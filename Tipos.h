@@ -1,0 +1,26 @@
+#pragma once
+
+#include "raylib.h"
+
+enum EstadoJuego {
+    ESTADO_LOGO,
+    ESTADO_MENU,
+    ESTADO_CONFIGURACION,
+    ESTADO_SELECCION_JUGADORES,
+    ESTADO_PARTIDA,
+    ESTADO_MINIJUEGO,
+    ESTADO_RESULTADO,
+    ESTADO_FINAL
+};
+
+enum TipoMinijuego {
+    MINIJUEGO_MEMORIA,
+    MINIJUEGO_BOMBA,
+    MINIJUEGO_PLATAFORMA,
+    MINIJUEGO_COORDINACION
+};
+
+enum TipoControl {
+    CONTROL_TECLADO,
+    CONTROL_JOYSTICK
+};

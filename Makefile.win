@@ -1,15 +1,15 @@
-# Project: Humo Manager
+# Project: Party
 # Makefile created by Embarcadero Dev-C++ 6.3
 
 CPP      = g++.exe
 CC       = gcc.exe
 WINDRES  = windres.exe
-OBJ      = main.o
-LINKOBJ  = main.o
+OBJ      = main.o WindowUtils.o Lighting.o Plataforma.o MenuPausa.o Jugador.o
+LINKOBJ  = main.o WindowUtils.o Lighting.o Plataforma.o MenuPausa.o Jugador.o
 LIBS     = -L"G:/Thiago/Embarcadero/Dev-Cpp/TDM-GCC-64/lib" -L"G:/Thiago/Embarcadero/Dev-Cpp/TDM-GCC-64/x86_64-w64-mingw32/lib" -static-libgcc -L"G:/Thiago/Programacion/raylib-master/src" -L"F:/Thiago/Programacion/raylib-master/src" -L"E:/Thiago/Programacion/raylib-master/src" -lraylib -lopengl32 -lgdi32 -lwinmm
 INCS     = -I"G:/Thiago/Embarcadero/Dev-Cpp/TDM-GCC-64/include" -I"G:/Thiago/Embarcadero/Dev-Cpp/TDM-GCC-64/x86_64-w64-mingw32/include" -I"G:/Thiago/Embarcadero/Dev-Cpp/TDM-GCC-64/lib/gcc/x86_64-w64-mingw32/9.2.0/include" -I"G:/Thiago/Programacion/raylib-master/src"
 CXXINCS  = -I"G:/Thiago/Embarcadero/Dev-Cpp/TDM-GCC-64/include" -I"G:/Thiago/Embarcadero/Dev-Cpp/TDM-GCC-64/x86_64-w64-mingw32/include" -I"G:/Thiago/Embarcadero/Dev-Cpp/TDM-GCC-64/lib/gcc/x86_64-w64-mingw32/9.2.0/include" -I"G:/Thiago/Embarcadero/Dev-Cpp/TDM-GCC-64/lib/gcc/x86_64-w64-mingw32/9.2.0/include/c++" -I"G:/Thiago/Programacion/raylib-master/src"
-BIN      = "Humo Manager.exe"
+BIN      = Party.exe
 CXXFLAGS = $(CXXINCS) 
 CFLAGS   = $(INCS) 
 DEL      = G:\Thiago\Embarcadero\Dev-Cpp\devcpp.exe INTERNAL_DEL
@@ -26,3 +26,18 @@ $(BIN): $(OBJ)
 
 main.o: main.cpp
 	$(CPP) -c main.cpp -o main.o $(CXXFLAGS)
+
+WindowUtils.o: WindowUtils.cpp
+	$(CPP) -c WindowUtils.cpp -o WindowUtils.o $(CXXFLAGS)
+
+Lighting.o: Lighting.cpp
+	$(CPP) -c Lighting.cpp -o Lighting.o $(CXXFLAGS)
+
+Plataforma.o: Plataforma.cpp
+	$(CPP) -c Plataforma.cpp -o Plataforma.o $(CXXFLAGS)
+
+MenuPausa.o: MenuPausa.cpp
+	$(CPP) -c MenuPausa.cpp -o MenuPausa.o $(CXXFLAGS)
+
+Jugador.o: Jugador.cpp
+	$(CPP) -c Jugador.cpp -o Jugador.o $(CXXFLAGS)

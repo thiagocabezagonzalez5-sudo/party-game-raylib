@@ -1,0 +1,13 @@
+# Compilados
+*.o
+*.exe
+
+# Archivos temporales de Dev-C++
+*.layout
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# VS Code con rutas locales de tu PC
+.vscode/

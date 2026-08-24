@@ -1,0 +1,2 @@
+#include "Entities/Plataforma.h"
+
