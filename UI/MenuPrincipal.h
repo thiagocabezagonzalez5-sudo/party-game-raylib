@@ -4,55 +4,73 @@
 
 #include "Systems/FondoAnimado.h"
 
-
 struct MenuPrincipal
 {
     //------------------------------
-    // OPCIONES
+    // MENU
     //------------------------------
 
-    int opcionSeleccionada = 0;
+    int opcionSeleccionada =
+        0;
 
-    bool empezarJuego = false;
+    bool empezarJuego =
+        false;
 
-    bool abrirConfiguracion = false;
+    bool abrirConfiguracion =
+        false;
 
-    bool salir = false;
+    bool salir =
+        false;
 
 
     //------------------------------
-    // RECURSOS
+    // FONDO
     //------------------------------
 
     FondoAnimado fondo;
 
-    bool recursosCargados = false;
+    bool recursosCargados =
+        false;
 
 
     //------------------------------
     // TRANSICION
     //------------------------------
 
-    float tiempoEntrada = 0.0f;
+    float tiempoEntrada =
+        0.0f;
 
-    bool entradaActiva = false;
+    bool entradaActiva =
+        false;
 
-
-    /*
-        Bajamos mucho los tiempos.
-
-        El menu empieza a aparecer
-        casi junto con el video.
-    */
+    bool fadeBlancoActivo =
+        true;
 
     const float DURACION_FADE_VIDEO =
         0.65f;
 
     const float RETRASO_MENU =
-        0.15f;
+        0.10f;
 
     const float DURACION_FADE_MENU =
-        0.65f;
+        0.35f;
+
+
+    //------------------------------
+    // CLICK / ENTER VISUAL
+    //------------------------------
+
+    int botonPresionado =
+        -1;
+
+    int accionPendiente =
+        -1;
+
+    float tiempoBotonPresionado =
+        0.0f;
+
+    const float DURACION_BOTON_PRESION =
+        0.12f;
 
 
     //------------------------------
@@ -62,7 +80,7 @@ struct MenuPrincipal
     void Inicializar();
 
     void PrepararEntrada(
-        bool usarFade
+        bool desdeLogo
     );
 
     void Actualizar(

@@ -1,66 +1,392 @@
 #include "UI/MenuConfiguracion.h"
 
+
+//==================================================
+// COLORES
+//==================================================
+
+static const Color COLOR_NARANJA =
+{
+    255, 120, 20, 255
+};
+
+static const Color COLOR_CRISTAL =
+{
+    25, 28, 35, 255
+};
+
+
+//==================================================
+// UTILIDADES
+//==================================================
+
 static float LimitarFloat(
     float valor,
     float minimo,
     float maximo
 )
 {
-    if (valor < minimo) return minimo;
-    if (valor > maximo) return maximo;
+    if (valor < minimo)
+    {
+        return minimo;
+    }
+
+    if (valor > maximo)
+    {
+        return maximo;
+    }
+
     return valor;
 }
 
-static int LimitarEnteroCircular(
+
+static int ValorCircular(
     int valor,
     int minimo,
     int maximo
 )
 {
-    if (valor < minimo) return maximo;
-    if (valor > maximo) return minimo;
+    if (valor < minimo)
+    {
+        return maximo;
+    }
+
+    if (valor > maximo)
+    {
+        return minimo;
+    }
+
     return valor;
 }
 
-static void DibujarBarra(
-    int x,
-    int y,
-    int ancho,
-    int alto,
-    float valor,
-    Color colorRelleno
+
+//==================================================
+// SIDEBAR
+//==================================================
+
+static int ObtenerAnchoSidebar()
+{
+    int ancho =
+        (int)(
+            GetScreenWidth() * 0.22f
+        );
+
+    if (ancho < 190)
+    {
+        ancho = 190;
+    }
+
+    if (ancho > 330)
+    {
+        ancho = 330;
+    }
+
+    return ancho;
+}
+
+
+//==================================================
+// RECTANGULO CATEGORIA
+//==================================================
+
+static Rectangle ObtenerRectCategoria(
+    int indice
 )
 {
-    DrawRectangleLines(
-        x,
-        y,
+    int anchoSidebar =
+        ObtenerAnchoSidebar();
+
+    const float alto =
+        54.0f;
+
+    const float separacion =
+        14.0f;
+
+    const float inicioY =
+        42.0f;
+
+    return Rectangle
+    {
+        30.0f,
+        inicioY + indice * (alto + separacion),
+        (float)anchoSidebar - 60.0f,
+        alto
+    };
+}
+
+
+//==================================================
+// RECTANGULO OPCION
+//==================================================
+
+static Rectangle ObtenerRectOpcion(
+    int indice
+)
+{
+    int sidebar =
+        ObtenerAnchoSidebar();
+
+    return Rectangle
+    {
+        (float)sidebar + 65.0f,
+        155.0f + indice * 74.0f,
+        (float)GetScreenWidth() - sidebar - 130.0f,
+        54.0f
+    };
+}
+
+
+//==================================================
+// BARRA AUDIO
+//==================================================
+
+static Rectangle ObtenerRectBarraAudio(
+    int indice
+)
+{
+    int sidebar =
+        ObtenerAnchoSidebar();
+
+    float ancho =
+        GetScreenWidth() * 0.28f;
+
+    if (ancho < 220.0f)
+    {
+        ancho = 220.0f;
+    }
+
+    if (ancho > 500.0f)
+    {
+        ancho = 500.0f;
+    }
+
+    return Rectangle
+    {
+        (float)sidebar + 390.0f,
+        170.0f + indice * 74.0f,
         ancho,
-        alto,
-        BLACK
+        24.0f
+    };
+}
+
+
+//==================================================
+// VOLUMEN DESDE MOUSE
+//==================================================
+
+static float ObtenerVolumenMouse(
+    Rectangle barra,
+    float mouseX
+)
+{
+    float porcentaje =
+        (
+            mouseX -
+            barra.x
+        ) /
+        barra.width;
+
+    return LimitarFloat(
+        porcentaje,
+        0.0f,
+        1.0f
+    );
+}
+
+
+//==================================================
+// DIBUJAR BARRA
+//==================================================
+
+static void DibujarBarra(
+    Rectangle barra,
+    float valor,
+    bool seleccionada,
+    float alpha
+)
+{
+    Color color =
+        seleccionada
+        ? COLOR_NARANJA
+        : RAYWHITE;
+
+    color =
+        Fade(
+            color,
+            alpha
+        );
+
+    DrawRectangle(
+        (int)barra.x,
+        (int)barra.y,
+        (int)barra.width,
+        (int)barra.height,
+        Fade(
+            BLACK,
+            0.45f * alpha
+        )
     );
 
     int anchoRelleno =
-        (int)(ancho * valor);
+        (int)(
+            (barra.width - 4.0f) * valor
+        );
 
     DrawRectangle(
-        x + 2,
-        y + 2,
-        anchoRelleno - 4 > 0 ? anchoRelleno - 4 : 0,
-        alto - 4,
-        colorRelleno
+        (int)barra.x + 2,
+        (int)barra.y + 2,
+        anchoRelleno,
+        (int)barra.height - 4,
+        color
+    );
+
+    DrawRectangleLines(
+        (int)barra.x,
+        (int)barra.y,
+        (int)barra.width,
+        (int)barra.height,
+        color
     );
 }
 
+
+//==================================================
+// INICIAR TRANSICION CONTENIDO
+//==================================================
+
+static void IniciarTransicionContenido(
+    MenuConfiguracion& menu,
+    PantallaMenuConfiguracion nuevaPantalla,
+    int nuevaCategoria
+)
+{
+    menu.pantallaDestino =
+        nuevaPantalla;
+
+    menu.categoriaDestino =
+        nuevaCategoria;
+
+    menu.transicionContenidoActiva =
+        true;
+
+    menu.transicionContenidoSaliendo =
+        true;
+}
+
+
+//==================================================
+// INICIAR SALIDA MENU
+//==================================================
+
+static void IniciarSalidaMenu(
+    MenuConfiguracion& menu
+)
+{
+    menu.saliendo =
+        true;
+
+    menu.arrastrandoVolumenMusica =
+        false;
+
+    menu.arrastrandoVolumenSonidos =
+        false;
+}
+
+
+//==================================================
+// CAMBIAR CATEGORIA
+//==================================================
+
+static void CambiarCategoria(
+    MenuConfiguracion& menu,
+    int nuevaCategoria
+)
+{
+    nuevaCategoria =
+        ValorCircular(
+            nuevaCategoria,
+            0,
+            CANTIDAD_CATEGORIAS_CONFIGURACION - 1
+        );
+
+    if (
+        nuevaCategoria ==
+        menu.categoriaActual
+    )
+    {
+        return;
+    }
+
+    IniciarTransicionContenido(
+        menu,
+        CONFIG_DETALLE_CATEGORIA,
+        nuevaCategoria
+    );
+}
+
+
+//==================================================
+// INICIALIZAR
+//==================================================
+
 void MenuConfiguracion::Inicializar()
 {
-    categoriaActual = CATEGORIA_AUDIO;
+    pantallaActual =
+        CONFIG_SELECCION_CATEGORIA;
 
-    opcionAudioSeleccionada = 0;
-    opcionVideoSeleccionada = 0;
+    categoriaActual =
+        CATEGORIA_AUDIO;
 
-    volver = false;
-    configuracionCambiada = false;
+    categoriaCursor =
+        CATEGORIA_AUDIO;
+
+    categoriaHover =
+        -1;
+
+    opcionAudioSeleccionada =
+        0;
+
+    opcionVideoSeleccionada =
+        0;
+
+    volver =
+        false;
+
+    configuracionCambiada =
+        false;
+
+    arrastrandoVolumenSonidos =
+        false;
+
+    arrastrandoVolumenMusica =
+        false;
+
+    alphaGeneral =
+        0.0f;
+
+    alphaContenido =
+        1.0f;
+
+    saliendo =
+        false;
+
+    transicionContenidoActiva =
+        false;
+
+    transicionContenidoSaliendo =
+        false;
+
+    pantallaDestino =
+        CONFIG_SELECCION_CATEGORIA;
+
+    categoriaDestino =
+        CATEGORIA_AUDIO;
 }
+
+
+//==================================================
+// ACTUALIZAR
+//==================================================
 
 void MenuConfiguracion::Actualizar(
     ConfiguracionJuego& config,
@@ -71,37 +397,296 @@ void MenuConfiguracion::Actualizar(
     AudioJuego& audio
 )
 {
-    if (IsKeyPressed(KEY_TAB))
+    float deltaTime =
+        GetFrameTime();
+
+    //==================================================
+    // TRANSICION GENERAL
+    //==================================================
+
+    if (saliendo)
     {
-        if (categoriaActual == CATEGORIA_AUDIO)
-            categoriaActual = CATEGORIA_VIDEO;
+        alphaGeneral -=
+            deltaTime /
+            DURACION_TRANSICION;
+
+        if (alphaGeneral <= 0.0f)
+        {
+            alphaGeneral =
+                0.0f;
+
+            volver =
+                true;
+        }
+
+        return;
+    }
+
+    if (alphaGeneral < 1.0f)
+    {
+        alphaGeneral +=
+            deltaTime /
+            DURACION_TRANSICION;
+
+        if (alphaGeneral > 1.0f)
+        {
+            alphaGeneral =
+                1.0f;
+        }
+    }
+
+    //==================================================
+    // TRANSICION ENTRE APARTADOS
+    //==================================================
+
+    if (transicionContenidoActiva)
+    {
+        if (transicionContenidoSaliendo)
+        {
+            alphaContenido -=
+                deltaTime /
+                DURACION_TRANSICION_CONTENIDO;
+
+            if (alphaContenido <= 0.0f)
+            {
+                alphaContenido =
+                    0.0f;
+
+                pantallaActual =
+                    pantallaDestino;
+
+                categoriaActual =
+                    categoriaDestino;
+
+                categoriaCursor =
+                    categoriaDestino;
+
+                opcionAudioSeleccionada =
+                    0;
+
+                opcionVideoSeleccionada =
+                    0;
+
+                transicionContenidoSaliendo =
+                    false;
+            }
+
+            return;
+        }
         else
-            categoriaActual = CATEGORIA_AUDIO;
+        {
+            alphaContenido +=
+                deltaTime /
+                DURACION_TRANSICION_CONTENIDO;
+
+            if (alphaContenido >= 1.0f)
+            {
+                alphaContenido =
+                    1.0f;
+
+                transicionContenidoActiva =
+                    false;
+            }
+
+            return;
+        }
+    }
+
+    Vector2 mouse =
+        GetMousePosition();
+
+    bool click =
+        IsMouseButtonPressed(
+            MOUSE_BUTTON_LEFT
+        );
+
+    categoriaHover =
+        -1;
+
+    for (
+        int i = 0;
+        i < CANTIDAD_CATEGORIAS_CONFIGURACION;
+        i++
+    )
+    {
+        Rectangle rect =
+            ObtenerRectCategoria(i);
+
+        if (
+            CheckCollisionPointRec(
+                mouse,
+                rect
+            )
+        )
+        {
+            categoriaHover =
+                i;
+        }
+    }
+
+    //==================================================
+    // SELECTOR DE CATEGORIA
+    //==================================================
+
+    if (
+        pantallaActual ==
+        CONFIG_SELECCION_CATEGORIA
+    )
+    {
+        if (IsKeyPressed(KEY_UP))
+        {
+            categoriaCursor--;
+
+            categoriaCursor =
+                ValorCircular(
+                    categoriaCursor,
+                    0,
+                    CANTIDAD_CATEGORIAS_CONFIGURACION - 1
+                );
+        }
+
+        if (IsKeyPressed(KEY_DOWN))
+        {
+            categoriaCursor++;
+
+            categoriaCursor =
+                ValorCircular(
+                    categoriaCursor,
+                    0,
+                    CANTIDAD_CATEGORIAS_CONFIGURACION - 1
+                );
+        }
+
+        if (IsKeyPressed(KEY_Q))
+        {
+            categoriaCursor--;
+
+            categoriaCursor =
+                ValorCircular(
+                    categoriaCursor,
+                    0,
+                    CANTIDAD_CATEGORIAS_CONFIGURACION - 1
+                );
+        }
+
+        if (IsKeyPressed(KEY_E))
+        {
+            categoriaCursor++;
+
+            categoriaCursor =
+                ValorCircular(
+                    categoriaCursor,
+                    0,
+                    CANTIDAD_CATEGORIAS_CONFIGURACION - 1
+                );
+        }
+
+        if (categoriaHover >= 0)
+        {
+            categoriaCursor =
+                categoriaHover;
+        }
+
+        if (
+            click &&
+            categoriaHover >= 0
+        )
+        {
+            IniciarTransicionContenido(
+                *this,
+                CONFIG_DETALLE_CATEGORIA,
+                categoriaHover
+            );
+        }
+
+        if (IsKeyPressed(KEY_ENTER))
+        {
+            IniciarTransicionContenido(
+                *this,
+                CONFIG_DETALLE_CATEGORIA,
+                categoriaCursor
+            );
+        }
+
+        if (IsKeyPressed(KEY_ESCAPE))
+        {
+            IniciarSalidaMenu(
+                *this
+            );
+        }
+
+        return;
+    }
+
+    //==================================================
+    // DETALLE CATEGORIA
+    //==================================================
+
+    if (IsKeyPressed(KEY_Q))
+    {
+        CambiarCategoria(
+            *this,
+            categoriaActual - 1
+        );
+
+        return;
+    }
+
+    if (IsKeyPressed(KEY_E))
+    {
+        CambiarCategoria(
+            *this,
+            categoriaActual + 1
+        );
+
+        return;
+    }
+
+    if (
+        click &&
+        categoriaHover >= 0
+    )
+    {
+        CambiarCategoria(
+            *this,
+            categoriaHover
+        );
+
+        return;
     }
 
     if (IsKeyPressed(KEY_ESCAPE))
     {
-        volver = true;
+        IniciarTransicionContenido(
+            *this,
+            CONFIG_SELECCION_CATEGORIA,
+            categoriaActual
+        );
+
+        arrastrandoVolumenMusica =
+            false;
+
+        arrastrandoVolumenSonidos =
+            false;
+
         return;
     }
 
-    int direccion = 0;
+    //==================================================
+    // AUDIO
+    //==================================================
 
-    if (IsKeyPressed(KEY_LEFT))
-        direccion = -1;
-
-    if (IsKeyPressed(KEY_RIGHT))
-        direccion = 1;
-
-    bool enter = IsKeyPressed(KEY_ENTER);
-
-    if (categoriaActual == CATEGORIA_AUDIO)
+    if (
+        categoriaActual ==
+        CATEGORIA_AUDIO
+    )
     {
         if (IsKeyPressed(KEY_UP))
         {
             opcionAudioSeleccionada--;
+
             opcionAudioSeleccionada =
-                LimitarEnteroCircular(
+                ValorCircular(
                     opcionAudioSeleccionada,
                     0,
                     CANTIDAD_OPCIONES_AUDIO - 1
@@ -111,76 +696,237 @@ void MenuConfiguracion::Actualizar(
         if (IsKeyPressed(KEY_DOWN))
         {
             opcionAudioSeleccionada++;
+
             opcionAudioSeleccionada =
-                LimitarEnteroCircular(
+                ValorCircular(
                     opcionAudioSeleccionada,
                     0,
                     CANTIDAD_OPCIONES_AUDIO - 1
                 );
         }
 
-        switch (opcionAudioSeleccionada)
+        for (
+            int i = 0;
+            i < CANTIDAD_OPCIONES_AUDIO;
+            i++
+        )
         {
-            case AUDIO_VOLUMEN_SONIDOS:
+            Rectangle rect =
+                ObtenerRectOpcion(i);
+
+            if (
+                CheckCollisionPointRec(
+                    mouse,
+                    rect
+                )
+            )
             {
-                if (direccion != 0)
-                {
-                    config.volumenSonidos =
-                        LimitarFloat(
-                            config.volumenSonidos + 0.05f * direccion,
-                            0.0f,
-                            1.0f
-                        );
-
-                    audio.AplicarVolumenSonidos(
-                        config.volumenSonidos
-                    );
-
-                    configuracionCambiada = true;
-                }
-
-                break;
-            }
-
-            case AUDIO_VOLUMEN_MUSICA:
-            {
-                if (direccion != 0)
-                {
-                    config.volumenMusica =
-                        LimitarFloat(
-                            config.volumenMusica + 0.05f * direccion,
-                            0.0f,
-                            1.0f
-                        );
-
-                    audio.AplicarVolumenMusica(
-                        config.volumenMusica
-                    );
-
-                    configuracionCambiada = true;
-                }
-
-                break;
-            }
-
-            case AUDIO_VOLVER:
-            {
-                if (enter)
-                {
-                    volver = true;
-                }
-
-                break;
+                opcionAudioSeleccionada =
+                    i;
             }
         }
+
+        int direccion =
+            0;
+
+        if (IsKeyPressed(KEY_LEFT))
+        {
+            direccion =
+                -1;
+        }
+
+        if (IsKeyPressed(KEY_RIGHT))
+        {
+            direccion =
+                1;
+        }
+
+        if (
+            opcionAudioSeleccionada ==
+                AUDIO_VOLUMEN_SONIDOS &&
+            direccion != 0
+        )
+        {
+            config.volumenSonidos =
+                LimitarFloat(
+                    config.volumenSonidos +
+                        0.05f * direccion,
+                    0.0f,
+                    1.0f
+                );
+
+            audio.AplicarVolumenSonidos(
+                config.volumenSonidos
+            );
+
+            configuracionCambiada =
+                true;
+        }
+
+        if (
+            opcionAudioSeleccionada ==
+                AUDIO_VOLUMEN_MUSICA &&
+            direccion != 0
+        )
+        {
+            config.volumenMusica =
+                LimitarFloat(
+                    config.volumenMusica +
+                        0.05f * direccion,
+                    0.0f,
+                    1.0f
+                );
+
+            audio.AplicarVolumenMusica(
+                config.volumenMusica
+            );
+
+            configuracionCambiada =
+                true;
+        }
+
+        Rectangle barraSonidos =
+            ObtenerRectBarraAudio(
+                AUDIO_VOLUMEN_SONIDOS
+            );
+
+        if (
+            click &&
+            CheckCollisionPointRec(
+                mouse,
+                barraSonidos
+            )
+        )
+        {
+            arrastrandoVolumenSonidos =
+                true;
+
+            opcionAudioSeleccionada =
+                AUDIO_VOLUMEN_SONIDOS;
+        }
+
+        if (
+            arrastrandoVolumenSonidos &&
+            IsMouseButtonDown(
+                MOUSE_BUTTON_LEFT
+            )
+        )
+        {
+            config.volumenSonidos =
+                ObtenerVolumenMouse(
+                    barraSonidos,
+                    mouse.x
+                );
+
+            audio.AplicarVolumenSonidos(
+                config.volumenSonidos
+            );
+
+            configuracionCambiada =
+                true;
+        }
+
+        Rectangle barraMusica =
+            ObtenerRectBarraAudio(
+                AUDIO_VOLUMEN_MUSICA
+            );
+
+        if (
+            click &&
+            CheckCollisionPointRec(
+                mouse,
+                barraMusica
+            )
+        )
+        {
+            arrastrandoVolumenMusica =
+                true;
+
+            opcionAudioSeleccionada =
+                AUDIO_VOLUMEN_MUSICA;
+        }
+
+        if (
+            arrastrandoVolumenMusica &&
+            IsMouseButtonDown(
+                MOUSE_BUTTON_LEFT
+            )
+        )
+        {
+            config.volumenMusica =
+                ObtenerVolumenMouse(
+                    barraMusica,
+                    mouse.x
+                );
+
+            audio.AplicarVolumenMusica(
+                config.volumenMusica
+            );
+
+            configuracionCambiada =
+                true;
+        }
+
+        if (
+            !IsMouseButtonDown(
+                MOUSE_BUTTON_LEFT
+            )
+        )
+        {
+            arrastrandoVolumenSonidos =
+                false;
+
+            arrastrandoVolumenMusica =
+                false;
+        }
+
+        Rectangle volverRect =
+            ObtenerRectOpcion(
+                AUDIO_VOLVER
+            );
+
+        if (
+            opcionAudioSeleccionada ==
+                AUDIO_VOLVER
+        )
+        {
+            if (
+                IsKeyPressed(KEY_ENTER) ||
+                (
+                    click &&
+                    CheckCollisionPointRec(
+                        mouse,
+                        volverRect
+                    )
+                )
+            )
+            {
+                IniciarTransicionContenido(
+                    *this,
+                    CONFIG_SELECCION_CATEGORIA,
+                    categoriaActual
+                );
+            }
+        }
+
+        return;
     }
-    else
+
+    //==================================================
+    // VIDEO
+    //==================================================
+
+    if (
+        categoriaActual ==
+        CATEGORIA_VIDEO
+    )
     {
         if (IsKeyPressed(KEY_UP))
         {
             opcionVideoSeleccionada--;
+
             opcionVideoSeleccionada =
-                LimitarEnteroCircular(
+                ValorCircular(
                     opcionVideoSeleccionada,
                     0,
                     CANTIDAD_OPCIONES_VIDEO - 1
@@ -190,113 +936,299 @@ void MenuConfiguracion::Actualizar(
         if (IsKeyPressed(KEY_DOWN))
         {
             opcionVideoSeleccionada++;
+
             opcionVideoSeleccionada =
-                LimitarEnteroCircular(
+                ValorCircular(
                     opcionVideoSeleccionada,
                     0,
                     CANTIDAD_OPCIONES_VIDEO - 1
                 );
         }
 
-        switch (opcionVideoSeleccionada)
+        for (
+            int i = 0;
+            i < CANTIDAD_OPCIONES_VIDEO;
+            i++
+        )
         {
-            case VIDEO_MODO_VENTANA:
+            Rectangle rect =
+                ObtenerRectOpcion(i);
+
+            if (
+                CheckCollisionPointRec(
+                    mouse,
+                    rect
+                )
+            )
             {
-                if (direccion != 0 || enter)
+                opcionVideoSeleccionada =
+                    i;
+            }
+        }
+
+        int direccion =
+            0;
+
+        if (IsKeyPressed(KEY_LEFT))
+        {
+            direccion =
+                -1;
+        }
+
+        if (IsKeyPressed(KEY_RIGHT))
+        {
+            direccion =
+                1;
+        }
+
+        bool enter =
+            IsKeyPressed(KEY_ENTER);
+
+        Rectangle rectActual =
+            ObtenerRectOpcion(
+                opcionVideoSeleccionada
+            );
+
+        bool clickOpcion =
+            click &&
+            CheckCollisionPointRec(
+                mouse,
+                rectActual
+            );
+
+        if (
+            (
+                enter ||
+                clickOpcion
+            ) &&
+            direccion == 0
+        )
+        {
+            direccion =
+                1;
+        }
+
+        if (
+            opcionVideoSeleccionada ==
+                VIDEO_MODO_VENTANA &&
+            direccion != 0
+        )
+        {
+            int nuevoModo =
+                (int)config.modoVentana +
+                direccion;
+
+            nuevoModo =
+                ValorCircular(
+                    nuevoModo,
+                    (int)MODO_VENTANA,
+                    (int)MODO_SIN_BORDES
+                );
+
+            ModoVentana modoActual =
+                config.modoVentana;
+
+            AplicarModoVentana(
+                modoActual,
+                (ModoVentana)nuevoModo,
+                resoluciones[
+                    config.indiceResolucion
+                ]
+            );
+
+            config.modoVentana =
+                modoActual;
+
+            configuracionCambiada =
+                true;
+        }
+        else if (
+            opcionVideoSeleccionada ==
+                VIDEO_RESOLUCION &&
+            direccion != 0
+        )
+        {
+            if (
+                config.modoVentana !=
+                MODO_SIN_BORDES
+            )
+            {
+                config.indiceResolucion +=
+                    direccion;
+
+                if (
+                    config.indiceResolucion < 0
+                )
                 {
-                    int nuevoModo =
-                        (int)config.modoVentana + (direccion == 0 ? 1 : direccion);
-
-                    if (nuevoModo < (int)MODO_VENTANA)
-                        nuevoModo = (int)MODO_SIN_BORDES;
-
-                    if (nuevoModo > (int)MODO_SIN_BORDES)
-                        nuevoModo = (int)MODO_VENTANA;
-
-                    AplicarModoVentana(
-                        config.modoVentana,
-                        (ModoVentana)nuevoModo,
-                        resoluciones[config.indiceResolucion]
-                    );
-
-                    configuracionCambiada = true;
+                    config.indiceResolucion =
+                        cantidadResoluciones - 1;
                 }
 
-                break;
-            }
-
-            case VIDEO_RESOLUCION:
-            {
-                if (config.modoVentana != MODO_SIN_BORDES)
+                if (
+                    config.indiceResolucion >=
+                    cantidadResoluciones
+                )
                 {
-                    if (direccion != 0)
-                    {
-                        config.indiceResolucion += direccion;
-
-                        if (config.indiceResolucion < 0)
-                            config.indiceResolucion = cantidadResoluciones - 1;
-
-                        if (config.indiceResolucion >= cantidadResoluciones)
-                            config.indiceResolucion = 0;
-
-                        AplicarModoVentana(
-                            config.modoVentana,
-                            config.modoVentana,
-                            resoluciones[config.indiceResolucion]
-                        );
-
-                        configuracionCambiada = true;
-                    }
+                    config.indiceResolucion =
+                        0;
                 }
 
-                break;
-            }
+                ModoVentana modoActual =
+                    config.modoVentana;
 
-            case VIDEO_FPS:
+                AplicarModoVentana(
+                    modoActual,
+                    modoActual,
+                    resoluciones[
+                        config.indiceResolucion
+                    ]
+                );
+
+                config.modoVentana =
+                    modoActual;
+
+                configuracionCambiada =
+                    true;
+            }
+        }
+        else if (
+            opcionVideoSeleccionada ==
+                VIDEO_FPS &&
+            direccion != 0
+        )
+        {
+            config.indiceFPS +=
+                direccion;
+
+            if (
+                config.indiceFPS < 0
+            )
             {
-                if (direccion != 0)
-                {
-                    config.indiceFPS += direccion;
-
-                    if (config.indiceFPS < 0)
-                        config.indiceFPS = cantidadOpcionesFPS - 1;
-
-                    if (config.indiceFPS >= cantidadOpcionesFPS)
-                        config.indiceFPS = 0;
-
-                    SetTargetFPS(
-                        opcionesFPS[config.indiceFPS]
-                    );
-
-                    configuracionCambiada = true;
-                }
-
-                break;
+                config.indiceFPS =
+                    cantidadOpcionesFPS - 1;
             }
 
-            case VIDEO_MOSTRAR_FPS:
+            if (
+                config.indiceFPS >=
+                cantidadOpcionesFPS
+            )
             {
-                if (direccion != 0 || enter)
-                {
-                    config.mostrarFPS = !config.mostrarFPS;
-                    configuracionCambiada = true;
-                }
-
-                break;
+                config.indiceFPS =
+                    0;
             }
 
-            case VIDEO_VOLVER:
-            {
-                if (enter)
-                {
-                    volver = true;
-                }
+            SetTargetFPS(
+                opcionesFPS[
+                    config.indiceFPS
+                ]
+            );
 
-                break;
-            }
+            configuracionCambiada =
+                true;
+        }
+        else if (
+            opcionVideoSeleccionada ==
+                VIDEO_MOSTRAR_FPS &&
+            (
+                enter ||
+                clickOpcion
+            )
+        )
+        {
+            config.mostrarFPS =
+                !config.mostrarFPS;
+
+            configuracionCambiada =
+                true;
+        }
+        else if (
+            opcionVideoSeleccionada ==
+                VIDEO_VOLVER &&
+            (
+                enter ||
+                clickOpcion
+            )
+        )
+        {
+            IniciarTransicionContenido(
+                *this,
+                CONFIG_SELECCION_CATEGORIA,
+                categoriaActual
+            );
+        }
+
+        return;
+    }
+
+    //==================================================
+    // CONTROL
+    //==================================================
+
+    if (
+        categoriaActual ==
+        CATEGORIA_CONTROL
+    )
+    {
+        Rectangle volverRect =
+            ObtenerRectOpcion(0);
+
+        if (
+            IsKeyPressed(KEY_ENTER) ||
+            (
+                click &&
+                CheckCollisionPointRec(
+                    mouse,
+                    volverRect
+                )
+            )
+        )
+        {
+            IniciarTransicionContenido(
+                *this,
+                CONFIG_SELECCION_CATEGORIA,
+                categoriaActual
+            );
+        }
+
+        return;
+    }
+
+    //==================================================
+    // ACERCA DE
+    //==================================================
+
+    if (
+        categoriaActual ==
+        CATEGORIA_ACERCA_DE
+    )
+    {
+        Rectangle volverRect =
+            ObtenerRectOpcion(0);
+
+        if (
+            IsKeyPressed(KEY_ENTER) ||
+            (
+                click &&
+                CheckCollisionPointRec(
+                    mouse,
+                    volverRect
+                )
+            )
+        )
+        {
+            IniciarTransicionContenido(
+                *this,
+                CONFIG_SELECCION_CATEGORIA,
+                categoriaActual
+            );
         }
     }
 }
+
+
+//==================================================
+// DIBUJAR
+//==================================================
 
 void MenuConfiguracion::Dibujar(
     const ConfiguracionJuego& config,
@@ -304,67 +1236,287 @@ void MenuConfiguracion::Dibujar(
     int opcionesFPS[]
 )
 {
-    ClearBackground(
-        Color{ 230, 230, 230, 255 }
+    int anchoPantalla =
+        GetScreenWidth();
+
+    int altoPantalla =
+        GetScreenHeight();
+
+    int anchoSidebar =
+        ObtenerAnchoSidebar();
+
+    DrawRectangle(
+        0,
+        0,
+        anchoPantalla,
+        altoPantalla,
+        Fade(
+            COLOR_CRISTAL,
+            0.78f * alphaGeneral
+        )
     );
 
-    int anchoPantalla = GetScreenWidth();
-    int altoPantalla = GetScreenHeight();
-
-    int anchoSidebar = 220;
+    DrawRectangle(
+        0,
+        0,
+        anchoSidebar,
+        altoPantalla,
+        Fade(
+            BLACK,
+            0.20f * alphaGeneral
+        )
+    );
 
     DrawLineEx(
-        Vector2{ (float)anchoSidebar, 40.0f },
-        Vector2{ (float)anchoSidebar, (float)altoPantalla - 40.0f },
-        4.0f,
-        BLACK
+        Vector2{
+            (float)anchoSidebar,
+            0.0f
+        },
+        Vector2{
+            (float)anchoSidebar,
+            (float)altoPantalla
+        },
+        3.0f,
+        Fade(
+            RAYWHITE,
+            0.65f * alphaGeneral
+        )
     );
 
-    // Sidebar
-    int xSidebar = 30;
-    int yAudio = 120;
-    int yVideo = 180;
-
-    if (categoriaActual == CATEGORIA_AUDIO)
+    const char* categorias[] =
     {
-        DrawText(">", xSidebar - 20, yAudio, 28, BLACK);
-        DrawText("audio", xSidebar, yAudio, 28, BLACK);
+        "AUDIO",
+        "VIDEO",
+        "CONTROL",
+        "ACERCA DE"
+    };
+
+    for (
+        int i = 0;
+        i < CANTIDAD_CATEGORIAS_CONFIGURACION;
+        i++
+    )
+    {
+        Rectangle rect =
+            ObtenerRectCategoria(i);
+
+        bool activa =
+            (
+                pantallaActual ==
+                CONFIG_DETALLE_CATEGORIA
+            ) &&
+            (
+                categoriaActual == i
+            );
+
+        bool cursorSelector =
+            (
+                pantallaActual ==
+                CONFIG_SELECCION_CATEGORIA
+            ) &&
+            (
+                categoriaCursor == i
+            );
+
+        bool hover =
+            (categoriaHover == i);
+
+        if (
+            activa ||
+            cursorSelector
+        )
+        {
+            DrawRectangle(
+                (int)rect.x,
+                (int)rect.y,
+                (int)rect.width,
+                (int)rect.height,
+                Fade(
+                    COLOR_NARANJA,
+                    0.95f * alphaGeneral
+                )
+            );
+        }
+
+        if (
+            hover &&
+            !activa &&
+            !cursorSelector
+        )
+        {
+            DrawRectangleLines(
+                (int)rect.x,
+                (int)rect.y,
+                (int)rect.width,
+                (int)rect.height,
+                Fade(
+                    COLOR_NARANJA,
+                    alphaGeneral
+                )
+            );
+        }
+
+        if (
+            activa ||
+            cursorSelector
+        )
+        {
+            DrawText(
+                ">",
+                (int)rect.x - 26,
+                (int)rect.y + 10,
+                28,
+                Fade(
+                    COLOR_NARANJA,
+                    alphaGeneral
+                )
+            );
+        }
+
+        int anchoTexto =
+            MeasureText(
+                categorias[i],
+                28
+            );
+
+        DrawText(
+            categorias[i],
+            (int)(
+                rect.x +
+                rect.width / 2.0f -
+                anchoTexto / 2.0f
+            ),
+            (int)rect.y + 10,
+            28,
+            Fade(
+                RAYWHITE,
+                alphaGeneral
+            )
+        );
+    }
+
+    int xContenido =
+        anchoSidebar + 55;
+
+    if (
+        pantallaActual ==
+        CONFIG_SELECCION_CATEGORIA
+    )
+    {
+        DrawText(
+            "CONFIGURACION",
+            xContenido,
+            40,
+            48,
+            Fade(
+                RAYWHITE,
+                alphaGeneral
+            )
+        );
+
+        DrawText(
+            "Selecciona una categoria",
+            xContenido,
+            125,
+            28,
+            Fade(
+                LIGHTGRAY,
+                alphaGeneral
+            )
+        );
+
+        DrawText(
+            "ENTER / CLICK - ENTRAR",
+            xContenido,
+            altoPantalla - 100,
+            22,
+            Fade(
+                COLOR_NARANJA,
+                alphaGeneral
+            )
+        );
+
+        DrawText(
+            "Q / E - CAMBIAR CATEGORIA",
+            xContenido,
+            altoPantalla - 70,
+            18,
+            Fade(
+                LIGHTGRAY,
+                alphaGeneral
+            )
+        );
+
+        DrawText(
+            "ESC - VOLVER",
+            xContenido,
+            altoPantalla - 42,
+            18,
+            Fade(
+                GRAY,
+                alphaGeneral
+            )
+        );
+
+        return;
+    }
+
+    float alphaPanel =
+        alphaGeneral *
+        alphaContenido;
+
+    const char* tituloCategoria =
+        "";
+
+    if (
+        categoriaActual ==
+        CATEGORIA_AUDIO
+    )
+    {
+        tituloCategoria =
+            "CONFIG AUDIO";
+    }
+    else if (
+        categoriaActual ==
+        CATEGORIA_VIDEO
+    )
+    {
+        tituloCategoria =
+            "CONFIG VIDEO";
+    }
+    else if (
+        categoriaActual ==
+        CATEGORIA_CONTROL
+    )
+    {
+        tituloCategoria =
+            "CONTROLES";
     }
     else
     {
-        DrawText("audio", xSidebar, yAudio, 28, BLACK);
+        tituloCategoria =
+            "ACERCA DE";
     }
-
-    if (categoriaActual == CATEGORIA_VIDEO)
-    {
-        DrawText(">", xSidebar - 20, yVideo, 28, BLACK);
-        DrawText("video", xSidebar, yVideo, 28, BLACK);
-    }
-    else
-    {
-        DrawText("video", xSidebar, yVideo, 28, BLACK);
-    }
-
-    // Titulo principal
-    int xContenido = anchoSidebar + 40;
-
-    const char* titulo =
-        categoriaActual == CATEGORIA_AUDIO
-        ? "opciones de audio"
-        : "opciones de video";
 
     DrawText(
-        titulo,
+        tituloCategoria,
         xContenido,
-        50,
-        54,
-        BLACK
+        40,
+        48,
+        Fade(
+            RAYWHITE,
+            alphaPanel
+        )
     );
 
-    int yBase = 150;
-    int separacion = 65;
+    //==================================================
+    // AUDIO
+    //==================================================
 
-    if (categoriaActual == CATEGORIA_AUDIO)
+    if (
+        categoriaActual ==
+        CATEGORIA_AUDIO
+    )
     {
         const char* nombres[] =
         {
@@ -373,65 +1525,120 @@ void MenuConfiguracion::Dibujar(
             "volver"
         };
 
-        for (int i = 0; i < CANTIDAD_OPCIONES_AUDIO; i++)
+        for (
+            int i = 0;
+            i < CANTIDAD_OPCIONES_AUDIO;
+            i++
+        )
         {
-            int y = yBase + i * separacion;
-            Color color = (i == opcionAudioSeleccionada) ? BLACK : DARKGRAY;
+            Rectangle rect =
+                ObtenerRectOpcion(i);
 
-            if (i == opcionAudioSeleccionada)
+            bool seleccionada =
+                (opcionAudioSeleccionada == i);
+
+            Color color =
+                seleccionada
+                ? COLOR_NARANJA
+                : RAYWHITE;
+
+            if (seleccionada)
             {
-                DrawText(">", xContenido - 25, y, 24, BLACK);
+                DrawText(
+                    ">",
+                    (int)rect.x - 28,
+                    (int)rect.y + 10,
+                    26,
+                    Fade(
+                        COLOR_NARANJA,
+                        alphaPanel
+                    )
+                );
             }
 
             DrawText(
                 nombres[i],
-                xContenido,
-                y,
+                (int)rect.x,
+                (int)rect.y + 10,
                 28,
-                color
+                Fade(
+                    color,
+                    alphaPanel
+                )
+            );
+        }
+
+        Rectangle barraSonidos =
+            ObtenerRectBarraAudio(
+                AUDIO_VOLUMEN_SONIDOS
             );
 
-            if (i == AUDIO_VOLUMEN_SONIDOS)
-            {
-                DibujarBarra(
-                    xContenido + 320,
-                    y + 6,
-                    240,
-                    24,
-                    config.volumenSonidos,
-                    BLACK
-                );
+        DibujarBarra(
+            barraSonidos,
+            config.volumenSonidos,
+            opcionAudioSeleccionada ==
+                AUDIO_VOLUMEN_SONIDOS,
+            alphaPanel
+        );
 
-                DrawText(
-                    TextFormat("%d%%", (int)(config.volumenSonidos * 100.0f)),
-                    xContenido + 580,
-                    y,
-                    24,
-                    BLACK
-                );
-            }
-            else if (i == AUDIO_VOLUMEN_MUSICA)
-            {
-                DibujarBarra(
-                    xContenido + 320,
-                    y + 6,
-                    240,
-                    24,
-                    config.volumenMusica,
-                    BLACK
-                );
+        DrawText(
+            TextFormat(
+                "%d%%",
+                (int)(
+                    config.volumenSonidos * 100.0f
+                )
+            ),
+            (int)(
+                barraSonidos.x +
+                barraSonidos.width + 20
+            ),
+            (int)barraSonidos.y,
+            22,
+            Fade(
+                RAYWHITE,
+                alphaPanel
+            )
+        );
 
-                DrawText(
-                    TextFormat("%d%%", (int)(config.volumenMusica * 100.0f)),
-                    xContenido + 580,
-                    y,
-                    24,
-                    BLACK
-                );
-            }
-        }
+        Rectangle barraMusica =
+            ObtenerRectBarraAudio(
+                AUDIO_VOLUMEN_MUSICA
+            );
+
+        DibujarBarra(
+            barraMusica,
+            config.volumenMusica,
+            opcionAudioSeleccionada ==
+                AUDIO_VOLUMEN_MUSICA,
+            alphaPanel
+        );
+
+        DrawText(
+            TextFormat(
+                "%d%%",
+                (int)(
+                    config.volumenMusica * 100.0f
+                )
+            ),
+            (int)(
+                barraMusica.x +
+                barraMusica.width + 20
+            ),
+            (int)barraMusica.y,
+            22,
+            Fade(
+                RAYWHITE,
+                alphaPanel
+            )
+        );
     }
-    else
+    //==================================================
+    // VIDEO
+    //==================================================
+    else if (
+        categoriaActual ==
+        CATEGORIA_VIDEO
+    )
     {
         const char* nombres[] =
         {
@@ -442,48 +1649,100 @@ void MenuConfiguracion::Dibujar(
             "volver"
         };
 
-        for (int i = 0; i < CANTIDAD_OPCIONES_VIDEO; i++)
+        for (
+            int i = 0;
+            i < CANTIDAD_OPCIONES_VIDEO;
+            i++
+        )
         {
-            int y = yBase + i * separacion;
-            Color color = (i == opcionVideoSeleccionada) ? BLACK : DARKGRAY;
+            Rectangle rect =
+                ObtenerRectOpcion(i);
 
-            if (i == opcionVideoSeleccionada)
+            bool seleccionada =
+                (opcionVideoSeleccionada == i);
+
+            bool bloqueada =
+                (
+                    i == VIDEO_RESOLUCION &&
+                    config.modoVentana ==
+                        MODO_SIN_BORDES
+                );
+
+            Color color =
+                bloqueada
+                ? GRAY
+                : (
+                    seleccionada
+                    ? COLOR_NARANJA
+                    : RAYWHITE
+                );
+
+            if (seleccionada)
             {
-                DrawText(">", xContenido - 25, y, 24, BLACK);
+                DrawText(
+                    ">",
+                    (int)rect.x - 28,
+                    (int)rect.y + 10,
+                    26,
+                    Fade(
+                        color,
+                        alphaPanel
+                    )
+                );
             }
 
             DrawText(
                 nombres[i],
-                xContenido,
-                y,
+                (int)rect.x,
+                (int)rect.y + 10,
                 28,
-                color
+                Fade(
+                    color,
+                    alphaPanel
+                )
             );
 
-            const char* valor = "";
+            int xValor =
+                (int)rect.x + 360;
 
             if (i == VIDEO_MODO_VENTANA)
             {
-                valor = NombreModoVentana(config.modoVentana);
-
                 DrawText(
-                    valor,
-                    xContenido + 350,
-                    y,
+                    NombreModoVentana(
+                        config.modoVentana
+                    ),
+                    xValor,
+                    (int)rect.y + 10,
                     26,
-                    BLACK
+                    Fade(
+                        color,
+                        alphaPanel
+                    )
                 );
             }
             else if (i == VIDEO_RESOLUCION)
             {
-                if (config.modoVentana == MODO_SIN_BORDES)
+                if (
+                    config.modoVentana ==
+                    MODO_SIN_BORDES
+                )
                 {
+                    int monitor =
+                        GetCurrentMonitor();
+
                     DrawText(
-                        "bloqueada en sin bordes",
-                        xContenido + 350,
-                        y,
+                        TextFormat(
+                            "%d x %d - BLOQUEADA",
+                            GetMonitorWidth(monitor),
+                            GetMonitorHeight(monitor)
+                        ),
+                        xValor,
+                        (int)rect.y + 10,
                         24,
-                        GRAY
+                        Fade(
+                            GRAY,
+                            alphaPanel
+                        )
                     );
                 }
                 else
@@ -491,44 +1750,226 @@ void MenuConfiguracion::Dibujar(
                     DrawText(
                         TextFormat(
                             "%d x %d",
-                            resoluciones[config.indiceResolucion].ancho,
-                            resoluciones[config.indiceResolucion].alto
+                            resoluciones[
+                                config.indiceResolucion
+                            ].ancho,
+                            resoluciones[
+                                config.indiceResolucion
+                            ].alto
                         ),
-                        xContenido + 350,
-                        y,
+                        xValor,
+                        (int)rect.y + 10,
                         26,
-                        BLACK
+                        Fade(
+                            color,
+                            alphaPanel
+                        )
                     );
                 }
             }
             else if (i == VIDEO_FPS)
             {
                 DrawText(
-                    TextFormat("%d", opcionesFPS[config.indiceFPS]),
-                    xContenido + 350,
-                    y,
+                    TextFormat(
+                        "%d",
+                        opcionesFPS[
+                            config.indiceFPS
+                        ]
+                    ),
+                    xValor,
+                    (int)rect.y + 10,
                     26,
-                    BLACK
+                    Fade(
+                        color,
+                        alphaPanel
+                    )
                 );
             }
             else if (i == VIDEO_MOSTRAR_FPS)
             {
                 DrawText(
-                    config.mostrarFPS ? "si" : "no",
-                    xContenido + 350,
-                    y,
+                    config.mostrarFPS
+                    ? "SI"
+                    : "NO",
+                    xValor,
+                    (int)rect.y + 10,
                     26,
-                    BLACK
+                    Fade(
+                        color,
+                        alphaPanel
+                    )
                 );
             }
         }
     }
+    //==================================================
+    // CONTROL
+    //==================================================
+    else if (
+        categoriaActual ==
+        CATEGORIA_CONTROL
+    )
+    {
+        DrawText(
+            "MOVIMIENTO",
+            xContenido,
+            155,
+            28,
+            Fade(
+                RAYWHITE,
+                alphaPanel
+            )
+        );
+
+        DrawText(
+            "W A S D",
+            xContenido + 330,
+            155,
+            28,
+            Fade(
+                LIGHTGRAY,
+                alphaPanel
+            )
+        );
+
+        DrawText(
+            "SALTAR",
+            xContenido,
+            215,
+            28,
+            Fade(
+                RAYWHITE,
+                alphaPanel
+            )
+        );
+
+        DrawText(
+            "ESPACIO",
+            xContenido + 330,
+            215,
+            28,
+            Fade(
+                LIGHTGRAY,
+                alphaPanel
+            )
+        );
+
+        DrawText(
+            "PAUSA",
+            xContenido,
+            275,
+            28,
+            Fade(
+                RAYWHITE,
+                alphaPanel
+            )
+        );
+
+        DrawText(
+            "TAB",
+            xContenido + 330,
+            275,
+            28,
+            Fade(
+                LIGHTGRAY,
+                alphaPanel
+            )
+        );
+
+        DrawText(
+            "> volver",
+            xContenido,
+            380,
+            28,
+            Fade(
+                COLOR_NARANJA,
+                alphaPanel
+            )
+        );
+    }
+    //==================================================
+    // ACERCA DE
+    //==================================================
+    else if (
+        categoriaActual ==
+        CATEGORIA_ACERCA_DE
+    )
+    {
+        DrawText(
+            "PARTY GAME",
+            xContenido,
+            150,
+            42,
+            Fade(
+                RAYWHITE,
+                alphaPanel
+            )
+        );
+
+        DrawText(
+            "Juego local para 2 a 4 jugadores",
+            xContenido,
+            225,
+            24,
+            Fade(
+                LIGHTGRAY,
+                alphaPanel
+            )
+        );
+
+        DrawText(
+            "Desarrollado en C++ con raylib",
+            xContenido,
+            265,
+            24,
+            Fade(
+                LIGHTGRAY,
+                alphaPanel
+            )
+        );
+
+        DrawText(
+            "Proyecto en desarrollo",
+            xContenido,
+            305,
+            24,
+            Fade(
+                LIGHTGRAY,
+                alphaPanel
+            )
+        );
+
+        DrawText(
+            "> volver",
+            xContenido,
+            390,
+            28,
+            Fade(
+                COLOR_NARANJA,
+                alphaPanel
+            )
+        );
+    }
 
     DrawText(
-        "TAB: cambiar categoria  |  flechas: navegar/cambiar  |  ESC: volver",
+        "Q / E - CAMBIAR CATEGORIA",
         xContenido,
-        altoPantalla - 50,
-        20,
-        DARKGRAY
+        altoPantalla - 72,
+        18,
+        Fade(
+            LIGHTGRAY,
+            alphaPanel
+        )
+    );
+
+    DrawText(
+        "ESC - VOLVER A CATEGORIAS",
+        xContenido,
+        altoPantalla - 44,
+        18,
+        Fade(
+            GRAY,
+            alphaPanel
+        )
     );
 }

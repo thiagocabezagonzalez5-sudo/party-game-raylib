@@ -2,27 +2,147 @@
 
 
 //==================================================
+// RECTANGULO BOTON
+//==================================================
+
+static Rectangle ObtenerRectBotonMenu(
+    int indice
+)
+{
+    float anchoPantalla =
+        (float)GetScreenWidth();
+
+    float altoPantalla =
+        (float)GetScreenHeight();
+
+    float anchoBoton =
+        440.0f;
+
+    if (
+        anchoBoton >
+        anchoPantalla * 0.65f
+    )
+    {
+        anchoBoton =
+            anchoPantalla * 0.65f;
+    }
+
+    float altoBoton =
+        52.0f;
+
+    float separacion =
+        70.0f;
+
+    float centroX =
+        anchoPantalla / 2.0f;
+
+    float inicioY =
+        altoPantalla / 2.0f - 35.0f;
+
+    return Rectangle
+    {
+        centroX - anchoBoton / 2.0f,
+        inicioY + indice * separacion,
+        anchoBoton,
+        altoBoton
+    };
+}
+
+
+//==================================================
+// INICIAR PULSACION
+//==================================================
+
+static void IniciarPulsacion(
+    MenuPrincipal& menu,
+    int indice
+)
+{
+    if (menu.accionPendiente != -1)
+    {
+        return;
+    }
+
+    menu.botonPresionado =
+        indice;
+
+    menu.accionPendiente =
+        indice;
+
+    menu.tiempoBotonPresionado =
+        menu.DURACION_BOTON_PRESION;
+}
+
+
+//==================================================
+// APLICAR ACCION
+//==================================================
+
+static void AplicarAccionPendiente(
+    MenuPrincipal& menu
+)
+{
+    switch (menu.accionPendiente)
+    {
+        case 0:
+        {
+            menu.empezarJuego =
+                true;
+            break;
+        }
+
+        case 1:
+        {
+            menu.abrirConfiguracion =
+                true;
+            break;
+        }
+
+        case 2:
+        {
+            menu.salir =
+                true;
+            break;
+        }
+    }
+
+    menu.accionPendiente =
+        -1;
+
+    menu.botonPresionado =
+        -1;
+
+    menu.tiempoBotonPresionado =
+        0.0f;
+}
+
+
+//==================================================
 // INICIALIZAR
 //==================================================
 
 void MenuPrincipal::Inicializar()
 {
-    //------------------------------
-    // ESTADO DEL MENU
-    //------------------------------
+    opcionSeleccionada =
+        0;
 
-    opcionSeleccionada = 0;
+    empezarJuego =
+        false;
 
-    empezarJuego = false;
+    abrirConfiguracion =
+        false;
 
-    abrirConfiguracion = false;
+    salir =
+        false;
 
-    salir = false;
+    botonPresionado =
+        -1;
 
+    accionPendiente =
+        -1;
 
-    //------------------------------
-    // CARGAR RECURSOS UNA SOLA VEZ
-    //------------------------------
+    tiempoBotonPresionado =
+        0.0f;
 
     if (!recursosCargados)
     {
@@ -31,56 +151,49 @@ void MenuPrincipal::Inicializar()
             15.0f
         );
 
-        recursosCargados = true;
+        recursosCargados =
+            true;
     }
 }
 
 
 //==================================================
-// PREPARAR TRANSICION
+// PREPARAR ENTRADA
 //==================================================
 
 void MenuPrincipal::PrepararEntrada(
-    bool usarFade
+    bool desdeLogo
 )
 {
-    //------------------------------
-    // RESET OPCIONES
-    //------------------------------
+    opcionSeleccionada =
+        0;
 
-    opcionSeleccionada = 0;
+    empezarJuego =
+        false;
 
-    empezarJuego = false;
+    abrirConfiguracion =
+        false;
 
-    abrirConfiguracion = false;
+    salir =
+        false;
 
-    salir = false;
+    botonPresionado =
+        -1;
 
+    accionPendiente =
+        -1;
 
-    //------------------------------
-    // CON TRANSICION
-    //------------------------------
+    tiempoBotonPresionado =
+        0.0f;
 
-    if (usarFade)
-    {
-        tiempoEntrada = 0.0f;
+    tiempoEntrada =
+        0.0f;
 
-        entradaActiva = true;
-    }
+    entradaActiva =
+        true;
 
-
-    //------------------------------
-    // SIN TRANSICION
-    //------------------------------
-
-    else
-    {
-        tiempoEntrada =
-            RETRASO_MENU +
-            DURACION_FADE_MENU;
-
-        entradaActiva = false;
-    }
+    fadeBlancoActivo =
+        desdeLogo;
 }
 
 
@@ -93,13 +206,12 @@ void MenuPrincipal::Actualizar(
 )
 {
     //------------------------------
-    // VIDEO
+    // GIF
     //------------------------------
 
     fondo.Actualizar(
         deltaTime
     );
-
 
     //------------------------------
     // TRANSICION
@@ -110,42 +222,58 @@ void MenuPrincipal::Actualizar(
         tiempoEntrada +=
             deltaTime;
 
-
         if (
             tiempoEntrada >=
             RETRASO_MENU +
             DURACION_FADE_MENU
         )
         {
-            entradaActiva = false;
+            entradaActiva =
+                false;
         }
     }
 
-
-    /*
-        Mientras el menu todavia
-        esta apareciendo no aceptamos
-        input.
-    */
+    //------------------------------
+    // BLOQUEAR INPUT DURANTE FADE
+    //------------------------------
 
     if (entradaActiva)
     {
         return;
     }
 
+    //------------------------------
+    // BOTON PRESIONADO
+    //------------------------------
+
+    if (accionPendiente != -1)
+    {
+        tiempoBotonPresionado -=
+            deltaTime;
+
+        if (
+            tiempoBotonPresionado <=
+            0.0f
+        )
+        {
+            AplicarAccionPendiente(
+                *this
+            );
+        }
+
+        return;
+    }
 
     //==================================================
-    // NAVEGACION
+    // TECLADO
     //==================================================
 
     if (IsKeyPressed(KEY_DOWN))
     {
         opcionSeleccionada++;
 
-
         if (
-            opcionSeleccionada >
-            2
+            opcionSeleccionada > 2
         )
         {
             opcionSeleccionada =
@@ -153,15 +281,12 @@ void MenuPrincipal::Actualizar(
         }
     }
 
-
     if (IsKeyPressed(KEY_UP))
     {
         opcionSeleccionada--;
 
-
         if (
-            opcionSeleccionada <
-            0
+            opcionSeleccionada < 0
         )
         {
             opcionSeleccionada =
@@ -169,41 +294,50 @@ void MenuPrincipal::Actualizar(
         }
     }
 
-
-    //==================================================
-    // ENTER
-    //==================================================
-
     if (IsKeyPressed(KEY_ENTER))
     {
-        switch (
+        IniciarPulsacion(
+            *this,
             opcionSeleccionada
+        );
+    }
+
+    //==================================================
+    // MOUSE
+    //==================================================
+
+    Vector2 mouse =
+        GetMousePosition();
+
+    for (
+        int i = 0;
+        i < 3;
+        i++
+    )
+    {
+        Rectangle boton =
+            ObtenerRectBotonMenu(i);
+
+        if (
+            CheckCollisionPointRec(
+                mouse,
+                boton
+            )
         )
         {
-            case 0:
+            opcionSeleccionada =
+                i;
+
+            if (
+                IsMouseButtonPressed(
+                    MOUSE_BUTTON_LEFT
+                )
+            )
             {
-                empezarJuego =
-                    true;
-
-                break;
-            }
-
-
-            case 1:
-            {
-                abrirConfiguracion =
-                    true;
-
-                break;
-            }
-
-
-            case 2:
-            {
-                salir =
-                    true;
-
-                break;
+                IniciarPulsacion(
+                    *this,
+                    i
+                );
             }
         }
     }
@@ -216,17 +350,12 @@ void MenuPrincipal::Actualizar(
 
 void MenuPrincipal::Dibujar()
 {
-    //------------------------------
-    // FONDO ANIMADO
-    //------------------------------
+    //==================================================
+    // FONDO
+    //==================================================
 
     fondo
         .DibujarPantallaCompleta();
-
-
-    //------------------------------
-    // OSCURECER FONDO
-    //------------------------------
 
     DrawRectangle(
         0,
@@ -239,50 +368,49 @@ void MenuPrincipal::Dibujar()
         )
     );
 
-
     //==================================================
-    // FADE VIDEO DESDE BLANCO
+    // FADE BLANCO SOLO DESDE LOGO
     //==================================================
 
-    float progresoVideo =
-        tiempoEntrada /
-        DURACION_FADE_VIDEO;
-
-
-    if (progresoVideo < 0.0f)
-        progresoVideo = 0.0f;
-
-
-    if (progresoVideo > 1.0f)
-        progresoVideo = 1.0f;
-
-
-    float alphaBlanco =
-        1.0f -
-        progresoVideo;
-
-
-    //------------------------------
-    // FONDO BLANCO QUE DESAPARECE
-    //------------------------------
-
-    if (alphaBlanco > 0.0f)
+    if (fadeBlancoActivo)
     {
-        DrawRectangle(
-            0,
-            0,
-            GetScreenWidth(),
-            GetScreenHeight(),
-            Fade(
-                WHITE,
-                alphaBlanco
-            )
-        );
+        float progresoVideo =
+            tiempoEntrada /
+            DURACION_FADE_VIDEO;
+
+        if (progresoVideo < 0.0f)
+        {
+            progresoVideo =
+                0.0f;
+        }
+
+        if (progresoVideo > 1.0f)
+        {
+            progresoVideo =
+                1.0f;
+        }
+
+        float alphaBlanco =
+            1.0f -
+            progresoVideo;
+
+        if (alphaBlanco > 0.0f)
+        {
+            DrawRectangle(
+                0,
+                0,
+                GetScreenWidth(),
+                GetScreenHeight(),
+                Fade(
+                    WHITE,
+                    alphaBlanco
+                )
+            );
+        }
     }
 
-
     //==================================================
-    // FADE DEL MENU
+    // FADE UI
     //==================================================
 
     float progresoMenu =
@@ -292,25 +420,23 @@ void MenuPrincipal::Dibujar()
         ) /
         DURACION_FADE_MENU;
 
-
     if (progresoMenu < 0.0f)
-        progresoMenu = 0.0f;
-
+    {
+        progresoMenu =
+            0.0f;
+    }
 
     if (progresoMenu > 1.0f)
-        progresoMenu = 1.0f;
-
-
-    /*
-        Cuando ya termino la animacion,
-        el menu siempre queda en 1.
-    */
+    {
+        progresoMenu =
+            1.0f;
+    }
 
     if (!entradaActiva)
     {
-        progresoMenu = 1.0f;
+        progresoMenu =
+            1.0f;
     }
-
 
     Color blancoMenu =
         Fade(
@@ -318,47 +444,27 @@ void MenuPrincipal::Dibujar()
             progresoMenu
         );
 
-
-    Color seleccionado =
+    Color naranja =
         Fade(
-            GOLD,
+            ORANGE,
             progresoMenu
         );
-
 
     Color sombra =
         Fade(
             BLACK,
-            progresoMenu *
-            0.8f
+            progresoMenu * 0.8f
         );
 
-
     //==================================================
-    // POSICIONES CENTRADAS
-    //==================================================
-
-    int centroX =
-        GetScreenWidth() /
-        2;
-
-
-    int centroY =
-        GetScreenHeight() /
-        2;
-
-
-    //==================================================
-    // TITULO RETRO
+    // TITULO
     //==================================================
 
     const char* titulo =
         "PARTY GAME";
 
-
     int tamanoTitulo =
         64;
-
 
     int anchoTitulo =
         MeasureText(
@@ -366,21 +472,13 @@ void MenuPrincipal::Dibujar()
             tamanoTitulo
         );
 
-
     int tituloX =
-        centroX -
-        anchoTitulo /
-        2;
-
+        GetScreenWidth() / 2 -
+        anchoTitulo / 2;
 
     int tituloY =
-        centroY -
-        220;
-
-
-    //------------------------------
-    // SOMBRA TITULO
-    //------------------------------
+        GetScreenHeight() / 2 -
+        230;
 
     DrawText(
         titulo,
@@ -390,15 +488,13 @@ void MenuPrincipal::Dibujar()
         sombra
     );
 
-
     DrawText(
         titulo,
         tituloX,
         tituloY,
         tamanoTitulo,
-        seleccionado
+        naranja
     );
-
 
     //==================================================
     // OPCIONES
@@ -407,113 +503,123 @@ void MenuPrincipal::Dibujar()
     const char* opciones[] =
     {
         "EMPEZAR JUEGO",
-
         "CONFIGURACION",
-
         "SALIR"
     };
-
-
-    const int CANTIDAD =
-        3;
-
 
     const int TAMANO_TEXTO =
         30;
 
-
-    const int SEPARACION =
-        65;
-
-
-    int inicioY =
-        centroY -
-        40;
-
-
     for (
         int i = 0;
-        i < CANTIDAD;
+        i < 3;
         i++
     )
     {
+        Rectangle boton =
+            ObtenerRectBotonMenu(i);
+
         int anchoTexto =
             MeasureText(
                 opciones[i],
                 TAMANO_TEXTO
             );
 
+        int textoX =
+            (int)(
+                boton.x +
+                boton.width / 2.0f -
+                anchoTexto / 2.0f
+            );
 
-        int x =
-            centroX -
-            anchoTexto /
-            2;
+        int textoY =
+            (int)(
+                boton.y +
+                boton.height / 2.0f -
+                TAMANO_TEXTO / 2.0f
+            );
 
+        bool seleccionada =
+            (i == opcionSeleccionada);
 
-        int y =
-            inicioY +
-            i *
-            SEPARACION;
+        bool presionada =
+            (
+                i == botonPresionado &&
+                tiempoBotonPresionado > 0.0f
+            );
 
-
-        //------------------------------
-        // SELECCION
-        //------------------------------
-
-        if (i == opcionSeleccionada)
+        if (seleccionada)
         {
-            int margenX = 30;
-            int margenY = 10;
-
-            int distanciaCursor = 80;
+            if (presionada)
+            {
+                DrawRectangle(
+                    (int)boton.x,
+                    (int)boton.y,
+                    (int)boton.width,
+                    (int)boton.height,
+                    naranja
+                );
+            }
 
             DrawRectangleLines(
-                x - margenX,
-                y - margenY,
-                anchoTexto + margenX * 2,
-                TAMANO_TEXTO + margenY * 2,
-                seleccionado
+                (int)boton.x,
+                (int)boton.y,
+                (int)boton.width,
+                (int)boton.height,
+                naranja
             );
 
             DrawText(
                 ">",
-                x - distanciaCursor,
-                y,
+                (int)boton.x - 45,
+                textoY,
                 TAMANO_TEXTO,
-                seleccionado
+                naranja
             );
+
+            int anchoCursor =
+                MeasureText(
+                    "<",
+                    TAMANO_TEXTO
+                );
 
             DrawText(
                 "<",
-                x + anchoTexto + distanciaCursor - MeasureText("<", TAMANO_TEXTO),
-                y,
+                (int)(
+                    boton.x +
+                    boton.width +
+                    45 -
+                    anchoCursor
+                ),
+                textoY,
                 TAMANO_TEXTO,
-                seleccionado
+                naranja
             );
 
             DrawText(
                 opciones[i],
-                x,
-                y,
+                textoX,
+                textoY,
                 TAMANO_TEXTO,
-                seleccionado
+                presionada
+                ? BLACK
+                : naranja
             );
         }
         else
         {
             DrawText(
                 opciones[i],
-                x,
-                y,
+                textoX,
+                textoY,
                 TAMANO_TEXTO,
                 blancoMenu
             );
         }
     }
 
-
     //==================================================
-    // LINEAS RETRO / SCANLINES
+    // SCANLINES
     //==================================================
 
     for (
@@ -535,14 +641,12 @@ void MenuPrincipal::Dibujar()
         );
     }
 
-
     //==================================================
     // AYUDA
     //==================================================
 
     const char* ayuda =
-        "FLECHAS: MOVER   ENTER: SELECCIONAR";
-
+        "FLECHAS / MOUSE: MOVER   ENTER / CLICK: SELECCIONAR";
 
     int anchoAyuda =
         MeasureText(
@@ -550,19 +654,12 @@ void MenuPrincipal::Dibujar()
             18
         );
 
-
     DrawText(
         ayuda,
-
-        centroX -
-        anchoAyuda /
-        2,
-
-        GetScreenHeight() -
-        55,
-
+        GetScreenWidth() / 2 -
+            anchoAyuda / 2,
+        GetScreenHeight() - 55,
         18,
-
         Fade(
             LIGHTGRAY,
             progresoMenu

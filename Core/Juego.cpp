@@ -9,12 +9,6 @@
 
 void Juego::Inicializar()
 {
-    //------------------------------
-    // VENTANA PROVISIONAL
-    //------------------------------
-    // Primero Raylib necesita crear una
-    // ventana para poder consultar el monitor.
-
     InitWindow(
         1280,
         720,
@@ -22,51 +16,38 @@ void Juego::Inicializar()
     );
 
 
-    /*
-        Evitamos que ESC cierre el programa.
-
-        Nosotros vamos a manejar ESC
-        desde nuestros menus.
-    */
-
     SetExitKey(
         KEY_NULL
     );
 
 
-    //------------------------------
+    //==================================================
     // RESOLUCIONES
-    //------------------------------
+    //==================================================
 
     InicializarResoluciones();
 
 
-    //------------------------------
-    // FPS
-    //------------------------------
-
-        //==================================================
-    // RESOLUCION NATIVA DEL MONITOR
-    //==================================================
-
     int monitor =
         GetCurrentMonitor();
+
 
     int anchoMonitor =
         GetMonitorWidth(
             monitor
         );
 
+
     int altoMonitor =
         GetMonitorHeight(
             monitor
         );
 
-    int indiceNativo = 0;
+
+    int indiceNativo =
+        0;
 
 
-    // Buscar cual de nuestras resoluciones
-    // coincide con la resolucion del monitor
     for (
         int i = 0;
         i < cantidadResoluciones;
@@ -76,11 +57,14 @@ void Juego::Inicializar()
         if (
             resoluciones[i].ancho ==
                 anchoMonitor &&
+
             resoluciones[i].alto ==
                 altoMonitor
         )
         {
-            indiceNativo = i;
+            indiceNativo =
+                i;
+
 
             break;
         }
@@ -88,42 +72,43 @@ void Juego::Inicializar()
 
 
     //==================================================
-    // CARGAR CONFIGURACION GUARDADA
+    // CONFIGURACION
     //==================================================
-
-    /*
-        Primero usamos los valores por defecto
-        definidos en ConfiguracionJuego.
-
-        Luego intentamos reemplazarlos por los
-        guardados en config.ini.
-    */
 
     config =
         ConfiguracionJuego{};
 
 
-    CargarConfiguracion(
-        rutaConfiguracion,
-        config
-    );
+    bool configEncontrada =
+        CargarConfiguracion(
+            rutaConfiguracion,
+            config
+        );
 
 
-    //==================================================
+    if (!configEncontrada)
+    {
+        config.modoVentana =
+            MODO_PANTALLA_COMPLETA;
+
+
+        config.indiceResolucion =
+            indiceNativo;
+
+
+        config.indiceFPS =
+            1;
+    }
+
+
+    //------------------------------
     // VALIDAR RESOLUCION
-    //==================================================
-
-    /*
-        Puede pasar que el archivo config.ini
-        tenga guardado un indice que ya no existe.
-
-        Por ejemplo:
-        - cambio de monitor
-        - cambio de lista de resoluciones
-    */
+    //------------------------------
 
     if (
-        config.indiceResolucion < 0 ||
+        config.indiceResolucion <
+            0 ||
+
         config.indiceResolucion >=
             cantidadResoluciones
     )
@@ -133,72 +118,73 @@ void Juego::Inicializar()
     }
 
 
-    //==================================================
+    //------------------------------
     // VALIDAR FPS
-    //==================================================
+    //------------------------------
 
     if (
-        config.indiceFPS < 0 ||
+        config.indiceFPS <
+            0 ||
+
         config.indiceFPS >=
             CANTIDAD_OPCIONES_FPS
     )
     {
-        // indice 1 = 60 FPS
-        config.indiceFPS = 1;
-    }
-
-
-    //==================================================
-    // VALIDAR MODO DE VENTANA
-    //==================================================
-
-    if (
-        config.modoVentana <
-            MODO_VENTANA ||
-        config.modoVentana >
-            MODO_SIN_BORDES
-    )
-    {
-        config.modoVentana =
-            MODO_PANTALLA_COMPLETA;
-    }
-
-
-    //==================================================
-    // PRIMER INICIO
-    //==================================================
-
-    /*
-        Si config.ini no existe todavía,
-        CargarConfiguracion devuelve false.
-
-        En ese caso queremos arrancar en:
-        - pantalla completa
-        - resolucion nativa
-        - 60 FPS
-    */
-
-    bool configuracionEncontrada =
-        FileExists(
-            rutaConfiguracion
-        );
-
-
-    if (!configuracionEncontrada)
-    {
-        config.modoVentana =
-            MODO_PANTALLA_COMPLETA;
-
-        config.indiceResolucion =
-            indiceNativo;
-
         config.indiceFPS =
             1;
     }
 
 
+    //------------------------------
+    // VALIDAR VOLUMEN MUSICA
+    //------------------------------
+
+    if (
+        config.volumenMusica <
+        0.0f
+    )
+    {
+        config.volumenMusica =
+            0.0f;
+    }
+
+
+    if (
+        config.volumenMusica >
+        1.0f
+    )
+    {
+        config.volumenMusica =
+            1.0f;
+    }
+
+
+    //------------------------------
+    // VALIDAR VOLUMEN SONIDOS
+    //------------------------------
+
+    if (
+        config.volumenSonidos <
+        0.0f
+    )
+    {
+        config.volumenSonidos =
+            0.0f;
+    }
+
+
+    if (
+        config.volumenSonidos >
+        1.0f
+    )
+    {
+        config.volumenSonidos =
+            1.0f;
+    }
+
+
     //==================================================
-    // APLICAR FPS
+    // FPS
     //==================================================
 
     SetTargetFPS(
@@ -209,15 +195,8 @@ void Juego::Inicializar()
 
 
     //==================================================
-    // APLICAR MODO DE VENTANA
+    // MODO DE VENTANA
     //==================================================
-
-    /*
-        Raylib acaba de crear una ventana normal.
-
-        Por eso nuestro modo actual antes de
-        aplicar la configuracion es VENTANA.
-    */
 
     ModoVentana modoActual =
         MODO_VENTANA;
@@ -232,11 +211,6 @@ void Juego::Inicializar()
     );
 
 
-    /*
-        Guardamos el resultado por si
-        AplicarModoVentana modifico algo.
-    */
-
     config.modoVentana =
         modoActual;
 
@@ -244,14 +218,6 @@ void Juego::Inicializar()
     //==================================================
     // AUDIO
     //==================================================
-
-    /*
-        Inicializamos el dispositivo ahora.
-
-        La musica pesada NO se carga aca.
-        La vamos a cargar mientras se muestra
-        el logo.
-    */
 
     audio.Inicializar();
 
@@ -267,15 +233,27 @@ void Juego::Inicializar()
 
 
     //==================================================
-    // MENU DE CONFIGURACION
+    // MENUS
     //==================================================
 
     menuConfiguracion
         .Inicializar();
 
 
+    seleccionPersonajes
+        .Inicializar();
+
+
     //==================================================
-    // LOGO DEL CREADOR
+    // ZONA PRUEBAS
+    //==================================================
+
+    zonaPruebas
+        .Inicializar();
+
+
+    //==================================================
+    // LOGO
     //==================================================
 
     pantallaLogo.Inicializar(
@@ -284,29 +262,19 @@ void Juego::Inicializar()
 
 
     //==================================================
-    // MENU PRINCIPAL
+    // CARGA
     //==================================================
-
-    /*
-        NO llamamos:
-
-        menuPrincipal.Inicializar();
-
-        porque esa funcion carga el GIF.
-
-        Queremos cargarlo DESPUES de que
-        el logo ya haya aparecido en pantalla.
-    */
 
     menuPreparado =
         false;
+
 
     cargaMenuSolicitada =
         false;
 
 
     //==================================================
-    // ESTADO INICIAL
+    // ESTADO
     //==================================================
 
     estado =
@@ -319,12 +287,13 @@ void Juego::Inicializar()
 
 
 //==================================================
-// CREAR LISTA DE RESOLUCIONES
+// RESOLUCIONES
 //==================================================
 
 void Juego::InicializarResoluciones()
 {
-    cantidadResoluciones = 0;
+    cantidadResoluciones =
+        0;
 
 
     int monitor =
@@ -343,26 +312,15 @@ void Juego::InicializarResoluciones()
         );
 
 
-    //------------------------------
-    // RESOLUCIONES COMUNES
-    //------------------------------
-
     Resolucion candidatas[] =
     {
         { 800, 600 },
-
         { 1024, 576 },
-
         { 1280, 720 },
-
         { 1366, 768 },
-
         { 1600, 900 },
-
         { 1920, 1080 },
-
         { 2560, 1440 },
-
         { 3840, 2160 }
     };
 
@@ -372,19 +330,17 @@ void Juego::InicializarResoluciones()
         sizeof(candidatas[0]);
 
 
-    //------------------------------
-    // SOLO LAS QUE CABEN EN MONITOR
-    //------------------------------
-
     for (
         int i = 0;
-        i < cantidadCandidatas;
+        i <
+        cantidadCandidatas;
         i++
     )
     {
         if (
             candidatas[i].ancho <=
                 anchoMonitor &&
+
             candidatas[i].alto <=
                 altoMonitor
         )
@@ -401,7 +357,7 @@ void Juego::InicializarResoluciones()
 
 
     //------------------------------
-    // ASEGURAR RESOLUCION NATIVA
+    // NATIVA
     //------------------------------
 
     AgregarResolucion(
@@ -422,149 +378,128 @@ void Juego::Actualizar(
     float deltaTime
 )
 {
+    //==================================================
+    // AUDIO GLOBAL
+    //==================================================
+
     audio.Actualizar();
+
+
+    //==================================================
+    // ESTADOS
+    //==================================================
 
     switch (estado)
     {
         //==================================================
         // LOGO
         //==================================================
+
         case ESTADO_LOGO:
         {
-            //------------------------------------------
-            // ACTUALIZAR LOGO
-            //------------------------------------------
-
             pantallaLogo.Actualizar(
                 deltaTime
             );
 
 
-            //------------------------------------------
-            // PASO 1:
-            // MOSTRAR "CARGANDO..."
-            //------------------------------------------
-
-            /*
-                Esperamos hasta que el logo ya haya
-                aparecido completamente.
-
-                Cuando llegamos a 1 segundo activamos
-                la pantalla de carga, pero todavía
-                NO cargamos nada.
-
-                Así damos un frame para que
-                "CARGANDO..." realmente aparezca.
-            */
+            //------------------------------
+            // SOLICITAR CARGA
+            //------------------------------
 
             if (
                 !menuPreparado &&
                 !cargaMenuSolicitada &&
-                pantallaLogo.tiempo >= 1.0f
+                pantallaLogo.tiempo >=
+                    1.0f
             )
             {
-                cargaMenuSolicitada = true;
+                cargaMenuSolicitada =
+                    true;
+
 
                 break;
             }
 
 
-            //------------------------------------------
-            // PASO 2:
-            // CARGAR RECURSOS
-            //------------------------------------------
+            //------------------------------
+            // CARGAR MENU
+            //------------------------------
 
             if (
                 cargaMenuSolicitada &&
                 !menuPreparado
             )
             {
-                //------------------------------
-                // GIF
-                //------------------------------
+                menuPrincipal
+                    .Inicializar();
 
-                menuPrincipal.Inicializar();
-
-
-                //------------------------------
-                // MUSICA
-                //------------------------------
 
                 audio.CargarMusicaMenu(
                     "Assets/Audio/MusicaMenu.mp3"
                 );
 
 
-                //------------------------------
-                // LISTO
-                //------------------------------
-
-                menuPreparado = true;
-
-                cargaMenuSolicitada = false;
+                audio.AplicarVolumenMusica(
+                    config.volumenMusica
+                );
 
 
-                /*
-                    Mantenemos la intro todavía
-                    un rato después de cargar.
+                menuPreparado =
+                    true;
 
-                    Así un frame muy lento debido
-                    al GIF no nos salta directamente
-                    al menú.
-                */
 
-                pantallaLogo.tiempo = 1.5f;
+                cargaMenuSolicitada =
+                    false;
+
+
+                pantallaLogo.tiempo =
+                    1.5f;
             }
 
 
-            //------------------------------------------
-            // TERMINAR INTRO
-            //------------------------------------------
+            //------------------------------
+            // TERMINAR LOGO
+            //------------------------------
 
             if (
                 menuPreparado &&
                 pantallaLogo.Termino()
             )
             {
-                //------------------------------
-                // FADE MENU
-                //------------------------------
-
-                menuPrincipal.PrepararEntrada(
-                    true
-                );
+                menuPrincipal
+                    .PrepararEntrada(
+                        true
+                    );
 
 
-                //------------------------------
-                // MUSICA
-                //------------------------------
-
-                audio.ReproducirMusicaMenu();
+                audio
+                    .ReproducirMusicaMenu();
 
 
-                //------------------------------
-                // MENU PRINCIPAL
-                //------------------------------
-
-                estado = ESTADO_MENU;
+                estado =
+                    ESTADO_MENU;
             }
 
 
             break;
         }
+
+
         //==================================================
-        // MENU
+        // MENU PRINCIPAL
         //==================================================
 
         case ESTADO_MENU:
         {
             menuPrincipal
-                .Actualizar(deltaTime);
+                .Actualizar(
+                    deltaTime
+                );
 
 
-            //------------------------------
-            // JUGAR
-            //------------------------------
+            //==================================================
+            // EMPEZAR
+            //==================================================
 
             if (
                 menuPrincipal
@@ -576,14 +511,35 @@ void Juego::Actualizar(
                     false;
 
 
+                /*
+                    TEMPORAL:
+
+                    Mientras desarrollamos gameplay
+                    entramos directamente a la zona
+                    de pruebas.
+
+                    Mas adelante volvera a ser:
+
+                    MENU
+                      ->
+                    SELECCION PERSONAJES
+                      ->
+                    PARTIDA
+                */
+
+
+                zonaPruebas
+                    .Inicializar();
+
+
                 estado =
-                    ESTADO_SELECCION_JUGADORES;
+                    ESTADO_ZONA_PRUEBAS;
             }
 
 
-            //------------------------------
+            //==================================================
             // CONFIGURACION
-            //------------------------------
+            //==================================================
 
             if (
                 menuPrincipal
@@ -595,36 +551,29 @@ void Juego::Actualizar(
                     false;
 
 
-                /*
-                    IMPORTANTE:
+                menuConfiguracion
+                    .Inicializar();
 
-                    NO volvemos a llamar
-                    Inicializar().
-
-                    Si lo hicieramos,
-                    perderiamos los cambios
-                    de resolucion/FPS.
-                */
-
-                menuConfiguracion.Inicializar();
 
                 estado =
                     ESTADO_CONFIGURACION;
             }
 
 
-            //------------------------------
+            //==================================================
             // SALIR
-            //------------------------------
+            //==================================================
 
             if (
-                menuPrincipal.salir
+                menuPrincipal
+                    .salir
             )
             {
                 GuardarConfiguracion(
                     rutaConfiguracion,
                     config
                 );
+
 
                 cerrarJuego =
                     true;
@@ -641,50 +590,160 @@ void Juego::Actualizar(
 
         case ESTADO_CONFIGURACION:
         {
-            menuConfiguracion.Actualizar(
-                config,
-                resoluciones,
-                cantidadResoluciones,
-                opcionesFPS,
-                CANTIDAD_OPCIONES_FPS,
-                audio
-            );
+            menuPrincipal
+                .fondo
+                .Actualizar(
+                    deltaTime
+                );
 
-            if (menuConfiguracion.configuracionCambiada)
+
+            menuConfiguracion
+                .Actualizar(
+                    config,
+                    resoluciones,
+                    cantidadResoluciones,
+                    opcionesFPS,
+                    CANTIDAD_OPCIONES_FPS,
+                    audio
+                );
+
+
+            //------------------------------
+            // GUARDAR CAMBIOS
+            //------------------------------
+
+            if (
+                menuConfiguracion
+                    .configuracionCambiada
+            )
             {
                 GuardarConfiguracion(
                     rutaConfiguracion,
                     config
                 );
 
-                menuConfiguracion.configuracionCambiada = false;
+
+                menuConfiguracion
+                    .configuracionCambiada =
+                    false;
             }
 
-            if (menuConfiguracion.volver)
+
+            //------------------------------
+            // VOLVER
+            //------------------------------
+
+            if (
+                menuConfiguracion
+                    .volver
+            )
             {
-                menuConfiguracion.volver = false;
+                menuConfiguracion
+                    .volver =
+                    false;
+
 
                 GuardarConfiguracion(
                     rutaConfiguracion,
                     config
                 );
 
-                menuPrincipal.PrepararEntrada(false);
 
-                estado = ESTADO_MENU;
+                menuPrincipal
+                    .PrepararEntrada(
+                        false
+                    );
+
+
+                estado =
+                    ESTADO_MENU;
             }
+
 
             break;
         }
 
 
         //==================================================
-        // SELECCION
+        // SELECCION DE PERSONAJES
         //==================================================
 
         case ESTADO_SELECCION_JUGADORES:
         {
-            // Futuro
+            menuPrincipal
+                .fondo
+                .Actualizar(
+                    deltaTime
+                );
+
+
+            seleccionPersonajes
+                .Actualizar(
+                    deltaTime
+                );
+
+
+            if (
+                seleccionPersonajes
+                    .volverAlMenu
+            )
+            {
+                seleccionPersonajes
+                    .volverAlMenu =
+                    false;
+
+
+                menuPrincipal
+                    .PrepararEntrada(
+                        false
+                    );
+
+
+                estado =
+                    ESTADO_MENU;
+            }
+
+
+            break;
+        }
+
+
+        //==================================================
+        // ZONA DE PRUEBAS
+        //==================================================
+
+        case ESTADO_ZONA_PRUEBAS:
+        {
+            zonaPruebas
+                .Actualizar(
+                    deltaTime
+                );
+
+
+            //------------------------------
+            // VOLVER AL MENU
+            //------------------------------
+
+            if (
+                zonaPruebas
+                    .volverAlMenu
+            )
+            {
+                zonaPruebas
+                    .volverAlMenu =
+                    false;
+
+
+                menuPrincipal
+                    .PrepararEntrada(
+                        false
+                    );
+
+
+                estado =
+                    ESTADO_MENU;
+            }
+
 
             break;
         }
@@ -696,8 +755,6 @@ void Juego::Actualizar(
 
         case ESTADO_PARTIDA:
         {
-            // partida.Actualizar(deltaTime);
-
             break;
         }
 
@@ -708,8 +765,6 @@ void Juego::Actualizar(
 
         case ESTADO_MINIJUEGO:
         {
-            // partida.ActualizarMinijuego(deltaTime);
-
             break;
         }
 
@@ -720,8 +775,6 @@ void Juego::Actualizar(
 
         case ESTADO_RESULTADO:
         {
-            // partida.ActualizarResultado(deltaTime);
-
             break;
         }
     }
@@ -739,18 +792,12 @@ void Juego::Dibujar()
         //==================================================
         // LOGO
         //==================================================
+
         case ESTADO_LOGO:
         {
-            //------------------------------
-            // LOGO
-            //------------------------------
+            pantallaLogo
+                .Dibujar();
 
-            pantallaLogo.Dibujar();
-
-
-            //------------------------------
-            // CARGANDO
-            //------------------------------
 
             if (
                 cargaMenuSolicitada &&
@@ -775,8 +822,10 @@ void Juego::Dibujar()
                 DrawText(
                     texto,
 
-                    GetScreenWidth() / 2 -
-                        ancho / 2,
+                    GetScreenWidth() /
+                        2 -
+                        ancho /
+                        2,
 
                     GetScreenHeight() -
                         100,
@@ -790,17 +839,14 @@ void Juego::Dibujar()
 
             break;
         }
+
+
         //==================================================
         // MENU
         //==================================================
 
         case ESTADO_MENU:
         {
-            ClearBackground(
-                RAYWHITE
-            );
-
-
             menuPrincipal
                 .Dibujar();
 
@@ -810,16 +856,23 @@ void Juego::Dibujar()
 
 
         //==================================================
-        // CONFIGURACION
+        // CONFIG
         //==================================================
 
         case ESTADO_CONFIGURACION:
         {
-            menuConfiguracion.Dibujar(
-                config,
-                resoluciones,
-                opcionesFPS
-            );
+            menuPrincipal
+                .fondo
+                .DibujarPantallaCompleta();
+
+
+            menuConfiguracion
+                .Dibujar(
+                    config,
+                    resoluciones,
+                    opcionesFPS
+                );
+
 
             break;
         }
@@ -831,18 +884,27 @@ void Juego::Dibujar()
 
         case ESTADO_SELECCION_JUGADORES:
         {
-            ClearBackground(
-                RAYWHITE
-            );
+            menuPrincipal
+                .fondo
+                .DibujarPantallaCompleta();
 
 
-            DrawText(
-                "Seleccion de jugadores",
-                200,
-                200,
-                30,
-                BLACK
-            );
+            seleccionPersonajes
+                .Dibujar();
+
+
+            break;
+        }
+
+
+        //==================================================
+        // ZONA DE PRUEBAS
+        //==================================================
+
+        case ESTADO_ZONA_PRUEBAS:
+        {
+            zonaPruebas
+                .Dibujar();
 
 
             break;
@@ -896,11 +958,12 @@ void Juego::Dibujar()
 
 
     //==================================================
-    // CONTADOR DE FPS GLOBAL
+    // FPS GLOBAL
     //==================================================
 
     if (
-        config.mostrarFPS
+        config.mostrarFPS &&
+        estado != ESTADO_LOGO
     )
     {
         const char* texto =
@@ -919,11 +982,15 @@ void Juego::Dibujar()
 
         DrawText(
             texto,
+
             GetScreenWidth() -
                 anchoTexto -
                 20,
+
             20,
+
             20,
+
             DARKGREEN
         );
     }
@@ -951,9 +1018,34 @@ void Juego::Descargar()
         config
     );
 
+
+    //------------------------------
+    // PERSONAJES
+    //------------------------------
+
+    seleccionPersonajes
+        .Descargar();
+
+
+    //------------------------------
+    // AUDIO
+    //------------------------------
+
     audio.Descargar();
 
-    pantallaLogo.Descargar();
 
-    menuPrincipal.Descargar();
+    //------------------------------
+    // LOGO
+    //------------------------------
+
+    pantallaLogo
+        .Descargar();
+
+
+    //------------------------------
+    // MENU
+    //------------------------------
+
+    menuPrincipal
+        .Descargar();
 }

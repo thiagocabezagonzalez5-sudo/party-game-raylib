@@ -2,81 +2,123 @@
 
 #include "Tipos.h"
 
-#include "Core/WindowUtils.h"
+#include "raylib.h"
+
+
+//==================================================
+// CORE
+//==================================================
+
 #include "Core/ConfiguracionJuego.h"
+#include "Core/WindowUtils.h"
+
+
+//==================================================
+// SYSTEMS
+//==================================================
 
 #include "Systems/Audio.h"
+
+
+//==================================================
+// UI
+//==================================================
 
 #include "UI/MenuPrincipal.h"
 #include "UI/MenuConfiguracion.h"
 #include "UI/PantallaLogo.h"
+#include "UI/SeleccionPersonajes.h"
 
+
+//==================================================
+// GAMEPLAY
+//==================================================
+
+#include "Gameplay/ZonaPruebas.h"
+
+
+//==================================================
+// JUEGO
+//==================================================
 
 struct Juego
 {
-    //==================================================
+    //------------------------------
+    // CONSTANTES
+    //------------------------------
+
+    static const int MAX_RESOLUCIONES =
+        10;
+
+
+    static const int CANTIDAD_OPCIONES_FPS =
+        5;
+
+
+    //------------------------------
     // ESTADO
-    //==================================================
+    //------------------------------
 
     EstadoJuego estado =
-        ESTADO_MENU;
+        ESTADO_LOGO;
 
 
     bool cerrarJuego =
         false;
 
 
-    //==================================================
-    // CONFIGURACION JUEGO
-    //==================================================
-
-    ConfiguracionJuego config;
-
-    const char* rutaConfiguracion = "config.ini";
-
-    
-    //==================================================
-    // AUDIO
-    //==================================================
-    
-    AudioJuego audio;
-
-
-    //==================================================
-    // MENUS
-    //==================================================
-
-    bool menuPreparado = false;
-
-    bool cargaMenuSolicitada = false;
+    //------------------------------
+    // MENUS / PANTALLAS
+    //------------------------------
 
     MenuPrincipal menuPrincipal;
 
+
     MenuConfiguracion menuConfiguracion;
+
 
     PantallaLogo pantallaLogo;
 
 
-    //==================================================
+    SeleccionPersonajes seleccionPersonajes;
+
+
+    //------------------------------
+    // GAMEPLAY
+    //------------------------------
+
+    ZonaPruebas zonaPruebas;
+
+
+    //------------------------------
+    // AUDIO
+    //------------------------------
+
+    AudioJuego audio;
+
+
+    //------------------------------
+    // CONFIGURACION
+    //------------------------------
+
+    ConfiguracionJuego config;
+
+
+    const char* rutaConfiguracion =
+        "config.ini";
+
+
+    //------------------------------
     // RESOLUCIONES
-    //==================================================
-
-    static const int MAX_RESOLUCIONES = 10;
-
+    //------------------------------
 
     Resolucion resoluciones[
         MAX_RESOLUCIONES
     ];
 
 
-    int cantidadResoluciones = 0;
-
-
-    //==================================================
-    // FPS
-    //==================================================
-
-    static const int CANTIDAD_OPCIONES_FPS = 5;
+    int cantidadResoluciones =
+        0;
 
 
     int opcionesFPS[
@@ -91,21 +133,38 @@ struct Juego
     };
 
 
-    //==================================================
+    //------------------------------
+    // LOGO / CARGA
+    //------------------------------
+
+    bool menuPreparado =
+        false;
+
+
+    bool cargaMenuSolicitada =
+        false;
+
+
+    //------------------------------
     // FUNCIONES
-    //==================================================
+    //------------------------------
 
     void Inicializar();
 
+
     void InicializarResoluciones();
+
 
     void Actualizar(
         float deltaTime
     );
 
+
     void Dibujar();
 
+
     bool DebeCerrar();
+
 
     void Descargar();
 };
