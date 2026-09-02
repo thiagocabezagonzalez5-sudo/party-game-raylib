@@ -5,7 +5,8 @@
 
 
 const int MAX_BLOQUES_PRUEBA = 8;
-const int MAX_JUGADORES_PRUEBA = 2;
+const int MAX_JUGADORES_PRUEBA = 4;
+const int MAX_PARTICULAS_TIERRA = 120;
 
 
 struct BloquePrueba
@@ -28,10 +29,46 @@ struct BloquePrueba
 };
 
 
+struct ParticulaTierra
+{
+    bool activa = false;
+
+    Vector3 posicion =
+    {
+        0.0f,
+        0.0f,
+        0.0f
+    };
+
+    Vector3 velocidad =
+    {
+        0.0f,
+        0.0f,
+        0.0f
+    };
+
+    float vida = 0.0f;
+    float vidaMaxima = 0.0f;
+    float tamano = 0.08f;
+
+    Color color =
+    {
+        125,
+        84,
+        48,
+        255
+    };
+};
+
+
 struct JugadorPrueba
 {
     int numero = 1;
-    bool activo = true;
+    bool activo = false;
+
+    bool usaGamepad = false;
+    int indiceGamepad = -1;
+
     Color color = RED;
 
     Vector3 posicion =
@@ -77,12 +114,14 @@ struct JugadorPrueba
 struct ZonaPruebas
 {
     JugadorPrueba jugadores[MAX_JUGADORES_PRUEBA];
-    int cantidadJugadoresActivos = 2;
+    int cantidadJugadoresActivos = 0;
 
     ModoTeclado modoTecladoActual = TECLADO_DIVIDIDO;
 
     BloquePrueba bloques[MAX_BLOQUES_PRUEBA];
     int cantidadBloques = 0;
+
+    ParticulaTierra particulas[MAX_PARTICULAS_TIERRA];
 
     Camera3D camara{};
 

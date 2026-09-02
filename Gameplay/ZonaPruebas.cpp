@@ -14,6 +14,57 @@ struct EntradaJugadorPrueba
 
 
 //==================================================
+// UTILIDADES
+//==================================================
+
+static float AleatorioFloat(
+    float minimo,
+    float maximo
+)
+{
+    float porcentaje =
+        (float)GetRandomValue(0, 1000) /
+        1000.0f;
+
+    return
+        minimo +
+        (maximo - minimo) * porcentaje;
+}
+
+
+static int CantidadJugadoresTeclado(
+    ModoTeclado modoTeclado
+)
+{
+    return
+        modoTeclado == TECLADO_DIVIDIDO
+        ? 2
+        : 1;
+}
+
+
+static int ObtenerIndiceGamepadParaJugador(
+    int indiceJugador,
+    ModoTeclado modoTeclado
+)
+{
+    int cantidadTeclado =
+        CantidadJugadoresTeclado(
+            modoTeclado
+        );
+
+    if (indiceJugador < cantidadTeclado)
+    {
+        return -1;
+    }
+
+    return
+        indiceJugador -
+        cantidadTeclado;
+}
+
+
+//==================================================
 // HITBOX DE BLOQUE
 //==================================================
 
@@ -146,19 +197,224 @@ static void AgregarBloque(
 
 
 //==================================================
-// LEER INPUT DE UN JUGADOR
+// PARTICULAS DE TIERRA
 //==================================================
 
-static EntradaJugadorPrueba LeerEntradaJugador(
+static void CrearParticulasSalto(
+    ParticulaTierra particulas[],
+    int cantidadMaxima,
+    const JugadorPrueba& jugador
+)
+{
+    const int CANTIDAD_CREAR = 14;
+
+    int creadas = 0;
+
+    for (
+        int i = 0;
+        i < cantidadMaxima &&
+        creadas < CANTIDAD_CREAR;
+        i++
+    )
+    {
+        ParticulaTierra& particula =
+            particulas[i];
+
+        if (particula.activa)
+        {
+            continue;
+        }
+
+        float angulo =
+            AleatorioFloat(
+                0.0f,
+                6.28318f
+            );
+
+        float velocidadHorizontal =
+            AleatorioFloat(
+                0.7f,
+                2.1f
+            );
+
+        particula.activa = true;
+
+        particula.posicion =
+        {
+            jugador.posicion.x +
+                AleatorioFloat(-0.22f, 0.22f),
+
+            jugador.posicion.y -
+                jugador.tamano.y / 2.0f +
+                0.06f,
+
+            jugador.posicion.z +
+                AleatorioFloat(-0.22f, 0.22f)
+        };
+
+        particula.velocidad =
+        {
+            cosf(angulo) * velocidadHorizontal,
+            AleatorioFloat(0.8f, 2.3f),
+            sinf(angulo) * velocidadHorizontal
+        };
+
+        particula.vidaMaxima =
+            AleatorioFloat(
+                0.28f,
+                0.52f
+            );
+
+        particula.vida =
+            particula.vidaMaxima;
+
+        particula.tamano =
+            AleatorioFloat(
+                0.05f,
+                0.13f
+            );
+
+        int varianteColor =
+            GetRandomValue(0, 2);
+
+        if (varianteColor == 0)
+        {
+            particula.color =
+            {
+                116,
+                77,
+                44,
+                255
+            };
+        }
+        else if (varianteColor == 1)
+        {
+            particula.color =
+            {
+                145,
+                102,
+                62,
+                255
+            };
+        }
+        else
+        {
+            particula.color =
+            {
+                175,
+                137,
+                88,
+                255
+            };
+        }
+
+        creadas++;
+    }
+}
+
+
+static void ActualizarParticulas(
+    ParticulaTierra particulas[],
+    int cantidadMaxima,
+    float deltaTime
+)
+{
+    for (
+        int i = 0;
+        i < cantidadMaxima;
+        i++
+    )
+    {
+        ParticulaTierra& particula =
+            particulas[i];
+
+        if (!particula.activa)
+        {
+            continue;
+        }
+
+        particula.vida -=
+            deltaTime;
+
+        if (particula.vida <= 0.0f)
+        {
+            particula.activa = false;
+            continue;
+        }
+
+        particula.velocidad.y -=
+            8.0f * deltaTime;
+
+        particula.posicion.x +=
+            particula.velocidad.x * deltaTime;
+
+        particula.posicion.y +=
+            particula.velocidad.y * deltaTime;
+
+        particula.posicion.z +=
+            particula.velocidad.z * deltaTime;
+    }
+}
+
+
+static void DibujarParticulas(
+    const ParticulaTierra particulas[],
+    int cantidadMaxima
+)
+{
+    for (
+        int i = 0;
+        i < cantidadMaxima;
+        i++
+    )
+    {
+        const ParticulaTierra& particula =
+            particulas[i];
+
+        if (!particula.activa)
+        {
+            continue;
+        }
+
+        float porcentajeVida =
+            particula.vidaMaxima > 0.0f
+            ? particula.vida /
+                particula.vidaMaxima
+            : 0.0f;
+
+        if (porcentajeVida < 0.0f)
+        {
+            porcentajeVida = 0.0f;
+        }
+
+        float tamanoActual =
+            particula.tamano *
+            (0.35f + 0.65f * porcentajeVida);
+
+        DrawCube(
+            particula.posicion,
+            tamanoActual,
+            tamanoActual,
+            tamanoActual,
+            Fade(
+                particula.color,
+                porcentajeVida
+            )
+        );
+    }
+}
+
+
+//==================================================
+// INPUT DE TECLADO
+//==================================================
+
+static EntradaJugadorPrueba LeerEntradaTeclado(
     int indiceJugador,
     ModoTeclado modoTeclado
 )
 {
     EntradaJugadorPrueba entrada;
-
-    //==================================================
-    // UN JUGADOR USA EL TECLADO COMPLETO
-    //==================================================
 
     if (modoTeclado == TECLADO_COMPLETO)
     {
@@ -189,28 +445,214 @@ static EntradaJugadorPrueba LeerEntradaJugador(
         return entrada;
     }
 
-    //==================================================
-    // TECLADO DIVIDIDO
-    //==================================================
-
     if (indiceJugador == 0)
     {
-        entrada.izquierda = IsKeyDown(KEY_A);
-        entrada.derecha = IsKeyDown(KEY_D);
-        entrada.adelante = IsKeyDown(KEY_W);
-        entrada.atras = IsKeyDown(KEY_S);
-        entrada.saltar = IsKeyPressed(KEY_SPACE);
+        entrada.izquierda =
+            IsKeyDown(KEY_A);
+
+        entrada.derecha =
+            IsKeyDown(KEY_D);
+
+        entrada.adelante =
+            IsKeyDown(KEY_W);
+
+        entrada.atras =
+            IsKeyDown(KEY_S);
+
+        entrada.saltar =
+            IsKeyPressed(KEY_SPACE);
     }
     else if (indiceJugador == 1)
     {
-        entrada.izquierda = IsKeyDown(KEY_LEFT);
-        entrada.derecha = IsKeyDown(KEY_RIGHT);
-        entrada.adelante = IsKeyDown(KEY_UP);
-        entrada.atras = IsKeyDown(KEY_DOWN);
-        entrada.saltar = IsKeyPressed(KEY_ENTER);
+        entrada.izquierda =
+            IsKeyDown(KEY_LEFT);
+
+        entrada.derecha =
+            IsKeyDown(KEY_RIGHT);
+
+        entrada.adelante =
+            IsKeyDown(KEY_UP);
+
+        entrada.atras =
+            IsKeyDown(KEY_DOWN);
+
+        entrada.saltar =
+            IsKeyPressed(KEY_ENTER);
     }
 
     return entrada;
+}
+
+
+//==================================================
+// INPUT DE GAMEPAD
+//==================================================
+
+static EntradaJugadorPrueba LeerEntradaGamepad(
+    int indiceGamepad
+)
+{
+    EntradaJugadorPrueba entrada;
+
+    if (!IsGamepadAvailable(indiceGamepad))
+    {
+        return entrada;
+    }
+
+    const float DEADZONE =
+        0.25f;
+
+    float ejeX =
+        GetGamepadAxisMovement(
+            indiceGamepad,
+            GAMEPAD_AXIS_LEFT_X
+        );
+
+    float ejeY =
+        GetGamepadAxisMovement(
+            indiceGamepad,
+            GAMEPAD_AXIS_LEFT_Y
+        );
+
+    entrada.izquierda =
+        IsGamepadButtonDown(
+            indiceGamepad,
+            GAMEPAD_BUTTON_LEFT_FACE_LEFT
+        ) ||
+        ejeX < -DEADZONE;
+
+    entrada.derecha =
+        IsGamepadButtonDown(
+            indiceGamepad,
+            GAMEPAD_BUTTON_LEFT_FACE_RIGHT
+        ) ||
+        ejeX > DEADZONE;
+
+    entrada.adelante =
+        IsGamepadButtonDown(
+            indiceGamepad,
+            GAMEPAD_BUTTON_LEFT_FACE_UP
+        ) ||
+        ejeY < -DEADZONE;
+
+    entrada.atras =
+        IsGamepadButtonDown(
+            indiceGamepad,
+            GAMEPAD_BUTTON_LEFT_FACE_DOWN
+        ) ||
+        ejeY > DEADZONE;
+
+    entrada.saltar =
+        IsGamepadButtonPressed(
+            indiceGamepad,
+            GAMEPAD_BUTTON_RIGHT_FACE_DOWN
+        );
+
+    return entrada;
+}
+
+
+static EntradaJugadorPrueba LeerEntradaJugador(
+    int indiceJugador,
+    const JugadorPrueba& jugador,
+    ModoTeclado modoTeclado
+)
+{
+    if (jugador.usaGamepad)
+    {
+        return LeerEntradaGamepad(
+            jugador.indiceGamepad
+        );
+    }
+
+    return LeerEntradaTeclado(
+        indiceJugador,
+        modoTeclado
+    );
+}
+
+
+//==================================================
+// CONECTAR / DESCONECTAR GAMEPADS
+//==================================================
+
+static void ActualizarJugadoresConectados(
+    ZonaPruebas& zona
+)
+{
+    int cantidadTeclado =
+        CantidadJugadoresTeclado(
+            zona.modoTecladoActual
+        );
+
+    zona.cantidadJugadoresActivos =
+        0;
+
+    for (
+        int i = 0;
+        i < MAX_JUGADORES_PRUEBA;
+        i++
+    )
+    {
+        JugadorPrueba& jugador =
+            zona.jugadores[i];
+
+        bool estabaActivo =
+            jugador.activo;
+
+        if (i < cantidadTeclado)
+        {
+            jugador.activo = true;
+            jugador.usaGamepad = false;
+            jugador.indiceGamepad = -1;
+        }
+        else
+        {
+            int indiceGamepad =
+                ObtenerIndiceGamepadParaJugador(
+                    i,
+                    zona.modoTecladoActual
+                );
+
+            jugador.usaGamepad = true;
+            jugador.indiceGamepad =
+                indiceGamepad;
+
+            jugador.activo =
+                IsGamepadAvailable(
+                    indiceGamepad
+                );
+        }
+
+        if (
+            jugador.activo &&
+            !estabaActivo
+        )
+        {
+            zona.ReiniciarJugador(i);
+        }
+
+        if (
+            !jugador.activo &&
+            estabaActivo
+        )
+        {
+            jugador.velocidad =
+            {
+                0.0f,
+                0.0f,
+                0.0f
+            };
+
+            jugador.cayendo = false;
+            jugador.enSuelo = false;
+        }
+
+        if (jugador.activo)
+        {
+            zona.cantidadJugadoresActivos++;
+        }
+    }
 }
 
 
@@ -230,10 +672,13 @@ static void ResolverColisionX(
         return;
     }
 
-    jugador.posicion.x += movimientoX;
+    jugador.posicion.x +=
+        movimientoX;
 
     BoundingBox jugadorBox =
-        CrearHitboxJugador(jugador);
+        CrearHitboxJugador(
+            jugador
+        );
 
     for (
         int i = 0;
@@ -270,7 +715,9 @@ static void ResolverColisionX(
         }
 
         jugadorBox =
-            CrearHitboxJugador(jugador);
+            CrearHitboxJugador(
+                jugador
+            );
     }
 }
 
@@ -291,10 +738,13 @@ static void ResolverColisionZ(
         return;
     }
 
-    jugador.posicion.z += movimientoZ;
+    jugador.posicion.z +=
+        movimientoZ;
 
     BoundingBox jugadorBox =
-        CrearHitboxJugador(jugador);
+        CrearHitboxJugador(
+            jugador
+        );
 
     for (
         int i = 0;
@@ -331,7 +781,9 @@ static void ResolverColisionZ(
         }
 
         jugadorBox =
-            CrearHitboxJugador(jugador);
+            CrearHitboxJugador(
+                jugador
+            );
     }
 }
 
@@ -348,35 +800,34 @@ static void ActualizarMovimientoHorizontal(
     float deltaTime
 )
 {
-    float direccionX = 0.0f;
-    float direccionZ = 0.0f;
+    float direccionX =
+        0.0f;
+
+    float direccionZ =
+        0.0f;
 
     if (entrada.izquierda)
     {
-        direccionX -= 1.0f;
+        direccionX -=
+            1.0f;
     }
 
     if (entrada.derecha)
     {
-        direccionX += 1.0f;
+        direccionX +=
+            1.0f;
     }
-
-    /*
-        La camara esta detras del jugador,
-        sobre el lado +Z del escenario.
-
-        W / flecha arriba mueve hacia -Z,
-        o sea alejandose de la camara.
-    */
 
     if (entrada.adelante)
     {
-        direccionZ -= 1.0f;
+        direccionZ -=
+            1.0f;
     }
 
     if (entrada.atras)
     {
-        direccionZ += 1.0f;
+        direccionZ +=
+            1.0f;
     }
 
     float longitud =
@@ -387,8 +838,11 @@ static void ActualizarMovimientoHorizontal(
 
     if (longitud > 0.0f)
     {
-        direccionX /= longitud;
-        direccionZ /= longitud;
+        direccionX /=
+            longitud;
+
+        direccionZ /=
+            longitud;
     }
 
     jugador.velocidad.x =
@@ -424,6 +878,7 @@ static void ActualizarVertical(
     const EntradaJugadorPrueba& entrada,
     BloquePrueba bloques[],
     int cantidadBloques,
+    ParticulaTierra particulas[],
     float deltaTime
 )
 {
@@ -432,10 +887,17 @@ static void ActualizarVertical(
         entrada.saltar
     )
     {
+        CrearParticulasSalto(
+            particulas,
+            MAX_PARTICULAS_TIERRA,
+            jugador
+        );
+
         jugador.velocidad.y =
             jugador.fuerzaSalto;
 
-        jugador.enSuelo = false;
+        jugador.enSuelo =
+            false;
     }
 
     jugador.velocidad.y -=
@@ -447,7 +909,8 @@ static void ActualizarVertical(
     jugador.posicion.y +=
         jugador.velocidad.y * deltaTime;
 
-    jugador.enSuelo = false;
+    jugador.enSuelo =
+        false;
 
     float mitadAlto =
         jugador.tamano.y / 2.0f;
@@ -459,7 +922,9 @@ static void ActualizarVertical(
         posicionAnteriorY + mitadAlto;
 
     BoundingBox jugadorBox =
-        CrearHitboxJugador(jugador);
+        CrearHitboxJugador(
+            jugador
+        );
 
     for (
         int i = 0;
@@ -483,10 +948,12 @@ static void ActualizarVertical(
         }
 
         float pieNuevo =
-            jugador.posicion.y - mitadAlto;
+            jugador.posicion.y -
+            mitadAlto;
 
         float cabezaNueva =
-            jugador.posicion.y + mitadAlto;
+            jugador.posicion.y +
+            mitadAlto;
 
         if (
             jugador.velocidad.y <= 0.0f &&
@@ -495,13 +962,19 @@ static void ActualizarVertical(
         )
         {
             jugador.posicion.y =
-                bloqueBox.max.y + mitadAlto;
+                bloqueBox.max.y +
+                mitadAlto;
 
-            jugador.velocidad.y = 0.0f;
-            jugador.enSuelo = true;
+            jugador.velocidad.y =
+                0.0f;
+
+            jugador.enSuelo =
+                true;
 
             jugadorBox =
-                CrearHitboxJugador(jugador);
+                CrearHitboxJugador(
+                    jugador
+                );
 
             continue;
         }
@@ -513,12 +986,16 @@ static void ActualizarVertical(
         )
         {
             jugador.posicion.y =
-                bloqueBox.min.y - mitadAlto;
+                bloqueBox.min.y -
+                mitadAlto;
 
-            jugador.velocidad.y = 0.0f;
+            jugador.velocidad.y =
+                0.0f;
 
             jugadorBox =
-                CrearHitboxJugador(jugador);
+                CrearHitboxJugador(
+                    jugador
+                );
         }
     }
 }
@@ -533,6 +1010,7 @@ static void ActualizarJugador(
     const EntradaJugadorPrueba& entrada,
     BloquePrueba bloques[],
     int cantidadBloques,
+    ParticulaTierra particulas[],
     float deltaTime
 )
 {
@@ -562,13 +1040,17 @@ static void ActualizarJugador(
         entrada,
         bloques,
         cantidadBloques,
+        particulas,
         deltaTime
     );
 
     if (jugador.posicion.y < -8.0f)
     {
-        jugador.cayendo = true;
-        jugador.tiempoRespawn = 0.0f;
+        jugador.cayendo =
+            true;
+
+        jugador.tiempoRespawn =
+            0.0f;
     }
 }
 
@@ -615,74 +1097,110 @@ void ZonaPruebas::Inicializar(
     ModoTeclado modoTeclado
 )
 {
-    cantidadBloques = 0;
-    volverAlMenu = false;
-    mostrarDebug = false;
+    cantidadBloques =
+        0;
+
+    volverAlMenu =
+        false;
+
+    mostrarDebug =
+        false;
 
     modoTecladoActual =
         modoTeclado;
 
     cantidadJugadoresActivos =
-        modoTecladoActual == TECLADO_DIVIDIDO
-        ? 2
-        : 1;
+        0;
+
 
     //==================================================
-    // P1
+    // LIMPIAR PARTICULAS
     //==================================================
 
-    jugadores[0].numero = 1;
-    jugadores[0].activo = true;
-    jugadores[0].color = RED;
-    jugadores[0].posicionSpawn =
+    for (
+        int i = 0;
+        i < MAX_PARTICULAS_TIERRA;
+        i++
+    )
     {
-        -1.0f,
-        1.0f,
-        3.5f
-    };
+        particulas[i].activa =
+            false;
+    }
 
-    jugadores[0].tamano =
-    {
-        0.8f,
-        1.4f,
-        0.8f
-    };
-
-    jugadores[0].velocidadMovimiento = 5.0f;
-    jugadores[0].fuerzaSalto = 7.2f;
-    jugadores[0].gravedad = 18.0f;
-    jugadores[0].duracionRespawn = 1.2f;
 
     //==================================================
-    // P2
+    // CONFIGURAR LOS 4 SLOTS DE JUGADOR
     //==================================================
 
-    jugadores[1].numero = 2;
-    jugadores[1].activo =
-        modoTecladoActual ==
-        TECLADO_DIVIDIDO;
-
-    jugadores[1].color = BLUE;
-    jugadores[1].posicionSpawn =
+    Color colores[MAX_JUGADORES_PRUEBA] =
     {
-        1.0f,
-        1.0f,
-        3.5f
+        RED,
+        BLUE,
+        GREEN,
+        GOLD
     };
 
-    jugadores[1].tamano =
+    float posicionesX[MAX_JUGADORES_PRUEBA] =
     {
-        0.8f,
-        1.4f,
-        0.8f
+        -1.8f,
+        -0.6f,
+        0.6f,
+        1.8f
     };
 
-    jugadores[1].velocidadMovimiento = 5.0f;
-    jugadores[1].fuerzaSalto = 7.2f;
-    jugadores[1].gravedad = 18.0f;
-    jugadores[1].duracionRespawn = 1.2f;
+    for (
+        int i = 0;
+        i < MAX_JUGADORES_PRUEBA;
+        i++
+    )
+    {
+        JugadorPrueba& jugador =
+            jugadores[i];
 
-    ReiniciarJugadores();
+        jugador.numero =
+            i + 1;
+
+        jugador.activo =
+            false;
+
+        jugador.usaGamepad =
+            false;
+
+        jugador.indiceGamepad =
+            -1;
+
+        jugador.color =
+            colores[i];
+
+        jugador.posicionSpawn =
+        {
+            posicionesX[i],
+            1.0f,
+            3.5f
+        };
+
+        jugador.tamano =
+        {
+            0.8f,
+            1.4f,
+            0.8f
+        };
+
+        jugador.velocidadMovimiento =
+            5.0f;
+
+        jugador.fuerzaSalto =
+            7.2f;
+
+        jugador.gravedad =
+            18.0f;
+
+        jugador.duracionRespawn =
+            1.2f;
+
+        ReiniciarJugador(i);
+    }
+
 
     //==================================================
     // SUELO
@@ -711,6 +1229,7 @@ void ZonaPruebas::Inicializar(
         }
     );
 
+
     //==================================================
     // BLOQUE BAJO
     //==================================================
@@ -731,6 +1250,7 @@ void ZonaPruebas::Inicializar(
         },
         ORANGE
     );
+
 
     //==================================================
     // BLOQUE ALTO
@@ -753,19 +1273,10 @@ void ZonaPruebas::Inicializar(
         BLUE
     );
 
+
     //==================================================
     // CAMARA FIJA DETRAS DE LOS JUGADORES
     //==================================================
-
-    /*
-        La camara NO sigue a nadie.
-
-        Esta ubicada sobre +Z y mira
-        hacia el centro del escenario.
-        Por eso vemos a los jugadores
-        desde atras cuando avanzan con
-        W o flecha arriba hacia -Z.
-    */
 
     camara.position =
     {
@@ -788,8 +1299,20 @@ void ZonaPruebas::Inicializar(
         0.0f
     };
 
-    camara.fovy = 50.0f;
-    camara.projection = CAMERA_PERSPECTIVE;
+    camara.fovy =
+        50.0f;
+
+    camara.projection =
+        CAMERA_PERSPECTIVE;
+
+
+    //==================================================
+    // DETECTAR TECLADOS Y MANDOS INICIALES
+    //==================================================
+
+    ActualizarJugadoresConectados(
+        *this
+    );
 }
 
 
@@ -822,9 +1345,14 @@ void ZonaPruebas::ReiniciarJugador(
         0.0f
     };
 
-    jugador.enSuelo = false;
-    jugador.cayendo = false;
-    jugador.tiempoRespawn = 0.0f;
+    jugador.enSuelo =
+        false;
+
+    jugador.cayendo =
+        false;
+
+    jugador.tiempoRespawn =
+        0.0f;
 }
 
 
@@ -836,7 +1364,10 @@ void ZonaPruebas::ReiniciarJugadores()
         i++
     )
     {
-        ReiniciarJugador(i);
+        if (jugadores[i].activo)
+        {
+            ReiniciarJugador(i);
+        }
     }
 }
 
@@ -851,7 +1382,9 @@ void ZonaPruebas::Actualizar(
 {
     if (IsKeyPressed(KEY_ESCAPE))
     {
-        volverAlMenu = true;
+        volverAlMenu =
+            true;
+
         return;
     }
 
@@ -861,11 +1394,37 @@ void ZonaPruebas::Actualizar(
             !mostrarDebug;
     }
 
+
+    //==================================================
+    // MANDOS CONECTADOS EN CALIENTE
+    //==================================================
+
+    ActualizarJugadoresConectados(
+        *this
+    );
+
+
+    //==================================================
+    // PARTICULAS
+    //==================================================
+
+    ActualizarParticulas(
+        particulas,
+        MAX_PARTICULAS_TIERRA,
+        deltaTime
+    );
+
+
     if (IsKeyPressed(KEY_R))
     {
         ReiniciarJugadores();
         return;
     }
+
+
+    //==================================================
+    // JUGADORES
+    //==================================================
 
     for (
         int i = 0;
@@ -884,6 +1443,7 @@ void ZonaPruebas::Actualizar(
         EntradaJugadorPrueba entrada =
             LeerEntradaJugador(
                 i,
+                jugador,
                 modoTecladoActual
             );
 
@@ -892,6 +1452,7 @@ void ZonaPruebas::Actualizar(
             entrada,
             bloques,
             cantidadBloques,
+            particulas,
             deltaTime
         );
 
@@ -923,7 +1484,14 @@ void ZonaPruebas::Dibujar() const
         }
     );
 
-    BeginMode3D(camara);
+    BeginMode3D(
+        camara
+    );
+
+
+    //==================================================
+    // BLOQUES
+    //==================================================
 
     for (
         int i = 0;
@@ -958,6 +1526,21 @@ void ZonaPruebas::Dibujar() const
         }
     }
 
+
+    //==================================================
+    // PARTICULAS
+    //==================================================
+
+    DibujarParticulas(
+        particulas,
+        MAX_PARTICULAS_TIERRA
+    );
+
+
+    //==================================================
+    // JUGADORES
+    //==================================================
+
     for (
         int i = 0;
         i < MAX_JUGADORES_PRUEBA;
@@ -967,7 +1550,9 @@ void ZonaPruebas::Dibujar() const
         const JugadorPrueba& jugador =
             jugadores[i];
 
-        DibujarJugador(jugador);
+        DibujarJugador(
+            jugador
+        );
 
         if (
             mostrarDebug &&
@@ -984,12 +1569,18 @@ void ZonaPruebas::Dibujar() const
         }
     }
 
+
     DrawGrid(
         30,
         1.0f
     );
 
     EndMode3D();
+
+
+    //==================================================
+    // INTERFAZ
+    //==================================================
 
     DrawText(
         "ZONA DE PRUEBAS",
@@ -999,42 +1590,90 @@ void ZonaPruebas::Dibujar() const
         BLACK
     );
 
-    if (
-        modoTecladoActual ==
-        TECLADO_DIVIDIDO
+    int yControl =
+        70;
+
+    for (
+        int i = 0;
+        i < MAX_JUGADORES_PRUEBA;
+        i++
     )
     {
-        DrawText(
-            "P1 ROJO: WASD + ESPACIO",
-            25,
-            70,
-            20,
-            RED
-        );
+        const JugadorPrueba& jugador =
+            jugadores[i];
 
-        DrawText(
-            "P2 AZUL: FLECHAS + ENTER",
-            25,
-            98,
-            20,
-            BLUE
-        );
+        if (!jugador.activo)
+        {
+            continue;
+        }
+
+        if (jugador.usaGamepad)
+        {
+            DrawText(
+                TextFormat(
+                    "P%d: MANDO %d - STICK/CRUCETA + A",
+                    jugador.numero,
+                    jugador.indiceGamepad + 1
+                ),
+                25,
+                yControl,
+                20,
+                jugador.color
+            );
+        }
+        else if (
+            modoTecladoActual ==
+            TECLADO_COMPLETO
+        )
+        {
+            DrawText(
+                "P1: WASD O FLECHAS + ESPACIO",
+                25,
+                yControl,
+                20,
+                jugador.color
+            );
+        }
+        else if (i == 0)
+        {
+            DrawText(
+                "P1: WASD + ESPACIO",
+                25,
+                yControl,
+                20,
+                jugador.color
+            );
+        }
+        else
+        {
+            DrawText(
+                "P2: FLECHAS + ENTER",
+                25,
+                yControl,
+                20,
+                jugador.color
+            );
+        }
+
+        yControl +=
+            28;
     }
-    else
-    {
-        DrawText(
-            "P1 ROJO: WASD O FLECHAS + ESPACIO",
-            25,
-            70,
-            20,
-            RED
-        );
-    }
+
+    DrawText(
+        TextFormat(
+            "JUGADORES ACTIVOS: %d / 4",
+            cantidadJugadoresActivos
+        ),
+        25,
+        yControl + 8,
+        20,
+        BLACK
+    );
 
     DrawText(
         "R - Respawn de jugadores",
         25,
-        136,
+        yControl + 38,
         20,
         BLACK
     );
@@ -1042,7 +1681,7 @@ void ZonaPruebas::Dibujar() const
     DrawText(
         "F3 - Debug / Hitboxes",
         25,
-        164,
+        yControl + 66,
         20,
         BLACK
     );
@@ -1050,10 +1689,15 @@ void ZonaPruebas::Dibujar() const
     DrawText(
         "ESC - Volver al menu",
         25,
-        192,
+        yControl + 94,
         20,
         BLACK
     );
+
+
+    //==================================================
+    // MENSAJES DE CAIDA
+    //==================================================
 
     int yCaida =
         GetScreenHeight() - 70;
@@ -1083,23 +1727,30 @@ void ZonaPruebas::Dibujar() const
                 jugador.color
             );
 
-            yCaida -= 30;
+            yCaida -=
+                30;
         }
     }
+
+
+    //==================================================
+    // DEBUG
+    //==================================================
 
     if (mostrarDebug)
     {
         int x =
-            GetScreenWidth() - 330;
+            GetScreenWidth() - 350;
 
-        int y = 30;
+        int y =
+            30;
 
         DrawRectangle(
             x - 15,
             y - 15,
-            310,
+            330,
             105 +
-                cantidadJugadoresActivos * 115,
+                cantidadJugadoresActivos * 137,
             Fade(
                 BLACK,
                 0.70f
@@ -1114,7 +1765,8 @@ void ZonaPruebas::Dibujar() const
             LIME
         );
 
-        y += 38;
+        y +=
+            38;
 
         for (
             int i = 0;
@@ -1177,7 +1829,32 @@ void ZonaPruebas::Dibujar() const
                 : ORANGE
             );
 
-            y += 112;
+            if (jugador.usaGamepad)
+            {
+                DrawText(
+                    TextFormat(
+                        "Control: mando %d",
+                        jugador.indiceGamepad + 1
+                    ),
+                    x,
+                    y + 103,
+                    18,
+                    LIGHTGRAY
+                );
+            }
+            else
+            {
+                DrawText(
+                    "Control: teclado",
+                    x,
+                    y + 103,
+                    18,
+                    LIGHTGRAY
+                );
+            }
+
+            y +=
+                134;
         }
     }
 }
