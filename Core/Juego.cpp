@@ -4,6 +4,73 @@
 
 
 //==================================================
+// PREPARAR DIRECTORIO DE RECURSOS
+//==================================================
+
+static void PrepararDirectorioDeRecursos()
+{
+    // Si Assets ya existe en la carpeta de trabajo,
+    // no hace falta cambiar nada. Este es el caso
+    // normal cuando se ejecuta desde Visual Studio Code.
+    if (DirectoryExists("Assets"))
+    {
+        return;
+    }
+
+
+    // Al abrir directamente el .exe dentro de build,
+    // Windows usa build como carpeta de trabajo.
+    // Buscamos entonces Assets un nivel arriba.
+    const char* directorioAplicacion =
+        GetApplicationDirectory();
+
+
+    if (
+        directorioAplicacion != nullptr &&
+        DirectoryExists(
+            TextFormat(
+                "%s../Assets",
+                directorioAplicacion
+            )
+        )
+    )
+    {
+        bool directorioCambiado =
+            ChangeDirectory(
+                TextFormat(
+                    "%s..",
+                    directorioAplicacion
+                )
+            );
+
+
+        if (directorioCambiado)
+        {
+            TraceLog(
+                LOG_INFO,
+                "Directorio de recursos preparado: %s",
+                GetWorkingDirectory()
+            );
+        }
+        else
+        {
+            TraceLog(
+                LOG_WARNING,
+                "No se pudo acceder a la carpeta del proyecto"
+            );
+        }
+    }
+    else
+    {
+        TraceLog(
+            LOG_WARNING,
+            "No se encontro la carpeta Assets junto al ejecutable ni un nivel arriba"
+        );
+    }
+}
+
+
+//==================================================
 // INICIALIZAR
 //==================================================
 
@@ -14,6 +81,9 @@ void Juego::Inicializar()
         720,
         "Juego de Party"
     );
+
+
+    PrepararDirectorioDeRecursos();
 
 
     SetExitKey(
@@ -1038,6 +1108,14 @@ void Juego::Descargar()
         rutaConfiguracion,
         config
     );
+
+
+    //------------------------------
+    // ZONA DE PRUEBAS / MODELOS
+    //------------------------------
+
+    zonaPruebas
+        .Descargar();
 
 
     //------------------------------
