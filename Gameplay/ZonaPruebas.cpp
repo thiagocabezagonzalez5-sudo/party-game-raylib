@@ -64,8 +64,64 @@ static int ObtenerIndiceGamepadParaJugador(
 }
 
 
+static const char* NombreColorPlataforma(
+    int indice
+)
+{
+    switch (indice)
+    {
+        case 0: return "ROJO";
+        case 1: return "NARANJA";
+        case 2: return "AMARILLO";
+        case 3: return "VERDE";
+        case 4: return "AZUL";
+        case 5: return "INDIGO";
+        case 6: return "VIOLETA";
+    }
+
+    return "?";
+}
+
+
+static Color ObtenerColorArcoiris(
+    int indice
+)
+{
+    switch (indice)
+    {
+        case 0:
+            return RED;
+
+        case 1:
+            return ORANGE;
+
+        case 2:
+            return YELLOW;
+
+        case 3:
+            return GREEN;
+
+        case 4:
+            return BLUE;
+
+        case 5:
+            return Color{
+                75,
+                0,
+                130,
+                255
+            };
+
+        case 6:
+            return VIOLET;
+    }
+
+    return WHITE;
+}
+
+
 //==================================================
-// HITBOX DE BLOQUE
+// HITBOXES
 //==================================================
 
 static BoundingBox CrearHitboxBloque(
@@ -98,10 +154,6 @@ static BoundingBox CrearHitboxBloque(
 }
 
 
-//==================================================
-// HITBOX DE JUGADOR
-//==================================================
-
 static BoundingBox CrearHitboxJugador(
     const JugadorPrueba& jugador
 )
@@ -132,10 +184,6 @@ static BoundingBox CrearHitboxJugador(
 }
 
 
-//==================================================
-// COLISIONES AUXILIARES
-//==================================================
-
 static bool CajasSeSolapan(
     const BoundingBox& a,
     const BoundingBox& b
@@ -165,13 +213,12 @@ static bool SolapanXZ(
 
 
 //==================================================
-// AGREGAR BLOQUE
+// PLATAFORMAS DEL MINIJUEGO
 //==================================================
 
-static void AgregarBloque(
+static void AgregarPlataforma(
     ZonaPruebas& zona,
     Vector3 posicion,
-    Vector3 tamano,
     Color color
 )
 {
@@ -189,10 +236,217 @@ static void AgregarBloque(
         ];
 
     bloque.posicion = posicion;
-    bloque.tamano = tamano;
+    bloque.posicionInicial = posicion;
+
+    bloque.tamano =
+    {
+        2.8f,
+        0.60f,
+        2.8f
+    };
+
     bloque.color = color;
+    bloque.activaColision = true;
+    bloque.cayendo = false;
+    bloque.velocidadCaida = 0.0f;
 
     zona.cantidadBloques++;
+}
+
+
+static void ReiniciarPlataformas(
+    ZonaPruebas& zona
+)
+{
+    for (
+        int i = 0;
+        i < zona.cantidadBloques;
+        i++
+    )
+    {
+        BloquePrueba& bloque =
+            zona.bloques[i];
+
+        bloque.posicion =
+            bloque.posicionInicial;
+
+        bloque.activaColision =
+            true;
+
+        bloque.cayendo =
+            false;
+
+        bloque.velocidadCaida =
+            0.0f;
+    }
+}
+
+
+static void ElegirNuevaPlataformaSegura(
+    ZonaPruebas& zona
+)
+{
+    int anterior =
+        zona.indicePlataformaSegura;
+
+    if (zona.cantidadBloques <= 1)
+    {
+        zona.indicePlataformaSegura =
+            0;
+    }
+    else
+    {
+        do
+        {
+            zona.indicePlataformaSegura =
+                GetRandomValue(
+                    0,
+                    zona.cantidadBloques - 1
+                );
+        }
+        while (
+            zona.indicePlataformaSegura ==
+            anterior
+        );
+    }
+
+    zona.faseMinijuego =
+        FASE_ELEGIR_PLATAFORMA;
+
+    zona.tiempoFase =
+        zona.duracionElegirPlataforma;
+}
+
+
+static void TirarPlataformasIncorrectas(
+    ZonaPruebas& zona
+)
+{
+    for (
+        int i = 0;
+        i < zona.cantidadBloques;
+        i++
+    )
+    {
+        BloquePrueba& bloque =
+            zona.bloques[i];
+
+        if (
+            i ==
+            zona.indicePlataformaSegura
+        )
+        {
+            bloque.activaColision =
+                true;
+
+            bloque.cayendo =
+                false;
+
+            continue;
+        }
+
+        bloque.activaColision =
+            false;
+
+        bloque.cayendo =
+            true;
+
+        bloque.velocidadCaida =
+            0.0f;
+    }
+
+    zona.faseMinijuego =
+        FASE_CAIDA_PLATAFORMAS;
+
+    zona.tiempoFase =
+        zona.duracionCaidaPlataformas;
+}
+
+
+static void ActualizarCaidaPlataformas(
+    ZonaPruebas& zona,
+    float deltaTime
+)
+{
+    for (
+        int i = 0;
+        i < zona.cantidadBloques;
+        i++
+    )
+    {
+        BloquePrueba& bloque =
+            zona.bloques[i];
+
+        if (!bloque.cayendo)
+        {
+            continue;
+        }
+
+        bloque.velocidadCaida +=
+            12.0f * deltaTime;
+
+        bloque.posicion.y -=
+            bloque.velocidadCaida *
+            deltaTime;
+    }
+}
+
+
+static void ActualizarMinijuegoColor(
+    ZonaPruebas& zona,
+    float deltaTime
+)
+{
+    zona.tiempoFase -=
+        deltaTime;
+
+    if (
+        zona.faseMinijuego ==
+        FASE_ELEGIR_PLATAFORMA
+    )
+    {
+        if (zona.tiempoFase <= 0.0f)
+        {
+            TirarPlataformasIncorrectas(
+                zona
+            );
+        }
+
+        return;
+    }
+
+    ActualizarCaidaPlataformas(
+        zona,
+        deltaTime
+    );
+
+    if (zona.tiempoFase <= 0.0f)
+    {
+        ReiniciarPlataformas(
+            zona
+        );
+
+        for (
+            int i = 0;
+            i < MAX_JUGADORES_PRUEBA;
+            i++
+        )
+        {
+            if (
+                zona.jugadores[i].activo &&
+                zona.jugadores[i].cayendo
+            )
+            {
+                zona.ReiniciarJugador(i);
+            }
+        }
+
+        zona.numeroRonda++;
+
+        ElegirNuevaPlataformaSegura(
+            zona
+        );
+    }
 }
 
 
@@ -206,9 +460,11 @@ static void CrearParticulasSalto(
     const JugadorPrueba& jugador
 )
 {
-    const int CANTIDAD_CREAR = 14;
+    const int CANTIDAD_CREAR =
+        14;
 
-    int creadas = 0;
+    int creadas =
+        0;
 
     for (
         int i = 0;
@@ -237,7 +493,8 @@ static void CrearParticulasSalto(
                 2.1f
             );
 
-        particula.activa = true;
+        particula.activa =
+            true;
 
         particula.posicion =
         {
@@ -254,9 +511,16 @@ static void CrearParticulasSalto(
 
         particula.velocidad =
         {
-            cosf(angulo) * velocidadHorizontal,
-            AleatorioFloat(0.8f, 2.3f),
-            sinf(angulo) * velocidadHorizontal
+            cosf(angulo) *
+                velocidadHorizontal,
+
+            AleatorioFloat(
+                0.8f,
+                2.3f
+            ),
+
+            sinf(angulo) *
+                velocidadHorizontal
         };
 
         particula.vidaMaxima =
@@ -338,7 +602,9 @@ static void ActualizarParticulas(
 
         if (particula.vida <= 0.0f)
         {
-            particula.activa = false;
+            particula.activa =
+                false;
+
             continue;
         }
 
@@ -346,13 +612,16 @@ static void ActualizarParticulas(
             8.0f * deltaTime;
 
         particula.posicion.x +=
-            particula.velocidad.x * deltaTime;
+            particula.velocidad.x *
+            deltaTime;
 
         particula.posicion.y +=
-            particula.velocidad.y * deltaTime;
+            particula.velocidad.y *
+            deltaTime;
 
         particula.posicion.z +=
-            particula.velocidad.z * deltaTime;
+            particula.velocidad.z *
+            deltaTime;
     }
 }
 
@@ -384,12 +653,17 @@ static void DibujarParticulas(
 
         if (porcentajeVida < 0.0f)
         {
-            porcentajeVida = 0.0f;
+            porcentajeVida =
+                0.0f;
         }
 
         float tamanoActual =
             particula.tamano *
-            (0.35f + 0.65f * porcentajeVida);
+            (
+                0.35f +
+                0.65f *
+                porcentajeVida
+            );
 
         DrawCube(
             particula.posicion,
@@ -602,9 +876,14 @@ static void ActualizarJugadoresConectados(
 
         if (i < cantidadTeclado)
         {
-            jugador.activo = true;
-            jugador.usaGamepad = false;
-            jugador.indiceGamepad = -1;
+            jugador.activo =
+                true;
+
+            jugador.usaGamepad =
+                false;
+
+            jugador.indiceGamepad =
+                -1;
         }
         else
         {
@@ -614,7 +893,9 @@ static void ActualizarJugadoresConectados(
                     zona.modoTecladoActual
                 );
 
-            jugador.usaGamepad = true;
+            jugador.usaGamepad =
+                true;
+
             jugador.indiceGamepad =
                 indiceGamepad;
 
@@ -637,13 +918,7 @@ static void ActualizarJugadoresConectados(
             estabaActivo
         )
         {
-            jugador.velocidad =
-            {
-                0.0f,
-                0.0f,
-                0.0f
-            };
-
+            jugador.velocidad = {};
             jugador.cayendo = false;
             jugador.enSuelo = false;
         }
@@ -657,7 +932,7 @@ static void ActualizarJugadoresConectados(
 
 
 //==================================================
-// COLISION HORIZONTAL X
+// COLISION CON PLATAFORMAS
 //==================================================
 
 static void ResolverColisionX(
@@ -686,6 +961,11 @@ static void ResolverColisionX(
         i++
     )
     {
+        if (!bloques[i].activaColision)
+        {
+            continue;
+        }
+
         BoundingBox bloqueBox =
             CrearHitboxBloque(
                 bloques[i]
@@ -722,10 +1002,6 @@ static void ResolverColisionX(
 }
 
 
-//==================================================
-// COLISION HORIZONTAL Z
-//==================================================
-
 static void ResolverColisionZ(
     JugadorPrueba& jugador,
     BloquePrueba bloques[],
@@ -752,6 +1028,11 @@ static void ResolverColisionZ(
         i++
     )
     {
+        if (!bloques[i].activaColision)
+        {
+            continue;
+        }
+
         BoundingBox bloqueBox =
             CrearHitboxBloque(
                 bloques[i]
@@ -857,14 +1138,16 @@ static void ActualizarMovimientoHorizontal(
         jugador,
         bloques,
         cantidadBloques,
-        jugador.velocidad.x * deltaTime
+        jugador.velocidad.x *
+        deltaTime
     );
 
     ResolverColisionZ(
         jugador,
         bloques,
         cantidadBloques,
-        jugador.velocidad.z * deltaTime
+        jugador.velocidad.z *
+        deltaTime
     );
 }
 
@@ -901,25 +1184,30 @@ static void ActualizarVertical(
     }
 
     jugador.velocidad.y -=
-        jugador.gravedad * deltaTime;
+        jugador.gravedad *
+        deltaTime;
 
     float posicionAnteriorY =
         jugador.posicion.y;
 
     jugador.posicion.y +=
-        jugador.velocidad.y * deltaTime;
+        jugador.velocidad.y *
+        deltaTime;
 
     jugador.enSuelo =
         false;
 
     float mitadAlto =
-        jugador.tamano.y / 2.0f;
+        jugador.tamano.y /
+        2.0f;
 
     float pieAnterior =
-        posicionAnteriorY - mitadAlto;
+        posicionAnteriorY -
+        mitadAlto;
 
     float cabezaAnterior =
-        posicionAnteriorY + mitadAlto;
+        posicionAnteriorY +
+        mitadAlto;
 
     BoundingBox jugadorBox =
         CrearHitboxJugador(
@@ -932,6 +1220,11 @@ static void ActualizarVertical(
         i++
     )
     {
+        if (!bloques[i].activaColision)
+        {
+            continue;
+        }
+
         BoundingBox bloqueBox =
             CrearHitboxBloque(
                 bloques[i]
@@ -1056,7 +1349,179 @@ static void ActualizarJugador(
 
 
 //==================================================
-// DIBUJAR JUGADOR PLACEHOLDER
+// COLISION ENTRE JUGADORES
+//==================================================
+
+static void ResolverColisionesEntreJugadores(
+    ZonaPruebas& zona
+)
+{
+    const float MARGEN =
+        0.002f;
+
+    // Dos pasadas ayudan a separar grupos de 3 o 4 jugadores.
+    for (
+        int pasada = 0;
+        pasada < 2;
+        pasada++
+    )
+    {
+        for (
+            int i = 0;
+            i < MAX_JUGADORES_PRUEBA;
+            i++
+        )
+        {
+            JugadorPrueba& a =
+                zona.jugadores[i];
+
+            if (
+                !a.activo ||
+                a.cayendo
+            )
+            {
+                continue;
+            }
+
+            for (
+                int j = i + 1;
+                j < MAX_JUGADORES_PRUEBA;
+                j++
+            )
+            {
+                JugadorPrueba& b =
+                    zona.jugadores[j];
+
+                if (
+                    !b.activo ||
+                    b.cayendo
+                )
+                {
+                    continue;
+                }
+
+                BoundingBox cajaA =
+                    CrearHitboxJugador(a);
+
+                BoundingBox cajaB =
+                    CrearHitboxJugador(b);
+
+                if (
+                    !CajasSeSolapan(
+                        cajaA,
+                        cajaB
+                    )
+                )
+                {
+                    continue;
+                }
+
+                float solapeX =
+                    (
+                        cajaA.max.x < cajaB.max.x
+                        ? cajaA.max.x
+                        : cajaB.max.x
+                    ) -
+                    (
+                        cajaA.min.x > cajaB.min.x
+                        ? cajaA.min.x
+                        : cajaB.min.x
+                    );
+
+                float solapeZ =
+                    (
+                        cajaA.max.z < cajaB.max.z
+                        ? cajaA.max.z
+                        : cajaB.max.z
+                    ) -
+                    (
+                        cajaA.min.z > cajaB.min.z
+                        ? cajaA.min.z
+                        : cajaB.min.z
+                    );
+
+                if (
+                    solapeX <= 0.0f ||
+                    solapeZ <= 0.0f
+                )
+                {
+                    continue;
+                }
+
+                if (solapeX < solapeZ)
+                {
+                    float direccion =
+                        a.posicion.x < b.posicion.x
+                        ? -1.0f
+                        : 1.0f;
+
+                    if (
+                        fabsf(
+                            a.posicion.x -
+                            b.posicion.x
+                        ) < 0.001f
+                    )
+                    {
+                        direccion =
+                            i < j
+                            ? -1.0f
+                            : 1.0f;
+                    }
+
+                    float empuje =
+                        solapeX /
+                        2.0f +
+                        MARGEN;
+
+                    a.posicion.x +=
+                        direccion *
+                        empuje;
+
+                    b.posicion.x -=
+                        direccion *
+                        empuje;
+                }
+                else
+                {
+                    float direccion =
+                        a.posicion.z < b.posicion.z
+                        ? -1.0f
+                        : 1.0f;
+
+                    if (
+                        fabsf(
+                            a.posicion.z -
+                            b.posicion.z
+                        ) < 0.001f
+                    )
+                    {
+                        direccion =
+                            i < j
+                            ? -1.0f
+                            : 1.0f;
+                    }
+
+                    float empuje =
+                        solapeZ /
+                        2.0f +
+                        MARGEN;
+
+                    a.posicion.z +=
+                        direccion *
+                        empuje;
+
+                    b.posicion.z -=
+                        direccion *
+                        empuje;
+                }
+            }
+        }
+    }
+}
+
+
+//==================================================
+// DIBUJO
 //==================================================
 
 static void DibujarJugador(
@@ -1089,6 +1554,100 @@ static void DibujarJugador(
 }
 
 
+static void DibujarTelevisor(
+    Color colorPantalla
+)
+{
+    Vector3 cuerpo =
+    {
+        0.0f,
+        4.2f,
+        -8.2f
+    };
+
+    DrawCube(
+        cuerpo,
+        4.8f,
+        3.1f,
+        0.55f,
+        Color{
+            35,
+            35,
+            42,
+            255
+        }
+    );
+
+    DrawCubeWires(
+        cuerpo,
+        4.8f,
+        3.1f,
+        0.55f,
+        BLACK
+    );
+
+    DrawCube(
+        Vector3{
+            0.0f,
+            4.2f,
+            -7.90f
+        },
+        4.05f,
+        2.35f,
+        0.08f,
+        colorPantalla
+    );
+
+    DrawCubeWires(
+        Vector3{
+            0.0f,
+            4.2f,
+            -7.85f
+        },
+        4.10f,
+        2.40f,
+        0.05f,
+        RAYWHITE
+    );
+
+    DrawCube(
+        Vector3{
+            -1.45f,
+            2.0f,
+            -8.2f
+        },
+        0.30f,
+        1.45f,
+        0.30f,
+        DARKGRAY
+    );
+
+    DrawCube(
+        Vector3{
+            1.45f,
+            2.0f,
+            -8.2f
+        },
+        0.30f,
+        1.45f,
+        0.30f,
+        DARKGRAY
+    );
+
+    DrawCube(
+        Vector3{
+            0.0f,
+            1.25f,
+            -8.2f
+        },
+        4.0f,
+        0.25f,
+        1.0f,
+        DARKGRAY
+    );
+}
+
+
 //==================================================
 // INICIALIZAR
 //==================================================
@@ -1112,6 +1671,18 @@ void ZonaPruebas::Inicializar(
     cantidadJugadoresActivos =
         0;
 
+    faseMinijuego =
+        FASE_ELEGIR_PLATAFORMA;
+
+    indicePlataformaSegura =
+        -1;
+
+    numeroRonda =
+        1;
+
+    tiempoFase =
+        duracionElegirPlataforma;
+
 
     //==================================================
     // LIMPIAR PARTICULAS
@@ -1129,6 +1700,44 @@ void ZonaPruebas::Inicializar(
 
 
     //==================================================
+    // 7 PLATAFORMAS: CENTRO + 6 VERTICES DEL HEXAGONO
+    //==================================================
+
+    const float RADIO =
+        4.2f;
+
+    const float X_DIAGONAL =
+        3.64f;
+
+    const float Z_DIAGONAL =
+        2.10f;
+
+    Vector3 posiciones[MAX_BLOQUES_PRUEBA] =
+    {
+        { 0.0f, 0.0f, 0.0f },
+        { 0.0f, 0.0f, -RADIO },
+        { X_DIAGONAL, 0.0f, -Z_DIAGONAL },
+        { X_DIAGONAL, 0.0f, Z_DIAGONAL },
+        { 0.0f, 0.0f, RADIO },
+        { -X_DIAGONAL, 0.0f, Z_DIAGONAL },
+        { -X_DIAGONAL, 0.0f, -Z_DIAGONAL }
+    };
+
+    for (
+        int i = 0;
+        i < MAX_BLOQUES_PRUEBA;
+        i++
+    )
+    {
+        AgregarPlataforma(
+            *this,
+            posiciones[i],
+            ObtenerColorArcoiris(i)
+        );
+    }
+
+
+    //==================================================
     // CONFIGURAR LOS 4 SLOTS DE JUGADOR
     //==================================================
 
@@ -1140,12 +1749,12 @@ void ZonaPruebas::Inicializar(
         GOLD
     };
 
-    float posicionesX[MAX_JUGADORES_PRUEBA] =
+    Vector3 spawns[MAX_JUGADORES_PRUEBA] =
     {
-        -1.8f,
-        -0.6f,
-        0.6f,
-        1.8f
+        { -0.65f, 1.0f, 0.55f },
+        { 0.65f, 1.0f, 0.55f },
+        { -0.65f, 1.0f, -0.55f },
+        { 0.65f, 1.0f, -0.55f }
     };
 
     for (
@@ -1173,11 +1782,7 @@ void ZonaPruebas::Inicializar(
             colores[i];
 
         jugador.posicionSpawn =
-        {
-            posicionesX[i],
-            1.0f,
-            3.5f
-        };
+            spawns[i];
 
         jugador.tamano =
         {
@@ -1203,93 +1808,21 @@ void ZonaPruebas::Inicializar(
 
 
     //==================================================
-    // SUELO
-    //==================================================
-
-    AgregarBloque(
-        *this,
-        Vector3
-        {
-            0.0f,
-            -0.5f,
-            0.0f
-        },
-        Vector3
-        {
-            14.0f,
-            1.0f,
-            14.0f
-        },
-        Color
-        {
-            105,
-            105,
-            115,
-            255
-        }
-    );
-
-
-    //==================================================
-    // BLOQUE BAJO
-    //==================================================
-
-    AgregarBloque(
-        *this,
-        Vector3
-        {
-            -3.0f,
-            0.5f,
-            -2.0f
-        },
-        Vector3
-        {
-            2.5f,
-            1.0f,
-            2.5f
-        },
-        ORANGE
-    );
-
-
-    //==================================================
-    // BLOQUE ALTO
-    //==================================================
-
-    AgregarBloque(
-        *this,
-        Vector3
-        {
-            2.0f,
-            1.0f,
-            1.0f
-        },
-        Vector3
-        {
-            3.0f,
-            2.0f,
-            3.0f
-        },
-        BLUE
-    );
-
-
-    //==================================================
     // CAMARA FIJA DETRAS DE LOS JUGADORES
     //==================================================
 
     camara.position =
     {
         0.0f,
-        6.5f,
-        13.0f
+        10.0f,
+        15.5f
     };
 
     camara.target =
     {
         0.0f,
-        1.0f,
-        -1.0f
+        0.8f,
+        -1.5f
     };
 
     camara.up =
@@ -1300,24 +1833,24 @@ void ZonaPruebas::Inicializar(
     };
 
     camara.fovy =
-        50.0f;
+        55.0f;
 
     camara.projection =
         CAMERA_PERSPECTIVE;
 
 
-    //==================================================
-    // DETECTAR TECLADOS Y MANDOS INICIALES
-    //==================================================
-
     ActualizarJugadoresConectados(
+        *this
+    );
+
+    ElegirNuevaPlataformaSegura(
         *this
     );
 }
 
 
 //==================================================
-// REINICIAR UN JUGADOR
+// REINICIAR JUGADORES
 //==================================================
 
 void ZonaPruebas::ReiniciarJugador(
@@ -1338,12 +1871,7 @@ void ZonaPruebas::ReiniciarJugador(
     jugador.posicion =
         jugador.posicionSpawn;
 
-    jugador.velocidad =
-    {
-        0.0f,
-        0.0f,
-        0.0f
-    };
+    jugador.velocidad = {};
 
     jugador.enSuelo =
         false;
@@ -1395,18 +1923,9 @@ void ZonaPruebas::Actualizar(
     }
 
 
-    //==================================================
-    // MANDOS CONECTADOS EN CALIENTE
-    //==================================================
-
     ActualizarJugadoresConectados(
         *this
     );
-
-
-    //==================================================
-    // PARTICULAS
-    //==================================================
 
     ActualizarParticulas(
         particulas,
@@ -1414,17 +1933,30 @@ void ZonaPruebas::Actualizar(
         deltaTime
     );
 
+    ActualizarMinijuegoColor(
+        *this,
+        deltaTime
+    );
+
 
     if (IsKeyPressed(KEY_R))
     {
+        ReiniciarPlataformas(
+            *this
+        );
+
         ReiniciarJugadores();
+
+        numeroRonda =
+            1;
+
+        ElegirNuevaPlataformaSegura(
+            *this
+        );
+
         return;
     }
 
-
-    //==================================================
-    // JUGADORES
-    //==================================================
 
     for (
         int i = 0;
@@ -1455,16 +1987,12 @@ void ZonaPruebas::Actualizar(
             particulas,
             deltaTime
         );
-
-        if (
-            jugador.cayendo &&
-            jugador.tiempoRespawn >=
-                jugador.duracionRespawn
-        )
-        {
-            ReiniciarJugador(i);
-        }
     }
+
+
+    ResolverColisionesEntreJugadores(
+        *this
+    );
 }
 
 
@@ -1475,8 +2003,7 @@ void ZonaPruebas::Actualizar(
 void ZonaPruebas::Dibujar() const
 {
     ClearBackground(
-        Color
-        {
+        Color{
             125,
             190,
             220,
@@ -1490,7 +2017,29 @@ void ZonaPruebas::Dibujar() const
 
 
     //==================================================
-    // BLOQUES
+    // VACIO / REFERENCIA VISUAL
+    //==================================================
+
+    DrawCube(
+        Vector3{
+            0.0f,
+            -10.0f,
+            0.0f
+        },
+        30.0f,
+        0.20f,
+        30.0f,
+        Color{
+            35,
+            38,
+            48,
+            255
+        }
+    );
+
+
+    //==================================================
+    // PLATAFORMAS
     //==================================================
 
     for (
@@ -1499,32 +2048,49 @@ void ZonaPruebas::Dibujar() const
         i++
     )
     {
+        const BloquePrueba& bloque =
+            bloques[i];
+
         DrawCube(
-            bloques[i].posicion,
-            bloques[i].tamano.x,
-            bloques[i].tamano.y,
-            bloques[i].tamano.z,
-            bloques[i].color
+            bloque.posicion,
+            bloque.tamano.x,
+            bloque.tamano.y,
+            bloque.tamano.z,
+            bloque.color
         );
 
         DrawCubeWires(
-            bloques[i].posicion,
-            bloques[i].tamano.x,
-            bloques[i].tamano.y,
-            bloques[i].tamano.z,
+            bloque.posicion,
+            bloque.tamano.x,
+            bloque.tamano.y,
+            bloque.tamano.z,
             BLACK
         );
 
-        if (mostrarDebug)
+        if (
+            mostrarDebug &&
+            bloque.activaColision
+        )
         {
             DrawBoundingBox(
                 CrearHitboxBloque(
-                    bloques[i]
+                    bloque
                 ),
                 YELLOW
             );
         }
     }
+
+
+    //==================================================
+    // TELEVISOR
+    //==================================================
+
+    DibujarTelevisor(
+        ObtenerColorArcoiris(
+            indicePlataformaSegura
+        )
+    );
 
 
     //==================================================
@@ -1570,94 +2136,106 @@ void ZonaPruebas::Dibujar() const
     }
 
 
-    DrawGrid(
-        30,
-        1.0f
-    );
-
     EndMode3D();
 
 
     //==================================================
-    // INTERFAZ
+    // HUD DEL MINIJUEGO
     //==================================================
 
     DrawText(
-        "ZONA DE PRUEBAS",
+        "PRUEBA MINIJUEGO: COLOR SEGURO",
         25,
         25,
-        30,
+        28,
         BLACK
     );
 
-    int yControl =
-        70;
+    Color colorSeguro =
+        ObtenerColorArcoiris(
+            indicePlataformaSegura
+        );
 
-    for (
-        int i = 0;
-        i < MAX_JUGADORES_PRUEBA;
-        i++
+    DrawRectangle(
+        25,
+        68,
+        300,
+        55,
+        Fade(
+            BLACK,
+            0.65f
+        )
+    );
+
+    DrawRectangle(
+        35,
+        78,
+        35,
+        35,
+        colorSeguro
+    );
+
+    DrawRectangleLines(
+        35,
+        78,
+        35,
+        35,
+        RAYWHITE
+    );
+
+    DrawText(
+        NombreColorPlataforma(
+            indicePlataformaSegura
+        ),
+        85,
+        83,
+        25,
+        RAYWHITE
+    );
+
+
+    if (
+        faseMinijuego ==
+        FASE_ELEGIR_PLATAFORMA
     )
     {
-        const JugadorPrueba& jugador =
-            jugadores[i];
+        int segundos =
+            (int)ceilf(
+                tiempoFase
+            );
 
-        if (!jugador.activo)
-        {
-            continue;
-        }
-
-        if (jugador.usaGamepad)
-        {
-            DrawText(
-                TextFormat(
-                    "P%d: MANDO %d - STICK/CRUCETA + A",
-                    jugador.numero,
-                    jugador.indiceGamepad + 1
-                ),
-                25,
-                yControl,
-                20,
-                jugador.color
-            );
-        }
-        else if (
-            modoTecladoActual ==
-            TECLADO_COMPLETO
-        )
-        {
-            DrawText(
-                "P1: WASD O FLECHAS + ESPACIO",
-                25,
-                yControl,
-                20,
-                jugador.color
-            );
-        }
-        else if (i == 0)
-        {
-            DrawText(
-                "P1: WASD + ESPACIO",
-                25,
-                yControl,
-                20,
-                jugador.color
-            );
-        }
-        else
-        {
-            DrawText(
-                "P2: FLECHAS + ENTER",
-                25,
-                yControl,
-                20,
-                jugador.color
-            );
-        }
-
-        yControl +=
-            28;
+        DrawText(
+            TextFormat(
+                "CAEN EN: %d",
+                segundos
+            ),
+            25,
+            138,
+            24,
+            BLACK
+        );
     }
+    else
+    {
+        DrawText(
+            "SOLO QUEDA EL COLOR DE LA TV!",
+            25,
+            138,
+            24,
+            RED
+        );
+    }
+
+    DrawText(
+        TextFormat(
+            "RONDA: %d",
+            numeroRonda
+        ),
+        25,
+        170,
+        20,
+        BLACK
+    );
 
     DrawText(
         TextFormat(
@@ -1665,42 +2243,26 @@ void ZonaPruebas::Dibujar() const
             cantidadJugadoresActivos
         ),
         25,
-        yControl + 8,
+        198,
         20,
         BLACK
     );
 
     DrawText(
-        "R - Respawn de jugadores",
+        "R - Reiniciar prueba   F3 - Hitboxes   ESC - Menu",
         25,
-        yControl + 38,
-        20,
-        BLACK
-    );
-
-    DrawText(
-        "F3 - Debug / Hitboxes",
-        25,
-        yControl + 66,
-        20,
-        BLACK
-    );
-
-    DrawText(
-        "ESC - Volver al menu",
-        25,
-        yControl + 94,
-        20,
+        GetScreenHeight() - 35,
+        18,
         BLACK
     );
 
 
     //==================================================
-    // MENSAJES DE CAIDA
+    // ESTADO DE JUGADORES CAIDOS
     //==================================================
 
-    int yCaida =
-        GetScreenHeight() - 70;
+    int yCaidos =
+        230;
 
     for (
         int i = 0;
@@ -1718,143 +2280,17 @@ void ZonaPruebas::Dibujar() const
         {
             DrawText(
                 TextFormat(
-                    "P%d SE CAYO - REAPARECIENDO...",
+                    "P%d CAYO - vuelve en la proxima ronda",
                     jugador.numero
                 ),
                 25,
-                yCaida,
-                22,
+                yCaidos,
+                18,
                 jugador.color
             );
 
-            yCaida -=
-                30;
-        }
-    }
-
-
-    //==================================================
-    // DEBUG
-    //==================================================
-
-    if (mostrarDebug)
-    {
-        int x =
-            GetScreenWidth() - 350;
-
-        int y =
-            30;
-
-        DrawRectangle(
-            x - 15,
-            y - 15,
-            330,
-            105 +
-                cantidadJugadoresActivos * 137,
-            Fade(
-                BLACK,
-                0.70f
-            )
-        );
-
-        DrawText(
-            "DEBUG",
-            x,
-            y,
-            22,
-            LIME
-        );
-
-        y +=
-            38;
-
-        for (
-            int i = 0;
-            i < MAX_JUGADORES_PRUEBA;
-            i++
-        )
-        {
-            const JugadorPrueba& jugador =
-                jugadores[i];
-
-            if (!jugador.activo)
-            {
-                continue;
-            }
-
-            DrawText(
-                TextFormat(
-                    "P%d",
-                    jugador.numero
-                ),
-                x,
-                y,
-                20,
-                jugador.color
-            );
-
-            DrawText(
-                TextFormat(
-                    "X %.2f  Y %.2f  Z %.2f",
-                    jugador.posicion.x,
-                    jugador.posicion.y,
-                    jugador.posicion.z
-                ),
-                x,
-                y + 28,
-                18,
-                WHITE
-            );
-
-            DrawText(
-                TextFormat(
-                    "Vel Y: %.2f",
-                    jugador.velocidad.y
-                ),
-                x,
-                y + 53,
-                18,
-                WHITE
-            );
-
-            DrawText(
-                jugador.enSuelo
-                ? "En suelo: SI"
-                : "En suelo: NO",
-                x,
-                y + 78,
-                18,
-                jugador.enSuelo
-                ? LIME
-                : ORANGE
-            );
-
-            if (jugador.usaGamepad)
-            {
-                DrawText(
-                    TextFormat(
-                        "Control: mando %d",
-                        jugador.indiceGamepad + 1
-                    ),
-                    x,
-                    y + 103,
-                    18,
-                    LIGHTGRAY
-                );
-            }
-            else
-            {
-                DrawText(
-                    "Control: teclado",
-                    x,
-                    y + 103,
-                    18,
-                    LIGHTGRAY
-                );
-            }
-
-            y +=
-                134;
+            yCaidos +=
+                24;
         }
     }
 }

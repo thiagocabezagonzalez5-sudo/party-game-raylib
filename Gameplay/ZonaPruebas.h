@@ -4,19 +4,22 @@
 #include "Core/ConfiguracionJuego.h"
 
 
-const int MAX_BLOQUES_PRUEBA = 8;
+const int MAX_BLOQUES_PRUEBA = 7;
 const int MAX_JUGADORES_PRUEBA = 4;
-const int MAX_PARTICULAS_TIERRA = 120;
+const int MAX_PARTICULAS_TIERRA = 160;
+
+
+enum FaseMinijuegoColor
+{
+    FASE_ELEGIR_PLATAFORMA = 0,
+    FASE_CAIDA_PLATAFORMAS
+};
 
 
 struct BloquePrueba
 {
-    Vector3 posicion =
-    {
-        0.0f,
-        0.0f,
-        0.0f
-    };
+    Vector3 posicion{};
+    Vector3 posicionInicial{};
 
     Vector3 tamano =
     {
@@ -26,6 +29,11 @@ struct BloquePrueba
     };
 
     Color color = GRAY;
+
+    bool activaColision = true;
+    bool cayendo = false;
+
+    float velocidadCaida = 0.0f;
 };
 
 
@@ -33,19 +41,8 @@ struct ParticulaTierra
 {
     bool activa = false;
 
-    Vector3 posicion =
-    {
-        0.0f,
-        0.0f,
-        0.0f
-    };
-
-    Vector3 velocidad =
-    {
-        0.0f,
-        0.0f,
-        0.0f
-    };
+    Vector3 posicion{};
+    Vector3 velocidad{};
 
     float vida = 0.0f;
     float vidaMaxima = 0.0f;
@@ -71,26 +68,9 @@ struct JugadorPrueba
 
     Color color = RED;
 
-    Vector3 posicion =
-    {
-        0.0f,
-        1.0f,
-        0.0f
-    };
-
-    Vector3 posicionSpawn =
-    {
-        0.0f,
-        1.0f,
-        0.0f
-    };
-
-    Vector3 velocidad =
-    {
-        0.0f,
-        0.0f,
-        0.0f
-    };
+    Vector3 posicion{};
+    Vector3 posicionSpawn{};
+    Vector3 velocidad{};
 
     Vector3 tamano =
     {
@@ -127,6 +107,16 @@ struct ZonaPruebas
 
     bool mostrarDebug = false;
     bool volverAlMenu = false;
+
+    FaseMinijuegoColor faseMinijuego =
+        FASE_ELEGIR_PLATAFORMA;
+
+    int indicePlataformaSegura = 0;
+    int numeroRonda = 1;
+
+    float tiempoFase = 5.0f;
+    float duracionElegirPlataforma = 5.0f;
+    float duracionCaidaPlataformas = 2.0f;
 
     void Inicializar(
         ModoTeclado modoTeclado
