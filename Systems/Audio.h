@@ -4,7 +4,7 @@
 
 struct AudioJuego
 {
-    Music musicaMenu = { 0 };
+    Music musicaMenu{};
 
     bool dispositivoInicializado = false;
     bool musicaMenuCargada = false;

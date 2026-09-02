@@ -4,7 +4,7 @@
 
 struct PantallaLogo
 {
-    Texture2D logo = { 0 };
+    Texture2D logo{};
 
     bool logoCargado = false;
 

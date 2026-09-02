@@ -47,10 +47,11 @@ struct PersonajeSeleccion
     //------------------------------
 
     Texture2D icono =
-        { 0 };
+        {};
 
     Texture2D retrato =
-        { 0 };
+        {};
+
 
 
     //------------------------------

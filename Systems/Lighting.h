@@ -4,7 +4,7 @@
 
 struct LightingState
 {
-    Shader shader = { 0 };
+    Shader shader{};
 
     int locLightDir = -1;
     int locLightColor = -1;

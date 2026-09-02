@@ -84,7 +84,7 @@ struct ZonaPruebas
     BloquePrueba bloques[MAX_BLOQUES_PRUEBA];
     int cantidadBloques = 0;
 
-    Camera3D camara = { 0 };
+    Camera3D camara{};
 
     bool mostrarDebug = false;
     bool volverAlMenu = false;

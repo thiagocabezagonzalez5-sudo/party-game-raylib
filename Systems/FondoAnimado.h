@@ -4,9 +4,9 @@
 
 struct FondoAnimado
 {
-    Image imagen = { 0 };
+    Image imagen{};
 
-    Texture2D textura = { 0 };
+    Texture2D textura{};
 
     int cantidadFrames = 0;
 
