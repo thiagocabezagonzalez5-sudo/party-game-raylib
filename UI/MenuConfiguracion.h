@@ -47,6 +47,15 @@ enum OpcionVideo
 };
 
 
+enum OpcionControl
+{
+    CONTROL_MODO_TECLADO = 0,
+    CONTROL_VOLVER,
+
+    CANTIDAD_OPCIONES_CONTROL
+};
+
+
 struct MenuConfiguracion
 {
     //------------------------------
@@ -79,6 +88,9 @@ struct MenuConfiguracion
         0;
 
     int opcionVideoSeleccionada =
+        0;
+
+    int opcionControlSeleccionada =
         0;
 
 

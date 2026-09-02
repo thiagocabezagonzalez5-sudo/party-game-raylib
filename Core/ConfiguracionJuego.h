@@ -2,6 +2,14 @@
 
 #include "Core/WindowUtils.h"
 
+
+enum ModoTeclado
+{
+    TECLADO_COMPLETO = 0,
+    TECLADO_DIVIDIDO
+};
+
+
 struct ConfiguracionJuego
 {
     ModoVentana modoVentana = MODO_PANTALLA_COMPLETA;
@@ -13,12 +21,16 @@ struct ConfiguracionJuego
 
     float volumenMusica = 0.35f;
     float volumenSonidos = 0.60f;
+
+    ModoTeclado modoTeclado = TECLADO_DIVIDIDO;
 };
+
 
 bool CargarConfiguracion(
     const char* ruta,
     ConfiguracionJuego& config
 );
+
 
 bool GuardarConfiguracion(
     const char* ruta,

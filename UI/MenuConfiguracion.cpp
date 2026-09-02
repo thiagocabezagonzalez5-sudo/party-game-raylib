@@ -60,6 +60,19 @@ static int ValorCircular(
 }
 
 
+static const char* NombreModoTeclado(
+    ModoTeclado modo
+)
+{
+    if (modo == TECLADO_DIVIDIDO)
+    {
+        return "2 JUGADORES";
+    }
+
+    return "1 JUGADOR";
+}
+
+
 //==================================================
 // SIDEBAR
 //==================================================
@@ -349,6 +362,9 @@ void MenuConfiguracion::Inicializar()
     opcionVideoSeleccionada =
         0;
 
+    opcionControlSeleccionada =
+        0;
+
     volver =
         false;
 
@@ -465,6 +481,9 @@ void MenuConfiguracion::Actualizar(
                     0;
 
                 opcionVideoSeleccionada =
+                    0;
+
+                opcionControlSeleccionada =
                     0;
 
                 transicionContenidoSaliendo =
@@ -1169,17 +1188,99 @@ void MenuConfiguracion::Actualizar(
         CATEGORIA_CONTROL
     )
     {
-        Rectangle volverRect =
-            ObtenerRectOpcion(0);
+        if (IsKeyPressed(KEY_UP))
+        {
+            opcionControlSeleccionada--;
 
-        if (
-            IsKeyPressed(KEY_ENTER) ||
-            (
-                click &&
+            opcionControlSeleccionada =
+                ValorCircular(
+                    opcionControlSeleccionada,
+                    0,
+                    CANTIDAD_OPCIONES_CONTROL - 1
+                );
+        }
+
+        if (IsKeyPressed(KEY_DOWN))
+        {
+            opcionControlSeleccionada++;
+
+            opcionControlSeleccionada =
+                ValorCircular(
+                    opcionControlSeleccionada,
+                    0,
+                    CANTIDAD_OPCIONES_CONTROL - 1
+                );
+        }
+
+        for (
+            int i = 0;
+            i < CANTIDAD_OPCIONES_CONTROL;
+            i++
+        )
+        {
+            Rectangle rect =
+                ObtenerRectOpcion(i);
+
+            if (
                 CheckCollisionPointRec(
                     mouse,
-                    volverRect
+                    rect
                 )
+            )
+            {
+                opcionControlSeleccionada =
+                    i;
+            }
+        }
+
+        Rectangle rectActual =
+            ObtenerRectOpcion(
+                opcionControlSeleccionada
+            );
+
+        bool clickOpcion =
+            click &&
+            CheckCollisionPointRec(
+                mouse,
+                rectActual
+            );
+
+        if (
+            opcionControlSeleccionada ==
+            CONTROL_MODO_TECLADO
+        )
+        {
+            if (
+                IsKeyPressed(KEY_LEFT) ||
+                IsKeyPressed(KEY_RIGHT) ||
+                IsKeyPressed(KEY_ENTER) ||
+                clickOpcion
+            )
+            {
+                if (
+                    config.modoTeclado ==
+                    TECLADO_COMPLETO
+                )
+                {
+                    config.modoTeclado =
+                        TECLADO_DIVIDIDO;
+                }
+                else
+                {
+                    config.modoTeclado =
+                        TECLADO_COMPLETO;
+                }
+
+                configuracionCambiada =
+                    true;
+            }
+        }
+        else if (
+            opcionControlSeleccionada ==
+                CONTROL_VOLVER &&
+            (
+                IsKeyPressed(KEY_ENTER) ||
+                clickOpcion
             )
         )
         {
@@ -1810,82 +1911,148 @@ void MenuConfiguracion::Dibujar(
         CATEGORIA_CONTROL
     )
     {
-        DrawText(
-            "MOVIMIENTO",
-            xContenido,
-            155,
-            28,
-            Fade(
-                RAYWHITE,
-                alphaPanel
-            )
-        );
+        const char* nombres[] =
+        {
+            "modo teclado",
+            "volver"
+        };
 
-        DrawText(
-            "W A S D",
-            xContenido + 330,
-            155,
-            28,
-            Fade(
-                LIGHTGRAY,
-                alphaPanel
-            )
-        );
+        for (
+            int i = 0;
+            i < CANTIDAD_OPCIONES_CONTROL;
+            i++
+        )
+        {
+            Rectangle rect =
+                ObtenerRectOpcion(i);
 
-        DrawText(
-            "SALTAR",
-            xContenido,
-            215,
-            28,
-            Fade(
-                RAYWHITE,
-                alphaPanel
-            )
-        );
+            bool seleccionada =
+                opcionControlSeleccionada ==
+                i;
 
-        DrawText(
-            "ESPACIO",
-            xContenido + 330,
-            215,
-            28,
-            Fade(
-                LIGHTGRAY,
-                alphaPanel
-            )
-        );
+            Color color =
+                seleccionada
+                ? COLOR_NARANJA
+                : RAYWHITE;
 
-        DrawText(
-            "PAUSA",
-            xContenido,
-            275,
-            28,
-            Fade(
-                RAYWHITE,
-                alphaPanel
-            )
-        );
+            if (seleccionada)
+            {
+                DrawText(
+                    ">",
+                    (int)rect.x - 28,
+                    (int)rect.y + 10,
+                    26,
+                    Fade(
+                        COLOR_NARANJA,
+                        alphaPanel
+                    )
+                );
+            }
 
-        DrawText(
-            "TAB",
-            xContenido + 330,
-            275,
-            28,
-            Fade(
-                LIGHTGRAY,
-                alphaPanel
-            )
-        );
+            DrawText(
+                nombres[i],
+                (int)rect.x,
+                (int)rect.y + 10,
+                28,
+                Fade(
+                    color,
+                    alphaPanel
+                )
+            );
 
-        DrawText(
-            "> volver",
-            xContenido,
-            380,
-            28,
-            Fade(
-                COLOR_NARANJA,
-                alphaPanel
-            )
-        );
+            if (i == CONTROL_MODO_TECLADO)
+            {
+                DrawText(
+                    NombreModoTeclado(
+                        config.modoTeclado
+                    ),
+                    (int)rect.x + 330,
+                    (int)rect.y + 10,
+                    26,
+                    Fade(
+                        color,
+                        alphaPanel
+                    )
+                );
+            }
+        }
+
+        int yInfo =
+            350;
+
+        if (
+            config.modoTeclado ==
+            TECLADO_COMPLETO
+        )
+        {
+            DrawText(
+                "1 JUGADOR EN TECLADO",
+                xContenido,
+                yInfo,
+                24,
+                Fade(
+                    COLOR_NARANJA,
+                    alphaPanel
+                )
+            );
+
+            DrawText(
+                "P1: WASD O FLECHAS",
+                xContenido,
+                yInfo + 38,
+                20,
+                Fade(
+                    LIGHTGRAY,
+                    alphaPanel
+                )
+            );
+
+            DrawText(
+                "SALTO: ESPACIO",
+                xContenido,
+                yInfo + 68,
+                20,
+                Fade(
+                    LIGHTGRAY,
+                    alphaPanel
+                )
+            );
+        }
+        else
+        {
+            DrawText(
+                "TECLADO DIVIDIDO",
+                xContenido,
+                yInfo,
+                24,
+                Fade(
+                    COLOR_NARANJA,
+                    alphaPanel
+                )
+            );
+
+            DrawText(
+                "P1: WASD + ESPACIO",
+                xContenido,
+                yInfo + 38,
+                20,
+                Fade(
+                    RED,
+                    alphaPanel
+                )
+            );
+
+            DrawText(
+                "P2: FLECHAS + CTRL DERECHO",
+                xContenido,
+                yInfo + 68,
+                20,
+                Fade(
+                    BLUE,
+                    alphaPanel
+                )
+            );
+        }
     }
     //==================================================
     // ACERCA DE

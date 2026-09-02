@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdlib>
 
+
 static int LeerEntero(
     const std::string& texto,
     int valorDefault
@@ -19,6 +20,7 @@ static int LeerEntero(
     }
 }
 
+
 static float LeerFloat(
     const std::string& texto,
     float valorDefault
@@ -33,6 +35,7 @@ static float LeerFloat(
         return valorDefault;
     }
 }
+
 
 bool CargarConfiguracion(
     const char* ruta,
@@ -92,12 +95,25 @@ bool CargarConfiguracion(
         {
             config.volumenSonidos = LeerFloat(valor, 0.60f);
         }
+        else if (clave == "modoTeclado")
+        {
+            int modo = LeerEntero(valor, (int)TECLADO_DIVIDIDO);
+
+            if (modo < (int)TECLADO_COMPLETO)
+                modo = (int)TECLADO_COMPLETO;
+
+            if (modo > (int)TECLADO_DIVIDIDO)
+                modo = (int)TECLADO_DIVIDIDO;
+
+            config.modoTeclado = (ModoTeclado)modo;
+        }
     }
 
     archivo.close();
 
     return true;
 }
+
 
 bool GuardarConfiguracion(
     const char* ruta,
@@ -117,6 +133,7 @@ bool GuardarConfiguracion(
     archivo << "mostrarFPS=" << (config.mostrarFPS ? 1 : 0) << "\n";
     archivo << "volumenMusica=" << config.volumenMusica << "\n";
     archivo << "volumenSonidos=" << config.volumenSonidos << "\n";
+    archivo << "modoTeclado=" << (int)config.modoTeclado << "\n";
 
     archivo.close();
 

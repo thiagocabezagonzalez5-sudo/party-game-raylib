@@ -1,19 +1,12 @@
 #pragma once
 
 #include "raylib.h"
+#include "Core/ConfiguracionJuego.h"
 
 
-//==================================================
-// CONSTANTES
-//==================================================
+const int MAX_BLOQUES_PRUEBA = 8;
+const int MAX_JUGADORES_PRUEBA = 2;
 
-const int MAX_BLOQUES_PRUEBA =
-    8;
-
-
-//==================================================
-// BLOQUE / PLATAFORMA
-//==================================================
 
 struct BloquePrueba
 {
@@ -24,7 +17,6 @@ struct BloquePrueba
         0.0f
     };
 
-
     Vector3 tamano =
     {
         1.0f,
@@ -32,21 +24,15 @@ struct BloquePrueba
         1.0f
     };
 
-
-    Color color =
-        GRAY;
+    Color color = GRAY;
 };
 
 
-//==================================================
-// JUGADOR PLACEHOLDER
-//==================================================
-
 struct JugadorPrueba
 {
-    //------------------------------
-    // POSICION
-    //------------------------------
+    int numero = 1;
+    bool activo = true;
+    Color color = RED;
 
     Vector3 posicion =
     {
@@ -55,18 +41,12 @@ struct JugadorPrueba
         0.0f
     };
 
-
     Vector3 posicionSpawn =
     {
         0.0f,
         1.0f,
         0.0f
     };
-
-
-    //------------------------------
-    // VELOCIDAD
-    //------------------------------
 
     Vector3 velocidad =
     {
@@ -75,11 +55,6 @@ struct JugadorPrueba
         0.0f
     };
 
-
-    //------------------------------
-    // TAMAÑO FISICO
-    //------------------------------
-
     Vector3 tamano =
     {
         0.8f,
@@ -87,114 +62,46 @@ struct JugadorPrueba
         0.8f
     };
 
+    float velocidadMovimiento = 5.0f;
+    float fuerzaSalto = 7.2f;
+    float gravedad = 18.0f;
 
-    //------------------------------
-    // MOVIMIENTO
-    //------------------------------
+    bool enSuelo = false;
+    bool cayendo = false;
 
-    float velocidadMovimiento =
-        5.0f;
-
-
-    float fuerzaSalto =
-        7.2f;
-
-
-    float gravedad =
-        18.0f;
-
-
-    //------------------------------
-    // ESTADOS
-    //------------------------------
-
-    bool enSuelo =
-        false;
-
-
-    bool cayendo =
-        false;
-
-
-    //------------------------------
-    // RESPAWN
-    //------------------------------
-
-    float tiempoRespawn =
-        0.0f;
-
-
-    float duracionRespawn =
-        1.2f;
+    float tiempoRespawn = 0.0f;
+    float duracionRespawn = 1.2f;
 };
 
 
-//==================================================
-// ZONA DE PRUEBAS
-//==================================================
-
 struct ZonaPruebas
 {
-    //------------------------------
-    // JUGADOR
-    //------------------------------
+    JugadorPrueba jugadores[MAX_JUGADORES_PRUEBA];
+    int cantidadJugadoresActivos = 2;
 
-    JugadorPrueba jugador;
+    ModoTeclado modoTecladoActual = TECLADO_DIVIDIDO;
 
+    BloquePrueba bloques[MAX_BLOQUES_PRUEBA];
+    int cantidadBloques = 0;
 
-    //------------------------------
-    // MUNDO
-    //------------------------------
+    Camera3D camara = { 0 };
 
-    BloquePrueba bloques[
-        MAX_BLOQUES_PRUEBA
-    ];
+    bool mostrarDebug = false;
+    bool volverAlMenu = false;
 
-
-    int cantidadBloques =
-        0;
-
-
-    //------------------------------
-    // CAMARA
-    //------------------------------
-
-    Camera3D camara =
-    {
-        0
-    };
-
-
-    //------------------------------
-    // DEBUG
-    //------------------------------
-
-    bool mostrarDebug =
-        false;
-
-
-    //------------------------------
-    // ESTADO
-    //------------------------------
-
-    bool volverAlMenu =
-        false;
-
-
-    //------------------------------
-    // FUNCIONES
-    //------------------------------
-
-    void Inicializar();
-
+    void Inicializar(
+        ModoTeclado modoTeclado
+    );
 
     void Actualizar(
         float deltaTime
     );
 
-
     void Dibujar() const;
 
+    void ReiniciarJugador(
+        int indice
+    );
 
-    void ReiniciarJugador();
+    void ReiniciarJugadores();
 };

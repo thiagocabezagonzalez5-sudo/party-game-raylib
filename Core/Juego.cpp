@@ -136,6 +136,23 @@ void Juego::Inicializar()
 
 
     //------------------------------
+    // VALIDAR MODO TECLADO
+    //------------------------------
+
+    if (
+        config.modoTeclado <
+            TECLADO_COMPLETO ||
+
+        config.modoTeclado >
+            TECLADO_DIVIDIDO
+    )
+    {
+        config.modoTeclado =
+            TECLADO_DIVIDIDO;
+    }
+
+
+    //------------------------------
     // VALIDAR VOLUMEN MUSICA
     //------------------------------
 
@@ -249,7 +266,9 @@ void Juego::Inicializar()
     //==================================================
 
     zonaPruebas
-        .Inicializar();
+        .Inicializar(
+            config.modoTeclado
+        );
 
 
     //==================================================
@@ -529,7 +548,9 @@ void Juego::Actualizar(
 
 
                 zonaPruebas
-                    .Inicializar();
+                    .Inicializar(
+                        config.modoTeclado
+                    );
 
 
                 estado =
