@@ -56,11 +56,27 @@ struct Minijuego67
 
     float tiempoPartida = 30.0f;
     float velocidadCintas = 0.24f;
+    float desplazamientoVisualCintas = 0.0f;
 
     int puntos = 0;
     int jugadoresEnPartida = 0;
 
     bool terminado = false;
+
+    Camera3D camara{};
+
+    Model modeloJugador{};
+    bool modeloJugadorCargado = false;
+
+    ModelAnimation* animacionesJugador = nullptr;
+    int cantidadAnimacionesJugador = 0;
+    int indiceAnimacionIdle = -1;
+
+    float fotogramaAnimacionIdle = 0.0f;
+    bool animacionIdleActiva = false;
+
+    const char* rutaModeloJugador =
+        "Assets/Modelos/Jugador_Raylib_Normalizado.glb";
 
     void Inicializar();
 
@@ -86,4 +102,6 @@ struct Minijuego67
         int cantidadMaxima,
         ModoTeclado modoTeclado
     ) const;
+
+    void Descargar();
 };
