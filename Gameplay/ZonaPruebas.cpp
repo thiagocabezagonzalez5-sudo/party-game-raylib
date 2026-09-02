@@ -32,6 +32,26 @@ static float AleatorioFloat(
 }
 
 
+static float LimitarFloat(
+    float valor,
+    float minimo,
+    float maximo
+)
+{
+    if (valor < minimo)
+    {
+        return minimo;
+    }
+
+    if (valor > maximo)
+    {
+        return maximo;
+    }
+
+    return valor;
+}
+
+
 static int CantidadJugadoresTeclado(
     ModoTeclado modoTeclado
 )
@@ -117,6 +137,26 @@ static Color ObtenerColorArcoiris(
     }
 
     return WHITE;
+}
+
+
+static const char* NombreModoPrueba(
+    ModoZonaPruebas modo
+)
+{
+    switch (modo)
+    {
+        case PRUEBA_ZONA_PRINCIPAL:
+            return "1 - ZONA PRINCIPAL";
+
+        case PRUEBA_COLOR_SEGURO:
+            return "2 - COLOR SEGURO";
+
+        case PRUEBA_PELOTAS_EMPUJON:
+            return "3 - PELOTAS / EMPUJONES";
+    }
+
+    return "PRUEBA";
 }
 
 
@@ -213,12 +253,13 @@ static bool SolapanXZ(
 
 
 //==================================================
-// PLATAFORMAS DEL MINIJUEGO
+// BLOQUES / ESCENARIOS
 //==================================================
 
-static void AgregarPlataforma(
+static void AgregarBloque(
     ZonaPruebas& zona,
     Vector3 posicion,
+    Vector3 tamano,
     Color color
 )
 {
@@ -235,22 +276,47 @@ static void AgregarPlataforma(
             zona.cantidadBloques
         ];
 
-    bloque.posicion = posicion;
-    bloque.posicionInicial = posicion;
+    bloque.posicion =
+        posicion;
+
+    bloque.posicionInicial =
+        posicion;
 
     bloque.tamano =
-    {
-        2.8f,
-        0.60f,
-        2.8f
-    };
+        tamano;
 
-    bloque.color = color;
-    bloque.activaColision = true;
-    bloque.cayendo = false;
-    bloque.velocidadCaida = 0.0f;
+    bloque.color =
+        color;
+
+    bloque.activaColision =
+        true;
+
+    bloque.cayendo =
+        false;
+
+    bloque.velocidadCaida =
+        0.0f;
 
     zona.cantidadBloques++;
+}
+
+
+static void AgregarPlataformaColor(
+    ZonaPruebas& zona,
+    Vector3 posicion,
+    Color color
+)
+{
+    AgregarBloque(
+        zona,
+        posicion,
+        Vector3{
+            2.8f,
+            0.60f,
+            2.8f
+        },
+        color
+    );
 }
 
 
@@ -281,6 +347,203 @@ static void ReiniciarPlataformas(
     }
 }
 
+
+static void ConfigurarZonaPrincipal(
+    ZonaPruebas& zona
+)
+{
+    zona.cantidadBloques =
+        0;
+
+    AgregarBloque(
+        zona,
+        Vector3{
+            0.0f,
+            -0.5f,
+            0.0f
+        },
+        Vector3{
+            14.0f,
+            1.0f,
+            14.0f
+        },
+        Color{
+            105,
+            105,
+            115,
+            255
+        }
+    );
+
+    AgregarBloque(
+        zona,
+        Vector3{
+            -3.0f,
+            0.5f,
+            -2.0f
+        },
+        Vector3{
+            2.5f,
+            1.0f,
+            2.5f
+        },
+        ORANGE
+    );
+
+    AgregarBloque(
+        zona,
+        Vector3{
+            2.0f,
+            1.0f,
+            -1.0f
+        },
+        Vector3{
+            3.0f,
+            2.0f,
+            3.0f
+        },
+        BLUE
+    );
+
+    zona.camara.position =
+    {
+        0.0f,
+        6.5f,
+        13.0f
+    };
+
+    zona.camara.target =
+    {
+        0.0f,
+        1.0f,
+        -1.0f
+    };
+
+    zona.camara.fovy =
+        50.0f;
+}
+
+
+static void ConfigurarMinijuegoColor(
+    ZonaPruebas& zona
+)
+{
+    zona.cantidadBloques =
+        0;
+
+    const float RADIO =
+        4.2f;
+
+    const float X_DIAGONAL =
+        3.64f;
+
+    const float Z_DIAGONAL =
+        2.10f;
+
+    Vector3 posiciones[7] =
+    {
+        { 0.0f, 0.0f, 0.0f },
+        { 0.0f, 0.0f, -RADIO },
+        { X_DIAGONAL, 0.0f, -Z_DIAGONAL },
+        { X_DIAGONAL, 0.0f, Z_DIAGONAL },
+        { 0.0f, 0.0f, RADIO },
+        { -X_DIAGONAL, 0.0f, Z_DIAGONAL },
+        { -X_DIAGONAL, 0.0f, -Z_DIAGONAL }
+    };
+
+    for (
+        int i = 0;
+        i < 7;
+        i++
+    )
+    {
+        AgregarPlataformaColor(
+            zona,
+            posiciones[i],
+            ObtenerColorArcoiris(i)
+        );
+    }
+
+    zona.faseMinijuego =
+        FASE_ELEGIR_PLATAFORMA;
+
+    zona.indicePlataformaSegura =
+        -1;
+
+    zona.numeroRonda =
+        1;
+
+    zona.tiempoFase =
+        zona.duracionElegirPlataforma;
+
+    zona.camara.position =
+    {
+        0.0f,
+        10.0f,
+        15.5f
+    };
+
+    zona.camara.target =
+    {
+        0.0f,
+        0.8f,
+        -1.5f
+    };
+
+    zona.camara.fovy =
+        55.0f;
+}
+
+
+static void ConfigurarMinijuegoPelotas(
+    ZonaPruebas& zona
+)
+{
+    zona.cantidadBloques =
+        0;
+
+    AgregarBloque(
+        zona,
+        Vector3{
+            0.0f,
+            -0.5f,
+            0.0f
+        },
+        Vector3{
+            11.0f,
+            1.0f,
+            11.0f
+        },
+        Color{
+            74,
+            78,
+            92,
+            255
+        }
+    );
+
+    zona.camara.position =
+    {
+        0.0f,
+        8.0f,
+        13.0f
+    };
+
+    zona.camara.target =
+    {
+        0.0f,
+        0.5f,
+        0.0f
+    };
+
+    zona.camara.fovy =
+        52.0f;
+}
+
+
+//==================================================
+// MINIJUEGO COLOR SEGURO
+//==================================================
 
 static void ElegirNuevaPlataformaSegura(
     ZonaPruebas& zona
@@ -426,26 +689,13 @@ static void ActualizarMinijuegoColor(
             zona
         );
 
-        for (
-            int i = 0;
-            i < MAX_JUGADORES_PRUEBA;
-            i++
-        )
-        {
-            if (
-                zona.jugadores[i].activo &&
-                zona.jugadores[i].cayendo
-            )
-            {
-                zona.ReiniciarJugador(i);
-            }
-        }
-
         zona.numeroRonda++;
 
         ElegirNuevaPlataformaSegura(
             zona
         );
+
+        zona.ReiniciarJugadores();
     }
 }
 
@@ -651,18 +901,18 @@ static void DibujarParticulas(
                 particula.vidaMaxima
             : 0.0f;
 
-        if (porcentajeVida < 0.0f)
-        {
-            porcentajeVida =
-                0.0f;
-        }
+        porcentajeVida =
+            LimitarFloat(
+                porcentajeVida,
+                0.0f,
+                1.0f
+            );
 
         float tamanoActual =
             particula.tamano *
             (
                 0.35f +
-                0.65f *
-                porcentajeVida
+                0.65f * porcentajeVida
             );
 
         DrawCube(
@@ -680,7 +930,7 @@ static void DibujarParticulas(
 
 
 //==================================================
-// INPUT DE TECLADO
+// INPUT
 //==================================================
 
 static EntradaJugadorPrueba LeerEntradaTeclado(
@@ -757,10 +1007,6 @@ static EntradaJugadorPrueba LeerEntradaTeclado(
     return entrada;
 }
 
-
-//==================================================
-// INPUT DE GAMEPAD
-//==================================================
 
 static EntradaJugadorPrueba LeerEntradaGamepad(
     int indiceGamepad
@@ -847,7 +1093,7 @@ static EntradaJugadorPrueba LeerEntradaJugador(
 
 
 //==================================================
-// CONECTAR / DESCONECTAR GAMEPADS
+// CONEXION DE JUGADORES
 //==================================================
 
 static void ActualizarJugadoresConectados(
@@ -919,6 +1165,7 @@ static void ActualizarJugadoresConectados(
         )
         {
             jugador.velocidad = {};
+            jugador.empuje = {};
             jugador.cayendo = false;
             jugador.enSuelo = false;
         }
@@ -932,7 +1179,7 @@ static void ActualizarJugadoresConectados(
 
 
 //==================================================
-// COLISION CON PLATAFORMAS
+// COLISION CON BLOQUES
 //==================================================
 
 static void ResolverColisionX(
@@ -1070,7 +1317,7 @@ static void ResolverColisionZ(
 
 
 //==================================================
-// MOVIMIENTO HORIZONTAL
+// MOVIMIENTO
 //==================================================
 
 static void ActualizarMovimientoHorizontal(
@@ -1078,6 +1325,7 @@ static void ActualizarMovimientoHorizontal(
     const EntradaJugadorPrueba& entrada,
     BloquePrueba bloques[],
     int cantidadBloques,
+    bool usarEmpuje,
     float deltaTime
 )
 {
@@ -1126,13 +1374,54 @@ static void ActualizarMovimientoHorizontal(
             longitud;
     }
 
-    jugador.velocidad.x =
+    float movimientoBaseX =
         direccionX *
         jugador.velocidadMovimiento;
 
-    jugador.velocidad.z =
+    float movimientoBaseZ =
         direccionZ *
         jugador.velocidadMovimiento;
+
+    if (usarEmpuje)
+    {
+        jugador.velocidad.x =
+            movimientoBaseX +
+            jugador.empuje.x;
+
+        jugador.velocidad.z =
+            movimientoBaseZ +
+            jugador.empuje.z;
+
+        float factorFreno =
+            1.0f -
+            3.8f * deltaTime;
+
+        if (factorFreno < 0.0f)
+        {
+            factorFreno =
+                0.0f;
+        }
+
+        jugador.empuje.x *=
+            factorFreno;
+
+        jugador.empuje.z *=
+            factorFreno;
+    }
+    else
+    {
+        jugador.velocidad.x =
+            movimientoBaseX;
+
+        jugador.velocidad.z =
+            movimientoBaseZ;
+
+        jugador.empuje.x =
+            0.0f;
+
+        jugador.empuje.z =
+            0.0f;
+    }
 
     ResolverColisionX(
         jugador,
@@ -1152,20 +1441,18 @@ static void ActualizarMovimientoHorizontal(
 }
 
 
-//==================================================
-// MOVIMIENTO VERTICAL
-//==================================================
-
 static void ActualizarVertical(
     JugadorPrueba& jugador,
     const EntradaJugadorPrueba& entrada,
     BloquePrueba bloques[],
     int cantidadBloques,
     ParticulaTierra particulas[],
+    bool permitirSalto,
     float deltaTime
 )
 {
     if (
+        permitirSalto &&
         jugador.enSuelo &&
         entrada.saltar
     )
@@ -1197,19 +1484,7 @@ static void ActualizarVertical(
     jugador.enSuelo =
         false;
 
-    float mitadAlto =
-        jugador.tamano.y /
-        2.0f;
-
-    float pieAnterior =
-        posicionAnteriorY -
-        mitadAlto;
-
-    float cabezaAnterior =
-        posicionAnteriorY +
-        mitadAlto;
-
-    BoundingBox jugadorBox =
+    BoundingBox cajaJugador =
         CrearHitboxJugador(
             jugador
         );
@@ -1225,38 +1500,42 @@ static void ActualizarVertical(
             continue;
         }
 
-        BoundingBox bloqueBox =
+        BoundingBox cajaBloque =
             CrearHitboxBloque(
                 bloques[i]
             );
 
         if (
             !SolapanXZ(
-                jugadorBox,
-                bloqueBox
+                cajaJugador,
+                cajaBloque
             )
         )
         {
             continue;
         }
 
-        float pieNuevo =
-            jugador.posicion.y -
-            mitadAlto;
+        float mitadAltoJugador =
+            jugador.tamano.y /
+            2.0f;
 
-        float cabezaNueva =
-            jugador.posicion.y +
-            mitadAlto;
+        float piesAnteriores =
+            posicionAnteriorY -
+            mitadAltoJugador;
+
+        float piesActuales =
+            jugador.posicion.y -
+            mitadAltoJugador;
 
         if (
             jugador.velocidad.y <= 0.0f &&
-            pieAnterior >= bloqueBox.max.y - 0.01f &&
-            pieNuevo <= bloqueBox.max.y
+            piesAnteriores >= cajaBloque.max.y &&
+            piesActuales <= cajaBloque.max.y
         )
         {
             jugador.posicion.y =
-                bloqueBox.max.y +
-                mitadAlto;
+                cajaBloque.max.y +
+                mitadAltoJugador;
 
             jugador.velocidad.y =
                 0.0f;
@@ -1264,39 +1543,44 @@ static void ActualizarVertical(
             jugador.enSuelo =
                 true;
 
-            jugadorBox =
+            cajaJugador =
                 CrearHitboxJugador(
                     jugador
                 );
-
-            continue;
         }
-
-        if (
-            jugador.velocidad.y > 0.0f &&
-            cabezaAnterior <= bloqueBox.min.y + 0.01f &&
-            cabezaNueva >= bloqueBox.min.y
+        else if (
+            jugador.velocidad.y > 0.0f
         )
         {
-            jugador.posicion.y =
-                bloqueBox.min.y -
-                mitadAlto;
+            float cabezaAnterior =
+                posicionAnteriorY +
+                mitadAltoJugador;
 
-            jugador.velocidad.y =
-                0.0f;
+            float cabezaActual =
+                jugador.posicion.y +
+                mitadAltoJugador;
 
-            jugadorBox =
-                CrearHitboxJugador(
-                    jugador
-                );
+            if (
+                cabezaAnterior <= cajaBloque.min.y &&
+                cabezaActual >= cajaBloque.min.y
+            )
+            {
+                jugador.posicion.y =
+                    cajaBloque.min.y -
+                    mitadAltoJugador;
+
+                jugador.velocidad.y =
+                    0.0f;
+
+                cajaJugador =
+                    CrearHitboxJugador(
+                        jugador
+                    );
+            }
         }
     }
 }
 
-
-//==================================================
-// ACTUALIZAR UN JUGADOR
-//==================================================
 
 static void ActualizarJugador(
     JugadorPrueba& jugador,
@@ -1304,12 +1588,20 @@ static void ActualizarJugador(
     BloquePrueba bloques[],
     int cantidadBloques,
     ParticulaTierra particulas[],
+    ModoZonaPruebas modoActual,
     float deltaTime
 )
 {
-    if (!jugador.activo)
+    if (jugador.cooldownChoque > 0.0f)
     {
-        return;
+        jugador.cooldownChoque -=
+            deltaTime;
+
+        if (jugador.cooldownChoque < 0.0f)
+        {
+            jugador.cooldownChoque =
+                0.0f;
+        }
     }
 
     if (jugador.cayendo)
@@ -1317,14 +1609,39 @@ static void ActualizarJugador(
         jugador.tiempoRespawn +=
             deltaTime;
 
+        if (
+            modoActual != PRUEBA_COLOR_SEGURO &&
+            jugador.tiempoRespawn >=
+            jugador.duracionRespawn
+        )
+        {
+            jugador.posicion =
+                jugador.posicionSpawn;
+
+            jugador.velocidad = {};
+            jugador.empuje = {};
+            jugador.enSuelo = false;
+            jugador.cayendo = false;
+            jugador.tiempoRespawn = 0.0f;
+        }
+
         return;
     }
+
+    bool usarEmpuje =
+        modoActual ==
+        PRUEBA_PELOTAS_EMPUJON;
+
+    bool permitirSalto =
+        modoActual !=
+        PRUEBA_PELOTAS_EMPUJON;
 
     ActualizarMovimientoHorizontal(
         jugador,
         entrada,
         bloques,
         cantidadBloques,
+        usarEmpuje,
         deltaTime
     );
 
@@ -1334,6 +1651,7 @@ static void ActualizarJugador(
         bloques,
         cantidadBloques,
         particulas,
+        permitirSalto,
         deltaTime
     );
 
@@ -1344,176 +1662,144 @@ static void ActualizarJugador(
 
         jugador.tiempoRespawn =
             0.0f;
+
+        jugador.empuje = {};
     }
 }
 
 
 //==================================================
-// COLISION ENTRE JUGADORES
+// COLISION ENTRE JUGADORES NORMAL
 //==================================================
 
-static void ResolverColisionesEntreJugadores(
+static void ResolverColisionesJugadoresNormales(
     ZonaPruebas& zona
 )
 {
     const float MARGEN =
-        0.002f;
+        0.001f;
 
-    // Dos pasadas ayudan a separar grupos de 3 o 4 jugadores.
     for (
-        int pasada = 0;
-        pasada < 2;
-        pasada++
+        int i = 0;
+        i < MAX_JUGADORES_PRUEBA;
+        i++
     )
     {
-        for (
-            int i = 0;
-            i < MAX_JUGADORES_PRUEBA;
-            i++
+        JugadorPrueba& a =
+            zona.jugadores[i];
+
+        if (
+            !a.activo ||
+            a.cayendo
         )
         {
-            JugadorPrueba& a =
-                zona.jugadores[i];
+            continue;
+        }
+
+        for (
+            int j = i + 1;
+            j < MAX_JUGADORES_PRUEBA;
+            j++
+        )
+        {
+            JugadorPrueba& b =
+                zona.jugadores[j];
 
             if (
-                !a.activo ||
-                a.cayendo
+                !b.activo ||
+                b.cayendo
             )
             {
                 continue;
             }
 
-            for (
-                int j = i + 1;
-                j < MAX_JUGADORES_PRUEBA;
-                j++
+            BoundingBox cajaA =
+                CrearHitboxJugador(a);
+
+            BoundingBox cajaB =
+                CrearHitboxJugador(b);
+
+            if (
+                !CajasSeSolapan(
+                    cajaA,
+                    cajaB
+                )
             )
             {
-                JugadorPrueba& b =
-                    zona.jugadores[j];
+                continue;
+            }
 
-                if (
-                    !b.activo ||
-                    b.cayendo
-                )
-                {
-                    continue;
-                }
+            float solapeX =
+                (
+                    cajaA.max.x < cajaB.max.x
+                    ? cajaA.max.x
+                    : cajaB.max.x
+                ) -
+                (
+                    cajaA.min.x > cajaB.min.x
+                    ? cajaA.min.x
+                    : cajaB.min.x
+                );
 
-                BoundingBox cajaA =
-                    CrearHitboxJugador(a);
+            float solapeZ =
+                (
+                    cajaA.max.z < cajaB.max.z
+                    ? cajaA.max.z
+                    : cajaB.max.z
+                ) -
+                (
+                    cajaA.min.z > cajaB.min.z
+                    ? cajaA.min.z
+                    : cajaB.min.z
+                );
 
-                BoundingBox cajaB =
-                    CrearHitboxJugador(b);
+            if (
+                solapeX <= 0.0f ||
+                solapeZ <= 0.0f
+            )
+            {
+                continue;
+            }
 
-                if (
-                    !CajasSeSolapan(
-                        cajaA,
-                        cajaB
-                    )
-                )
-                {
-                    continue;
-                }
+            if (solapeX < solapeZ)
+            {
+                float direccion =
+                    a.posicion.x < b.posicion.x
+                    ? -1.0f
+                    : 1.0f;
 
-                float solapeX =
-                    (
-                        cajaA.max.x < cajaB.max.x
-                        ? cajaA.max.x
-                        : cajaB.max.x
-                    ) -
-                    (
-                        cajaA.min.x > cajaB.min.x
-                        ? cajaA.min.x
-                        : cajaB.min.x
-                    );
+                float correccion =
+                    solapeX /
+                    2.0f +
+                    MARGEN;
 
-                float solapeZ =
-                    (
-                        cajaA.max.z < cajaB.max.z
-                        ? cajaA.max.z
-                        : cajaB.max.z
-                    ) -
-                    (
-                        cajaA.min.z > cajaB.min.z
-                        ? cajaA.min.z
-                        : cajaB.min.z
-                    );
+                a.posicion.x +=
+                    direccion *
+                    correccion;
 
-                if (
-                    solapeX <= 0.0f ||
-                    solapeZ <= 0.0f
-                )
-                {
-                    continue;
-                }
+                b.posicion.x -=
+                    direccion *
+                    correccion;
+            }
+            else
+            {
+                float direccion =
+                    a.posicion.z < b.posicion.z
+                    ? -1.0f
+                    : 1.0f;
 
-                if (solapeX < solapeZ)
-                {
-                    float direccion =
-                        a.posicion.x < b.posicion.x
-                        ? -1.0f
-                        : 1.0f;
+                float correccion =
+                    solapeZ /
+                    2.0f +
+                    MARGEN;
 
-                    if (
-                        fabsf(
-                            a.posicion.x -
-                            b.posicion.x
-                        ) < 0.001f
-                    )
-                    {
-                        direccion =
-                            i < j
-                            ? -1.0f
-                            : 1.0f;
-                    }
+                a.posicion.z +=
+                    direccion *
+                    correccion;
 
-                    float empuje =
-                        solapeX /
-                        2.0f +
-                        MARGEN;
-
-                    a.posicion.x +=
-                        direccion *
-                        empuje;
-
-                    b.posicion.x -=
-                        direccion *
-                        empuje;
-                }
-                else
-                {
-                    float direccion =
-                        a.posicion.z < b.posicion.z
-                        ? -1.0f
-                        : 1.0f;
-
-                    if (
-                        fabsf(
-                            a.posicion.z -
-                            b.posicion.z
-                        ) < 0.001f
-                    )
-                    {
-                        direccion =
-                            i < j
-                            ? -1.0f
-                            : 1.0f;
-                    }
-
-                    float empuje =
-                        solapeZ /
-                        2.0f +
-                        MARGEN;
-
-                    a.posicion.z +=
-                        direccion *
-                        empuje;
-
-                    b.posicion.z -=
-                        direccion *
-                        empuje;
-                }
+                b.posicion.z -=
+                    direccion *
+                    correccion;
             }
         }
     }
@@ -1521,10 +1807,197 @@ static void ResolverColisionesEntreJugadores(
 
 
 //==================================================
-// DIBUJO
+// COLISION / EMPUJON ENTRE PELOTAS
 //==================================================
 
-static void DibujarJugador(
+static void ResolverEmpujonesPelotas(
+    ZonaPruebas& zona
+)
+{
+    for (
+        int i = 0;
+        i < MAX_JUGADORES_PRUEBA;
+        i++
+    )
+    {
+        JugadorPrueba& a =
+            zona.jugadores[i];
+
+        if (
+            !a.activo ||
+            a.cayendo
+        )
+        {
+            continue;
+        }
+
+        for (
+            int j = i + 1;
+            j < MAX_JUGADORES_PRUEBA;
+            j++
+        )
+        {
+            JugadorPrueba& b =
+                zona.jugadores[j];
+
+            if (
+                !b.activo ||
+                b.cayendo
+            )
+            {
+                continue;
+            }
+
+            float diferenciaY =
+                fabsf(
+                    a.posicion.y -
+                    b.posicion.y
+                );
+
+            float alturaPermitida =
+                (
+                    a.tamano.y +
+                    b.tamano.y
+                ) /
+                2.0f;
+
+            if (diferenciaY >= alturaPermitida)
+            {
+                continue;
+            }
+
+            float dx =
+                b.posicion.x -
+                a.posicion.x;
+
+            float dz =
+                b.posicion.z -
+                a.posicion.z;
+
+            float distancia =
+                sqrtf(
+                    dx * dx +
+                    dz * dz
+                );
+
+            float radioA =
+                a.tamano.x /
+                2.0f;
+
+            float radioB =
+                b.tamano.x /
+                2.0f;
+
+            float distanciaMinima =
+                radioA +
+                radioB;
+
+            if (distancia >= distanciaMinima)
+            {
+                continue;
+            }
+
+            float nx =
+                1.0f;
+
+            float nz =
+                0.0f;
+
+            if (distancia > 0.001f)
+            {
+                nx =
+                    dx /
+                    distancia;
+
+                nz =
+                    dz /
+                    distancia;
+            }
+            else if (i > j)
+            {
+                nx =
+                    -1.0f;
+            }
+
+            float solape =
+                distanciaMinima -
+                distancia;
+
+            a.posicion.x -=
+                nx *
+                solape /
+                2.0f;
+
+            a.posicion.z -=
+                nz *
+                solape /
+                2.0f;
+
+            b.posicion.x +=
+                nx *
+                solape /
+                2.0f;
+
+            b.posicion.z +=
+                nz *
+                solape /
+                2.0f;
+
+            float relativo =
+                (
+                    a.velocidad.x -
+                    b.velocidad.x
+                ) * nx +
+                (
+                    a.velocidad.z -
+                    b.velocidad.z
+                ) * nz;
+
+            if (
+                relativo > 0.20f &&
+                a.cooldownChoque <= 0.0f &&
+                b.cooldownChoque <= 0.0f
+            )
+            {
+                float fuerza =
+                    2.8f +
+                    relativo *
+                    0.55f;
+
+                if (fuerza > 6.5f)
+                {
+                    fuerza =
+                        6.5f;
+                }
+
+                a.empuje.x -=
+                    nx * fuerza;
+
+                a.empuje.z -=
+                    nz * fuerza;
+
+                b.empuje.x +=
+                    nx * fuerza;
+
+                b.empuje.z +=
+                    nz * fuerza;
+
+                a.cooldownChoque =
+                    0.14f;
+
+                b.cooldownChoque =
+                    0.14f;
+            }
+        }
+    }
+}
+
+
+//==================================================
+// DIBUJO 3D
+//==================================================
+
+static void DibujarJugadorCubo(
     const JugadorPrueba& jugador
 )
 {
@@ -1549,6 +2022,38 @@ static void DibujarJugador(
         jugador.tamano.x,
         jugador.tamano.y,
         jugador.tamano.z,
+        BLACK
+    );
+}
+
+
+static void DibujarJugadorPelota(
+    const JugadorPrueba& jugador
+)
+{
+    if (
+        !jugador.activo ||
+        jugador.cayendo
+    )
+    {
+        return;
+    }
+
+    float radio =
+        jugador.tamano.x /
+        2.0f;
+
+    DrawSphere(
+        jugador.posicion,
+        radio,
+        jugador.color
+    );
+
+    DrawSphereWires(
+        jugador.posicion,
+        radio,
+        12,
+        16,
         BLACK
     );
 }
@@ -1648,17 +2153,183 @@ static void DibujarTelevisor(
 }
 
 
+static void DibujarArenaPelotas()
+{
+    DrawCube(
+        Vector3{
+            0.0f,
+            -0.5f,
+            0.0f
+        },
+        11.0f,
+        1.0f,
+        11.0f,
+        Color{
+            74,
+            78,
+            92,
+            255
+        }
+    );
+
+    DrawCubeWires(
+        Vector3{
+            0.0f,
+            -0.5f,
+            0.0f
+        },
+        11.0f,
+        1.0f,
+        11.0f,
+        BLACK
+    );
+
+    DrawCubeWires(
+        Vector3{
+            0.0f,
+            0.03f,
+            0.0f
+        },
+        10.0f,
+        0.04f,
+        10.0f,
+        RAYWHITE
+    );
+}
+
+
 //==================================================
-// INICIALIZAR
+// CONFIGURAR JUGADORES SEGUN PROTOTIPO
+//==================================================
+
+static void ConfigurarJugadoresParaModo(
+    ZonaPruebas& zona
+)
+{
+    Color colores[MAX_JUGADORES_PRUEBA] =
+    {
+        RED,
+        BLUE,
+        GREEN,
+        GOLD
+    };
+
+    Vector3 spawnsPrincipal[MAX_JUGADORES_PRUEBA] =
+    {
+        { -1.2f, 1.0f, 4.0f },
+        { 1.2f, 1.0f, 4.0f },
+        { -2.4f, 1.0f, 3.0f },
+        { 2.4f, 1.0f, 3.0f }
+    };
+
+    Vector3 spawnsColor[MAX_JUGADORES_PRUEBA] =
+    {
+        { -0.65f, 1.0f, 0.55f },
+        { 0.65f, 1.0f, 0.55f },
+        { -0.65f, 1.0f, -0.55f },
+        { 0.65f, 1.0f, -0.55f }
+    };
+
+    Vector3 spawnsPelotas[MAX_JUGADORES_PRUEBA] =
+    {
+        { -2.2f, 0.65f, 2.2f },
+        { 2.2f, 0.65f, 2.2f },
+        { -2.2f, 0.65f, -2.2f },
+        { 2.2f, 0.65f, -2.2f }
+    };
+
+    for (
+        int i = 0;
+        i < MAX_JUGADORES_PRUEBA;
+        i++
+    )
+    {
+        JugadorPrueba& jugador =
+            zona.jugadores[i];
+
+        jugador.numero =
+            i + 1;
+
+        jugador.color =
+            colores[i];
+
+        if (
+            zona.modoActual ==
+            PRUEBA_ZONA_PRINCIPAL
+        )
+        {
+            jugador.posicionSpawn =
+                spawnsPrincipal[i];
+
+            jugador.tamano =
+            {
+                0.8f,
+                1.4f,
+                0.8f
+            };
+
+            jugador.velocidadMovimiento =
+                5.0f;
+        }
+        else if (
+            zona.modoActual ==
+            PRUEBA_COLOR_SEGURO
+        )
+        {
+            jugador.posicionSpawn =
+                spawnsColor[i];
+
+            jugador.tamano =
+            {
+                0.8f,
+                1.4f,
+                0.8f
+            };
+
+            jugador.velocidadMovimiento =
+                5.0f;
+        }
+        else
+        {
+            jugador.posicionSpawn =
+                spawnsPelotas[i];
+
+            jugador.tamano =
+            {
+                1.30f,
+                1.30f,
+                1.30f
+            };
+
+            jugador.velocidadMovimiento =
+                4.4f;
+        }
+
+        jugador.fuerzaSalto =
+            7.2f;
+
+        jugador.gravedad =
+            18.0f;
+
+        jugador.duracionRespawn =
+            1.2f;
+
+        jugador.empuje = {};
+        jugador.cooldownChoque = 0.0f;
+
+        zona.ReiniciarJugador(i);
+    }
+}
+
+
+//==================================================
+// INICIALIZAR / CAMBIAR PROTOTIPO
 //==================================================
 
 void ZonaPruebas::Inicializar(
     ModoTeclado modoTeclado
 )
 {
-    cantidadBloques =
-        0;
-
     volverAlMenu =
         false;
 
@@ -1671,22 +2342,15 @@ void ZonaPruebas::Inicializar(
     cantidadJugadoresActivos =
         0;
 
-    faseMinijuego =
-        FASE_ELEGIR_PLATAFORMA;
+    camara.up =
+    {
+        0.0f,
+        1.0f,
+        0.0f
+    };
 
-    indicePlataformaSegura =
-        -1;
-
-    numeroRonda =
-        1;
-
-    tiempoFase =
-        duracionElegirPlataforma;
-
-
-    //==================================================
-    // LIMPIAR PARTICULAS
-    //==================================================
+    camara.projection =
+        CAMERA_PERSPECTIVE;
 
     for (
         int i = 0;
@@ -1698,154 +2362,87 @@ void ZonaPruebas::Inicializar(
             false;
     }
 
-
-    //==================================================
-    // 7 PLATAFORMAS: CENTRO + 6 VERTICES DEL HEXAGONO
-    //==================================================
-
-    const float RADIO =
-        4.2f;
-
-    const float X_DIAGONAL =
-        3.64f;
-
-    const float Z_DIAGONAL =
-        2.10f;
-
-    Vector3 posiciones[MAX_BLOQUES_PRUEBA] =
-    {
-        { 0.0f, 0.0f, 0.0f },
-        { 0.0f, 0.0f, -RADIO },
-        { X_DIAGONAL, 0.0f, -Z_DIAGONAL },
-        { X_DIAGONAL, 0.0f, Z_DIAGONAL },
-        { 0.0f, 0.0f, RADIO },
-        { -X_DIAGONAL, 0.0f, Z_DIAGONAL },
-        { -X_DIAGONAL, 0.0f, -Z_DIAGONAL }
-    };
-
-    for (
-        int i = 0;
-        i < MAX_BLOQUES_PRUEBA;
-        i++
-    )
-    {
-        AgregarPlataforma(
-            *this,
-            posiciones[i],
-            ObtenerColorArcoiris(i)
-        );
-    }
-
-
-    //==================================================
-    // CONFIGURAR LOS 4 SLOTS DE JUGADOR
-    //==================================================
-
-    Color colores[MAX_JUGADORES_PRUEBA] =
-    {
-        RED,
-        BLUE,
-        GREEN,
-        GOLD
-    };
-
-    Vector3 spawns[MAX_JUGADORES_PRUEBA] =
-    {
-        { -0.65f, 1.0f, 0.55f },
-        { 0.65f, 1.0f, 0.55f },
-        { -0.65f, 1.0f, -0.55f },
-        { 0.65f, 1.0f, -0.55f }
-    };
-
     for (
         int i = 0;
         i < MAX_JUGADORES_PRUEBA;
         i++
     )
     {
-        JugadorPrueba& jugador =
-            jugadores[i];
-
-        jugador.numero =
-            i + 1;
-
-        jugador.activo =
+        jugadores[i].activo =
             false;
 
-        jugador.usaGamepad =
+        jugadores[i].usaGamepad =
             false;
 
-        jugador.indiceGamepad =
+        jugadores[i].indiceGamepad =
             -1;
-
-        jugador.color =
-            colores[i];
-
-        jugador.posicionSpawn =
-            spawns[i];
-
-        jugador.tamano =
-        {
-            0.8f,
-            1.4f,
-            0.8f
-        };
-
-        jugador.velocidadMovimiento =
-            5.0f;
-
-        jugador.fuerzaSalto =
-            7.2f;
-
-        jugador.gravedad =
-            18.0f;
-
-        jugador.duracionRespawn =
-            1.2f;
-
-        ReiniciarJugador(i);
     }
 
+    CambiarModo(
+        PRUEBA_ZONA_PRINCIPAL
+    );
 
-    //==================================================
-    // CAMARA FIJA DETRAS DE LOS JUGADORES
-    //==================================================
+    ActualizarJugadoresConectados(
+        *this
+    );
+}
 
-    camara.position =
+
+void ZonaPruebas::CambiarModo(
+    ModoZonaPruebas nuevoModo
+)
+{
+    modoActual =
+        nuevoModo;
+
+    for (
+        int i = 0;
+        i < MAX_PARTICULAS_TIERRA;
+        i++
+    )
     {
-        0.0f,
-        10.0f,
-        15.5f
-    };
+        particulas[i].activa =
+            false;
+    }
 
-    camara.target =
+    if (
+        modoActual ==
+        PRUEBA_ZONA_PRINCIPAL
+    )
     {
-        0.0f,
-        0.8f,
-        -1.5f
-    };
-
-    camara.up =
+        ConfigurarZonaPrincipal(
+            *this
+        );
+    }
+    else if (
+        modoActual ==
+        PRUEBA_COLOR_SEGURO
+    )
     {
-        0.0f,
-        1.0f,
-        0.0f
-    };
+        ConfigurarMinijuegoColor(
+            *this
+        );
 
-    camara.fovy =
-        55.0f;
+        ElegirNuevaPlataformaSegura(
+            *this
+        );
+    }
+    else
+    {
+        ConfigurarMinijuegoPelotas(
+            *this
+        );
+    }
 
-    camara.projection =
-        CAMERA_PERSPECTIVE;
-
+    ConfigurarJugadoresParaModo(
+        *this
+    );
 
     ActualizarJugadoresConectados(
         *this
     );
 
-    ElegirNuevaPlataformaSegura(
-        *this
-    );
+    ReiniciarJugadores();
 }
 
 
@@ -1872,6 +2469,7 @@ void ZonaPruebas::ReiniciarJugador(
         jugador.posicionSpawn;
 
     jugador.velocidad = {};
+    jugador.empuje = {};
 
     jugador.enSuelo =
         false;
@@ -1880,6 +2478,9 @@ void ZonaPruebas::ReiniciarJugador(
         false;
 
     jugador.tiempoRespawn =
+        0.0f;
+
+    jugador.cooldownChoque =
         0.0f;
 }
 
@@ -1923,6 +2524,38 @@ void ZonaPruebas::Actualizar(
     }
 
 
+    //==================================================
+    // CAMBIAR ENTRE PROTOTIPOS
+    //==================================================
+
+    if (IsKeyPressed(KEY_ONE))
+    {
+        CambiarModo(
+            PRUEBA_ZONA_PRINCIPAL
+        );
+
+        return;
+    }
+
+    if (IsKeyPressed(KEY_TWO))
+    {
+        CambiarModo(
+            PRUEBA_COLOR_SEGURO
+        );
+
+        return;
+    }
+
+    if (IsKeyPressed(KEY_THREE))
+    {
+        CambiarModo(
+            PRUEBA_PELOTAS_EMPUJON
+        );
+
+        return;
+    }
+
+
     ActualizarJugadoresConectados(
         *this
     );
@@ -1933,26 +2566,41 @@ void ZonaPruebas::Actualizar(
         deltaTime
     );
 
-    ActualizarMinijuegoColor(
-        *this,
-        deltaTime
-    );
+    if (
+        modoActual ==
+        PRUEBA_COLOR_SEGURO
+    )
+    {
+        ActualizarMinijuegoColor(
+            *this,
+            deltaTime
+        );
+    }
 
 
     if (IsKeyPressed(KEY_R))
     {
-        ReiniciarPlataformas(
-            *this
-        );
+        if (
+            modoActual ==
+            PRUEBA_COLOR_SEGURO
+        )
+        {
+            ReiniciarPlataformas(
+                *this
+            );
+
+            numeroRonda =
+                1;
+
+            indicePlataformaSegura =
+                -1;
+
+            ElegirNuevaPlataformaSegura(
+                *this
+            );
+        }
 
         ReiniciarJugadores();
-
-        numeroRonda =
-            1;
-
-        ElegirNuevaPlataformaSegura(
-            *this
-        );
 
         return;
     }
@@ -1985,14 +2633,27 @@ void ZonaPruebas::Actualizar(
             bloques,
             cantidadBloques,
             particulas,
+            modoActual,
             deltaTime
         );
     }
 
 
-    ResolverColisionesEntreJugadores(
-        *this
-    );
+    if (
+        modoActual ==
+        PRUEBA_PELOTAS_EMPUJON
+    )
+    {
+        ResolverEmpujonesPelotas(
+            *this
+        );
+    }
+    else
+    {
+        ResolverColisionesJugadoresNormales(
+            *this
+        );
+    }
 }
 
 
@@ -2017,7 +2678,7 @@ void ZonaPruebas::Dibujar() const
 
 
     //==================================================
-    // VACIO / REFERENCIA VISUAL
+    // FONDO / VACIO
     //==================================================
 
     DrawCube(
@@ -2026,9 +2687,9 @@ void ZonaPruebas::Dibujar() const
             -10.0f,
             0.0f
         },
-        30.0f,
+        32.0f,
         0.20f,
-        30.0f,
+        32.0f,
         Color{
             35,
             38,
@@ -2039,63 +2700,71 @@ void ZonaPruebas::Dibujar() const
 
 
     //==================================================
-    // PLATAFORMAS
+    // ESCENARIO
     //==================================================
 
-    for (
-        int i = 0;
-        i < cantidadBloques;
-        i++
+    if (
+        modoActual ==
+        PRUEBA_PELOTAS_EMPUJON
     )
     {
-        const BloquePrueba& bloque =
-            bloques[i];
-
-        DrawCube(
-            bloque.posicion,
-            bloque.tamano.x,
-            bloque.tamano.y,
-            bloque.tamano.z,
-            bloque.color
-        );
-
-        DrawCubeWires(
-            bloque.posicion,
-            bloque.tamano.x,
-            bloque.tamano.y,
-            bloque.tamano.z,
-            BLACK
-        );
-
-        if (
-            mostrarDebug &&
-            bloque.activaColision
+        DibujarArenaPelotas();
+    }
+    else
+    {
+        for (
+            int i = 0;
+            i < cantidadBloques;
+            i++
         )
         {
-            DrawBoundingBox(
-                CrearHitboxBloque(
-                    bloque
-                ),
-                YELLOW
+            const BloquePrueba& bloque =
+                bloques[i];
+
+            DrawCube(
+                bloque.posicion,
+                bloque.tamano.x,
+                bloque.tamano.y,
+                bloque.tamano.z,
+                bloque.color
             );
+
+            DrawCubeWires(
+                bloque.posicion,
+                bloque.tamano.x,
+                bloque.tamano.y,
+                bloque.tamano.z,
+                BLACK
+            );
+
+            if (
+                mostrarDebug &&
+                bloque.activaColision
+            )
+            {
+                DrawBoundingBox(
+                    CrearHitboxBloque(
+                        bloque
+                    ),
+                    YELLOW
+                );
+            }
         }
     }
 
 
-    //==================================================
-    // TELEVISOR
-    //==================================================
+    if (
+        modoActual ==
+        PRUEBA_COLOR_SEGURO
+    )
+    {
+        DibujarTelevisor(
+            ObtenerColorArcoiris(
+                indicePlataformaSegura
+            )
+        );
+    }
 
-    DibujarTelevisor(
-        ObtenerColorArcoiris(
-            indicePlataformaSegura
-        )
-    );
-
-
-    //==================================================
-    // PARTICULAS
-    //==================================================
 
     DibujarParticulas(
         particulas,
@@ -2116,9 +2785,21 @@ void ZonaPruebas::Dibujar() const
         const JugadorPrueba& jugador =
             jugadores[i];
 
-        DibujarJugador(
-            jugador
-        );
+        if (
+            modoActual ==
+            PRUEBA_PELOTAS_EMPUJON
+        )
+        {
+            DibujarJugadorPelota(
+                jugador
+            );
+        }
+        else
+        {
+            DibujarJugadorCubo(
+                jugador
+            );
+        }
 
         if (
             mostrarDebug &&
@@ -2140,102 +2821,165 @@ void ZonaPruebas::Dibujar() const
 
 
     //==================================================
-    // HUD DEL MINIJUEGO
+    // SELECTOR DE PROTOTIPOS
     //==================================================
 
-    DrawText(
-        "PRUEBA MINIJUEGO: COLOR SEGURO",
-        25,
-        25,
-        28,
-        BLACK
-    );
-
-    Color colorSeguro =
-        ObtenerColorArcoiris(
-            indicePlataformaSegura
-        );
-
     DrawRectangle(
-        25,
-        68,
-        300,
-        55,
+        15,
+        15,
+        390,
+        118,
         Fade(
             BLACK,
-            0.65f
+            0.62f
         )
     );
 
-    DrawRectangle(
-        35,
-        78,
-        35,
-        35,
-        colorSeguro
-    );
-
-    DrawRectangleLines(
-        35,
-        78,
-        35,
-        35,
+    DrawText(
+        "ZONA DE PRUEBAS",
+        25,
+        25,
+        24,
         RAYWHITE
     );
 
     DrawText(
-        NombreColorPlataforma(
-            indicePlataformaSegura
-        ),
-        85,
-        83,
+        "1 Principal   2 Color seguro   3 Pelotas",
         25,
-        RAYWHITE
+        58,
+        18,
+        LIGHTGRAY
+    );
+
+    DrawText(
+        NombreModoPrueba(
+            modoActual
+        ),
+        25,
+        88,
+        20,
+        GOLD
     );
 
 
+    //==================================================
+    // HUD PARTICULAR DE CADA PROTOTIPO
+    //==================================================
+
     if (
-        faseMinijuego ==
-        FASE_ELEGIR_PLATAFORMA
+        modoActual ==
+        PRUEBA_ZONA_PRINCIPAL
     )
     {
-        int segundos =
-            (int)ceilf(
-                tiempoFase
+        DrawText(
+            "Zona libre para probar movimiento, saltos y colisiones",
+            25,
+            150,
+            20,
+            BLACK
+        );
+    }
+    else if (
+        modoActual ==
+        PRUEBA_COLOR_SEGURO
+    )
+    {
+        Color colorSeguro =
+            ObtenerColorArcoiris(
+                indicePlataformaSegura
             );
+
+        DrawRectangle(
+            25,
+            150,
+            310,
+            55,
+            Fade(
+                BLACK,
+                0.65f
+            )
+        );
+
+        DrawRectangle(
+            35,
+            160,
+            35,
+            35,
+            colorSeguro
+        );
+
+        DrawText(
+            NombreColorPlataforma(
+                indicePlataformaSegura
+            ),
+            85,
+            165,
+            25,
+            RAYWHITE
+        );
+
+        if (
+            faseMinijuego ==
+            FASE_ELEGIR_PLATAFORMA
+        )
+        {
+            int segundos =
+                (int)ceilf(
+                    tiempoFase
+                );
+
+            DrawText(
+                TextFormat(
+                    "CAEN EN: %d",
+                    segundos
+                ),
+                25,
+                218,
+                22,
+                BLACK
+            );
+        }
+        else
+        {
+            DrawText(
+                "SOLO QUEDA EL COLOR DE LA TV!",
+                25,
+                218,
+                22,
+                RED
+            );
+        }
 
         DrawText(
             TextFormat(
-                "CAEN EN: %d",
-                segundos
+                "RONDA: %d",
+                numeroRonda
             ),
             25,
-            138,
-            24,
+            248,
+            20,
             BLACK
         );
     }
     else
     {
         DrawText(
-            "SOLO QUEDA EL COLOR DE LA TV!",
+            "CHOCA CONTRA OTRA PELOTA PARA EMPUJARLA",
             25,
-            138,
-            24,
-            RED
+            150,
+            20,
+            BLACK
+        );
+
+        DrawText(
+            "Objetivo del prototipo: tirar rivales de la plataforma",
+            25,
+            180,
+            18,
+            DARKGRAY
         );
     }
 
-    DrawText(
-        TextFormat(
-            "RONDA: %d",
-            numeroRonda
-        ),
-        25,
-        170,
-        20,
-        BLACK
-    );
 
     DrawText(
         TextFormat(
@@ -2243,54 +2987,16 @@ void ZonaPruebas::Dibujar() const
             cantidadJugadoresActivos
         ),
         25,
-        198,
-        20,
-        BLACK
-    );
-
-    DrawText(
-        "R - Reiniciar prueba   F3 - Hitboxes   ESC - Menu",
-        25,
-        GetScreenHeight() - 35,
+        GetScreenHeight() - 68,
         18,
         BLACK
     );
 
-
-    //==================================================
-    // ESTADO DE JUGADORES CAIDOS
-    //==================================================
-
-    int yCaidos =
-        230;
-
-    for (
-        int i = 0;
-        i < MAX_JUGADORES_PRUEBA;
-        i++
-    )
-    {
-        const JugadorPrueba& jugador =
-            jugadores[i];
-
-        if (
-            jugador.activo &&
-            jugador.cayendo
-        )
-        {
-            DrawText(
-                TextFormat(
-                    "P%d CAYO - vuelve en la proxima ronda",
-                    jugador.numero
-                ),
-                25,
-                yCaidos,
-                18,
-                jugador.color
-            );
-
-            yCaidos +=
-                24;
-        }
-    }
+    DrawText(
+        "R - Reiniciar   F3 - Hitboxes   ESC - Menu",
+        25,
+        GetScreenHeight() - 38,
+        18,
+        BLACK
+    );
 }

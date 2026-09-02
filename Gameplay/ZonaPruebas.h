@@ -4,9 +4,17 @@
 #include "Core/ConfiguracionJuego.h"
 
 
-const int MAX_BLOQUES_PRUEBA = 7;
+const int MAX_BLOQUES_PRUEBA = 8;
 const int MAX_JUGADORES_PRUEBA = 4;
 const int MAX_PARTICULAS_TIERRA = 160;
+
+
+enum ModoZonaPruebas
+{
+    PRUEBA_ZONA_PRINCIPAL = 1,
+    PRUEBA_COLOR_SEGURO = 2,
+    PRUEBA_PELOTAS_EMPUJON = 3
+};
 
 
 enum FaseMinijuegoColor
@@ -71,6 +79,7 @@ struct JugadorPrueba
     Vector3 posicion{};
     Vector3 posicionSpawn{};
     Vector3 velocidad{};
+    Vector3 empuje{};
 
     Vector3 tamano =
     {
@@ -88,11 +97,16 @@ struct JugadorPrueba
 
     float tiempoRespawn = 0.0f;
     float duracionRespawn = 1.2f;
+
+    float cooldownChoque = 0.0f;
 };
 
 
 struct ZonaPruebas
 {
+    ModoZonaPruebas modoActual =
+        PRUEBA_ZONA_PRINCIPAL;
+
     JugadorPrueba jugadores[MAX_JUGADORES_PRUEBA];
     int cantidadJugadoresActivos = 0;
 
@@ -120,6 +134,10 @@ struct ZonaPruebas
 
     void Inicializar(
         ModoTeclado modoTeclado
+    );
+
+    void CambiarModo(
+        ModoZonaPruebas nuevoModo
     );
 
     void Actualizar(
