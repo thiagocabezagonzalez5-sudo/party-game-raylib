@@ -21,7 +21,7 @@ static const float FIN_ZONA_RECOGIDA_67 = 0.88f;
 static const float X_INICIO_CINTA_67 = -5.6f;
 static const float LARGO_CINTA_67 = 7.4f;
 static const float X_JUGADOR_67 = 2.35f;
-static const float X_MESA_67 = 4.55f;
+static const float X_MESA_67 = 2.70f;
 
 static const float Z_CARRIL_SUPERIOR_67 = -1.55f;
 static const float Z_CARRIL_INFERIOR_67 = 1.55f;
@@ -121,8 +121,8 @@ static bool NombreEsIdle67(const char* nombre)
 static Color ObtenerColorEquipo67(int equipo)
 {
     return equipo == 0
-        ? Color{ 235, 142, 48, 255 }
-        : Color{ 65, 157, 232, 255 };
+        ? Color{ 238, 55, 66, 255 }
+        : Color{ 40, 159, 224, 255 };
 }
 
 
@@ -251,8 +251,8 @@ static void AsegurarVistasEquipo67(
     Minijuego67& minijuego
 )
 {
-    int ancho = GetScreenWidth();
-    int alto = GetScreenHeight() / 2;
+    int ancho = GetScreenWidth() / 2;
+    int alto = GetScreenHeight();
 
     if (ancho <= 0 || alto <= 0)
     {
@@ -696,73 +696,68 @@ static void DibujarMesa67(
     Color colorEquipo
 )
 {
-    Color colorMesa =
+    Color colorBase =
         tiempoCompleta > 0.0f
-        ? Color{ 76, 183, 97, 255 }
-        : Color{ 126, 77, 43, 255 };
+        ? Color{ 72, 188, 99, 255 }
+        : Color{ 48, 51, 58, 255 };
 
-    DrawCube(
-        { X_MESA_67, 0.80f, 0.0f },
-        1.95f,
-        0.22f,
-        3.25f,
-        colorMesa
+    // Plataforma central de armado: queda entre los dos
+    // jugadores del equipo, como en el boceto de referencia.
+    DrawCylinder(
+        { X_MESA_67, 0.13f, 0.0f },
+        1.18f,
+        1.18f,
+        0.26f,
+        32,
+        Color{ 24, 26, 31, 255 }
     );
 
-    DrawCubeWires(
-        { X_MESA_67, 0.80f, 0.0f },
-        1.95f,
-        0.22f,
-        3.25f,
-        BLACK
+    DrawCylinder(
+        { X_MESA_67, 0.30f, 0.0f },
+        1.00f,
+        1.00f,
+        0.12f,
+        32,
+        colorBase
     );
 
-    for (int ladoX = -1; ladoX <= 1; ladoX += 2)
-    {
-        for (int ladoZ = -1; ladoZ <= 1; ladoZ += 2)
-        {
-            DrawCube(
-                {
-                    X_MESA_67 + ladoX * 0.70f,
-                    0.36f,
-                    ladoZ * 1.18f
-                },
-                0.18f,
-                0.78f,
-                0.18f,
-                Color{ 78, 48, 29, 255 }
-            );
-        }
-    }
-
-    DrawCube(
-        { X_MESA_67, 1.02f, 0.0f },
-        1.68f,
-        0.08f,
-        2.92f,
-        Fade(colorEquipo, 0.28f)
+    DrawCylinder(
+        { X_MESA_67, 0.39f, 0.0f },
+        0.84f,
+        0.84f,
+        0.05f,
+        32,
+        Fade(colorEquipo, 0.58f)
     );
 
-    if (
-        estado == MESA_67_CON_6 ||
+    // Marca tenue 67 incluso cuando la plataforma esta vacia.
+    DibujarNumero3D67(
+        6,
+        { X_MESA_67 - 0.34f, 0.82f, 0.0f },
+        0.47f,
+        estado == MESA_67_VACIA
+        ? Fade(RAYWHITE, 0.28f)
+        : ORANGE
+    );
+
+    DibujarNumero3D67(
+        7,
+        { X_MESA_67 + 0.34f, 0.82f, 0.0f },
+        0.47f,
         estado == MESA_67_COMPLETA
-    )
-    {
-        DibujarNumero3D67(
-            6,
-            { X_MESA_67 - 0.38f, 1.48f, 0.0f },
-            0.74f,
-            ORANGE
-        );
-    }
+        ? SKYBLUE
+        : Fade(RAYWHITE, 0.28f)
+    );
 
     if (estado == MESA_67_COMPLETA)
     {
-        DibujarNumero3D67(
-            7,
-            { X_MESA_67 + 0.38f, 1.48f, 0.0f },
-            0.74f,
-            SKYBLUE
+        DrawCylinder(
+            { X_MESA_67, 0.47f, 0.0f },
+            0.92f,
+            0.92f,
+            0.04f,
+            32,
+            Fade(LIME, 0.48f)
         );
     }
 }
@@ -872,40 +867,69 @@ static void DibujarFabricaEquipo67(
 
     DrawPlane(
         { 0.0f, -0.31f, 0.0f },
-        { 17.5f, 9.5f },
-        Color{ 101, 103, 107, 255 }
+        { 18.0f, 10.0f },
+        equipo == 0
+        ? Color{ 79, 45, 48, 255 }
+        : Color{ 38, 61, 77, 255 }
     );
 
+    // Pared posterior neutra con una franja del color del equipo.
     DrawCube(
-        { 0.0f, 2.45f, -4.35f },
-        16.5f,
+        { 0.0f, 2.45f, -4.45f },
+        16.8f,
         5.5f,
         0.25f,
-        Color{ 76, 83, 92, 255 }
+        Color{ 66, 72, 80, 255 }
     );
 
     DrawCube(
-        { -7.2f, 2.45f, 0.0f },
+        { 0.0f, 4.65f, -4.28f },
+        16.2f,
+        0.55f,
+        0.10f,
+        Fade(colorEquipo, 0.88f)
+    );
+
+    DrawCube(
+        { -7.35f, 2.45f, 0.0f },
         0.35f,
         5.5f,
-        8.6f,
-        Color{ 65, 71, 79, 255 }
+        8.8f,
+        Color{ 57, 63, 70, 255 }
+    );
+
+    // Dos paneles grandes ayudan a separar visualmente el
+    // carril del 6 y el carril del 7.
+    DrawCube(
+        { -1.15f, 0.02f, Z_CARRIL_SUPERIOR_67 },
+        11.8f,
+        0.05f,
+        2.10f,
+        Fade(colorEquipo, 0.16f)
+    );
+
+    DrawCube(
+        { -1.15f, 0.02f, Z_CARRIL_INFERIOR_67 },
+        11.8f,
+        0.05f,
+        2.10f,
+        Fade(colorEquipo, 0.16f)
     );
 
     for (int i = 0; i < 5; i++)
     {
         DrawCube(
-            { -5.8f + i * 2.85f, 4.02f, -4.18f },
+            { -5.8f + i * 2.85f, 3.92f, -4.18f },
             1.45f,
-            1.18f,
+            1.10f,
             0.08f,
-            Fade(colorEquipo, 0.70f)
+            Fade(colorEquipo, 0.52f)
         );
 
         DrawCubeWires(
-            { -5.8f + i * 2.85f, 4.02f, -4.18f },
+            { -5.8f + i * 2.85f, 3.92f, -4.18f },
             1.45f,
-            1.18f,
+            1.10f,
             0.08f,
             BLACK
         );
@@ -914,21 +938,13 @@ static void DibujarFabricaEquipo67(
     for (int i = 0; i < 4; i++)
     {
         DrawCube(
-            { -5.8f + i * 3.8f, 2.2f, -4.05f },
-            0.32f,
-            4.3f,
-            0.32f,
-            Color{ 51, 56, 63, 255 }
+            { -5.8f + i * 3.8f, 2.1f, -4.05f },
+            0.30f,
+            4.1f,
+            0.30f,
+            Color{ 49, 54, 61, 255 }
         );
     }
-
-    DrawCube(
-        { 5.9f, 3.15f, -4.02f },
-        2.2f,
-        0.22f,
-        0.18f,
-        colorEquipo
-    );
 }
 
 
@@ -974,40 +990,43 @@ static void DibujarHudEquipo67(
         minijuego.equipos[equipo];
 
     DrawRectangle(
-        14,
         12,
-        ancho - 28,
-        58,
-        Fade(BLACK, 0.72f)
+        10,
+        ancho - 24,
+        82,
+        Fade(BLACK, 0.74f)
     );
 
     DrawRectangle(
-        14,
         12,
+        10,
         8,
-        58,
+        82,
         colorEquipo
     );
 
     DrawText(
         TextFormat("EQUIPO %d", equipo + 1),
-        32,
-        22,
-        24,
+        30,
+        18,
+        25,
         RAYWHITE
     );
 
     DrawText(
-        TextFormat("PUNTOS: %d", estadoEquipo.puntos),
-        ancho / 2 - 65,
-        22,
-        24,
+        TextFormat("PUNTOS %d", estadoEquipo.puntos),
+        30,
+        52,
+        19,
         LIME
     );
 
+    const char* textoTiempo =
+        TextFormat("%.1f s", minijuego.tiempoPartida);
+
     DrawText(
-        TextFormat("TIEMPO: %.1f", minijuego.tiempoPartida),
-        ancho - 178,
+        textoTiempo,
+        ancho - MeasureText(textoTiempo, 22) - 24,
         22,
         22,
         minijuego.tiempoPartida <= 7.0f
@@ -1020,11 +1039,154 @@ static void DibujarHudEquipo67(
 
     DrawText(
         textoMesa,
-        32,
-        48,
-        15,
+        ancho - MeasureText(textoMesa, 14) - 24,
+        56,
+        14,
         LIGHTGRAY
     );
+
+    int indiceRol6 = -1;
+    int indiceRol7 = -1;
+    int indiceUnico = -1;
+
+    for (int i = 0; i < cantidadMaxima; i++)
+    {
+        if (
+            minijuego.equipoPorJugador[i] != equipo ||
+            !participantes[i].activo ||
+            !participantes[i].conectado
+        )
+        {
+            continue;
+        }
+
+        indiceUnico = i;
+
+        if (
+            minijuego.estadosJugadores[i].tipoPieza ==
+            PIEZA_NUMERO_6
+        )
+        {
+            indiceRol6 = i;
+        }
+        else
+        {
+            indiceRol7 = i;
+        }
+    }
+
+    if (minijuego.cantidadJugadoresEquipo[equipo] == 1)
+    {
+        indiceRol6 = indiceUnico;
+        indiceRol7 = -1;
+    }
+
+    int anchoTarjeta = ancho < 640 ? 185 : 215;
+    int xTarjeta = ancho - anchoTarjeta - 18;
+
+    auto DibujarTarjetaRol =
+        [&](int indiceJugador, int numero, int y)
+        {
+            if (indiceJugador < 0)
+            {
+                return;
+            }
+
+            const EstadoJugador67& estado =
+                minijuego.estadosJugadores[indiceJugador];
+
+            DrawRectangle(
+                xTarjeta,
+                y,
+                anchoTarjeta,
+                62,
+                Fade(BLACK, 0.80f)
+            );
+
+            DrawRectangleLinesEx(
+                Rectangle{
+                    (float)xTarjeta,
+                    (float)y,
+                    (float)anchoTarjeta,
+                    62.0f
+                },
+                2.0f,
+                participantes[indiceJugador].color
+            );
+
+            DrawText(
+                TextFormat(
+                    "J%d  ->  %d",
+                    participantes[indiceJugador].numeroJugador,
+                    numero
+                ),
+                xTarjeta + 9,
+                y + 7,
+                19,
+                numero == 6 ? ORANGE : SKYBLUE
+            );
+
+            const char* accion =
+                estado.tiempoStun > 0.0f
+                ? "FALLO"
+                : (
+                    estado.llevaPieza
+                    ? (
+                        estado.mirandoMesa
+                        ? "COLOCAR"
+                        : "GIRANDO"
+                    )
+                    : "AGARRAR"
+                );
+
+            DrawText(
+                TextFormat(
+                    "[%s] %s",
+                    ObtenerTextoBotonPrincipal(
+                        participantes[indiceJugador]
+                    ),
+                    accion
+                ),
+                xTarjeta + 9,
+                y + 36,
+                14,
+                estado.tiempoStun > 0.0f
+                ? RED
+                : RAYWHITE
+            );
+        };
+
+    if (minijuego.cantidadJugadoresEquipo[equipo] == 1)
+    {
+        if (indiceUnico >= 0)
+        {
+            int numeroActual =
+                minijuego.estadosJugadores[indiceUnico].tipoPieza ==
+                PIEZA_NUMERO_6
+                ? 6
+                : 7;
+
+            DibujarTarjetaRol(
+                indiceUnico,
+                numeroActual,
+                alto / 2 - 31
+            );
+        }
+    }
+    else
+    {
+        DibujarTarjetaRol(
+            indiceRol6,
+            6,
+            alto / 2 - 155
+        );
+
+        DibujarTarjetaRol(
+            indiceRol7,
+            7,
+            alto / 2 + 93
+        );
+    }
 
     if (estadoEquipo.tiempoFeedback > 0.0f)
     {
@@ -1033,132 +1195,22 @@ static void DibujarHudEquipo67(
             ? "BIEN!"
             : "ORDEN INCORRECTO";
 
-        DrawText(
-            textoFeedback,
-            ancho / 2 -
-                MeasureText(textoFeedback, 22) / 2,
-            80,
-            22,
-            estadoEquipo.ultimoAcierto
-            ? LIME
-            : RED
-        );
-    }
-
-    int indicesEquipo[2] = { -1, -1 };
-    int cantidadEquipo = 0;
-
-    for (int i = 0; i < cantidadMaxima; i++)
-    {
-        if (
-            minijuego.equipoPorJugador[i] == equipo &&
-            participantes[i].activo &&
-            participantes[i].conectado &&
-            cantidadEquipo < 2
-        )
-        {
-            indicesEquipo[cantidadEquipo] = i;
-            cantidadEquipo++;
-        }
-    }
-
-    if (cantidadEquipo <= 0)
-    {
-        return;
-    }
-
-    int separacion = 8;
-    int margen = 14;
-    int anchoTarjeta =
-        cantidadEquipo == 1
-        ? 360
-        : (ancho - margen * 2 - separacion) / 2;
-
-    if (anchoTarjeta > 390)
-    {
-        anchoTarjeta = 390;
-    }
-
-    int anchoTotal =
-        anchoTarjeta * cantidadEquipo +
-        separacion * (cantidadEquipo - 1);
-
-    int xInicial =
-        (ancho - anchoTotal) / 2;
-
-    int yTarjeta = alto - 64;
-
-    for (int orden = 0; orden < cantidadEquipo; orden++)
-    {
-        int indiceJugador = indicesEquipo[orden];
-
-        if (indiceJugador < 0)
-        {
-            continue;
-        }
-
-        const EstadoJugador67& estado =
-            minijuego.estadosJugadores[indiceJugador];
-
-        int x =
-            xInicial +
-            orden * (anchoTarjeta + separacion);
-
         DrawRectangle(
-            x,
-            yTarjeta,
-            anchoTarjeta,
-            50,
+            18,
+            alto / 2 - 28,
+            MeasureText(textoFeedback, 20) + 24,
+            42,
             Fade(BLACK, 0.78f)
         );
 
-        DrawRectangleLinesEx(
-            Rectangle{
-                (float)x,
-                (float)yTarjeta,
-                (float)anchoTarjeta,
-                50.0f
-            },
-            2.0f,
-            participantes[indiceJugador].color
-        );
-
-        const char* estadoTexto =
-            estado.tiempoStun > 0.0f
-            ? "FALLO"
-            : (
-                estado.llevaPieza
-                ? (
-                    estado.mirandoMesa
-                    ? "COLOCAR"
-                    : "GIRANDO"
-                )
-                : "AGARRAR"
-            );
-
         DrawText(
-            TextFormat(
-                "J%d  NUM %d  [%s]",
-                participantes[indiceJugador].numeroJugador,
-                estado.tipoPieza == PIEZA_NUMERO_6 ? 6 : 7,
-                ObtenerTextoBotonPrincipal(
-                    participantes[indiceJugador]
-                )
-            ),
-            x + 8,
-            yTarjeta + 6,
-            15,
-            RAYWHITE
-        );
-
-        DrawText(
-            estadoTexto,
-            x + 8,
-            yTarjeta + 27,
-            15,
-            estado.tiempoStun > 0.0f
-            ? RED
-            : SKYBLUE
+            textoFeedback,
+            30,
+            alto / 2 - 18,
+            20,
+            estadoEquipo.ultimoAcierto
+            ? LIME
+            : RED
         );
     }
 }
@@ -1179,8 +1231,8 @@ static void DibujarVistaEquipo67(
 
     ClearBackground(
         equipo == 0
-        ? Color{ 112, 148, 169, 255 }
-        : Color{ 102, 141, 171, 255 }
+        ? Color{ 95, 28, 34, 255 }
+        : Color{ 21, 72, 103, 255 }
     );
 
     BeginMode3D(
@@ -1285,16 +1337,18 @@ void Minijuego67::Inicializar()
     for (int equipo = 0; equipo < 2; equipo++)
     {
         camarasEquipo[equipo].position =
-            { 10.4f, 7.0f, 10.6f };
+            { 7.6f, 10.8f, 11.8f };
 
         camarasEquipo[equipo].target =
-            { 0.0f, 0.82f, 0.0f };
+            { -1.15f, 0.55f, 0.0f };
 
         camarasEquipo[equipo].up =
             { 0.0f, 1.0f, 0.0f };
 
-        camarasEquipo[equipo].fovy = 52.0f;
-        camarasEquipo[equipo].projection = CAMERA_PERSPECTIVE;
+        // La vista ortografica conserva el esquema del boceto:
+        // dos cintas horizontales y la plataforma 67 al centro.
+        camarasEquipo[equipo].fovy = 11.8f;
+        camarasEquipo[equipo].projection = CAMERA_ORTHOGRAPHIC;
     }
 
     AsegurarVistasEquipo67(*this);
@@ -1441,6 +1495,18 @@ void Minijuego67::PrepararEquipos(
             indicesActivos[cantidadIndices] = i;
             cantidadIndices++;
         }
+    }
+
+    // Sorteo Fisher-Yates: cada vez que comienza la partida
+    // se vuelven a formar los equipos y tambien se sortean
+    // los roles 6 y 7 dentro de cada pareja.
+    for (int i = cantidadIndices - 1; i > 0; i--)
+    {
+        int otroIndice = GetRandomValue(0, i);
+
+        int temporal = indicesActivos[i];
+        indicesActivos[i] = indicesActivos[otroIndice];
+        indicesActivos[otroIndice] = temporal;
     }
 
     if (cantidadActivos == 4)
@@ -1848,7 +1914,7 @@ void Minijuego67::Dibujar(
 
     int anchoPantalla = GetScreenWidth();
     int altoPantalla = GetScreenHeight();
-    int altoMitad = altoPantalla / 2;
+    int anchoMitad = anchoPantalla / 2;
 
     Rectangle origen =
     {
@@ -1858,26 +1924,26 @@ void Minijuego67::Dibujar(
         -(float)altoVistaEquipos
     };
 
-    Rectangle destinoSuperior =
+    Rectangle destinoIzquierdo =
     {
         0.0f,
         0.0f,
-        (float)anchoPantalla,
-        (float)altoMitad
+        (float)anchoMitad,
+        (float)altoPantalla
     };
 
-    Rectangle destinoInferior =
+    Rectangle destinoDerecho =
     {
+        (float)anchoMitad,
         0.0f,
-        (float)altoMitad,
-        (float)anchoPantalla,
-        (float)(altoPantalla - altoMitad)
+        (float)(anchoPantalla - anchoMitad),
+        (float)altoPantalla
     };
 
     DrawTexturePro(
         vistasEquipo[0].texture,
         origen,
-        destinoSuperior,
+        destinoIzquierdo,
         { 0.0f, 0.0f },
         0.0f,
         WHITE
@@ -1886,39 +1952,39 @@ void Minijuego67::Dibujar(
     DrawTexturePro(
         vistasEquipo[1].texture,
         origen,
-        destinoInferior,
+        destinoDerecho,
         { 0.0f, 0.0f },
         0.0f,
         WHITE
     );
 
     DrawRectangle(
+        anchoMitad - 3,
         0,
-        altoMitad - 3,
-        anchoPantalla,
         6,
+        altoPantalla,
         BLACK
     );
 
     DrawRectangle(
-        anchoPantalla / 2 - 58,
-        altoMitad - 18,
-        116,
-        36,
+        anchoMitad - 44,
+        altoPantalla / 2 - 24,
+        88,
+        48,
         Fade(BLACK, 0.90f)
     );
 
     const char* textoVersus =
         jugadoresEnPartida == 4
-        ? "2 VS 2"
-        : "1 VS 1";
+        ? "VS"
+        : "1V1";
 
     DrawText(
         textoVersus,
-        anchoPantalla / 2 -
-            MeasureText(textoVersus, 20) / 2,
-        altoMitad - 10,
-        20,
+        anchoMitad -
+            MeasureText(textoVersus, 22) / 2,
+        altoPantalla / 2 - 11,
+        22,
         RAYWHITE
     );
 
