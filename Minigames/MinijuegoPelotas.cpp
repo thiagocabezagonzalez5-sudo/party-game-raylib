@@ -9,6 +9,60 @@ static const float DURACION_PREPARACION_PELOTAS = 3.0f;
 static const float DURACION_PARTIDA_PELOTAS = 60.0f;
 static const float DURACION_TEXTO_YA_PELOTAS = 0.75f;
 
+// Fisica propia de este minijuego.
+// La utilidad base conserva su comportamiento general,
+// pero Pelotas limita aqui su aceleracion y velocidad final.
+static const float VELOCIDAD_MAXIMA_PELOTAS = 9.0f;
+static const float ACELERACION_MAXIMA_PELOTAS = 6.0f;
+
+
+static void LimitarMovimientoPelota(
+    JugadorPrueba& jugador,
+    float velocidadAnteriorX,
+    float velocidadAnteriorZ,
+    float deltaTime
+)
+{
+    float velocidadAnterior =
+        sqrtf(
+            velocidadAnteriorX * velocidadAnteriorX +
+            velocidadAnteriorZ * velocidadAnteriorZ
+        );
+
+    float velocidadActual =
+        sqrtf(
+            jugador.velocidad.x * jugador.velocidad.x +
+            jugador.velocidad.z * jugador.velocidad.z
+        );
+
+    if (velocidadActual <= 0.001f)
+    {
+        return;
+    }
+
+    float limitePorAceleracion =
+        velocidadAnterior +
+        ACELERACION_MAXIMA_PELOTAS * deltaTime;
+
+    float limiteFinal =
+        limitePorAceleracion < VELOCIDAD_MAXIMA_PELOTAS
+        ? limitePorAceleracion
+        : VELOCIDAD_MAXIMA_PELOTAS;
+
+    // Si la utilidad base intento acelerar mas rapido de lo
+    // permitido para este minijuego, conservamos la direccion
+    // pero reducimos la magnitud de la velocidad.
+    if (velocidadActual > limiteFinal)
+    {
+        float factor =
+            limiteFinal /
+            velocidadActual;
+
+        jugador.velocidad.x *= factor;
+        jugador.velocidad.z *= factor;
+    }
+}
+
 
 static void InicializarResultadoPelotas(
     MinijuegoPelotas& minijuego,
@@ -215,7 +269,7 @@ void MinijuegoPelotas::ConfigurarJugadores(
         };
 
         jugadores[i].velocidadMovimiento =
-            16.0f;
+            VELOCIDAD_MAXIMA_PELOTAS;
 
         jugadores[i].fuerzaSalto =
             0.0f;
@@ -371,6 +425,12 @@ void MinijuegoPelotas::Actualizar(
                 participantes[i]
             );
 
+        float velocidadAnteriorX =
+            jugador.velocidad.x;
+
+        float velocidadAnteriorZ =
+            jugador.velocidad.z;
+
         ActualizarJugadorPrueba(
             jugador,
             entrada,
@@ -381,6 +441,13 @@ void MinijuegoPelotas::Actualizar(
             false,
             true,
             false,
+            deltaTime
+        );
+
+        LimitarMovimientoPelota(
+            jugador,
+            velocidadAnteriorX,
+            velocidadAnteriorZ,
             deltaTime
         );
     }
@@ -602,9 +669,10 @@ void MinijuegoPelotas::Dibujar(
 
         DrawText(
             TextFormat(
-                "J%d VELOCIDAD: %.1f",
+                "J%d VELOCIDAD: %.1f / %.1f",
                 participantes[i].numeroJugador,
-                velocidad
+                velocidad,
+                VELOCIDAD_MAXIMA_PELOTAS
             ),
             25,
             posicionY,
