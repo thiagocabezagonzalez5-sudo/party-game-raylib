@@ -13,60 +13,30 @@ static Color ObtenerColorPlataforma(
     int indice
 )
 {
-    // Distribucion inspirada en la referencia:
-    // centro blanco y seis colores alrededor.
+    // Centro blanco y seis colores alrededor,
+    // siguiendo la distribucion visual de la referencia.
     switch (indice)
     {
         case 0:
             return RAYWHITE;
 
         case 1:
-            return Color{
-                242,
-                214,
-                74,
-                255
-            };
+            return Color{ 242, 214, 74, 255 };
 
         case 2:
-            return Color{
-                226,
-                58,
-                55,
-                255
-            };
+            return Color{ 226, 58, 55, 255 };
 
         case 3:
-            return Color{
-                74,
-                184,
-                92,
-                255
-            };
+            return Color{ 74, 184, 92, 255 };
 
         case 4:
-            return Color{
-                228,
-                126,
-                177,
-                255
-            };
+            return Color{ 228, 126, 177, 255 };
 
         case 5:
-            return Color{
-                78,
-                92,
-                201,
-                255
-            };
+            return Color{ 78, 92, 201, 255 };
 
         case 6:
-            return Color{
-                71,
-                189,
-                205,
-                255
-            };
+            return Color{ 71, 189, 205, 255 };
     }
 
     return WHITE;
@@ -133,8 +103,6 @@ static void DibujarPlataformaHexagonal(
     Vector3 verticesSuperiores[6]{};
     Vector3 verticesInferiores[6]{};
 
-    // 30 grados hace que el hexagono tenga una punta
-    // hacia adelante/atras y encaje como en la referencia.
     for (int i = 0; i < 6; i++)
     {
         float angulo =
@@ -171,6 +139,13 @@ static void DibujarPlataformaHexagonal(
         plataforma.posicion.z
     };
 
+    Vector3 centroInferior =
+    {
+        plataforma.posicion.x,
+        plataforma.posicion.y - MITAD_ALTURA,
+        plataforma.posicion.z
+    };
+
     Color colorLateral =
         OscurecerColorPlataforma(
             plataforma.color,
@@ -185,16 +160,34 @@ static void DibujarPlataformaHexagonal(
         255
     };
 
+    Color colorInferior =
+        OscurecerColorPlataforma(
+            plataforma.color,
+            0.20f
+        );
+
     for (int i = 0; i < 6; i++)
     {
         int siguiente =
             (i + 1) % 6;
 
+        // IMPORTANTE:
+        // El orden de los vertices deja la normal mirando
+        // hacia arriba. Antes estaban invertidos y raylib
+        // ocultaba la superficie por backface culling.
         DrawTriangle3D(
             centroSuperior,
-            verticesSuperiores[i],
             verticesSuperiores[siguiente],
+            verticesSuperiores[i],
             plataforma.color
+        );
+
+        // Cara inferior, visible cuando una plataforma cae.
+        DrawTriangle3D(
+            centroInferior,
+            verticesInferiores[i],
+            verticesInferiores[siguiente],
+            colorInferior
         );
 
         Color colorCara =
@@ -202,9 +195,10 @@ static void DibujarPlataformaHexagonal(
             ? colorLateral
             : colorLateralAlterno;
 
+        // Dos triangulos con la normal mirando hacia afuera.
         DrawTriangle3D(
             verticesSuperiores[i],
-            verticesInferiores[i],
+            verticesSuperiores[siguiente],
             verticesInferiores[siguiente],
             colorCara
         );
@@ -212,7 +206,7 @@ static void DibujarPlataformaHexagonal(
         DrawTriangle3D(
             verticesSuperiores[i],
             verticesInferiores[siguiente],
-            verticesSuperiores[siguiente],
+            verticesInferiores[i],
             colorCara
         );
 
@@ -511,9 +505,9 @@ void MinijuegoColorSeguro::Inicializar()
     cantidadPlataformas =
         0;
 
-    // Siete hexagonos: uno central y seis vecinos.
-    // La separacion corresponde a un hexagono regular
-    // de radio 2.35 para que queden unidos visualmente.
+    // Siete hexagonos regulares: uno central y seis vecinos.
+    // Radio visual 2.35. Estas distancias hacen que los
+    // lados queden encastrados sin separaciones grandes.
     const float RADIO_HEXAGONO =
         2.35f;
 
@@ -543,7 +537,7 @@ void MinijuegoColorSeguro::Inicializar()
             -DISTANCIA_DIAGONAL_Z
         },
 
-        // Laterales.
+        // Derecha.
         {
             DISTANCIA_HORIZONTAL,
             0.0f,
@@ -562,6 +556,7 @@ void MinijuegoColorSeguro::Inicializar()
             DISTANCIA_DIAGONAL_Z
         },
 
+        // Izquierda.
         {
             -DISTANCIA_HORIZONTAL,
             0.0f,
@@ -581,13 +576,12 @@ void MinijuegoColorSeguro::Inicializar()
             CANTIDAD_PLATAFORMAS_COLOR,
             posiciones[i],
 
-            // La colision sigue usando el sistema AABB
-            // compartido por los prototipos. Estas medidas
-            // forman una zona estable dentro del hexagono
-            // y permiten pasar de una pieza a la siguiente.
+            // El alto vuelve a 0.60f. Con 0.72f los pies
+            // del jugador aparecian dentro del AABB y la
+            // deteccion de aterrizaje nunca se activaba.
             Vector3{
                 4.10f,
-                0.72f,
+                0.60f,
                 3.65f
             },
             ObtenerColorPlataforma(i)
