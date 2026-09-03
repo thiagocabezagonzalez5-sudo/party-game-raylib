@@ -104,7 +104,7 @@ void PruebaModelos::Inicializar()
             -1;
 
         for (
-            unsigned int i = 0;
+            int i = 0;
             animaciones != nullptr &&
             i < cantidadAnimaciones;
             i++
@@ -113,7 +113,7 @@ void PruebaModelos::Inicializar()
             if (NombreEsIdle(animaciones[i].name))
             {
                 indiceAnimacionIdle =
-                    (int)i;
+                    i;
 
                 break;
             }
@@ -422,12 +422,12 @@ void PruebaModelos::Dibujar() const
         DrawText(
             animacionIdleActiva
             ? TextFormat(
-                "Idle activo: %s   Clips: %u",
+                "Idle activo: %s   Clips: %d",
                 animaciones[indiceAnimacionIdle].name,
                 cantidadAnimaciones
             )
             : TextFormat(
-                "Idle no encontrado   Clips: %u",
+                "Idle no encontrado   Clips: %d",
                 cantidadAnimaciones
             ),
             25,
