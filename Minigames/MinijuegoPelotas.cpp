@@ -14,8 +14,8 @@ static const float DURACION_TEXTO_YA_PELOTAS = 0.75f;
 // pero un choque puede lanzarlo temporalmente por encima de ese valor.
 static const float VELOCIDAD_MAXIMA_PELOTAS = 9.0f;
 static const float ACELERACION_MAXIMA_PELOTAS = 6.0f;
-static const float MULTIPLICADOR_EMPUJE_CHOQUE_PELOTAS = 1.65f;
-static const float VELOCIDAD_MAXIMA_LANZAMIENTO_PELOTAS = 15.0f;
+static const float MULTIPLICADOR_EMPUJE_CHOQUE_PELOTAS = 1.40f;
+static const float VELOCIDAD_MAXIMA_LANZAMIENTO_PELOTAS = 13.5f;
 
 // Arena circular. El bloque cuadrado sigue existiendo como soporte
 // vertical interno, pero cada jugador decide si ese suelo esta activo
