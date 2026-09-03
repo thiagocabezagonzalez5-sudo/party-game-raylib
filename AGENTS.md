@@ -91,6 +91,21 @@ Si existe `Docs/Wiki-de-mario-party.txt`, usarlo únicamente como referencia de 
 - Realizar cambios pequeños y verificables; no reescribir todo el proyecto por una función puntual.
 - Si una tarea es demasiado grande, dividirla en etapas y completar una etapa compilable por vez.
 
+## Flujo Git de Codex
+
+- Antes de modificar cualquier archivo, ejecutar `git branch --show-current` y `git status`.
+- Trabajar exclusivamente en la rama `codex-dev`.
+- Si la rama activa es `main`, `master` o cualquier otra, no modificar archivos, no ejecutar `commit` ni `push`, detenerse y avisar al usuario.
+- Nunca modificar directamente `main`, fusionar `codex-dev` con `main`, ejecutar `push` sobre `main`, usar `push --force`, ejecutar `reset --hard` ni eliminar ramas.
+- Después de cada cambio, compilar el proyecto, corregir los errores generados, ejecutar `git diff --check` y mostrar el resumen del diff.
+- Si la compilación y las verificaciones terminan correctamente, se permite crear un commit únicamente con los archivos de la tarea actual y hacer push exclusivamente a `origin/codex-dev`.
+- El mensaje del commit debe describir claramente la funcionalidad implementada.
+- No incluir en el commit `build/`, ejecutables, archivos temporales de pruebas, `Docs/Wiki-de-mario-party.txt` ni cambios locales anteriores no relacionados.
+- Para aislar la tarea de otros cambios preparados, usar una lista explícita de archivos y `git commit --only` cuando sea necesario.
+- Publicar únicamente con `git push origin codex-dev` o `git push origin HEAD` estando en `codex-dev`.
+- Después del push, informar el hash del commit, los archivos incluidos, el resultado de compilación, las pruebas realizadas y el estado final de `git status`.
+- Aunque el cambio funcione, nunca fusionar `codex-dev` con `main`; esa decisión queda reservada al usuario.
+
 ## Comunicación
 
 - Responder y comentar el código en español.
