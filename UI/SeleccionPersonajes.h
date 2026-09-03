@@ -16,6 +16,114 @@ const int MAX_PERSONAJES_SELECCION =
 
 
 //==================================================
+// CONFIRMACION FINAL DE PARTIDA
+//==================================================
+//
+// La seleccion marca a los jugadores como LISTOS al confirmar
+// personaje. Eso no debe iniciar la partida automaticamente:
+// con 2 jugadores listos todavia tiene que existir tiempo para
+// que un tercero o cuarto se una.
+//
+// Esta solicitud exige una NUEVA pulsacion de confirmar despues
+// de que todos los jugadores activos ya estaban listos.
+// Soporta ESPACIO, ENTER y A de cualquier gamepad.
+//==================================================
+
+struct SolicitudInicioSeleccion
+{
+    bool valor = false;
+    bool habilitada = false;
+
+    double tiempoHabilitada = 0.0;
+    double ultimoMomentoPermitido = 0.0;
+
+
+    SolicitudInicioSeleccion& operator=(
+        bool puedeIniciar
+    )
+    {
+        double ahora = GetTime();
+
+        if (!puedeIniciar)
+        {
+            valor = false;
+
+            // Juego.cpp vuelve a validar los jugadores despues de
+            // SeleccionPersonajes::Actualizar(). Para tres jugadores
+            // puede existir una asignacion false seguida de una true
+            // dentro del mismo frame. Este pequeno margen evita que
+            // esa primera asignacion desarme la confirmacion final.
+            if (
+                habilitada &&
+                ahora - ultimoMomentoPermitido > 0.20
+            )
+            {
+                habilitada = false;
+                tiempoHabilitada = 0.0;
+            }
+
+            return *this;
+        }
+
+        ultimoMomentoPermitido =
+            ahora;
+
+        if (!habilitada)
+        {
+            habilitada = true;
+            tiempoHabilitada = ahora;
+            valor = false;
+
+            return *this;
+        }
+
+        // Impide que la misma pulsacion que hizo LISTO al ultimo
+        // jugador tambien arranque la partida en ese mismo frame.
+        if (
+            ahora - tiempoHabilitada < 0.12
+        )
+        {
+            valor = false;
+            return *this;
+        }
+
+        bool confirmar =
+            IsKeyPressed(KEY_SPACE) ||
+            IsKeyPressed(KEY_ENTER);
+
+        for (
+            int gamepad = 0;
+            gamepad < MAX_JUGADORES_SELECCION;
+            gamepad++
+        )
+        {
+            if (
+                IsGamepadAvailable(gamepad) &&
+                IsGamepadButtonPressed(
+                    gamepad,
+                    GAMEPAD_BUTTON_RIGHT_FACE_DOWN
+                )
+            )
+            {
+                confirmar = true;
+            }
+        }
+
+        valor =
+            confirmar;
+
+        return *this;
+    }
+
+
+    operator bool() const
+    {
+        return valor;
+    }
+};
+
+
+//==================================================
 // PERSONAJE
 //==================================================
 
@@ -149,8 +257,7 @@ struct SeleccionPersonajes
     bool todosListos =
         false;
 
-    bool iniciarPartida =
-        false;
+    SolicitudInicioSeleccion iniciarPartida;
 
 
     //------------------------------
