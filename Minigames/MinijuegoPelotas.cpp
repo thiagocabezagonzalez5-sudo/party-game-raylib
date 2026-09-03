@@ -10,10 +10,27 @@ static const float DURACION_PARTIDA_PELOTAS = 60.0f;
 static const float DURACION_TEXTO_YA_PELOTAS = 0.75f;
 
 // Fisica propia de este minijuego.
-// La utilidad base conserva su comportamiento general,
-// pero Pelotas limita aqui su aceleracion y velocidad final.
+// La velocidad que consigue el jugador por movimiento queda limitada,
+// pero un choque puede lanzarlo temporalmente por encima de ese valor.
 static const float VELOCIDAD_MAXIMA_PELOTAS = 9.0f;
 static const float ACELERACION_MAXIMA_PELOTAS = 6.0f;
+static const float MULTIPLICADOR_EMPUJE_CHOQUE_PELOTAS = 1.65f;
+static const float VELOCIDAD_MAXIMA_LANZAMIENTO_PELOTAS = 15.0f;
+
+// Arena circular. El bloque cuadrado sigue existiendo como soporte
+// vertical interno, pero cada jugador decide si ese suelo esta activo
+// segun su posicion respecto del circulo.
+static const float RADIO_ARENA_PELOTAS = 5.25f;
+static const int SEGMENTOS_ARENA_PELOTAS = 48;
+
+
+static float MagnitudHorizontalPelotas(
+    float x,
+    float z
+)
+{
+    return sqrtf(x * x + z * z);
+}
 
 
 static void LimitarMovimientoPelota(
@@ -24,15 +41,15 @@ static void LimitarMovimientoPelota(
 )
 {
     float velocidadAnterior =
-        sqrtf(
-            velocidadAnteriorX * velocidadAnteriorX +
-            velocidadAnteriorZ * velocidadAnteriorZ
+        MagnitudHorizontalPelotas(
+            velocidadAnteriorX,
+            velocidadAnteriorZ
         );
 
     float velocidadActual =
-        sqrtf(
-            jugador.velocidad.x * jugador.velocidad.x +
-            jugador.velocidad.z * jugador.velocidad.z
+        MagnitudHorizontalPelotas(
+            jugador.velocidad.x,
+            jugador.velocidad.z
         );
 
     if (velocidadActual <= 0.001f)
@@ -49,9 +66,6 @@ static void LimitarMovimientoPelota(
         ? limitePorAceleracion
         : VELOCIDAD_MAXIMA_PELOTAS;
 
-    // Si la utilidad base intento acelerar mas rapido de lo
-    // permitido para este minijuego, conservamos la direccion
-    // pero reducimos la magnitud de la velocidad.
     if (velocidadActual > limiteFinal)
     {
         float factor =
@@ -63,6 +77,312 @@ static void LimitarMovimientoPelota(
     }
 }
 
+
+static void AplicarEmpujePendientePelotas(
+    JugadorPrueba& jugador,
+    Vector3 empujePendiente
+)
+{
+    jugador.velocidad.x +=
+        empujePendiente.x;
+
+    jugador.velocidad.z +=
+        empujePendiente.z;
+
+    float velocidad =
+        MagnitudHorizontalPelotas(
+            jugador.velocidad.x,
+            jugador.velocidad.z
+        );
+
+    if (
+        velocidad >
+        VELOCIDAD_MAXIMA_LANZAMIENTO_PELOTAS
+    )
+    {
+        float factor =
+            VELOCIDAD_MAXIMA_LANZAMIENTO_PELOTAS /
+            velocidad;
+
+        jugador.velocidad.x *= factor;
+        jugador.velocidad.z *= factor;
+    }
+}
+
+
+static bool JugadorSobreArenaCircularPelotas(
+    const JugadorPrueba& jugador
+)
+{
+    float distancia =
+        MagnitudHorizontalPelotas(
+            jugador.posicion.x,
+            jugador.posicion.z
+        );
+
+    float margenJugador =
+        jugador.tamano.x * 0.18f;
+
+    return
+        distancia <=
+        RADIO_ARENA_PELOTAS - margenJugador;
+}
+
+
+static void PotenciarEmpujesPelotas(
+    JugadorPrueba jugadores[],
+    const Participante participantes[],
+    int cantidadMaxima
+)
+{
+    for (int i = 0; i < cantidadMaxima; i++)
+    {
+        if (
+            !participantes[i].activo ||
+            !participantes[i].conectado ||
+            jugadores[i].cayendo
+        )
+        {
+            continue;
+        }
+
+        jugadores[i].empuje.x *=
+            MULTIPLICADOR_EMPUJE_CHOQUE_PELOTAS;
+
+        jugadores[i].empuje.z *=
+            MULTIPLICADOR_EMPUJE_CHOQUE_PELOTAS;
+    }
+}
+
+
+//==================================================
+// ARENA DE NIEVE
+//==================================================
+
+static float IrregularidadBordePelotas(
+    int indice
+)
+{
+    float angulo =
+        (2.0f * PI * (float)indice) /
+        (float)SEGMENTOS_ARENA_PELOTAS;
+
+    return
+        1.0f +
+        0.018f * sinf(angulo * 5.0f) +
+        0.012f * cosf(angulo * 9.0f);
+}
+
+
+static Vector3 PuntoCircularPelotas(
+    int indice,
+    float radio,
+    float altura
+)
+{
+    float angulo =
+        (2.0f * PI * (float)indice) /
+        (float)SEGMENTOS_ARENA_PELOTAS;
+
+    float irregularidad =
+        IrregularidadBordePelotas(indice);
+
+    return Vector3
+    {
+        cosf(angulo) * radio * irregularidad,
+        altura,
+        sinf(angulo) * radio * irregularidad
+    };
+}
+
+
+static void DibujarMontanaNievePelotas(
+    bool mostrarDebug
+)
+{
+    const Color nieveSuperior =
+        Color{ 246, 250, 252, 255 };
+
+    const Color nieveSombra =
+        Color{ 207, 225, 235, 255 };
+
+    const Color hieloClaro =
+        Color{ 153, 190, 208, 255 };
+
+    const Color hieloOscuro =
+        Color{ 93, 132, 153, 255 };
+
+    Vector3 centroSuperior =
+        { 0.0f, 0.015f, 0.0f };
+
+    for (
+        int i = 0;
+        i < SEGMENTOS_ARENA_PELOTAS;
+        i++
+    )
+    {
+        int siguiente =
+            (i + 1) %
+            SEGMENTOS_ARENA_PELOTAS;
+
+        Vector3 cimaA =
+            PuntoCircularPelotas(
+                i,
+                RADIO_ARENA_PELOTAS,
+                0.0f
+            );
+
+        Vector3 cimaB =
+            PuntoCircularPelotas(
+                siguiente,
+                RADIO_ARENA_PELOTAS,
+                0.0f
+            );
+
+        Vector3 nieveA =
+            PuntoCircularPelotas(
+                i,
+                RADIO_ARENA_PELOTAS + 0.50f,
+                -0.55f
+            );
+
+        Vector3 nieveB =
+            PuntoCircularPelotas(
+                siguiente,
+                RADIO_ARENA_PELOTAS + 0.50f,
+                -0.55f
+            );
+
+        Vector3 baseA =
+            PuntoCircularPelotas(
+                i,
+                RADIO_ARENA_PELOTAS + 1.15f,
+                -2.10f
+            );
+
+        Vector3 baseB =
+            PuntoCircularPelotas(
+                siguiente,
+                RADIO_ARENA_PELOTAS + 1.15f,
+                -2.10f
+            );
+
+        DrawTriangle3D(
+            centroSuperior,
+            cimaB,
+            cimaA,
+            nieveSuperior
+        );
+
+        DrawTriangle3D(
+            cimaA,
+            cimaB,
+            nieveB,
+            i % 2 == 0
+            ? nieveSuperior
+            : nieveSombra
+        );
+
+        DrawTriangle3D(
+            cimaA,
+            nieveB,
+            nieveA,
+            i % 2 == 0
+            ? nieveSuperior
+            : nieveSombra
+        );
+
+        DrawTriangle3D(
+            nieveA,
+            nieveB,
+            baseB,
+            i % 2 == 0
+            ? hieloClaro
+            : hieloOscuro
+        );
+
+        DrawTriangle3D(
+            nieveA,
+            baseB,
+            baseA,
+            i % 2 == 0
+            ? hieloClaro
+            : hieloOscuro
+        );
+
+        DrawLine3D(
+            cimaA,
+            cimaB,
+            Fade(SKYBLUE, 0.45f)
+        );
+    }
+
+    for (int i = 0; i < 12; i++)
+    {
+        float angulo =
+            (2.0f * PI * (float)i) /
+            12.0f;
+
+        float radio =
+            RADIO_ARENA_PELOTAS + 0.15f;
+
+        Vector3 posicion =
+        {
+            cosf(angulo) * radio,
+            -0.28f,
+            sinf(angulo) * radio
+        };
+
+        DrawSphere(
+            posicion,
+            0.38f + 0.08f * (float)(i % 3),
+            Fade(RAYWHITE, 0.96f)
+        );
+    }
+
+    if (mostrarDebug)
+    {
+        for (
+            int i = 0;
+            i < SEGMENTOS_ARENA_PELOTAS;
+            i++
+        )
+        {
+            int siguiente =
+                (i + 1) %
+                SEGMENTOS_ARENA_PELOTAS;
+
+            float anguloA =
+                (2.0f * PI * (float)i) /
+                (float)SEGMENTOS_ARENA_PELOTAS;
+
+            float anguloB =
+                (2.0f * PI * (float)siguiente) /
+                (float)SEGMENTOS_ARENA_PELOTAS;
+
+            DrawLine3D(
+                Vector3
+                {
+                    cosf(anguloA) * RADIO_ARENA_PELOTAS,
+                    0.07f,
+                    sinf(anguloA) * RADIO_ARENA_PELOTAS
+                },
+                Vector3
+                {
+                    cosf(anguloB) * RADIO_ARENA_PELOTAS,
+                    0.07f,
+                    sinf(anguloB) * RADIO_ARENA_PELOTAS
+                },
+                RED
+            );
+        }
+    }
+}
+
+
+//==================================================
+// RESULTADO
+//==================================================
 
 static void InicializarResultadoPelotas(
     MinijuegoPelotas& minijuego,
@@ -127,11 +447,18 @@ static void FinalizarResultadoPelotas(
         : DESENLACE_EMPATE;
 
     int tiempoFinalMs =
-        (int)std::lround(minijuego.tiempoJugado * 1000.0f);
+        (int)std::lround(
+            minijuego.tiempoJugado *
+            1000.0f
+        );
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        if (!minijuego.resultado.participantes[i].participo)
+        if (
+            !minijuego.resultado
+                .participantes[i]
+                .participo
+        )
         {
             continue;
         }
@@ -151,13 +478,17 @@ static void FinalizarResultadoPelotas(
 
         resultadoJugador.posicionFinal =
             estadoJugador.posicionFinal;
+
         resultadoJugador.numeroEquipo = -1;
+
         resultadoJugador.puntuacionMinijuego =
             estadoJugador.tiempoSobrevividoMs;
+
         resultadoJugador.puntosObtenidos = 0;
     }
 
-    minijuego.fase = FASE_PELOTAS_TERMINADO;
+    minijuego.fase =
+        FASE_PELOTAS_TERMINADO;
 }
 
 
@@ -168,12 +499,20 @@ static void FinalizarResultadoPelotas(
 void MinijuegoPelotas::Inicializar()
 {
     resultado = {};
-    resultado.formato = FORMATO_MINIJUEGO_INDIVIDUAL;
+    resultado.formato =
+        FORMATO_MINIJUEGO_INDIVIDUAL;
 
-    fase = FASE_PELOTAS_PREPARACION;
-    tiempoPreparacion = DURACION_PREPARACION_PELOTAS;
-    tiempoRestante = DURACION_PARTIDA_PELOTAS;
-    tiempoJugado = 0.0f;
+    fase =
+        FASE_PELOTAS_PREPARACION;
+
+    tiempoPreparacion =
+        DURACION_PREPARACION_PELOTAS;
+
+    tiempoRestante =
+        DURACION_PARTIDA_PELOTAS;
+
+    tiempoJugado =
+        0.0f;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -187,35 +526,32 @@ void MinijuegoPelotas::Inicializar()
         bloques,
         cantidadBloques,
         1,
-        Vector3{
+        Vector3
+        {
             0.0f,
             -0.5f,
             0.0f
         },
-        Vector3{
-            11.0f,
+        Vector3
+        {
+            13.0f,
             1.0f,
-            11.0f
+            13.0f
         },
-        Color{
-            74,
-            78,
-            92,
-            255
-        }
+        RAYWHITE
     );
 
     camara.position =
     {
         0.0f,
-        8.0f,
-        13.0f
+        9.0f,
+        14.2f
     };
 
     camara.target =
     {
         0.0f,
-        0.5f,
+        -0.15f,
         0.0f
     };
 
@@ -252,11 +588,7 @@ void MinijuegoPelotas::ConfigurarJugadores(
         ? cantidadMaxima
         : MAX_JUGADORES_PRUEBA;
 
-    for (
-        int i = 0;
-        i < limite;
-        i++
-    )
+    for (int i = 0; i < limite; i++)
     {
         jugadores[i].posicionSpawn =
             spawns[i];
@@ -292,7 +624,9 @@ void MinijuegoPelotas::Reiniciar(
     int cantidadMaxima
 )
 {
-    bool participantesAnteriores[MAX_PARTICIPANTES]{};
+    bool participantesAnteriores[
+        MAX_PARTICIPANTES
+    ]{};
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -301,7 +635,8 @@ void MinijuegoPelotas::Reiniciar(
     }
 
     resultado = {};
-    resultado.formato = FORMATO_MINIJUEGO_INDIVIDUAL;
+    resultado.formato =
+        FORMATO_MINIJUEGO_INDIVIDUAL;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -316,16 +651,19 @@ void MinijuegoPelotas::Reiniciar(
         estadosJugadores[i] = {};
     }
 
-    fase = FASE_PELOTAS_PREPARACION;
-    tiempoPreparacion = DURACION_PREPARACION_PELOTAS;
-    tiempoRestante = DURACION_PARTIDA_PELOTAS;
-    tiempoJugado = 0.0f;
+    fase =
+        FASE_PELOTAS_PREPARACION;
 
-    for (
-        int i = 0;
-        i < cantidadMaxima;
-        i++
-    )
+    tiempoPreparacion =
+        DURACION_PREPARACION_PELOTAS;
+
+    tiempoRestante =
+        DURACION_PARTIDA_PELOTAS;
+
+    tiempoJugado =
+        0.0f;
+
+    for (int i = 0; i < cantidadMaxima; i++)
     {
         ReiniciarJugadorPrueba(
             jugadores[i]
@@ -368,7 +706,8 @@ void MinijuegoPelotas::Actualizar(
             jugadores[i].empuje = {};
         }
 
-        tiempoPreparacion -= deltaTime;
+        tiempoPreparacion -=
+            deltaTime;
 
         if (tiempoPreparacion <= 0.0f)
         {
@@ -379,7 +718,8 @@ void MinijuegoPelotas::Actualizar(
         return;
     }
 
-    tiempoRestante -= deltaTime;
+    tiempoRestante -=
+        deltaTime;
 
     if (tiempoRestante < 0.0f)
     {
@@ -387,7 +727,8 @@ void MinijuegoPelotas::Actualizar(
     }
 
     tiempoJugado =
-        DURACION_PARTIDA_PELOTAS - tiempoRestante;
+        DURACION_PARTIDA_PELOTAS -
+        tiempoRestante;
 
     int vivosAntes =
         ContarJugadoresVivosPelotas(
@@ -395,11 +736,7 @@ void MinijuegoPelotas::Actualizar(
             participantes
         );
 
-    for (
-        int i = 0;
-        i < MAX_PARTICIPANTES;
-        i++
-    )
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         JugadorPrueba& jugador =
             jugadores[i];
@@ -431,11 +768,24 @@ void MinijuegoPelotas::Actualizar(
         float velocidadAnteriorZ =
             jugador.velocidad.z;
 
+        Vector3 empujePendiente =
+            jugador.empuje;
+
+        jugador.empuje = {};
+
+        BloquePrueba sueloJugador =
+            bloques[0];
+
+        sueloJugador.activaColision =
+            JugadorSobreArenaCircularPelotas(
+                jugador
+            );
+
         ActualizarJugadorPrueba(
             jugador,
             entrada,
-            bloques,
-            cantidadBloques,
+            &sueloJugador,
+            1,
             particulas,
             cantidadParticulas,
             false,
@@ -450,9 +800,27 @@ void MinijuegoPelotas::Actualizar(
             velocidadAnteriorZ,
             deltaTime
         );
+
+        AplicarEmpujePendientePelotas(
+            jugador,
+            empujePendiente
+        );
     }
 
-    int eliminadosEsteFrame = 0;
+    ResolverColisionesPelotas(
+        jugadores,
+        participantes,
+        cantidadMaxima
+    );
+
+    PotenciarEmpujesPelotas(
+        jugadores,
+        participantes,
+        cantidadMaxima
+    );
+
+    int eliminadosEsteFrame =
+        0;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -467,10 +835,15 @@ void MinijuegoPelotas::Actualizar(
     }
 
     int posicionEliminados =
-        vivosAntes - eliminadosEsteFrame + 1;
+        vivosAntes -
+        eliminadosEsteFrame +
+        1;
 
     int tiempoSobrevividoMs =
-        (int)std::lround(tiempoJugado * 1000.0f);
+        (int)std::lround(
+            tiempoJugado *
+            1000.0f
+        );
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -480,10 +853,14 @@ void MinijuegoPelotas::Actualizar(
             jugadores[i].cayendo
         )
         {
-            estadosJugadores[i].eliminado = true;
+            estadosJugadores[i].eliminado =
+                true;
+
             estadosJugadores[i].posicionFinal =
                 posicionEliminados;
-            estadosJugadores[i].tiempoSobrevividoMs =
+
+            estadosJugadores[i]
+                .tiempoSobrevividoMs =
                 tiempoSobrevividoMs;
 
             jugadores[i].velocidad = {};
@@ -491,16 +868,14 @@ void MinijuegoPelotas::Actualizar(
         }
     }
 
-    ResolverColisionesPelotas(
-        jugadores,
-        participantes,
-        cantidadMaxima
-    );
-
     int vivosDespues =
-        vivosAntes - eliminadosEsteFrame;
+        vivosAntes -
+        eliminadosEsteFrame;
 
-    if (vivosDespues <= 1 || tiempoRestante <= 0.0f)
+    if (
+        vivosDespues <= 1 ||
+        tiempoRestante <= 0.0f
+    )
     {
         FinalizarResultadoPelotas(
             *this,
@@ -524,10 +899,11 @@ void MinijuegoPelotas::Dibujar(
     (void)cantidadMaxima;
 
     ClearBackground(
-        Color{
-            125,
-            190,
+        Color
+        {
+            181,
             220,
+            238,
             255
         }
     );
@@ -536,39 +912,11 @@ void MinijuegoPelotas::Dibujar(
         camara
     );
 
-    DrawCube(
-        bloques[0].posicion,
-        bloques[0].tamano.x,
-        bloques[0].tamano.y,
-        bloques[0].tamano.z,
-        bloques[0].color
+    DibujarMontanaNievePelotas(
+        mostrarDebug
     );
 
-    DrawCubeWires(
-        bloques[0].posicion,
-        bloques[0].tamano.x,
-        bloques[0].tamano.y,
-        bloques[0].tamano.z,
-        BLACK
-    );
-
-    DrawCubeWires(
-        Vector3{
-            0.0f,
-            0.03f,
-            0.0f
-        },
-        10.0f,
-        0.04f,
-        10.0f,
-        RAYWHITE
-    );
-
-    for (
-        int i = 0;
-        i < MAX_PARTICIPANTES;
-        i++
-    )
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         if (estadosJugadores[i].eliminado)
         {
@@ -607,7 +955,7 @@ void MinijuegoPelotas::Dibujar(
     );
 
     DrawText(
-        "EMPUJA A LOS DEMAS FUERA DE LA ARENA",
+        "EMPUJA A LOS DEMAS FUERA DE LA MONTANA",
         25,
         70,
         22,
@@ -615,7 +963,7 @@ void MinijuegoPelotas::Dibujar(
     );
 
     DrawText(
-        "PISTA DE HIELO - ACELERA Y CONSERVA LA INERCIA",
+        "NIEVE RESBALADIZA - ACELERA Y CONSERVA LA INERCIA",
         25,
         102,
         20,
@@ -633,22 +981,23 @@ void MinijuegoPelotas::Dibujar(
     if (fase == FASE_PELOTAS_JUGANDO)
     {
         DrawText(
-            TextFormat("TIEMPO: %.1f", tiempoRestante),
+            TextFormat(
+                "TIEMPO: %.1f",
+                tiempoRestante
+            ),
             GetScreenWidth() - 210,
             26,
             26,
-            tiempoRestante <= 10.0f ? RED : DARKBLUE
+            tiempoRestante <= 10.0f
+            ? RED
+            : DARKBLUE
         );
     }
 
     int posicionY =
         168;
 
-    for (
-        int i = 0;
-        i < MAX_PARTICIPANTES;
-        i++
-    )
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         if (
             !participantes[i].activo ||
@@ -660,10 +1009,8 @@ void MinijuegoPelotas::Dibujar(
         }
 
         float velocidad =
-            sqrtf(
-                jugadores[i].velocidad.x *
-                jugadores[i].velocidad.x +
-                jugadores[i].velocidad.z *
+            MagnitudHorizontalPelotas(
+                jugadores[i].velocidad.x,
                 jugadores[i].velocidad.z
             );
 
@@ -686,12 +1033,21 @@ void MinijuegoPelotas::Dibujar(
 
     if (fase == FASE_PELOTAS_PREPARACION)
     {
-        int numero = (int)std::ceil(tiempoPreparacion);
-        const char* texto = TextFormat("%d", numero);
+        int numero =
+            (int)std::ceil(
+                tiempoPreparacion
+            );
+
+        const char* texto =
+            TextFormat(
+                "%d",
+                numero
+            );
 
         DrawText(
             texto,
-            GetScreenWidth() / 2 - MeasureText(texto, 84) / 2,
+            GetScreenWidth() / 2 -
+                MeasureText(texto, 84) / 2,
             GetScreenHeight() / 2 - 60,
             84,
             ORANGE
@@ -699,14 +1055,17 @@ void MinijuegoPelotas::Dibujar(
     }
     else if (
         fase == FASE_PELOTAS_JUGANDO &&
-        tiempoJugado < DURACION_TEXTO_YA_PELOTAS
+        tiempoJugado <
+            DURACION_TEXTO_YA_PELOTAS
     )
     {
-        const char* texto = "YA";
+        const char* texto =
+            "YA";
 
         DrawText(
             texto,
-            GetScreenWidth() / 2 - MeasureText(texto, 84) / 2,
+            GetScreenWidth() / 2 -
+                MeasureText(texto, 84) / 2,
             GetScreenHeight() / 2 - 60,
             84,
             LIME
@@ -722,36 +1081,53 @@ void MinijuegoPelotas::Dibujar(
             Fade(BLACK, 0.90f)
         );
 
-        int indicesGanadores[MAX_PARTICIPANTES]{};
-        int cantidadGanadores = ObtenerIndicesGanadores(
-            resultado,
-            indicesGanadores,
+        int indicesGanadores[
             MAX_PARTICIPANTES
-        );
+        ]{};
+
+        int cantidadGanadores =
+            ObtenerIndicesGanadores(
+                resultado,
+                indicesGanadores,
+                MAX_PARTICIPANTES
+            );
 
         const char* titulo =
-            resultado.desenlace == DESENLACE_EMPATE
+            resultado.desenlace ==
+                DESENLACE_EMPATE
             ? "EMPATE"
             : TextFormat(
                 "GANADOR: JUGADOR %d",
                 cantidadGanadores == 1
-                ? participantes[indicesGanadores[0]].numeroJugador
+                ? participantes[
+                    indicesGanadores[0]
+                  ].numeroJugador
                 : 0
             );
 
         DrawText(
             titulo,
-            GetScreenWidth() / 2 - MeasureText(titulo, 34) / 2,
+            GetScreenWidth() / 2 -
+                MeasureText(titulo, 34) / 2,
             GetScreenHeight() / 2 - 130,
             34,
             GOLD
         );
 
-        int y = GetScreenHeight() / 2 - 75;
+        int y =
+            GetScreenHeight() / 2 -
+            75;
 
-        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        for (
+            int i = 0;
+            i < MAX_PARTICIPANTES;
+            i++
+        )
         {
-            if (!resultado.participantes[i].participo)
+            if (
+                !resultado.participantes[i]
+                    .participo
+            )
             {
                 continue;
             }
@@ -759,27 +1135,40 @@ void MinijuegoPelotas::Dibujar(
             DrawText(
                 TextFormat(
                     "J%d  POSICION %d  %.3f s",
-                    participantes[i].numeroJugador,
-                    resultado.participantes[i].posicionFinal,
-                    resultado.participantes[i]
-                        .puntuacionMinijuego / 1000.0f
+                    participantes[i]
+                        .numeroJugador,
+                    resultado
+                        .participantes[i]
+                        .posicionFinal,
+                    resultado
+                        .participantes[i]
+                        .puntuacionMinijuego /
+                        1000.0f
                 ),
-                GetScreenWidth() / 2 - 210,
+                GetScreenWidth() / 2 -
+                    210,
                 y,
                 22,
                 participantes[i].color
             );
 
-            y += 30;
+            y +=
+                30;
         }
 
-        const char* reiniciar = "R PARA REINICIAR";
+        const char* reiniciar =
+            "R PARA REINICIAR";
 
         DrawText(
             reiniciar,
             GetScreenWidth() / 2 -
-                MeasureText(reiniciar, 22) / 2,
-            GetScreenHeight() / 2 + 112,
+                MeasureText(
+                    reiniciar,
+                    22
+                ) /
+                2,
+            GetScreenHeight() / 2 +
+                112,
             22,
             RAYWHITE
         );
@@ -787,7 +1176,8 @@ void MinijuegoPelotas::Dibujar(
 }
 
 
-const ResultadoMinijuego& MinijuegoPelotas::ObtenerResultado() const
+const ResultadoMinijuego&
+MinijuegoPelotas::ObtenerResultado() const
 {
     return resultado;
 }
