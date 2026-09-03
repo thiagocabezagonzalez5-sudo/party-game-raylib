@@ -114,7 +114,7 @@ struct Juego
     ];
 
 
-    // Solo puede ser 0 antes de confirmar, o 2/4
+    // Solo puede ser 0 antes de confirmar, o 2/3/4
     // cuando exista una seleccion confirmada.
     int cantidadParticipantes =
         0;
