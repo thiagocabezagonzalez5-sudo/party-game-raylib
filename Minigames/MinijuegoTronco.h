@@ -7,31 +7,43 @@
 
 enum AccionTronco
 {
-    ACCION_TRONCO_ARRIBA = 0,
-    ACCION_TRONCO_ABAJO,
-    ACCION_TRONCO_IZQUIERDA,
-    ACCION_TRONCO_DERECHA
+    ACCION_TRONCO_TIRAR = 0,
+    ACCION_TRONCO_EMPUJAR
 };
 
 
 enum EstadoPartidaTronco
 {
-    TRONCO_PREPARANDO = 0,
+    TRONCO_ESPERANDO_JUGADORES = 0,
+    TRONCO_PREPARANDO,
     TRONCO_JUGANDO,
-    TRONCO_GANADO,
-    TRONCO_PERDIDO
+    TRONCO_FINALIZADO
 };
 
 
 struct EstadoJugadorTronco
 {
-    AccionTronco accion =
-        ACCION_TRONCO_ARRIBA;
-
     bool respondio = false;
     bool acerto = false;
 
     float animacionGolpe = 0.0f;
+};
+
+
+struct EstadoEquipoTronco
+{
+    float progresoCorte = 0.0f;
+
+    float posicionSierra = -0.72f;
+    float objetivoSierra = -0.72f;
+    int direccionSierra = 1;
+
+    float tiempoCoordinacion = 0.0f;
+    float tiempoBloqueo = 0.0f;
+    float tiempoFeedback = 0.0f;
+
+    bool golpeEnCurso = false;
+    bool ultimoGolpeCorrecto = false;
 };
 
 
@@ -45,20 +57,33 @@ struct MinijuegoTronco
         MAX_JUGADORES_PRUEBA
     ];
 
-    EstadoPartidaTronco estado =
-        TRONCO_PREPARANDO;
+    EstadoEquipoTronco equipos[2];
 
-    int rondasCompletadas = 0;
-    int rondasObjetivo = 10;
-    int jugadoresEnRonda = 0;
+    int equipoPorJugador[
+        MAX_JUGADORES_PRUEBA
+    ] = { -1, -1, -1, -1 };
+
+    int ordenEnEquipoPorJugador[
+        MAX_JUGADORES_PRUEBA
+    ] = { -1, -1, -1, -1 };
+
+    int cantidadJugadoresEquipo[2] =
+    {
+        0,
+        0
+    };
+
+    EstadoPartidaTronco estado =
+        TRONCO_ESPERANDO_JUGADORES;
+
+    int jugadoresEnPartida = 0;
+    int equipoGanador = -1;
 
     float tiempoPreparacion = 0.0f;
     float tiempoPartida = 0.0f;
-    float tiempoRonda = 0.0f;
-    float tiempoPausaRonda = 0.0f;
 
-    bool rondaEnPausa = false;
-    bool ultimaRondaCorrecta = false;
+    bool partidaValida = false;
+    bool empate = false;
 
     void Inicializar();
 
@@ -72,7 +97,7 @@ struct MinijuegoTronco
         int cantidadMaxima
     );
 
-    void PrepararNuevaRonda(
+    void PrepararEquipos(
         const Participante participantes[],
         int cantidadMaxima
     );
