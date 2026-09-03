@@ -1,5 +1,6 @@
 #include "Gameplay/ZonaPruebas.h"
 
+#include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 
 
@@ -150,33 +151,9 @@ static void ConfigurarJugadoresPrincipal(
         i++
     )
     {
-        JugadorPrueba& jugador =
-            zona.jugadores[i];
-
-        jugador.posicionSpawn =
-            spawns[i];
-
-        jugador.tamano =
-        {
-            0.8f,
-            1.4f,
-            0.8f
-        };
-
-        jugador.velocidadMovimiento =
-            5.0f;
-
-        jugador.fuerzaSalto =
-            7.2f;
-
-        jugador.gravedad =
-            18.0f;
-
-        jugador.duracionRespawn =
-            1.2f;
-
-        ReiniciarJugadorPrueba(
-            jugador
+        ConfigurarJugadorMinijuegoEstandar(
+            zona.jugadores[i],
+            spawns[i]
         );
     }
 }
@@ -199,49 +176,29 @@ static void ActualizarZonaPrincipal(
         const Participante& participante =
             zona.participantes[i];
 
-        if (
-            !participante.activo ||
-            !participante.conectado
-        )
+        if (!participante.activo)
         {
             continue;
         }
 
-        InputMinijuegoParticipante entrada =
-            LeerInputMinijuegoParticipante(
-                participante
-            );
-
-        ActualizarJugadorPrueba(
+        ActualizarJugadorMinijuegoEstandar(
             jugador,
-            entrada,
+            participante,
             zona.bloquesPrincipal,
             zona.cantidadBloquesPrincipal,
             zona.particulas,
             MAX_PARTICULAS_TIERRA,
             true,
-            false,
-            true,
             deltaTime
         );
     }
 
-    ResolverGolpesSuelo(
+    ResolverInteraccionesJugadoresMinijuegoEstandar(
         zona.jugadores,
         zona.participantes,
-        MAX_JUGADORES_PRUEBA
-    );
-
-    ResolverGolpesJugadores(
-        zona.jugadores,
-        zona.participantes,
-        MAX_JUGADORES_PRUEBA
-    );
-
-    ResolverColisionesJugadoresNormales(
-        zona.jugadores,
-        zona.participantes,
-        MAX_JUGADORES_PRUEBA
+        MAX_JUGADORES_PRUEBA,
+        zona.particulas,
+        MAX_PARTICULAS_TIERRA
     );
 }
 
@@ -347,7 +304,7 @@ static void DibujarZonaPrincipal(
     );
 
     DrawText(
-        "MOVIMIENTO + SALTO + PARTICULAS + COLISIONES",
+        "MOVIMIENTO + SALTO + GOLPES + COLISION SOLIDA",
         25,
         70,
         20,
