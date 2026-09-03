@@ -20,6 +20,15 @@ enum EstadoMesa67
 };
 
 
+enum EstadoPartida67
+{
+    FABRICA_67_ESPERANDO_JUGADORES = 0,
+    FABRICA_67_PREPARANDO,
+    FABRICA_67_JUGANDO,
+    FABRICA_67_FINALIZADO
+};
+
+
 struct EstadoJugador67
 {
     TipoPieza67 tipoPieza =
@@ -37,6 +46,20 @@ struct EstadoJugador67
 };
 
 
+struct EstadoEquipo67
+{
+    EstadoMesa67 mesa =
+        MESA_67_VACIA;
+
+    float tiempoMesaCompleta = 0.0f;
+    float tiempoFeedback = 0.0f;
+
+    int puntos = 0;
+
+    bool ultimoAcierto = false;
+};
+
+
 struct Minijuego67
 {
     ResultadoMinijuego resultado;
@@ -45,32 +68,43 @@ struct Minijuego67
         MAX_JUGADORES_PRUEBA
     ];
 
-    int ordenActivoPorJugador[
+    EstadoEquipo67 equipos[2];
+
+    int equipoPorJugador[
         MAX_JUGADORES_PRUEBA
     ] = { -1, -1, -1, -1 };
 
-    EstadoMesa67 mesas[2] =
+    int ordenEnEquipoPorJugador[
+        MAX_JUGADORES_PRUEBA
+    ] = { -1, -1, -1, -1 };
+
+    int cantidadJugadoresEquipo[2] =
     {
-        MESA_67_VACIA,
-        MESA_67_VACIA
+        0,
+        0
     };
 
-    float tiempoMesaCompleta[2] =
-    {
-        0.0f,
-        0.0f
-    };
+    EstadoPartida67 estadoPartida =
+        FABRICA_67_ESPERANDO_JUGADORES;
 
+    float tiempoPreparacion = 2.5f;
     float tiempoPartida = 30.0f;
     float velocidadCintas = 0.24f;
     float desplazamientoVisualCintas = 0.0f;
 
-    int puntos = 0;
     int jugadoresEnPartida = 0;
+    int mascaraJugadoresEnPartida = 0;
+    int equipoGanador = -1;
 
-    bool terminado = false;
+    bool partidaValida = false;
+    bool empate = false;
 
-    Camera3D camara{};
+    Camera3D camarasEquipo[2]{};
+
+    RenderTexture2D vistasEquipo[2]{};
+    bool vistasEquipoCargadas = false;
+    int anchoVistaEquipos = 0;
+    int altoVistaEquipos = 0;
 
     Model modeloJugador{};
     bool modeloJugadorCargado = false;
@@ -88,6 +122,11 @@ struct Minijuego67
     void Inicializar();
 
     void Reiniciar(
+        const Participante participantes[],
+        int cantidadMaxima
+    );
+
+    void PrepararEquipos(
         const Participante participantes[],
         int cantidadMaxima
     );
