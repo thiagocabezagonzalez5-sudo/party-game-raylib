@@ -22,6 +22,8 @@ static const float VELOCIDAD_MAXIMA_LANZAMIENTO_PELOTAS = 15.0f;
 // segun su posicion respecto del circulo.
 static const float RADIO_ARENA_PELOTAS = 5.25f;
 static const int SEGMENTOS_ARENA_PELOTAS = 48;
+static const float ALTURA_BASE_MONTANA_PELOTAS = -2.10f;
+static const float CRECIMIENTO_RADIO_MONTANA_PELOTAS = 1.15f;
 
 
 static float MagnitudHorizontalPelotas(
@@ -126,6 +128,147 @@ static bool JugadorSobreArenaCircularPelotas(
     return
         distancia <=
         RADIO_ARENA_PELOTAS - margenJugador;
+}
+
+
+static void ResolverColisionMontanaPelotas(
+    JugadorPrueba& jugador,
+    Vector3 posicionAnterior
+)
+{
+    float radioPelota =
+        jugador.tamano.x / 2.0f;
+
+    float distancia =
+        MagnitudHorizontalPelotas(
+            jugador.posicion.x,
+            jugador.posicion.z
+        );
+
+    // Colision lateral simplificada del monticulo. No intenta seguir
+    // cada triangulo visual: crea un volumen conico suficientemente
+    // parecido para que una pelota que cae por el borde no atraviese
+    // la nieve y aparezca dentro de la montana.
+    bool tocaAlturaMontana =
+        jugador.posicion.y - radioPelota < 0.0f &&
+        jugador.posicion.y + radioPelota >
+            ALTURA_BASE_MONTANA_PELOTAS;
+
+    if (tocaAlturaMontana)
+    {
+        float progresoAltura =
+            -jugador.posicion.y /
+            -ALTURA_BASE_MONTANA_PELOTAS;
+
+        if (progresoAltura < 0.0f)
+        {
+            progresoAltura = 0.0f;
+        }
+
+        if (progresoAltura > 1.0f)
+        {
+            progresoAltura = 1.0f;
+        }
+
+        float radioMontana =
+            RADIO_ARENA_PELOTAS +
+            CRECIMIENTO_RADIO_MONTANA_PELOTAS *
+                progresoAltura;
+
+        float distanciaMinima =
+            radioMontana +
+            radioPelota * 0.82f;
+
+        float zonaCercanaAlBorde =
+            RADIO_ARENA_PELOTAS -
+            radioPelota * 0.45f;
+
+        if (
+            distancia > zonaCercanaAlBorde &&
+            distancia < distanciaMinima
+        )
+        {
+            float normalX = 1.0f;
+            float normalZ = 0.0f;
+
+            if (distancia > 0.001f)
+            {
+                normalX =
+                    jugador.posicion.x /
+                    distancia;
+
+                normalZ =
+                    jugador.posicion.z /
+                    distancia;
+            }
+            else
+            {
+                float distanciaAnterior =
+                    MagnitudHorizontalPelotas(
+                        posicionAnterior.x,
+                        posicionAnterior.z
+                    );
+
+                if (distanciaAnterior > 0.001f)
+                {
+                    normalX =
+                        posicionAnterior.x /
+                        distanciaAnterior;
+
+                    normalZ =
+                        posicionAnterior.z /
+                        distanciaAnterior;
+                }
+            }
+
+            jugador.posicion.x =
+                normalX * distanciaMinima;
+
+            jugador.posicion.z =
+                normalZ * distanciaMinima;
+
+            float velocidadHaciaCentro =
+                jugador.velocidad.x * normalX +
+                jugador.velocidad.z * normalZ;
+
+            if (velocidadHaciaCentro < 0.0f)
+            {
+                jugador.velocidad.x -=
+                    normalX * velocidadHaciaCentro;
+
+                jugador.velocidad.z -=
+                    normalZ * velocidadHaciaCentro;
+            }
+        }
+    }
+
+    // Seguridad inferior: si por algun impulso futuro una pelota que
+    // ya esta debajo intenta subir atravesando la base, la detenemos.
+    float radioBase =
+        RADIO_ARENA_PELOTAS +
+        CRECIMIENTO_RADIO_MONTANA_PELOTAS;
+
+    float parteSuperiorAnterior =
+        posicionAnterior.y + radioPelota;
+
+    float parteSuperiorActual =
+        jugador.posicion.y + radioPelota;
+
+    if (
+        posicionAnterior.y < ALTURA_BASE_MONTANA_PELOTAS &&
+        jugador.velocidad.y > 0.0f &&
+        parteSuperiorAnterior <= ALTURA_BASE_MONTANA_PELOTAS &&
+        parteSuperiorActual >= ALTURA_BASE_MONTANA_PELOTAS &&
+        distancia <= radioBase + radioPelota
+    )
+    {
+        jugador.posicion.y =
+            ALTURA_BASE_MONTANA_PELOTAS -
+            radioPelota -
+            0.001f;
+
+        jugador.velocidad.y = 0.0f;
+    }
 }
 
 
@@ -257,14 +400,14 @@ static void DibujarMontanaNievePelotas(
             PuntoCircularPelotas(
                 i,
                 RADIO_ARENA_PELOTAS + 1.15f,
-                -2.10f
+                ALTURA_BASE_MONTANA_PELOTAS
             );
 
         Vector3 baseB =
             PuntoCircularPelotas(
                 siguiente,
                 RADIO_ARENA_PELOTAS + 1.15f,
-                -2.10f
+                ALTURA_BASE_MONTANA_PELOTAS
             );
 
         DrawTriangle3D(
@@ -768,6 +911,9 @@ void MinijuegoPelotas::Actualizar(
         float velocidadAnteriorZ =
             jugador.velocidad.z;
 
+        Vector3 posicionAnterior =
+            jugador.posicion;
+
         Vector3 empujePendiente =
             jugador.empuje;
 
@@ -804,6 +950,11 @@ void MinijuegoPelotas::Actualizar(
         AplicarEmpujePendientePelotas(
             jugador,
             empujePendiente
+        );
+
+        ResolverColisionMontanaPelotas(
+            jugador,
+            posicionAnterior
         );
     }
 
