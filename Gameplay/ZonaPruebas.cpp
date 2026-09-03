@@ -34,6 +34,9 @@ static const char* NombreModoPrueba(
 
         case PRUEBA_TABLERO:
             return "7 - TABLERO";
+
+        case PRUEBA_ISLA_FUEGO:
+            return "8 - ISLA BAJO FUEGO";
     }
 
     return "PRUEBA";
@@ -363,6 +366,7 @@ void ZonaPruebas::Inicializar(
     minijuegoPelotas.Inicializar();
     minijuegoTronco.Inicializar();
     minijuego67.Inicializar();
+    minijuegoIslaFuego.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
@@ -465,6 +469,18 @@ void ZonaPruebas::CambiarModo(
     )
     {
         prototipoTablero.Reiniciar();
+    }
+    else if (
+        modoActual ==
+        PRUEBA_ISLA_FUEGO
+    )
+    {
+        minijuegoIslaFuego.Inicializar();
+
+        minijuegoIslaFuego.ConfigurarJugadores(
+            jugadores,
+            MAX_JUGADORES_PRUEBA
+        );
     }
 
     if (
@@ -619,6 +635,15 @@ void ZonaPruebas::Actualizar(
         return;
     }
 
+    if (IsKeyPressed(KEY_EIGHT))
+    {
+        CambiarModo(
+            PRUEBA_ISLA_FUEGO
+        );
+
+        return;
+    }
+
     if (IsKeyPressed(KEY_R))
     {
         if (
@@ -683,6 +708,16 @@ void ZonaPruebas::Actualizar(
         )
         {
             prototipoTablero.Reiniciar();
+        }
+        else if (
+            modoActual ==
+            PRUEBA_ISLA_FUEGO
+        )
+        {
+            minijuegoIslaFuego.Reiniciar(
+                jugadores,
+                MAX_JUGADORES_PRUEBA
+            );
         }
 
         return;
@@ -814,6 +849,20 @@ void ZonaPruebas::Actualizar(
             deltaTime
         );
     }
+    else if (
+        modoActual ==
+        PRUEBA_ISLA_FUEGO
+    )
+    {
+        minijuegoIslaFuego.Actualizar(
+            deltaTime,
+            jugadores,
+            MAX_JUGADORES_PRUEBA,
+            participantes,
+            particulas,
+            MAX_PARTICULAS_TIERRA
+        );
+    }
 }
 
 
@@ -895,11 +944,25 @@ void ZonaPruebas::Dibujar() const
             mostrarDebug
         );
     }
+    else if (
+        modoActual ==
+        PRUEBA_ISLA_FUEGO
+    )
+    {
+        minijuegoIslaFuego.Dibujar(
+            jugadores,
+            MAX_JUGADORES_PRUEBA,
+            participantes,
+            particulas,
+            MAX_PARTICULAS_TIERRA,
+            mostrarDebug
+        );
+    }
 
     DrawRectangle(
         18,
         GetScreenHeight() - 148,
-        1180,
+        1240,
         126,
         Fade(
             RAYWHITE,
@@ -908,10 +971,10 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO",
+        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO  8 ISLA",
         30,
         GetScreenHeight() - 133,
-        20,
+        19,
         BLACK
     );
 
