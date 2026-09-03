@@ -19,6 +19,12 @@ struct EstadoJugadorIslaFuego
     int posicionFinal = 0;
     int tiempoSobrevividoMs = 0;
     float tiempoAturdido = 0.0f;
+
+    // Un impacto directo con el cuerpo de la bomba no es
+    // un simple empujon de area: lanza al jugador y, tras
+    // una fraccion de segundo visible, lo elimina.
+    bool impactoDirecto = false;
+    float tiempoHastaEliminacionDirecta = 0.0f;
 };
 
 
