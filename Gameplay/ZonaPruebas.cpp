@@ -30,6 +30,9 @@ static const char* NombreModoPrueba(
 
         case PRUEBA_FABRICA_67:
             return "6 - FABRICA 67";
+
+        case PRUEBA_TABLERO:
+            return "7 - TABLERO";
     }
 
     return "PRUEBA";
@@ -404,6 +407,11 @@ void ZonaPruebas::Inicializar(
     minijuegoTronco.Inicializar();
     minijuego67.Inicializar();
 
+    prototipoTablero.Inicializar(
+        participantes,
+        cantidadParticipantes
+    );
+
     CambiarModo(
         PRUEBA_ZONA_PRINCIPAL
     );
@@ -493,6 +501,13 @@ void ZonaPruebas::CambiarModo(
     )
     {
         minijuego67.Inicializar();
+    }
+    else if (
+        modoActual ==
+        PRUEBA_TABLERO
+    )
+    {
+        prototipoTablero.Reiniciar();
     }
 
     if (
@@ -638,6 +653,15 @@ void ZonaPruebas::Actualizar(
         return;
     }
 
+    if (IsKeyPressed(KEY_SEVEN))
+    {
+        CambiarModo(
+            PRUEBA_TABLERO
+        );
+
+        return;
+    }
+
     if (IsKeyPressed(KEY_R))
     {
         if (
@@ -695,6 +719,13 @@ void ZonaPruebas::Actualizar(
                 participantes,
                 MAX_JUGADORES_PRUEBA
             );
+        }
+        else if (
+            modoActual ==
+            PRUEBA_TABLERO
+        )
+        {
+            prototipoTablero.Reiniciar();
         }
 
         return;
@@ -817,6 +848,15 @@ void ZonaPruebas::Actualizar(
             participantes
         );
     }
+    else if (
+        modoActual ==
+        PRUEBA_TABLERO
+    )
+    {
+        prototipoTablero.Actualizar(
+            deltaTime
+        );
+    }
 }
 
 
@@ -889,6 +929,15 @@ void ZonaPruebas::Dibujar() const
             participantes
         );
     }
+    else if (
+        modoActual ==
+        PRUEBA_TABLERO
+    )
+    {
+        prototipoTablero.Dibujar(
+            mostrarDebug
+        );
+    }
 
     DrawRectangle(
         18,
@@ -902,7 +951,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA 67",
+        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO",
         30,
         GetScreenHeight() - 133,
         20,

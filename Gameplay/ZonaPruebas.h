@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Participante.h"
+#include "Gameplay/PrototipoTablero.h"
 #include "Minigames/MinijuegoColorSeguro.h"
 #include "Minigames/Minijuego67.h"
 #include "Minigames/MinijuegoPelotas.h"
@@ -16,7 +17,8 @@ enum ModoZonaPruebas
     PRUEBA_PELOTAS_EMPUJON = 3,
     PRUEBA_MODELOS = 4,
     PRUEBA_TRONCO_COORDINADO = 5,
-    PRUEBA_FABRICA_67 = 6
+    PRUEBA_FABRICA_67 = 6,
+    PRUEBA_TABLERO = 7
 };
 
 
@@ -42,6 +44,7 @@ struct ZonaPruebas
     PruebaModelos pruebaModelos;
     MinijuegoTronco minijuegoTronco;
     Minijuego67 minijuego67;
+    PrototipoTablero prototipoTablero;
 
     bool mostrarDebug = false;
     bool volverAlMenu = false;
