@@ -22,7 +22,7 @@ static const float DURACION_RONDA_TRONCO =
 //==================================================
 
 static int ContarJugadoresActivosTronco(
-    const JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 )
 {
@@ -35,7 +35,10 @@ static int ContarJugadoresActivosTronco(
         i++
     )
     {
-        if (jugadores[i].activo)
+        if (
+            participantes[i].activo &&
+            participantes[i].conectado
+        )
         {
             cantidad++;
         }
@@ -45,142 +48,20 @@ static int ContarJugadoresActivosTronco(
 }
 
 
-static bool AccionTecladoPresionada(
-    int indiceJugador,
-    AccionTronco accion,
-    ModoTeclado modoTeclado
-)
-{
-    if (modoTeclado == TECLADO_COMPLETO)
-    {
-        if (indiceJugador != 0)
-        {
-            return false;
-        }
-
-        switch (accion)
-        {
-            case ACCION_TRONCO_ARRIBA:
-                return IsKeyPressed(KEY_W);
-
-            case ACCION_TRONCO_ABAJO:
-                return IsKeyPressed(KEY_S);
-
-            case ACCION_TRONCO_IZQUIERDA:
-                return IsKeyPressed(KEY_A);
-
-            case ACCION_TRONCO_DERECHA:
-                return IsKeyPressed(KEY_D);
-        }
-    }
-
-    if (indiceJugador == 0)
-    {
-        switch (accion)
-        {
-            case ACCION_TRONCO_ARRIBA:
-                return IsKeyPressed(KEY_W);
-
-            case ACCION_TRONCO_ABAJO:
-                return IsKeyPressed(KEY_S);
-
-            case ACCION_TRONCO_IZQUIERDA:
-                return IsKeyPressed(KEY_A);
-
-            case ACCION_TRONCO_DERECHA:
-                return IsKeyPressed(KEY_D);
-        }
-    }
-    else if (indiceJugador == 1)
-    {
-        switch (accion)
-        {
-            case ACCION_TRONCO_ARRIBA:
-                return IsKeyPressed(KEY_UP);
-
-            case ACCION_TRONCO_ABAJO:
-                return IsKeyPressed(KEY_DOWN);
-
-            case ACCION_TRONCO_IZQUIERDA:
-                return IsKeyPressed(KEY_LEFT);
-
-            case ACCION_TRONCO_DERECHA:
-                return IsKeyPressed(KEY_RIGHT);
-        }
-    }
-
-    return false;
-}
-
-
-static bool AccionGamepadPresionada(
-    int indiceGamepad,
+static bool AccionJugadorPresionada(
+    const Participante& participante,
     AccionTronco accion
 )
 {
-    if (!IsGamepadAvailable(indiceGamepad))
-    {
-        return false;
-    }
-
-    switch (accion)
-    {
-        case ACCION_TRONCO_ARRIBA:
-            return IsGamepadButtonPressed(
-                indiceGamepad,
-                GAMEPAD_BUTTON_RIGHT_FACE_UP
-            );
-
-        case ACCION_TRONCO_ABAJO:
-            return IsGamepadButtonPressed(
-                indiceGamepad,
-                GAMEPAD_BUTTON_RIGHT_FACE_DOWN
-            );
-
-        case ACCION_TRONCO_IZQUIERDA:
-            return IsGamepadButtonPressed(
-                indiceGamepad,
-                GAMEPAD_BUTTON_RIGHT_FACE_LEFT
-            );
-
-        case ACCION_TRONCO_DERECHA:
-            return IsGamepadButtonPressed(
-                indiceGamepad,
-                GAMEPAD_BUTTON_RIGHT_FACE_RIGHT
-            );
-    }
-
-    return false;
-}
-
-
-static bool AccionJugadorPresionada(
-    int indiceJugador,
-    const JugadorPrueba& jugador,
-    AccionTronco accion,
-    ModoTeclado modoTeclado
-)
-{
-    if (jugador.usaGamepad)
-    {
-        return AccionGamepadPresionada(
-            jugador.indiceGamepad,
-            accion
-        );
-    }
-
-    return AccionTecladoPresionada(
-        indiceJugador,
-        accion,
-        modoTeclado
+    return AccionDireccionalControlPresionada(
+        participante,
+        (AccionDireccionalControl)accion
     );
 }
 
 
 static bool AlgunaAccionJugadorPresionada(
-    int indiceJugador,
-    const JugadorPrueba& jugador,
-    ModoTeclado modoTeclado
+    const Participante& participante
 )
 {
     for (
@@ -191,10 +72,8 @@ static bool AlgunaAccionJugadorPresionada(
     {
         if (
             AccionJugadorPresionada(
-                indiceJugador,
-                jugador,
-                (AccionTronco)accion,
-                modoTeclado
+                participante,
+                (AccionTronco)accion
             )
         )
         {
@@ -207,93 +86,24 @@ static bool AlgunaAccionJugadorPresionada(
 
 
 static const char* TextoAccionTronco(
-    int indiceJugador,
-    const JugadorPrueba& jugador,
-    AccionTronco accion,
-    ModoTeclado modoTeclado
+    const Participante& participante,
+    AccionTronco accion
 )
 {
-    if (jugador.usaGamepad)
-    {
-        switch (accion)
-        {
-            case ACCION_TRONCO_ARRIBA:
-                return "Y";
-
-            case ACCION_TRONCO_ABAJO:
-                return "A";
-
-            case ACCION_TRONCO_IZQUIERDA:
-                return "X";
-
-            case ACCION_TRONCO_DERECHA:
-                return "B";
-        }
-    }
-
-    if (
-        modoTeclado == TECLADO_DIVIDIDO &&
-        indiceJugador == 1
-    )
-    {
-        switch (accion)
-        {
-            case ACCION_TRONCO_ARRIBA:
-                return "FLECHA ARRIBA";
-
-            case ACCION_TRONCO_ABAJO:
-                return "FLECHA ABAJO";
-
-            case ACCION_TRONCO_IZQUIERDA:
-                return "FLECHA IZQ";
-
-            case ACCION_TRONCO_DERECHA:
-                return "FLECHA DER";
-        }
-    }
-
-    switch (accion)
-    {
-        case ACCION_TRONCO_ARRIBA:
-            return "W";
-
-        case ACCION_TRONCO_ABAJO:
-            return "S";
-
-        case ACCION_TRONCO_IZQUIERDA:
-            return "A";
-
-        case ACCION_TRONCO_DERECHA:
-            return "D";
-    }
-
-    return "?";
+    return ObtenerTextoAccionDireccionalControl(
+        participante,
+        (AccionDireccionalControl)accion
+    );
 }
 
 
 static const char* TextoDispositivoTronco(
-    int indiceJugador,
-    const JugadorPrueba& jugador,
-    ModoTeclado modoTeclado
+    const Participante& participante
 )
 {
-    if (jugador.usaGamepad)
-    {
-        return TextFormat(
-            "CONTROL %d",
-            jugador.indiceGamepad + 1
-        );
-    }
-
-    if (
-        modoTeclado == TECLADO_DIVIDIDO &&
-        indiceJugador == 1
-    )
-    {
-        return "TECLADO FLECHAS";
-    }
-
-    return "TECLADO WASD";
+    return ObtenerNombreControlParticipante(
+        participante
+    );
 }
 
 
@@ -337,14 +147,6 @@ void MinijuegoTronco::ConfigurarJugadores(
     int cantidadMaxima
 ) const
 {
-    Color colores[MAX_JUGADORES_PRUEBA] =
-    {
-        RED,
-        BLUE,
-        GREEN,
-        GOLD
-    };
-
     Vector3 spawns[MAX_JUGADORES_PRUEBA] =
     {
         { -3.8f, 0.7f, 2.2f },
@@ -364,12 +166,6 @@ void MinijuegoTronco::ConfigurarJugadores(
         i++
     )
     {
-        jugadores[i].numero =
-            i + 1;
-
-        jugadores[i].color =
-            colores[i];
-
         jugadores[i].posicionSpawn =
             spawns[i];
 
@@ -388,7 +184,7 @@ void MinijuegoTronco::ConfigurarJugadores(
 
 
 void MinijuegoTronco::Reiniciar(
-    const JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 )
 {
@@ -403,7 +199,7 @@ void MinijuegoTronco::Reiniciar(
 
     jugadoresEnRonda =
         ContarJugadoresActivosTronco(
-            jugadores,
+            participantes,
             cantidadMaxima
         );
 
@@ -426,14 +222,14 @@ void MinijuegoTronco::Reiniciar(
         false;
 
     PrepararNuevaRonda(
-        jugadores,
+        participantes,
         cantidadMaxima
     );
 }
 
 
 void MinijuegoTronco::PrepararNuevaRonda(
-    const JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 )
 {
@@ -461,7 +257,10 @@ void MinijuegoTronco::PrepararNuevaRonda(
         estadosJugadores[i].animacionGolpe =
             0.0f;
 
-        if (jugadores[i].activo)
+        if (
+            participantes[i].activo &&
+            participantes[i].conectado
+        )
         {
             estadosJugadores[i].accion =
                 (AccionTronco)GetRandomValue(
@@ -479,21 +278,20 @@ void MinijuegoTronco::PrepararNuevaRonda(
 
 void MinijuegoTronco::Actualizar(
     float deltaTime,
-    const JugadorPrueba jugadores[],
     int cantidadMaxima,
-    ModoTeclado modoTeclado
+    const Participante participantes[]
 )
 {
     int jugadoresActivos =
         ContarJugadoresActivosTronco(
-            jugadores,
+            participantes,
             cantidadMaxima
         );
 
     if (jugadoresActivos != jugadoresEnRonda)
     {
         Reiniciar(
-            jugadores,
+            participantes,
             cantidadMaxima
         );
 
@@ -566,7 +364,7 @@ void MinijuegoTronco::Actualizar(
         if (tiempoPausaRonda <= 0.0f)
         {
             PrepararNuevaRonda(
-                jugadores,
+                participantes,
                 cantidadMaxima
             );
         }
@@ -587,7 +385,8 @@ void MinijuegoTronco::Actualizar(
     )
     {
         if (
-            !jugadores[i].activo ||
+            !participantes[i].activo ||
+            !participantes[i].conectado ||
             estadosJugadores[i].respondio
         )
         {
@@ -599,10 +398,8 @@ void MinijuegoTronco::Actualizar(
 
         if (
             AccionJugadorPresionada(
-                i,
-                jugadores[i],
-                accionCorrecta,
-                modoTeclado
+                participantes[i],
+                accionCorrecta
             )
         )
         {
@@ -617,9 +414,7 @@ void MinijuegoTronco::Actualizar(
         }
         else if (
             AlgunaAccionJugadorPresionada(
-                i,
-                jugadores[i],
-                modoTeclado
+                participantes[i]
             )
         )
         {
@@ -644,7 +439,8 @@ void MinijuegoTronco::Actualizar(
     )
     {
         if (
-            jugadores[i].activo &&
+            participantes[i].activo &&
+            participantes[i].conectado &&
             !estadosJugadores[i].respondio
         )
         {
@@ -653,7 +449,8 @@ void MinijuegoTronco::Actualizar(
         }
 
         if (
-            jugadores[i].activo &&
+            participantes[i].activo &&
+            participantes[i].conectado &&
             estadosJugadores[i].respondio &&
             !estadosJugadores[i].acerto
         )
@@ -717,6 +514,7 @@ void MinijuegoTronco::Actualizar(
 static void DibujarEscenarioTronco(
     const MinijuegoTronco& minijuego,
     const JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 )
 {
@@ -772,7 +570,10 @@ static void DibujarEscenarioTronco(
         i++
     )
     {
-        if (!jugadores[i].activo)
+        if (
+            !participantes[i].activo ||
+            !participantes[i].conectado
+        )
         {
             continue;
         }
@@ -796,7 +597,7 @@ static void DibujarEscenarioTronco(
             jugadores[i].tamano.x,
             jugadores[i].tamano.y,
             jugadores[i].tamano.z,
-            jugadores[i].color
+            participantes[i].color
         );
 
         DrawCubeWires(
@@ -852,7 +653,7 @@ static void DibujarEscenarioTronco(
 void MinijuegoTronco::Dibujar(
     const JugadorPrueba jugadores[],
     int cantidadMaxima,
-    ModoTeclado modoTeclado
+    const Participante participantes[]
 ) const
 {
     ClearBackground(
@@ -862,6 +663,7 @@ void MinijuegoTronco::Dibujar(
     DibujarEscenarioTronco(
         *this,
         jugadores,
+        participantes,
         cantidadMaxima
     );
 
@@ -1018,7 +820,7 @@ void MinijuegoTronco::Dibujar(
 
     int cantidadActivos =
         ContarJugadoresActivosTronco(
-            jugadores,
+            participantes,
             cantidadMaxima
         );
 
@@ -1045,7 +847,10 @@ void MinijuegoTronco::Dibujar(
         i++
     )
     {
-        if (!jugadores[i].activo)
+        if (
+            !participantes[i].activo ||
+            !participantes[i].conectado
+        )
         {
             continue;
         }
@@ -1077,13 +882,13 @@ void MinijuegoTronco::Dibujar(
                 (float)altoTarjeta
             },
             4.0f,
-            jugadores[i].color
+            participantes[i].color
         );
 
         DrawText(
             TextFormat(
                 "JUGADOR %d",
-                jugadores[i].numero
+                participantes[i].numeroJugador
             ),
             x + 12,
             168,
@@ -1093,9 +898,7 @@ void MinijuegoTronco::Dibujar(
 
         DrawText(
             TextoDispositivoTronco(
-                i,
-                jugadores[i],
-                modoTeclado
+                participantes[i]
             ),
             x + 12,
             194,
@@ -1111,10 +914,8 @@ void MinijuegoTronco::Dibujar(
                 : "ERROR"
             )
             : TextoAccionTronco(
-                i,
-                jugadores[i],
-                estadosJugadores[i].accion,
-                modoTeclado
+                participantes[i],
+                estadosJugadores[i].accion
             );
 
         int tamanoAccion =

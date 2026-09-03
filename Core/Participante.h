@@ -33,3 +33,28 @@ struct Participante
 
     bool conectado = false;
 };
+
+
+inline int ObtenerIndicesParticipantesActivos(
+    const Participante participantes[],
+    int indicesActivos[],
+    int capacidad
+)
+{
+    int cantidad = 0;
+
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES && cantidad < capacidad;
+        i++
+    )
+    {
+        if (participantes[i].activo)
+        {
+            indicesActivos[cantidad] = i;
+            cantidad++;
+        }
+    }
+
+    return cantidad;
+}

@@ -8,17 +8,6 @@ const int MAX_BLOQUES_PRUEBA = 8;
 const int MAX_PARTICULAS_TIERRA = 160;
 
 
-struct EntradaJugadorPrueba
-{
-    bool izquierda = false;
-    bool derecha = false;
-    bool adelante = false;
-    bool atras = false;
-    bool saltar = false;
-    bool golpear = false;
-};
-
-
 struct BloquePrueba
 {
     Vector3 posicion{};
@@ -63,14 +52,6 @@ struct ParticulaTierra
 
 struct JugadorPrueba
 {
-    int numero = 1;
-    bool activo = false;
-
-    bool usaGamepad = false;
-    int indiceGamepad = -1;
-
-    Color color = RED;
-
     Vector3 posicion{};
     Vector3 posicionSpawn{};
     Vector3 velocidad{};

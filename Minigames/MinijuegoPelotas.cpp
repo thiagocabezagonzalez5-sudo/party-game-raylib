@@ -70,14 +70,6 @@ void MinijuegoPelotas::ConfigurarJugadores(
     int cantidadMaxima
 ) const
 {
-    Color colores[MAX_JUGADORES_PRUEBA] =
-    {
-        RED,
-        BLUE,
-        GREEN,
-        GOLD
-    };
-
     Vector3 spawns[MAX_JUGADORES_PRUEBA] =
     {
         { -2.2f, 0.65f, 2.2f },
@@ -97,12 +89,6 @@ void MinijuegoPelotas::ConfigurarJugadores(
         i++
     )
     {
-        jugadores[i].numero =
-            i + 1;
-
-        jugadores[i].color =
-            colores[i];
-
         jugadores[i].posicionSpawn =
             spawns[i];
 
@@ -158,7 +144,7 @@ void MinijuegoPelotas::Actualizar(
     float deltaTime,
     JugadorPrueba jugadores[],
     int cantidadMaxima,
-    ModoTeclado modoTeclado,
+    Participante participantes[],
     ParticulaTierra particulas[],
     int cantidadParticulas
 )
@@ -172,16 +158,17 @@ void MinijuegoPelotas::Actualizar(
         JugadorPrueba& jugador =
             jugadores[i];
 
-        if (!jugador.activo)
+        if (
+            !participantes[i].activo ||
+            !participantes[i].conectado
+        )
         {
             continue;
         }
 
-        EntradaJugadorPrueba entrada =
-            LeerEntradaJugadorPrueba(
-                i,
-                jugador,
-                modoTeclado
+        InputMinijuegoParticipante entrada =
+            LeerInputMinijuegoParticipante(
+                participantes[i]
             );
 
         ActualizarJugadorPrueba(
@@ -200,6 +187,7 @@ void MinijuegoPelotas::Actualizar(
 
     ResolverColisionesPelotas(
         jugadores,
+        participantes,
         cantidadMaxima
     );
 }
@@ -212,6 +200,7 @@ void MinijuegoPelotas::Actualizar(
 void MinijuegoPelotas::Dibujar(
     const JugadorPrueba jugadores[],
     int cantidadMaxima,
+    const Participante participantes[],
     bool mostrarDebug
 ) const
 {
@@ -263,12 +252,14 @@ void MinijuegoPelotas::Dibujar(
     )
     {
         DibujarJugadorPelotaPrueba(
-            jugadores[i]
+            jugadores[i],
+            participantes[i]
         );
 
         if (
             mostrarDebug &&
-            jugadores[i].activo &&
+            participantes[i].activo &&
+            participantes[i].conectado &&
             !jugadores[i].cayendo
         )
         {
@@ -324,7 +315,10 @@ void MinijuegoPelotas::Dibujar(
         i++
     )
     {
-        if (!jugadores[i].activo)
+        if (
+            !participantes[i].activo ||
+            !participantes[i].conectado
+        )
         {
             continue;
         }
@@ -340,13 +334,13 @@ void MinijuegoPelotas::Dibujar(
         DrawText(
             TextFormat(
                 "J%d VELOCIDAD: %.1f",
-                jugadores[i].numero,
+                participantes[i].numeroJugador,
                 velocidad
             ),
             25,
             posicionY,
             18,
-            jugadores[i].color
+            participantes[i].color
         );
 
         posicionY +=

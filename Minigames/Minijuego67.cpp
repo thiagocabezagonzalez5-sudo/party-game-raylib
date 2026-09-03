@@ -26,8 +26,8 @@ static const float X_MESA_67 = 4.45f;
 // UTILIDADES DE ESTADO
 //==================================================
 
-static int ContarJugadoresActivos67(
-    const JugadorPrueba jugadores[],
+static int ContarParticipantesDisponibles67(
+    const Participante participantes[],
     int cantidadMaxima
 )
 {
@@ -35,36 +35,16 @@ static int ContarJugadoresActivos67(
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
-        if (jugadores[i].activo)
+        if (
+            participantes[i].activo &&
+            participantes[i].conectado
+        )
         {
             cantidad++;
         }
     }
 
     return cantidad;
-}
-
-
-static const char* TextoControlAccion67(
-    int indiceJugador,
-    const JugadorPrueba& jugador,
-    ModoTeclado modoTeclado
-)
-{
-    if (jugador.usaGamepad)
-    {
-        return "A";
-    }
-
-    if (
-        modoTeclado == TECLADO_DIVIDIDO &&
-        indiceJugador == 1
-    )
-    {
-        return "ENTER";
-    }
-
-    return "ESPACIO";
 }
 
 
@@ -133,7 +113,15 @@ static void ColocarPieza67(
     EstadoJugador67& estadoJugador =
         minijuego.estadosJugadores[indiceJugador];
 
-    int indiceMesa = indiceJugador / 2;
+    int ordenActivo =
+        minijuego.ordenActivoPorJugador[indiceJugador];
+
+    if (ordenActivo < 0)
+    {
+        return;
+    }
+
+    int indiceMesa = ordenActivo / 2;
 
     if (indiceMesa < 0 || indiceMesa >= 2)
     {
@@ -446,7 +434,7 @@ static void DibujarMesa67(
 
 static void DibujarJugador3D67(
     const Minijuego67& minijuego,
-    const JugadorPrueba& jugador,
+    const Participante& participante,
     const EstadoJugador67& estado,
     int indiceJugador
 )
@@ -476,7 +464,7 @@ static void DibujarJugador3D67(
     Color colorModelo =
         estado.tiempoStun > 0.0f
         ? Fade(RED, 0.72f)
-        : jugador.color;
+        : participante.color;
 
     DrawCylinder(
         { X_JUGADOR_67, 0.08f, z },
@@ -484,7 +472,7 @@ static void DibujarJugador3D67(
         0.62f,
         0.16f,
         24,
-        Fade(jugador.color, 0.72f)
+        Fade(participante.color, 0.72f)
     );
 
     if (minijuego.modeloJugadorCargado)
@@ -686,34 +674,8 @@ void Minijuego67::Inicializar()
 }
 
 
-void Minijuego67::ConfigurarJugadores(
-    JugadorPrueba jugadores[],
-    int cantidadMaxima
-) const
-{
-    Color colores[MAX_JUGADORES_PRUEBA] =
-    {
-        RED,
-        BLUE,
-        GREEN,
-        GOLD
-    };
-
-    int limite =
-        cantidadMaxima < MAX_JUGADORES_PRUEBA
-        ? cantidadMaxima
-        : MAX_JUGADORES_PRUEBA;
-
-    for (int i = 0; i < limite; i++)
-    {
-        jugadores[i].numero = i + 1;
-        jugadores[i].color = colores[i];
-    }
-}
-
-
 void Minijuego67::Reiniciar(
-    const JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 )
 {
@@ -725,10 +687,29 @@ void Minijuego67::Reiniciar(
     fotogramaAnimacionIdle = 0.0f;
 
     jugadoresEnPartida =
-        ContarJugadoresActivos67(
-            jugadores,
+        ContarParticipantesDisponibles67(
+            participantes,
             cantidadMaxima
         );
+
+    int indicesActivos[MAX_PARTICIPANTES]{};
+    int cantidadActivos =
+        ObtenerIndicesParticipantesActivos(
+            participantes,
+            indicesActivos,
+            MAX_PARTICIPANTES
+        );
+
+    for (int i = 0; i < cantidadMaxima; i++)
+    {
+        ordenActivoPorJugador[i] = -1;
+    }
+
+    for (int orden = 0; orden < cantidadActivos; orden++)
+    {
+        ordenActivoPorJugador[indicesActivos[orden]] =
+            orden;
+    }
 
     for (int i = 0; i < 2; i++)
     {
@@ -741,8 +722,10 @@ void Minijuego67::Reiniciar(
         EstadoJugador67& estado =
             estadosJugadores[i];
 
+        int ordenActivo = ordenActivoPorJugador[i];
+
         estado.tipoPieza =
-            i % 2 == 0
+            ordenActivo >= 0 && ordenActivo % 2 == 0
             ? PIEZA_NUMERO_6
             : PIEZA_NUMERO_7;
 
@@ -765,9 +748,8 @@ void Minijuego67::Reiniciar(
 
 void Minijuego67::Actualizar(
     float deltaTime,
-    const JugadorPrueba jugadores[],
     int cantidadMaxima,
-    ModoTeclado modoTeclado
+    const Participante participantes[]
 )
 {
     desplazamientoVisualCintas +=
@@ -802,14 +784,14 @@ void Minijuego67::Actualizar(
     }
 
     int cantidadActivos =
-        ContarJugadoresActivos67(
-            jugadores,
+        ContarParticipantesDisponibles67(
+            participantes,
             cantidadMaxima
         );
 
     if (cantidadActivos != jugadoresEnPartida)
     {
-        Reiniciar(jugadores, cantidadMaxima);
+        Reiniciar(participantes, cantidadMaxima);
         return;
     }
 
@@ -850,7 +832,10 @@ void Minijuego67::Actualizar(
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
-        if (!jugadores[i].activo)
+        if (
+            !participantes[i].activo ||
+            !participantes[i].conectado
+        )
         {
             continue;
         }
@@ -909,11 +894,9 @@ void Minijuego67::Actualizar(
             }
         }
 
-        EntradaJugadorPrueba entrada =
-            LeerEntradaJugadorPrueba(
-                i,
-                jugadores[i],
-                modoTeclado
+        InputMinijuegoParticipante entrada =
+            LeerInputMinijuegoParticipante(
+                participantes[i]
             );
 
         if (!entrada.saltar)
@@ -962,9 +945,8 @@ void Minijuego67::Actualizar(
 //==================================================
 
 void Minijuego67::Dibujar(
-    const JugadorPrueba jugadores[],
     int cantidadMaxima,
-    ModoTeclado modoTeclado
+    const Participante participantes[]
 ) const
 {
     ClearBackground(Color{ 112, 153, 177, 255 });
@@ -975,7 +957,9 @@ void Minijuego67::Dibujar(
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
-        bool jugadorActivo = jugadores[i].activo;
+        bool jugadorActivo =
+            participantes[i].activo &&
+            participantes[i].conectado;
         float z = ObtenerZCarril67(i);
 
         DibujarCinta67(
@@ -1017,7 +1001,7 @@ void Minijuego67::Dibujar(
 
         DibujarJugador3D67(
             *this,
-            jugadores[i],
+            participantes[i],
             estado,
             i
         );
@@ -1025,12 +1009,15 @@ void Minijuego67::Dibujar(
 
     for (int pareja = 0; pareja < 2; pareja++)
     {
-        int primerJugador = pareja * 2;
+        int indicesActivos[MAX_PARTICIPANTES]{};
+        int cantidadActivos =
+            ObtenerIndicesParticipantesActivos(
+                participantes,
+                indicesActivos,
+                MAX_PARTICIPANTES
+            );
 
-        if (
-            primerJugador < cantidadMaxima &&
-            jugadores[primerJugador].activo
-        )
+        if (pareja * 2 < cantidadActivos)
         {
             DibujarMesa67(
                 pareja,
@@ -1083,8 +1070,8 @@ void Minijuego67::Dibujar(
     );
 
     int cantidadActivos =
-        ContarJugadoresActivos67(
-            jugadores,
+        ContarParticipantesDisponibles67(
+            participantes,
             cantidadMaxima
         );
 
@@ -1119,7 +1106,10 @@ void Minijuego67::Dibujar(
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
-        if (!jugadores[i].activo)
+        if (
+            !participantes[i].activo ||
+            !participantes[i].conectado
+        )
         {
             continue;
         }
@@ -1145,7 +1135,7 @@ void Minijuego67::Dibujar(
                 55.0f
             },
             2.0f,
-            jugadores[i].color
+            participantes[i].color
         );
 
         const char* estadoTexto =
@@ -1164,14 +1154,12 @@ void Minijuego67::Dibujar(
         DrawText(
             TextFormat(
                 "J%d  NUMERO %d  [%s]",
-                jugadores[i].numero,
+                participantes[i].numeroJugador,
                 estado.tipoPieza == PIEZA_NUMERO_6
                 ? 6
                 : 7,
-                TextoControlAccion67(
-                    i,
-                    jugadores[i],
-                    modoTeclado
+                ObtenerTextoBotonPrincipal(
+                    participantes[i]
                 )
             ),
             x + 8,

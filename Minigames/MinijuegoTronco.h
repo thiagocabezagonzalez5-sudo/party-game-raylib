@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/ConfiguracionJuego.h"
+#include "Core/Participante.h"
 #include "Minigames/TiposMinijuegos.h"
 
 
@@ -65,25 +65,24 @@ struct MinijuegoTronco
     ) const;
 
     void Reiniciar(
-        const JugadorPrueba jugadores[],
+        const Participante participantes[],
         int cantidadMaxima
     );
 
     void PrepararNuevaRonda(
-        const JugadorPrueba jugadores[],
+        const Participante participantes[],
         int cantidadMaxima
     );
 
     void Actualizar(
         float deltaTime,
-        const JugadorPrueba jugadores[],
         int cantidadMaxima,
-        ModoTeclado modoTeclado
+        const Participante participantes[]
     );
 
     void Dibujar(
         const JugadorPrueba jugadores[],
         int cantidadMaxima,
-        ModoTeclado modoTeclado
+        const Participante participantes[]
     ) const;
 };

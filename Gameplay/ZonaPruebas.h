@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/ConfiguracionJuego.h"
+#include "Core/Participante.h"
 #include "Minigames/MinijuegoColorSeguro.h"
 #include "Minigames/Minijuego67.h"
 #include "Minigames/MinijuegoPelotas.h"
@@ -25,11 +25,10 @@ struct ZonaPruebas
     ModoZonaPruebas modoActual =
         PRUEBA_ZONA_PRINCIPAL;
 
-    ModoTeclado modoTecladoActual =
-        TECLADO_DIVIDIDO;
-
     JugadorPrueba jugadores[MAX_JUGADORES_PRUEBA];
-    int cantidadJugadoresActivos = 0;
+
+    Participante* participantes = nullptr;
+    int cantidadParticipantes = 0;
 
     ParticulaTierra particulas[MAX_PARTICULAS_TIERRA];
 
@@ -48,7 +47,8 @@ struct ZonaPruebas
     bool volverAlMenu = false;
 
     void Inicializar(
-        ModoTeclado modoTeclado
+        Participante participantesJuego[],
+        int cantidadParticipantesJuego
     );
 
     void CambiarModo(

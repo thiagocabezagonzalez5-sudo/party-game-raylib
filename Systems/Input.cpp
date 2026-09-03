@@ -364,6 +364,233 @@ InputSeleccionParticipante LeerInputSeleccionParticipante(
 }
 
 
+InputMinijuegoParticipante LeerInputMinijuegoParticipante(
+    const Participante& participante
+)
+{
+    InputMinijuegoParticipante entrada{};
+
+    if (!participante.conectado)
+    {
+        return entrada;
+    }
+
+    if (participante.control == CONTROL_GAMEPAD)
+    {
+        int gamepad = participante.indiceGamepad;
+        const float DEADZONE = 0.25f;
+
+        float ejeX = GetGamepadAxisMovement(
+            gamepad,
+            GAMEPAD_AXIS_LEFT_X
+        );
+
+        float ejeY = GetGamepadAxisMovement(
+            gamepad,
+            GAMEPAD_AXIS_LEFT_Y
+        );
+
+        entrada.izquierda =
+            IsGamepadButtonDown(
+                gamepad,
+                GAMEPAD_BUTTON_LEFT_FACE_LEFT
+            ) || ejeX < -DEADZONE;
+
+        entrada.derecha =
+            IsGamepadButtonDown(
+                gamepad,
+                GAMEPAD_BUTTON_LEFT_FACE_RIGHT
+            ) || ejeX > DEADZONE;
+
+        entrada.adelante =
+            IsGamepadButtonDown(
+                gamepad,
+                GAMEPAD_BUTTON_LEFT_FACE_UP
+            ) || ejeY < -DEADZONE;
+
+        entrada.atras =
+            IsGamepadButtonDown(
+                gamepad,
+                GAMEPAD_BUTTON_LEFT_FACE_DOWN
+            ) || ejeY > DEADZONE;
+
+        entrada.saltar = IsGamepadButtonPressed(
+            gamepad,
+            GAMEPAD_BUTTON_RIGHT_FACE_DOWN
+        );
+
+        entrada.golpear = IsGamepadButtonPressed(
+            gamepad,
+            GAMEPAD_BUTTON_RIGHT_FACE_RIGHT
+        );
+
+        return entrada;
+    }
+
+    bool usaWASD =
+        participante.control == CONTROL_TECLADO_COMPLETO ||
+        participante.control == CONTROL_TECLADO_WASD;
+
+    bool usaFlechas =
+        participante.control == CONTROL_TECLADO_COMPLETO ||
+        participante.control == CONTROL_TECLADO_FLECHAS;
+
+    if (usaWASD)
+    {
+        entrada.izquierda = IsKeyDown(KEY_A);
+        entrada.derecha = IsKeyDown(KEY_D);
+        entrada.adelante = IsKeyDown(KEY_W);
+        entrada.atras = IsKeyDown(KEY_S);
+    }
+
+    if (usaFlechas)
+    {
+        entrada.izquierda =
+            entrada.izquierda || IsKeyDown(KEY_LEFT);
+
+        entrada.derecha =
+            entrada.derecha || IsKeyDown(KEY_RIGHT);
+
+        entrada.adelante =
+            entrada.adelante || IsKeyDown(KEY_UP);
+
+        entrada.atras =
+            entrada.atras || IsKeyDown(KEY_DOWN);
+    }
+
+    if (participante.control == CONTROL_TECLADO_FLECHAS)
+    {
+        entrada.saltar = IsKeyPressed(KEY_ENTER);
+        entrada.golpear = IsKeyPressed(KEY_RIGHT_SHIFT);
+    }
+    else if (usaWASD)
+    {
+        entrada.saltar = IsKeyPressed(KEY_SPACE);
+        entrada.golpear = IsKeyPressed(KEY_E);
+    }
+
+    return entrada;
+}
+
+
+bool AccionDireccionalControlPresionada(
+    const Participante& participante,
+    AccionDireccionalControl accion
+)
+{
+    if (!participante.conectado)
+    {
+        return false;
+    }
+
+    if (participante.control == CONTROL_GAMEPAD)
+    {
+        int boton = GAMEPAD_BUTTON_UNKNOWN;
+
+        switch (accion)
+        {
+            case CONTROL_DIRECCION_ARRIBA:
+                boton = GAMEPAD_BUTTON_RIGHT_FACE_UP;
+                break;
+
+            case CONTROL_DIRECCION_ABAJO:
+                boton = GAMEPAD_BUTTON_RIGHT_FACE_DOWN;
+                break;
+
+            case CONTROL_DIRECCION_IZQUIERDA:
+                boton = GAMEPAD_BUTTON_RIGHT_FACE_LEFT;
+                break;
+
+            case CONTROL_DIRECCION_DERECHA:
+                boton = GAMEPAD_BUTTON_RIGHT_FACE_RIGHT;
+                break;
+        }
+
+        return IsGamepadButtonPressed(
+            participante.indiceGamepad,
+            boton
+        );
+    }
+
+    bool usaFlechas =
+        participante.control == CONTROL_TECLADO_FLECHAS;
+
+    switch (accion)
+    {
+        case CONTROL_DIRECCION_ARRIBA:
+            return IsKeyPressed(usaFlechas ? KEY_UP : KEY_W);
+
+        case CONTROL_DIRECCION_ABAJO:
+            return IsKeyPressed(usaFlechas ? KEY_DOWN : KEY_S);
+
+        case CONTROL_DIRECCION_IZQUIERDA:
+            return IsKeyPressed(usaFlechas ? KEY_LEFT : KEY_A);
+
+        case CONTROL_DIRECCION_DERECHA:
+            return IsKeyPressed(usaFlechas ? KEY_RIGHT : KEY_D);
+    }
+
+    return false;
+}
+
+
+const char* ObtenerTextoAccionDireccionalControl(
+    const Participante& participante,
+    AccionDireccionalControl accion
+)
+{
+    if (participante.control == CONTROL_GAMEPAD)
+    {
+        switch (accion)
+        {
+            case CONTROL_DIRECCION_ARRIBA: return "Y";
+            case CONTROL_DIRECCION_ABAJO: return "A";
+            case CONTROL_DIRECCION_IZQUIERDA: return "X";
+            case CONTROL_DIRECCION_DERECHA: return "B";
+        }
+    }
+
+    if (participante.control == CONTROL_TECLADO_FLECHAS)
+    {
+        switch (accion)
+        {
+            case CONTROL_DIRECCION_ARRIBA: return "FLECHA ARRIBA";
+            case CONTROL_DIRECCION_ABAJO: return "FLECHA ABAJO";
+            case CONTROL_DIRECCION_IZQUIERDA: return "FLECHA IZQ";
+            case CONTROL_DIRECCION_DERECHA: return "FLECHA DER";
+        }
+    }
+
+    switch (accion)
+    {
+        case CONTROL_DIRECCION_ARRIBA: return "W";
+        case CONTROL_DIRECCION_ABAJO: return "S";
+        case CONTROL_DIRECCION_IZQUIERDA: return "A";
+        case CONTROL_DIRECCION_DERECHA: return "D";
+    }
+
+    return "?";
+}
+
+
+const char* ObtenerTextoBotonPrincipal(
+    const Participante& participante
+)
+{
+    if (participante.control == CONTROL_GAMEPAD)
+    {
+        return "A";
+    }
+
+    if (participante.control == CONTROL_TECLADO_FLECHAS)
+    {
+        return "ENTER";
+    }
+
+    return "ESPACIO";
+}
+
+
 const char* ObtenerNombreControlParticipante(
     const Participante& participante
 )

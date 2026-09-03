@@ -451,14 +451,6 @@ void MinijuegoColorSeguro::ConfigurarJugadores(
     int cantidadMaxima
 ) const
 {
-    Color colores[MAX_JUGADORES_PRUEBA] =
-    {
-        RED,
-        BLUE,
-        GREEN,
-        GOLD
-    };
-
     Vector3 spawns[MAX_JUGADORES_PRUEBA] =
     {
         { -0.65f, 1.0f, 0.55f },
@@ -478,12 +470,6 @@ void MinijuegoColorSeguro::ConfigurarJugadores(
         i++
     )
     {
-        jugadores[i].numero =
-            i + 1;
-
-        jugadores[i].color =
-            colores[i];
-
         jugadores[i].posicionSpawn =
             spawns[i];
 
@@ -563,7 +549,7 @@ void MinijuegoColorSeguro::Actualizar(
     float deltaTime,
     JugadorPrueba jugadores[],
     int cantidadMaxima,
-    ModoTeclado modoTeclado,
+    Participante participantes[],
     ParticulaTierra particulas[],
     int cantidadParticulas
 )
@@ -625,16 +611,17 @@ void MinijuegoColorSeguro::Actualizar(
         JugadorPrueba& jugador =
             jugadores[i];
 
-        if (!jugador.activo)
+        if (
+            !participantes[i].activo ||
+            !participantes[i].conectado
+        )
         {
             continue;
         }
 
-        EntradaJugadorPrueba entrada =
-            LeerEntradaJugadorPrueba(
-                i,
-                jugador,
-                modoTeclado
+        InputMinijuegoParticipante entrada =
+            LeerInputMinijuegoParticipante(
+                participantes[i]
             );
 
         ActualizarJugadorPrueba(
@@ -654,6 +641,7 @@ void MinijuegoColorSeguro::Actualizar(
     bool huboImpactoGolpeSuelo =
         ResolverGolpesSuelo(
             jugadores,
+            participantes,
             cantidadMaxima
         );
 
@@ -668,11 +656,13 @@ void MinijuegoColorSeguro::Actualizar(
 
     ResolverGolpesJugadores(
         jugadores,
+        participantes,
         cantidadMaxima
     );
 
     ResolverColisionesJugadoresNormales(
         jugadores,
+        participantes,
         cantidadMaxima
     );
 
@@ -690,6 +680,7 @@ void MinijuegoColorSeguro::Actualizar(
 void MinijuegoColorSeguro::Dibujar(
     const JugadorPrueba jugadores[],
     int cantidadMaxima,
+    const Participante participantes[],
     const ParticulaTierra particulas[],
     int cantidadParticulas,
     bool mostrarDebug
@@ -765,12 +756,14 @@ void MinijuegoColorSeguro::Dibujar(
     )
     {
         DibujarJugadorCuboPrueba(
-            jugadores[i]
+            jugadores[i],
+            participantes[i]
         );
 
         if (
             mostrarDebug &&
-            jugadores[i].activo &&
+            participantes[i].activo &&
+            participantes[i].conectado &&
             !jugadores[i].cayendo
         )
         {

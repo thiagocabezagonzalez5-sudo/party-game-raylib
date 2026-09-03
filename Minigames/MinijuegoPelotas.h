@@ -4,38 +4,12 @@
 #include "Minigames/TiposMinijuegos.h"
 
 
-const int CANTIDAD_PLATAFORMAS_COLOR = 7;
-
-
-enum FaseMinijuegoColor
+struct MinijuegoPelotas
 {
-    FASE_ELEGIR_PLATAFORMA = 0,
-    FASE_CAIDA_PLATAFORMAS
-};
-
-
-struct MinijuegoColorSeguro
-{
-    BloquePrueba plataformas[CANTIDAD_PLATAFORMAS_COLOR];
-    int cantidadPlataformas = 0;
+    BloquePrueba bloques[1];
+    int cantidadBloques = 0;
 
     Camera3D camara{};
-
-    Vector3 posicionCamaraBase{};
-    Vector3 objetivoCamaraBase{};
-
-    float tiempoTemblorCamara = 0.0f;
-    float intensidadTemblorCamara = 0.0f;
-
-    FaseMinijuegoColor fase =
-        FASE_ELEGIR_PLATAFORMA;
-
-    int indicePlataformaSegura = 0;
-    int numeroRonda = 1;
-
-    float tiempoFase = 5.0f;
-    float duracionElegirPlataforma = 5.0f;
-    float duracionCaidaPlataformas = 2.0f;
 
     void Inicializar();
 
@@ -62,8 +36,6 @@ struct MinijuegoColorSeguro
         const JugadorPrueba jugadores[],
         int cantidadMaxima,
         const Participante participantes[],
-        const ParticulaTierra particulas[],
-        int cantidadParticulas,
         bool mostrarDebug
     ) const;
 };

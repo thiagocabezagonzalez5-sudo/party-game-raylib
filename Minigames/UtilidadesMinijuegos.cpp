@@ -42,307 +42,6 @@ static float LimitarFloat(
 }
 
 
-int CantidadJugadoresTeclado(
-    ModoTeclado modoTeclado
-)
-{
-    return
-        modoTeclado == TECLADO_DIVIDIDO
-        ? 2
-        : 1;
-}
-
-
-int ObtenerIndiceGamepadParaJugador(
-    int indiceJugador,
-    ModoTeclado modoTeclado
-)
-{
-    int cantidadTeclado =
-        CantidadJugadoresTeclado(
-            modoTeclado
-        );
-
-    if (indiceJugador < cantidadTeclado)
-    {
-        return -1;
-    }
-
-    return
-        indiceJugador -
-        cantidadTeclado;
-}
-
-
-//==================================================
-// INPUT
-//==================================================
-
-static EntradaJugadorPrueba LeerEntradaTeclado(
-    int indiceJugador,
-    ModoTeclado modoTeclado
-)
-{
-    EntradaJugadorPrueba entrada{};
-
-    if (modoTeclado == TECLADO_COMPLETO)
-    {
-        if (indiceJugador != 0)
-        {
-            return entrada;
-        }
-
-        entrada.izquierda =
-            IsKeyDown(KEY_A) ||
-            IsKeyDown(KEY_LEFT);
-
-        entrada.derecha =
-            IsKeyDown(KEY_D) ||
-            IsKeyDown(KEY_RIGHT);
-
-        entrada.adelante =
-            IsKeyDown(KEY_W) ||
-            IsKeyDown(KEY_UP);
-
-        entrada.atras =
-            IsKeyDown(KEY_S) ||
-            IsKeyDown(KEY_DOWN);
-
-        entrada.saltar =
-            IsKeyPressed(KEY_SPACE);
-
-        entrada.golpear =
-            IsKeyPressed(KEY_E);
-
-        return entrada;
-    }
-
-    if (indiceJugador == 0)
-    {
-        entrada.izquierda =
-            IsKeyDown(KEY_A);
-
-        entrada.derecha =
-            IsKeyDown(KEY_D);
-
-        entrada.adelante =
-            IsKeyDown(KEY_W);
-
-        entrada.atras =
-            IsKeyDown(KEY_S);
-
-        entrada.saltar =
-            IsKeyPressed(KEY_SPACE);
-
-        entrada.golpear =
-            IsKeyPressed(KEY_E);
-    }
-    else if (indiceJugador == 1)
-    {
-        entrada.izquierda =
-            IsKeyDown(KEY_LEFT);
-
-        entrada.derecha =
-            IsKeyDown(KEY_RIGHT);
-
-        entrada.adelante =
-            IsKeyDown(KEY_UP);
-
-        entrada.atras =
-            IsKeyDown(KEY_DOWN);
-
-        entrada.saltar =
-            IsKeyPressed(KEY_ENTER);
-
-        entrada.golpear =
-            IsKeyPressed(KEY_RIGHT_SHIFT);
-    }
-
-    return entrada;
-}
-
-
-static EntradaJugadorPrueba LeerEntradaGamepad(
-    int indiceGamepad
-)
-{
-    EntradaJugadorPrueba entrada{};
-
-    if (!IsGamepadAvailable(indiceGamepad))
-    {
-        return entrada;
-    }
-
-    const float DEADZONE =
-        0.25f;
-
-    float ejeX =
-        GetGamepadAxisMovement(
-            indiceGamepad,
-            GAMEPAD_AXIS_LEFT_X
-        );
-
-    float ejeY =
-        GetGamepadAxisMovement(
-            indiceGamepad,
-            GAMEPAD_AXIS_LEFT_Y
-        );
-
-    entrada.izquierda =
-        IsGamepadButtonDown(
-            indiceGamepad,
-            GAMEPAD_BUTTON_LEFT_FACE_LEFT
-        ) ||
-        ejeX < -DEADZONE;
-
-    entrada.derecha =
-        IsGamepadButtonDown(
-            indiceGamepad,
-            GAMEPAD_BUTTON_LEFT_FACE_RIGHT
-        ) ||
-        ejeX > DEADZONE;
-
-    entrada.adelante =
-        IsGamepadButtonDown(
-            indiceGamepad,
-            GAMEPAD_BUTTON_LEFT_FACE_UP
-        ) ||
-        ejeY < -DEADZONE;
-
-    entrada.atras =
-        IsGamepadButtonDown(
-            indiceGamepad,
-            GAMEPAD_BUTTON_LEFT_FACE_DOWN
-        ) ||
-        ejeY > DEADZONE;
-
-    entrada.saltar =
-        IsGamepadButtonPressed(
-            indiceGamepad,
-            GAMEPAD_BUTTON_RIGHT_FACE_DOWN
-        );
-
-    entrada.golpear =
-        IsGamepadButtonPressed(
-            indiceGamepad,
-            GAMEPAD_BUTTON_RIGHT_FACE_RIGHT
-        );
-
-    return entrada;
-}
-
-
-EntradaJugadorPrueba LeerEntradaJugadorPrueba(
-    int indiceJugador,
-    const JugadorPrueba& jugador,
-    ModoTeclado modoTeclado
-)
-{
-    if (jugador.usaGamepad)
-    {
-        return LeerEntradaGamepad(
-            jugador.indiceGamepad
-        );
-    }
-
-    return LeerEntradaTeclado(
-        indiceJugador,
-        modoTeclado
-    );
-}
-
-
-//==================================================
-// CONEXION DE JUGADORES
-//==================================================
-
-void ActualizarJugadoresConectadosPrueba(
-    JugadorPrueba jugadores[],
-    int cantidadMaxima,
-    int& cantidadActivos,
-    ModoTeclado modoTeclado
-)
-{
-    int cantidadTeclado =
-        CantidadJugadoresTeclado(
-            modoTeclado
-        );
-
-    cantidadActivos =
-        0;
-
-    for (
-        int i = 0;
-        i < cantidadMaxima;
-        i++
-    )
-    {
-        JugadorPrueba& jugador =
-            jugadores[i];
-
-        bool estabaActivo =
-            jugador.activo;
-
-        if (i < cantidadTeclado)
-        {
-            jugador.activo =
-                true;
-
-            jugador.usaGamepad =
-                false;
-
-            jugador.indiceGamepad =
-                -1;
-        }
-        else
-        {
-            int indiceGamepad =
-                ObtenerIndiceGamepadParaJugador(
-                    i,
-                    modoTeclado
-                );
-
-            jugador.usaGamepad =
-                true;
-
-            jugador.indiceGamepad =
-                indiceGamepad;
-
-            jugador.activo =
-                IsGamepadAvailable(
-                    indiceGamepad
-                );
-        }
-
-        if (
-            jugador.activo &&
-            !estabaActivo
-        )
-        {
-            ReiniciarJugadorPrueba(
-                jugador
-            );
-        }
-
-        if (
-            !jugador.activo &&
-            estabaActivo
-        )
-        {
-            jugador.velocidad = {};
-            jugador.empuje = {};
-            jugador.cayendo = false;
-            jugador.enSuelo = false;
-        }
-
-        if (jugador.activo)
-        {
-            cantidadActivos++;
-        }
-    }
-}
-
-
 //==================================================
 // BLOQUES / HITBOXES
 //==================================================
@@ -630,6 +329,112 @@ static void CrearParticulasSalto(
 }
 
 
+static void CrearParticulasImpactoGolpeSuelo(
+    ParticulaTierra particulas[],
+    int cantidadMaxima,
+    const JugadorPrueba& jugador
+)
+{
+    // El ground pound genera una corona mucho mas grande
+    // que las particulas normales del salto. Los cubos mas
+    // grandes representan pedazos del suelo desprendidos.
+    const int CANTIDAD_CREAR = 42;
+    int creadas = 0;
+
+    for (
+        int i = 0;
+        i < cantidadMaxima &&
+        creadas < CANTIDAD_CREAR;
+        i++
+    )
+    {
+        ParticulaTierra& particula =
+            particulas[i];
+
+        if (particula.activa)
+        {
+            continue;
+        }
+
+        float angulo =
+            AleatorioFloat(0.0f, 6.28318f);
+
+        float velocidadHorizontal =
+            AleatorioFloat(2.4f, 6.8f);
+
+        float distanciaInicial =
+            AleatorioFloat(0.15f, 0.58f);
+
+        particula.activa = true;
+
+        particula.posicion =
+        {
+            jugador.posicion.x +
+                cosf(angulo) * distanciaInicial,
+
+            jugador.posicion.y -
+                jugador.tamano.y / 2.0f +
+                AleatorioFloat(0.03f, 0.16f),
+
+            jugador.posicion.z +
+                sinf(angulo) * distanciaInicial
+        };
+
+        particula.velocidad =
+        {
+            cosf(angulo) * velocidadHorizontal,
+            AleatorioFloat(2.0f, 5.8f),
+            sinf(angulo) * velocidadHorizontal
+        };
+
+        particula.vidaMaxima =
+            AleatorioFloat(0.48f, 0.92f);
+
+        particula.vida =
+            particula.vidaMaxima;
+
+        bool esBloqueGrande =
+            creadas < 14;
+
+        particula.tamano =
+            esBloqueGrande
+            ? AleatorioFloat(0.16f, 0.30f)
+            : AleatorioFloat(0.07f, 0.17f);
+
+        int varianteColor =
+            GetRandomValue(0, 4);
+
+        if (varianteColor == 0)
+        {
+            particula.color =
+                Color{ 92, 72, 58, 255 };
+        }
+        else if (varianteColor == 1)
+        {
+            particula.color =
+                Color{ 126, 84, 48, 255 };
+        }
+        else if (varianteColor == 2)
+        {
+            particula.color =
+                Color{ 164, 119, 70, 255 };
+        }
+        else if (varianteColor == 3)
+        {
+            particula.color =
+                Color{ 112, 112, 118, 255 };
+        }
+        else
+        {
+            particula.color =
+                Color{ 154, 151, 145, 255 };
+        }
+
+        creadas++;
+    }
+}
+
+
 void ActualizarParticulasTierra(
     ParticulaTierra particulas[],
     int cantidadMaxima,
@@ -872,7 +677,7 @@ static void ResolverColisionZ(
 
 static void ActualizarMovimientoHorizontal(
     JugadorPrueba& jugador,
-    const EntradaJugadorPrueba& entrada,
+    const InputMinijuegoParticipante& entrada,
     BloquePrueba bloques[],
     int cantidadBloques,
     bool usarEmpuje,
@@ -1066,7 +871,7 @@ static void ActualizarMovimientoHorizontal(
 
 static void ActualizarVertical(
     JugadorPrueba& jugador,
-    const EntradaJugadorPrueba& entrada,
+    const InputMinijuegoParticipante& entrada,
     BloquePrueba bloques[],
     int cantidadBloques,
     ParticulaTierra particulas[],
@@ -1207,6 +1012,12 @@ static void ActualizarVertical(
             {
                 jugador.impactoGolpeSuelo =
                     true;
+
+                CrearParticulasImpactoGolpeSuelo(
+                    particulas,
+                    cantidadParticulas,
+                    jugador
+                );
             }
 
             cajaJugador =
@@ -1308,7 +1119,7 @@ void ReiniciarJugadorPrueba(
 
 void ActualizarJugadorPrueba(
     JugadorPrueba& jugador,
-    const EntradaJugadorPrueba& entrada,
+    const InputMinijuegoParticipante& entrada,
     BloquePrueba bloques[],
     int cantidadBloques,
     ParticulaTierra particulas[],
@@ -1383,7 +1194,7 @@ void ActualizarJugadorPrueba(
                 1.6f;
         }
 
-        EntradaJugadorPrueba entradaVacia{};
+        InputMinijuegoParticipante entradaVacia{};
 
         ActualizarVertical(
             jugador,
@@ -1508,6 +1319,7 @@ void ActualizarJugadorPrueba(
 
 void ResolverColisionesJugadoresNormales(
     JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 )
 {
@@ -1524,7 +1336,8 @@ void ResolverColisionesJugadoresNormales(
             jugadores[i];
 
         if (
-            !a.activo ||
+            !participantes[i].activo ||
+            !participantes[i].conectado ||
             a.cayendo
         )
         {
@@ -1541,7 +1354,8 @@ void ResolverColisionesJugadoresNormales(
                 jugadores[j];
 
             if (
-                !b.activo ||
+                !participantes[j].activo ||
+                !participantes[j].conectado ||
                 b.cayendo
             )
             {
@@ -1614,6 +1428,7 @@ void ResolverColisionesJugadoresNormales(
 
 void ResolverColisionesPelotas(
     JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 )
 {
@@ -1627,7 +1442,8 @@ void ResolverColisionesPelotas(
             jugadores[i];
 
         if (
-            !a.activo ||
+            !participantes[i].activo ||
+            !participantes[i].conectado ||
             a.cayendo
         )
         {
@@ -1644,7 +1460,8 @@ void ResolverColisionesPelotas(
                 jugadores[j];
 
             if (
-                !b.activo ||
+                !participantes[j].activo ||
+                !participantes[j].conectado ||
                 b.cayendo
             )
             {
@@ -1804,6 +1621,7 @@ void ResolverColisionesPelotas(
 
 bool ResolverGolpesSuelo(
     JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 )
 {
@@ -1820,7 +1638,8 @@ bool ResolverGolpesSuelo(
             jugadores[i];
 
         if (
-            !atacante.activo ||
+            !participantes[i].activo ||
+            !participantes[i].conectado ||
             !atacante.impactoGolpeSuelo
         )
         {
@@ -1848,7 +1667,8 @@ bool ResolverGolpesSuelo(
                 jugadores[j];
 
             if (
-                !objetivo.activo ||
+                !participantes[j].activo ||
+                !participantes[j].conectado ||
                 objetivo.cayendo ||
                 objetivo.aplastado ||
                 objetivo.tiempoInmunidad > 0.0f
@@ -1925,6 +1745,7 @@ bool ResolverGolpesSuelo(
 
 void ResolverGolpesJugadores(
     JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 )
 {
@@ -1938,7 +1759,8 @@ void ResolverGolpesJugadores(
             jugadores[i];
 
         if (
-            !atacante.activo ||
+            !participantes[i].activo ||
+            !participantes[i].conectado ||
             atacante.cayendo ||
             atacante.aplastado ||
             !atacante.golpeando ||
@@ -1963,7 +1785,8 @@ void ResolverGolpesJugadores(
                 jugadores[j];
 
             if (
-                !objetivo.activo ||
+                !participantes[j].activo ||
+                !participantes[j].conectado ||
                 objetivo.cayendo ||
                 objetivo.aplastado ||
                 objetivo.tiempoInmunidad > 0.0f
@@ -2044,11 +1867,13 @@ void ResolverGolpesJugadores(
 //==================================================
 
 void DibujarJugadorCuboPrueba(
-    const JugadorPrueba& jugador
+    const JugadorPrueba& jugador,
+    const Participante& participante
 )
 {
     if (
-        !jugador.activo ||
+        !participante.activo ||
+        !participante.conectado ||
         jugador.cayendo
     )
     {
@@ -2089,7 +1914,7 @@ void DibujarJugadorCuboPrueba(
 
     Color colorVisual =
         Fade(
-            jugador.color,
+            participante.color,
             alpha
         );
 
@@ -2151,11 +1976,13 @@ void DibujarJugadorCuboPrueba(
 
 
 void DibujarJugadorPelotaPrueba(
-    const JugadorPrueba& jugador
+    const JugadorPrueba& jugador,
+    const Participante& participante
 )
 {
     if (
-        !jugador.activo ||
+        !participante.activo ||
+        !participante.conectado ||
         jugador.cayendo
     )
     {
@@ -2169,7 +1996,7 @@ void DibujarJugadorPelotaPrueba(
     DrawSphere(
         jugador.posicion,
         radio,
-        jugador.color
+        participante.color
     );
 
     DrawSphereWires(

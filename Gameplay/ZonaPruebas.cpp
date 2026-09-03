@@ -136,14 +136,6 @@ static void ConfigurarJugadoresPrincipal(
     ZonaPruebas& zona
 )
 {
-    Color colores[MAX_JUGADORES_PRUEBA] =
-    {
-        RED,
-        BLUE,
-        GREEN,
-        GOLD
-    };
-
     Vector3 spawns[MAX_JUGADORES_PRUEBA] =
     {
         { -1.2f, 1.0f, 4.0f },
@@ -160,12 +152,6 @@ static void ConfigurarJugadoresPrincipal(
     {
         JugadorPrueba& jugador =
             zona.jugadores[i];
-
-        jugador.numero =
-            i + 1;
-
-        jugador.color =
-            colores[i];
 
         jugador.posicionSpawn =
             spawns[i];
@@ -210,16 +196,20 @@ static void ActualizarZonaPrincipal(
         JugadorPrueba& jugador =
             zona.jugadores[i];
 
-        if (!jugador.activo)
+        const Participante& participante =
+            zona.participantes[i];
+
+        if (
+            !participante.activo ||
+            !participante.conectado
+        )
         {
             continue;
         }
 
-        EntradaJugadorPrueba entrada =
-            LeerEntradaJugadorPrueba(
-                i,
-                jugador,
-                zona.modoTecladoActual
+        InputMinijuegoParticipante entrada =
+            LeerInputMinijuegoParticipante(
+                participante
             );
 
         ActualizarJugadorPrueba(
@@ -238,16 +228,19 @@ static void ActualizarZonaPrincipal(
 
     ResolverGolpesSuelo(
         zona.jugadores,
+        zona.participantes,
         MAX_JUGADORES_PRUEBA
     );
 
     ResolverGolpesJugadores(
         zona.jugadores,
+        zona.participantes,
         MAX_JUGADORES_PRUEBA
     );
 
     ResolverColisionesJugadoresNormales(
         zona.jugadores,
+        zona.participantes,
         MAX_JUGADORES_PRUEBA
     );
 }
@@ -318,12 +311,14 @@ static void DibujarZonaPrincipal(
     )
     {
         DibujarJugadorCuboPrueba(
-            zona.jugadores[i]
+            zona.jugadores[i],
+            zona.participantes[i]
         );
 
         if (
             zona.mostrarDebug &&
-            zona.jugadores[i].activo &&
+            zona.participantes[i].activo &&
+            zona.participantes[i].conectado &&
             !zona.jugadores[i].cayendo
         )
         {
@@ -374,7 +369,8 @@ static void DibujarZonaPrincipal(
 //==================================================
 
 void ZonaPruebas::Inicializar(
-    ModoTeclado modoTeclado
+    Participante participantesJuego[],
+    int cantidadParticipantesJuego
 )
 {
     volverAlMenu =
@@ -383,11 +379,11 @@ void ZonaPruebas::Inicializar(
     mostrarDebug =
         false;
 
-    modoTecladoActual =
-        modoTeclado;
+    participantes =
+        participantesJuego;
 
-    cantidadJugadoresActivos =
-        0;
+    cantidadParticipantes =
+        cantidadParticipantesJuego;
 
     for (
         int i = 0;
@@ -397,22 +393,6 @@ void ZonaPruebas::Inicializar(
     {
         particulas[i].activa =
             false;
-    }
-
-    for (
-        int i = 0;
-        i < MAX_JUGADORES_PRUEBA;
-        i++
-    )
-    {
-        jugadores[i].activo =
-            false;
-
-        jugadores[i].usaGamepad =
-            false;
-
-        jugadores[i].indiceGamepad =
-            -1;
     }
 
     ConfigurarZonaPrincipal(
@@ -513,19 +493,7 @@ void ZonaPruebas::CambiarModo(
     )
     {
         minijuego67.Inicializar();
-
-        minijuego67.ConfigurarJugadores(
-            jugadores,
-            MAX_JUGADORES_PRUEBA
-        );
     }
-
-    ActualizarJugadoresConectadosPrueba(
-        jugadores,
-        MAX_JUGADORES_PRUEBA,
-        cantidadJugadoresActivos,
-        modoTecladoActual
-    );
 
     if (
         modoActual !=
@@ -541,7 +509,7 @@ void ZonaPruebas::CambiarModo(
     )
     {
         minijuegoTronco.Reiniciar(
-            jugadores,
+            participantes,
             MAX_JUGADORES_PRUEBA
         );
     }
@@ -552,7 +520,7 @@ void ZonaPruebas::CambiarModo(
     )
     {
         minijuego67.Reiniciar(
-            jugadores,
+            participantes,
             MAX_JUGADORES_PRUEBA
         );
     }
@@ -714,7 +682,7 @@ void ZonaPruebas::Actualizar(
         )
         {
             minijuegoTronco.Reiniciar(
-                jugadores,
+                participantes,
                 MAX_JUGADORES_PRUEBA
             );
         }
@@ -724,7 +692,7 @@ void ZonaPruebas::Actualizar(
         )
         {
             minijuego67.Reiniciar(
-                jugadores,
+                participantes,
                 MAX_JUGADORES_PRUEBA
             );
         }
@@ -743,12 +711,41 @@ void ZonaPruebas::Actualizar(
         PRUEBA_MODELOS
     )
     {
-        ActualizarJugadoresConectadosPrueba(
-            jugadores,
-            MAX_JUGADORES_PRUEBA,
-            cantidadJugadoresActivos,
-            modoTecladoActual
-        );
+        for (
+            int i = 0;
+            i < MAX_PARTICIPANTES;
+            i++
+        )
+        {
+            bool estabaConectado =
+                participantes[i].conectado;
+
+            ActualizarConexionParticipante(
+                participantes[i]
+            );
+
+            if (
+                !participantes[i].activo ||
+                participantes[i].conectado == estabaConectado
+            )
+            {
+                continue;
+            }
+
+            if (participantes[i].conectado)
+            {
+                ReiniciarJugadorPrueba(
+                    jugadores[i]
+                );
+            }
+            else
+            {
+                jugadores[i].velocidad = {};
+                jugadores[i].empuje = {};
+                jugadores[i].cayendo = false;
+                jugadores[i].enSuelo = false;
+            }
+        }
     }
 
     if (
@@ -770,7 +767,7 @@ void ZonaPruebas::Actualizar(
             deltaTime,
             jugadores,
             MAX_JUGADORES_PRUEBA,
-            modoTecladoActual,
+            participantes,
             particulas,
             MAX_PARTICULAS_TIERRA
         );
@@ -784,7 +781,7 @@ void ZonaPruebas::Actualizar(
             deltaTime,
             jugadores,
             MAX_JUGADORES_PRUEBA,
-            modoTecladoActual,
+            participantes,
             particulas,
             MAX_PARTICULAS_TIERRA
         );
@@ -805,9 +802,8 @@ void ZonaPruebas::Actualizar(
     {
         minijuegoTronco.Actualizar(
             deltaTime,
-            jugadores,
             MAX_JUGADORES_PRUEBA,
-            modoTecladoActual
+            participantes
         );
     }
     else if (
@@ -817,9 +813,8 @@ void ZonaPruebas::Actualizar(
     {
         minijuego67.Actualizar(
             deltaTime,
-            jugadores,
             MAX_JUGADORES_PRUEBA,
-            modoTecladoActual
+            participantes
         );
     }
 }
@@ -848,6 +843,7 @@ void ZonaPruebas::Dibujar() const
         minijuegoColor.Dibujar(
             jugadores,
             MAX_JUGADORES_PRUEBA,
+            participantes,
             particulas,
             MAX_PARTICULAS_TIERRA,
             mostrarDebug
@@ -861,6 +857,7 @@ void ZonaPruebas::Dibujar() const
         minijuegoPelotas.Dibujar(
             jugadores,
             MAX_JUGADORES_PRUEBA,
+            participantes,
             mostrarDebug
         );
     }
@@ -879,7 +876,7 @@ void ZonaPruebas::Dibujar() const
         minijuegoTronco.Dibujar(
             jugadores,
             MAX_JUGADORES_PRUEBA,
-            modoTecladoActual
+            participantes
         );
     }
     else if (
@@ -888,9 +885,8 @@ void ZonaPruebas::Dibujar() const
     )
     {
         minijuego67.Dibujar(
-            jugadores,
             MAX_JUGADORES_PRUEBA,
-            modoTecladoActual
+            participantes
         );
     }
 
@@ -942,7 +938,7 @@ void ZonaPruebas::Dibujar() const
         DrawText(
             TextFormat(
                 "JUGADORES ACTIVOS: %d / 4",
-                cantidadJugadoresActivos
+                cantidadParticipantes
             ),
             30,
             GetScreenHeight() - 42,
@@ -959,5 +955,6 @@ void ZonaPruebas::Dibujar() const
 
 void ZonaPruebas::Descargar()
 {
+    minijuego67.Descargar();
     pruebaModelos.Descargar();
 }

@@ -23,6 +23,26 @@ struct InputSeleccionParticipante
 };
 
 
+struct InputMinijuegoParticipante
+{
+    bool izquierda = false;
+    bool derecha = false;
+    bool adelante = false;
+    bool atras = false;
+    bool saltar = false;
+    bool golpear = false;
+};
+
+
+enum AccionDireccionalControl
+{
+    CONTROL_DIRECCION_ARRIBA = 0,
+    CONTROL_DIRECCION_ABAJO,
+    CONTROL_DIRECCION_IZQUIERDA,
+    CONTROL_DIRECCION_DERECHA
+};
+
+
 void ConfigurarControlesParticipantes(
     Participante participantes[],
     int cantidadMaxima,
@@ -47,6 +67,28 @@ InputJugador LeerInputParticipante(
 
 
 InputSeleccionParticipante LeerInputSeleccionParticipante(
+    const Participante& participante
+);
+
+
+InputMinijuegoParticipante LeerInputMinijuegoParticipante(
+    const Participante& participante
+);
+
+
+bool AccionDireccionalControlPresionada(
+    const Participante& participante,
+    AccionDireccionalControl accion
+);
+
+
+const char* ObtenerTextoAccionDireccionalControl(
+    const Participante& participante,
+    AccionDireccionalControl accion
+);
+
+
+const char* ObtenerTextoBotonPrincipal(
     const Participante& participante
 );
 

@@ -372,7 +372,8 @@ void Juego::Inicializar()
 
     zonaPruebas
         .Inicializar(
-            config.modoTeclado
+            participantes,
+            cantidadParticipantes
         );
 
 
@@ -844,7 +845,8 @@ void Juego::Actualizar(
 
                     zonaPruebas
                         .Inicializar(
-                            config.modoTeclado
+                            participantes,
+                            cantidadParticipantes
                         );
 
 

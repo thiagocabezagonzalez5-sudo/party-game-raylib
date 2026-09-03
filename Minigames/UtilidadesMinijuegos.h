@@ -1,33 +1,8 @@
 #pragma once
 
-#include "Core/ConfiguracionJuego.h"
+#include "Core/Participante.h"
 #include "Minigames/TiposMinijuegos.h"
-
-
-int CantidadJugadoresTeclado(
-    ModoTeclado modoTeclado
-);
-
-
-int ObtenerIndiceGamepadParaJugador(
-    int indiceJugador,
-    ModoTeclado modoTeclado
-);
-
-
-EntradaJugadorPrueba LeerEntradaJugadorPrueba(
-    int indiceJugador,
-    const JugadorPrueba& jugador,
-    ModoTeclado modoTeclado
-);
-
-
-void ActualizarJugadoresConectadosPrueba(
-    JugadorPrueba jugadores[],
-    int cantidadMaxima,
-    int& cantidadActivos,
-    ModoTeclado modoTeclado
-);
+#include "Systems/Input.h"
 
 
 void ReiniciarJugadorPrueba(
@@ -63,7 +38,7 @@ BoundingBox CrearHitboxJugadorPrueba(
 
 void ActualizarJugadorPrueba(
     JugadorPrueba& jugador,
-    const EntradaJugadorPrueba& entrada,
+    const InputMinijuegoParticipante& entrada,
     BloquePrueba bloques[],
     int cantidadBloques,
     ParticulaTierra particulas[],
@@ -77,24 +52,28 @@ void ActualizarJugadorPrueba(
 
 void ResolverColisionesJugadoresNormales(
     JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 );
 
 
 void ResolverColisionesPelotas(
     JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 );
 
 
 bool ResolverGolpesSuelo(
     JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 );
 
 
 void ResolverGolpesJugadores(
     JugadorPrueba jugadores[],
+    const Participante participantes[],
     int cantidadMaxima
 );
 
@@ -113,10 +92,12 @@ void DibujarParticulasTierra(
 
 
 void DibujarJugadorCuboPrueba(
-    const JugadorPrueba& jugador
+    const JugadorPrueba& jugador,
+    const Participante& participante
 );
 
 
 void DibujarJugadorPelotaPrueba(
-    const JugadorPrueba& jugador
+    const JugadorPrueba& jugador,
+    const Participante& participante
 );

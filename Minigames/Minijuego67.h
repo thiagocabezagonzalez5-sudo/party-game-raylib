@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/ConfiguracionJuego.h"
+#include "Core/Participante.h"
 #include "Minigames/TiposMinijuegos.h"
 
 
@@ -42,6 +42,10 @@ struct Minijuego67
         MAX_JUGADORES_PRUEBA
     ];
 
+    int ordenActivoPorJugador[
+        MAX_JUGADORES_PRUEBA
+    ] = { -1, -1, -1, -1 };
+
     EstadoMesa67 mesas[2] =
     {
         MESA_67_VACIA,
@@ -80,27 +84,20 @@ struct Minijuego67
 
     void Inicializar();
 
-    void ConfigurarJugadores(
-        JugadorPrueba jugadores[],
-        int cantidadMaxima
-    ) const;
-
     void Reiniciar(
-        const JugadorPrueba jugadores[],
+        const Participante participantes[],
         int cantidadMaxima
     );
 
     void Actualizar(
         float deltaTime,
-        const JugadorPrueba jugadores[],
         int cantidadMaxima,
-        ModoTeclado modoTeclado
+        const Participante participantes[]
     );
 
     void Dibujar(
-        const JugadorPrueba jugadores[],
         int cantidadMaxima,
-        ModoTeclado modoTeclado
+        const Participante participantes[]
     ) const;
 
     void Descargar();
