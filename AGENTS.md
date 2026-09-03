@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Este repositorio contiene un juego party 3D local inspirado en el ritmo y la estructura de Mario Party. Debe admitir 2 o 4 jugadores locales, teclado y gamepads, tableros por turnos y minijuegos cortos. Las reglas pueden tomar referencias de juegos del género, pero los nombres, escenarios, personajes, arte, audio y código deben ser originales.
+Este repositorio contiene un juego party 3D local inspirado en el ritmo y la estructura de Mario Party. Debe admitir 2, 3 o 4 jugadores locales, teclado y gamepads, tableros por turnos y minijuegos cortos. Las reglas pueden tomar referencias de juegos del género, pero los nombres, escenarios, personajes, arte, audio y código deben ser originales.
 
 ## Restricciones académicas y técnicas
 
@@ -29,7 +29,7 @@ Este repositorio contiene un juego party 3D local inspirado en el ritmo y la est
 
 ## Jugadores y controles
 
-- Soportar hasta cuatro jugadores locales.
+- Soportar hasta cuatro jugadores locales y permitir partidas de 2, 3 o 4 participantes.
 - Respetar el modo de teclado configurado y la asignación actual de gamepads.
 - No asumir que todos los controles están conectados.
 - Manejar conexión y desconexión de gamepads sin dejar una ronda imposible.
@@ -53,7 +53,7 @@ Luego implementar un solo minijuego por tarea. Cada minijuego debe incluir:
 - Estado jugando y pantalla final.
 - Reinicio con `R` dentro de Zona de Pruebas.
 - Salida segura al menú o al selector de pruebas.
-- Soporte para 2 y 4 jugadores cuando corresponda.
+- Soporte para 2, 3 y 4 jugadores cuando las reglas del minijuego lo permitan; los formatos estrictamente 2 vs 2 pueden exigir 2 o 4.
 - Cámara legible para multijugador local.
 - Tiempo delta para movimiento y animaciones.
 - Límites de velocidad y resolución estable de colisiones.
