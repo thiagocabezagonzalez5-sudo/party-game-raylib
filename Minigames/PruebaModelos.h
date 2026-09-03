@@ -10,7 +10,7 @@ struct PruebaModelos
     ModelAnimation* animaciones =
         nullptr;
 
-    unsigned int cantidadAnimaciones =
+    int cantidadAnimaciones =
         0;
 
     int indiceAnimacionIdle =
