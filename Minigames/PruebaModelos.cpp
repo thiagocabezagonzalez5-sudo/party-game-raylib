@@ -104,7 +104,7 @@ void PruebaModelos::Inicializar()
             -1;
 
         for (
-            unsigned int i = 0;
+            int i = 0;
             animaciones != nullptr &&
             i < cantidadAnimaciones;
             i++
