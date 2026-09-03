@@ -3,7 +3,6 @@
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
-#include "Minigames/CombateJugadores.h"
 
 
 const int CANTIDAD_PLATAFORMAS_COLOR = 7;
@@ -101,12 +100,3 @@ struct MinijuegoColorSeguro
 
     const ResultadoMinijuego& ObtenerResultado() const;
 };
-
-
-// En los minijuegos de jugadores normales usamos colision
-// solida sin empuje y golpes con ralentizacion/particulas.
-// MinijuegoPelotas.cpp no incluye este encabezado, por lo que
-// conserva ResolverColisionesPelotas() y su fisica de empuje.
-#define ActualizarJugadorPrueba ActualizarJugadorPruebaConEfectos
-#define ResolverColisionesJugadoresNormales ResolverColisionesJugadoresSinEmpuje
-#define ResolverGolpesJugadores ResolverGolpesJugadoresConEfectos
