@@ -6,6 +6,10 @@
 #include <cmath>
 
 
+//==================================================
+// CONSTANTES
+//==================================================
+
 static const float DURACION_PREPARACION_ISLA = 3.0f;
 static const float DURACION_PARTIDA_ISLA = 30.0f;
 static const float DURACION_TEXTO_YA_ISLA = 0.75f;
@@ -15,6 +19,16 @@ static const float FUERZA_EXPLOSION_NORMAL = 5.2f;
 static const float FUERZA_EXPLOSION_FINAL = 8.0f;
 static const float DURACION_ATURDIMIENTO = 0.75f;
 
+static const float FUERZA_DIRECTA_NORMAL = 19.0f;
+static const float FUERZA_DIRECTA_ESPECIAL = 23.0f;
+static const float SALTO_DIRECTO_NORMAL = 10.0f;
+static const float SALTO_DIRECTO_ESPECIAL = 12.5f;
+static const float DURACION_VUELO_DIRECTO = 0.55f;
+
+
+//==================================================
+// UTILIDADES
+//==================================================
 
 static float MagnitudHorizontalIsla(
     float x,
@@ -71,6 +85,95 @@ static Vector3 PuntoAleatorioIsla(
 }
 
 
+static float ObtenerProgresoProyectil(
+    const ProyectilIslaFuego& proyectil
+)
+{
+    if (proyectil.duracionAviso <= 0.0f)
+    {
+        return 0.0f;
+    }
+
+    float progreso =
+        proyectil.tiempoHastaImpacto /
+        proyectil.duracionAviso;
+
+    if (progreso < 0.0f)
+    {
+        progreso = 0.0f;
+    }
+
+    if (progreso > 1.0f)
+    {
+        progreso = 1.0f;
+    }
+
+    return progreso;
+}
+
+
+static Vector3 ObtenerPosicionProyectil(
+    const ProyectilIslaFuego& proyectil
+)
+{
+    float progreso =
+        ObtenerProgresoProyectil(
+            proyectil
+        );
+
+    return Vector3
+    {
+        proyectil.puntoImpacto.x,
+        0.55f + progreso * 9.5f,
+        proyectil.puntoImpacto.z
+    };
+}
+
+
+static float ObtenerRadioCuerpoProyectil(
+    const ProyectilIslaFuego& proyectil
+)
+{
+    return proyectil.especial
+        ? 0.58f
+        : 0.34f;
+}
+
+
+static bool ProyectilTocaJugador(
+    const ProyectilIslaFuego& proyectil,
+    const JugadorPrueba& jugador
+)
+{
+    Vector3 posicionProyectil =
+        ObtenerPosicionProyectil(
+            proyectil
+        );
+
+    float radio =
+        ObtenerRadioCuerpoProyectil(
+            proyectil
+        );
+
+    BoundingBox cajaJugador =
+        CrearHitboxJugadorPrueba(
+            jugador
+        );
+
+    return
+        posicionProyectil.x + radio >= cajaJugador.min.x &&
+        posicionProyectil.x - radio <= cajaJugador.max.x &&
+        posicionProyectil.y + radio >= cajaJugador.min.y &&
+        posicionProyectil.y - radio <= cajaJugador.max.y &&
+        posicionProyectil.z + radio >= cajaJugador.min.z &&
+        posicionProyectil.z - radio <= cajaJugador.max.z;
+}
+
+
+//==================================================
+// PARTICULAS
+//==================================================
+
 static void CrearParticulasExplosionIsla(
     ParticulaTierra particulas[],
     int cantidadMaxima,
@@ -95,8 +198,7 @@ static void CrearParticulasExplosionIsla(
 
     for (
         int i = 0;
-        i < cantidadMaxima &&
-        creadas < objetivo;
+        i < cantidadMaxima && creadas < objetivo;
         i++
     )
     {
@@ -171,6 +273,10 @@ static void CrearParticulasExplosionIsla(
 }
 
 
+//==================================================
+// RESULTADO
+//==================================================
+
 static void InicializarResultadoIsla(
     MinijuegoIslaFuego& minijuego,
     const Participante participantes[]
@@ -190,7 +296,11 @@ static int ContarVivosIsla(
 {
     int cantidad = 0;
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
     {
         if (
             minijuego.resultado.participantes[i].participo &&
@@ -202,140 +312,6 @@ static int ContarVivosIsla(
     }
 
     return cantidad;
-}
-
-
-static void LanzarProyectilIsla(
-    MinijuegoIslaFuego& minijuego,
-    bool especial
-)
-{
-    minijuego.proyectil = {};
-
-    minijuego.proyectil.activo = true;
-    minijuego.proyectil.especial = especial;
-    minijuego.proyectil.puntoImpacto =
-        PuntoAleatorioIsla(
-            especial
-            ? 0.46f
-            : 0.82f
-        );
-
-    minijuego.proyectil.duracionAviso =
-        especial
-        ? 1.55f
-        : 1.18f;
-
-    minijuego.proyectil.tiempoHastaImpacto =
-        minijuego.proyectil.duracionAviso;
-
-    minijuego.proyectil.radioExplosion =
-        especial
-        ? 3.35f
-        : 2.05f;
-
-    if (especial)
-    {
-        minijuego.disparoFinalRealizado = true;
-    }
-}
-
-
-static void AplicarExplosionIsla(
-    MinijuegoIslaFuego& minijuego,
-    JugadorPrueba jugadores[],
-    Participante participantes[],
-    ParticulaTierra particulas[],
-    int cantidadParticulas
-)
-{
-    const ProyectilIslaFuego& proyectil =
-        minijuego.proyectil;
-
-    CrearParticulasExplosionIsla(
-        particulas,
-        cantidadParticulas,
-        proyectil.puntoImpacto,
-        proyectil.especial
-    );
-
-    float fuerzaBase =
-        proyectil.especial
-        ? FUERZA_EXPLOSION_FINAL
-        : FUERZA_EXPLOSION_NORMAL;
-
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
-    {
-        if (
-            !minijuego.resultado.participantes[i].participo ||
-            minijuego.estadosJugadores[i].eliminado ||
-            !participantes[i].conectado
-        )
-        {
-            continue;
-        }
-
-        JugadorPrueba& jugador =
-            jugadores[i];
-
-        float dx =
-            jugador.posicion.x -
-            proyectil.puntoImpacto.x;
-
-        float dz =
-            jugador.posicion.z -
-            proyectil.puntoImpacto.z;
-
-        float distancia =
-            MagnitudHorizontalIsla(dx, dz);
-
-        if (distancia > proyectil.radioExplosion)
-        {
-            continue;
-        }
-
-        // Saltar en el momento del impacto evita el efecto,
-        // igual que en la referencia de la wiki.
-        if (!jugador.enSuelo)
-        {
-            continue;
-        }
-
-        if (distancia < 0.05f)
-        {
-            dx = 1.0f;
-            dz = 0.0f;
-            distancia = 1.0f;
-        }
-
-        float normalX = dx / distancia;
-        float normalZ = dz / distancia;
-
-        float cercania =
-            1.0f -
-            distancia /
-            proyectil.radioExplosion;
-
-        float fuerza =
-            fuerzaBase *
-            (0.45f + 0.55f * cercania);
-
-        jugador.empuje.x +=
-            normalX * fuerza;
-
-        jugador.empuje.z +=
-            normalZ * fuerza;
-
-        jugador.velocidad.y =
-            3.4f +
-            cercania * 2.0f;
-
-        jugador.enSuelo = false;
-
-        minijuego.estadosJugadores[i].tiempoAturdido =
-            DURACION_ATURDIMIENTO +
-            (proyectil.especial ? 0.25f : 0.0f);
-    }
 }
 
 
@@ -352,7 +328,9 @@ static void FinalizarResultadoIsla(
     }
 
     int vivos =
-        ContarVivosIsla(minijuego);
+        ContarVivosIsla(
+            minijuego
+        );
 
     minijuego.resultado.estado =
         RESULTADO_MINIJUEGO_FINALIZADO;
@@ -368,7 +346,11 @@ static void FinalizarResultadoIsla(
             1000.0f
         );
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
     {
         ResultadoParticipante& resultadoJugador =
             minijuego.resultado.participantes[i];
@@ -402,13 +384,308 @@ static void FinalizarResultadoIsla(
 }
 
 
+//==================================================
+// PROYECTILES
+//==================================================
+
+static void LanzarProyectilIsla(
+    MinijuegoIslaFuego& minijuego,
+    bool especial
+)
+{
+    minijuego.proyectil = {};
+
+    minijuego.proyectil.activo = true;
+    minijuego.proyectil.especial = especial;
+
+    minijuego.proyectil.puntoImpacto =
+        PuntoAleatorioIsla(
+            especial
+            ? 0.46f
+            : 0.82f
+        );
+
+    minijuego.proyectil.duracionAviso =
+        especial
+        ? 1.55f
+        : 1.18f;
+
+    minijuego.proyectil.tiempoHastaImpacto =
+        minijuego.proyectil.duracionAviso;
+
+    minijuego.proyectil.radioExplosion =
+        especial
+        ? 3.35f
+        : 2.05f;
+
+    if (especial)
+    {
+        minijuego.disparoFinalRealizado = true;
+    }
+}
+
+
+static void ProgramarSiguienteDisparo(
+    MinijuegoIslaFuego& minijuego
+)
+{
+    float progreso =
+        minijuego.tiempoJugado /
+        DURACION_PARTIDA_ISLA;
+
+    float minimo =
+        1.15f - progreso * 0.42f;
+
+    float maximo =
+        1.75f - progreso * 0.48f;
+
+    minijuego.tiempoHastaSiguienteDisparo =
+        (float)GetRandomValue(
+            (int)(minimo * 100.0f),
+            (int)(maximo * 100.0f)
+        ) /
+        100.0f;
+}
+
+
+static void AplicarExplosionIsla(
+    MinijuegoIslaFuego& minijuego,
+    JugadorPrueba jugadores[],
+    Participante participantes[],
+    ParticulaTierra particulas[],
+    int cantidadParticulas
+)
+{
+    const ProyectilIslaFuego& proyectil =
+        minijuego.proyectil;
+
+    CrearParticulasExplosionIsla(
+        particulas,
+        cantidadParticulas,
+        proyectil.puntoImpacto,
+        proyectil.especial
+    );
+
+    float fuerzaBase =
+        proyectil.especial
+        ? FUERZA_EXPLOSION_FINAL
+        : FUERZA_EXPLOSION_NORMAL;
+
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
+    {
+        if (
+            !minijuego.resultado.participantes[i].participo ||
+            minijuego.estadosJugadores[i].eliminado ||
+            minijuego.estadosJugadores[i].impactoDirecto ||
+            !participantes[i].conectado
+        )
+        {
+            continue;
+        }
+
+        JugadorPrueba& jugador =
+            jugadores[i];
+
+        float dx =
+            jugador.posicion.x -
+            proyectil.puntoImpacto.x;
+
+        float dz =
+            jugador.posicion.z -
+            proyectil.puntoImpacto.z;
+
+        float distancia =
+            MagnitudHorizontalIsla(
+                dx,
+                dz
+            );
+
+        if (
+            distancia >
+            proyectil.radioExplosion
+        )
+        {
+            continue;
+        }
+
+        // El area de explosion puede evitarse saltando.
+        // El contacto DIRECTO con la bomba no puede evitarse asi.
+        if (!jugador.enSuelo)
+        {
+            continue;
+        }
+
+        if (distancia < 0.05f)
+        {
+            dx = 1.0f;
+            dz = 0.0f;
+            distancia = 1.0f;
+        }
+
+        float normalX =
+            dx / distancia;
+
+        float normalZ =
+            dz / distancia;
+
+        float cercania =
+            1.0f -
+            distancia /
+            proyectil.radioExplosion;
+
+        float fuerza =
+            fuerzaBase *
+            (0.45f + 0.55f * cercania);
+
+        jugador.empuje.x +=
+            normalX * fuerza;
+
+        jugador.empuje.z +=
+            normalZ * fuerza;
+
+        jugador.velocidad.y =
+            3.4f + cercania * 2.0f;
+
+        jugador.enSuelo = false;
+
+        minijuego.estadosJugadores[i].tiempoAturdido =
+            DURACION_ATURDIMIENTO +
+            (proyectil.especial ? 0.25f : 0.0f);
+    }
+}
+
+
+static bool AplicarImpactosDirectos(
+    MinijuegoIslaFuego& minijuego,
+    JugadorPrueba jugadores[],
+    Participante participantes[],
+    ParticulaTierra particulas[],
+    int cantidadParticulas
+)
+{
+    bool huboContacto = false;
+
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
+    {
+        EstadoJugadorIslaFuego& estadoJugador =
+            minijuego.estadosJugadores[i];
+
+        if (
+            !minijuego.resultado.participantes[i].participo ||
+            estadoJugador.eliminado ||
+            estadoJugador.impactoDirecto ||
+            !participantes[i].conectado
+        )
+        {
+            continue;
+        }
+
+        JugadorPrueba& jugador =
+            jugadores[i];
+
+        if (
+            !ProyectilTocaJugador(
+                minijuego.proyectil,
+                jugador
+            )
+        )
+        {
+            continue;
+        }
+
+        huboContacto = true;
+
+        float direccionX =
+            jugador.posicion.x;
+
+        float direccionZ =
+            jugador.posicion.z;
+
+        float longitud =
+            MagnitudHorizontalIsla(
+                direccionX,
+                direccionZ
+            );
+
+        if (longitud < 0.10f)
+        {
+            float angulo =
+                (float)GetRandomValue(0, 6283) /
+                1000.0f;
+
+            direccionX =
+                std::cos(angulo);
+
+            direccionZ =
+                std::sin(angulo);
+
+            longitud = 1.0f;
+        }
+
+        direccionX /= longitud;
+        direccionZ /= longitud;
+
+        float fuerza =
+            minijuego.proyectil.especial
+            ? FUERZA_DIRECTA_ESPECIAL
+            : FUERZA_DIRECTA_NORMAL;
+
+        jugador.empuje.x =
+            direccionX * fuerza;
+
+        jugador.empuje.z =
+            direccionZ * fuerza;
+
+        jugador.velocidad.y =
+            minijuego.proyectil.especial
+            ? SALTO_DIRECTO_ESPECIAL
+            : SALTO_DIRECTO_NORMAL;
+
+        jugador.enSuelo = false;
+        jugador.golpeSueloActivo = false;
+        jugador.golpeando = false;
+
+        estadoJugador.impactoDirecto = true;
+        estadoJugador.tiempoHastaEliminacionDirecta =
+            DURACION_VUELO_DIRECTO;
+        estadoJugador.tiempoAturdido =
+            DURACION_VUELO_DIRECTO;
+
+        CrearParticulasExplosionIsla(
+            particulas,
+            cantidadParticulas,
+            jugador.posicion,
+            true
+        );
+    }
+
+    return huboContacto;
+}
+
+
+//==================================================
+// INICIALIZAR / REINICIAR
+//==================================================
+
 void MinijuegoIslaFuego::Inicializar()
 {
     resultado = {};
     resultado.formato =
         FORMATO_MINIJUEGO_INDIVIDUAL;
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
     {
         estadosJugadores[i] = {};
     }
@@ -468,7 +745,11 @@ void MinijuegoIslaFuego::ConfigurarJugadores(
         ? cantidadMaxima
         : MAX_JUGADORES_PRUEBA;
 
-    for (int i = 0; i < limite; i++)
+    for (
+        int i = 0;
+        i < limite;
+        i++
+    )
     {
         ConfigurarJugadorMinijuegoEstandar(
             jugadores[i],
@@ -485,7 +766,11 @@ void MinijuegoIslaFuego::Reiniciar(
 {
     bool participaban[MAX_PARTICIPANTES]{};
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
     {
         participaban[i] =
             resultado.participantes[i].participo;
@@ -495,7 +780,11 @@ void MinijuegoIslaFuego::Reiniciar(
     resultado.formato =
         FORMATO_MINIJUEGO_INDIVIDUAL;
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
     {
         resultado.participantes[i].participo =
             participaban[i];
@@ -510,16 +799,23 @@ void MinijuegoIslaFuego::Reiniciar(
 
     fase =
         FASE_ISLA_FUEGO_PREPARACION;
+
     tiempoPreparacion =
         DURACION_PREPARACION_ISLA;
+
     tiempoRestante =
         DURACION_PARTIDA_ISLA;
+
     tiempoJugado = 0.0f;
     tiempoHastaSiguienteDisparo = 0.75f;
     disparoFinalRealizado = false;
     proyectil = {};
 
-    for (int i = 0; i < cantidadMaxima; i++)
+    for (
+        int i = 0;
+        i < cantidadMaxima;
+        i++
+    )
     {
         ReiniciarJugadorPrueba(
             jugadores[i]
@@ -527,6 +823,10 @@ void MinijuegoIslaFuego::Reiniciar(
     }
 }
 
+
+//==================================================
+// ACTUALIZAR
+//==================================================
 
 void MinijuegoIslaFuego::Actualizar(
     float deltaTime,
@@ -552,24 +852,31 @@ void MinijuegoIslaFuego::Actualizar(
 
     if (fase == FASE_ISLA_FUEGO_PREPARACION)
     {
-        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        for (
+            int i = 0;
+            i < MAX_PARTICIPANTES;
+            i++
+        )
         {
             jugadores[i].velocidad = {};
             jugadores[i].empuje = {};
         }
 
-        tiempoPreparacion -= deltaTime;
+        tiempoPreparacion -=
+            deltaTime;
 
         if (tiempoPreparacion <= 0.0f)
         {
             tiempoPreparacion = 0.0f;
-            fase = FASE_ISLA_FUEGO_JUGANDO;
+            fase =
+                FASE_ISLA_FUEGO_JUGANDO;
         }
 
         return;
     }
 
-    tiempoRestante -= deltaTime;
+    tiempoRestante -=
+        deltaTime;
 
     if (tiempoRestante < 0.0f)
     {
@@ -581,9 +888,15 @@ void MinijuegoIslaFuego::Actualizar(
         tiempoRestante;
 
     int vivosAntes =
-        ContarVivosIsla(*this);
+        ContarVivosIsla(
+            *this
+        );
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
     {
         JugadorPrueba& jugador =
             jugadores[i];
@@ -620,7 +933,10 @@ void MinijuegoIslaFuego::Actualizar(
 
         InputMinijuegoParticipante entrada{};
 
-        if (estadoJugador.tiempoAturdido <= 0.0f)
+        if (
+            estadoJugador.tiempoAturdido <= 0.0f &&
+            !estadoJugador.impactoDirecto
+        )
         {
             entrada =
                 LeerInputMinijuegoParticipante(
@@ -628,14 +944,16 @@ void MinijuegoIslaFuego::Actualizar(
                 );
         }
 
-        // Este minijuego solo usa movimiento y salto.
+        // Isla Bajo Fuego usa movimiento y salto, no golpes.
         entrada.golpear = false;
 
         BloquePrueba sueloJugador =
             suelo;
 
         sueloJugador.activaColision =
-            JugadorSobreIsla(jugador);
+            JugadorSobreIsla(
+                jugador
+            );
 
         ActualizarJugadorPruebaNormal(
             jugador,
@@ -644,10 +962,29 @@ void MinijuegoIslaFuego::Actualizar(
             1,
             particulas,
             cantidadParticulas,
-            true,
+            !estadoJugador.impactoDirecto,
             false,
             deltaTime
         );
+
+        if (estadoJugador.impactoDirecto)
+        {
+            estadoJugador.tiempoHastaEliminacionDirecta -=
+                deltaTime;
+
+            if (
+                estadoJugador.tiempoHastaEliminacionDirecta <=
+                0.0f
+            )
+            {
+                estadoJugador.tiempoHastaEliminacionDirecta =
+                    0.0f;
+
+                // Ya se mostro el vuelo provocado por la bomba.
+                // Desde este punto cuenta como eliminado.
+                jugador.cayendo = true;
+            }
+        }
     }
 
     ResolverColisionesJugadoresSinEmpuje(
@@ -661,7 +998,36 @@ void MinijuegoIslaFuego::Actualizar(
         proyectil.tiempoHastaImpacto -=
             deltaTime;
 
-        if (proyectil.tiempoHastaImpacto <= 0.0f)
+        bool impactoDirecto =
+            AplicarImpactosDirectos(
+                *this,
+                jugadores,
+                participantes,
+                particulas,
+                cantidadParticulas
+            );
+
+        if (impactoDirecto)
+        {
+            // La bomba detona al tocar directamente a un jugador.
+            AplicarExplosionIsla(
+                *this,
+                jugadores,
+                participantes,
+                particulas,
+                cantidadParticulas
+            );
+
+            proyectil.activo = false;
+
+            ProgramarSiguienteDisparo(
+                *this
+            );
+        }
+        else if (
+            proyectil.tiempoHastaImpacto <=
+            0.0f
+        )
         {
             AplicarExplosionIsla(
                 *this,
@@ -673,24 +1039,9 @@ void MinijuegoIslaFuego::Actualizar(
 
             proyectil.activo = false;
 
-            float progreso =
-                tiempoJugado /
-                DURACION_PARTIDA_ISLA;
-
-            float minimo =
-                1.15f -
-                progreso * 0.42f;
-
-            float maximo =
-                1.75f -
-                progreso * 0.48f;
-
-            tiempoHastaSiguienteDisparo =
-                (float)GetRandomValue(
-                    (int)(minimo * 100.0f),
-                    (int)(maximo * 100.0f)
-                ) /
-                100.0f;
+            ProgramarSiguienteDisparo(
+                *this
+            );
         }
     }
     else
@@ -708,7 +1059,9 @@ void MinijuegoIslaFuego::Actualizar(
                 true
             );
         }
-        else if (tiempoHastaSiguienteDisparo <= 0.0f)
+        else if (
+            tiempoHastaSiguienteDisparo <= 0.0f
+        )
         {
             LanzarProyectilIsla(
                 *this,
@@ -719,7 +1072,11 @@ void MinijuegoIslaFuego::Actualizar(
 
     int eliminadosEsteFrame = 0;
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
     {
         if (
             resultado.participantes[i].participo &&
@@ -742,7 +1099,11 @@ void MinijuegoIslaFuego::Actualizar(
             1000.0f
         );
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
     {
         if (
             resultado.participantes[i].participo &&
@@ -770,10 +1131,16 @@ void MinijuegoIslaFuego::Actualizar(
         tiempoRestante <= 0.0f
     )
     {
-        FinalizarResultadoIsla(*this);
+        FinalizarResultadoIsla(
+            *this
+        );
     }
 }
 
+
+//==================================================
+// DIBUJAR
+//==================================================
 
 void MinijuegoIslaFuego::Dibujar(
     const JugadorPrueba jugadores[],
@@ -790,7 +1157,9 @@ void MinijuegoIslaFuego::Dibujar(
         Color{ 106, 178, 216, 255 }
     );
 
-    BeginMode3D(camara);
+    BeginMode3D(
+        camara
+    );
 
     DrawCylinder(
         Vector3{ 0.0f, -0.32f, 0.0f },
@@ -821,23 +1190,20 @@ void MinijuegoIslaFuego::Dibujar(
     if (proyectil.activo)
     {
         float progreso =
-            proyectil.duracionAviso > 0.0f
-            ? proyectil.tiempoHastaImpacto /
-                proyectil.duracionAviso
-            : 0.0f;
-
-        if (progreso < 0.0f)
-        {
-            progreso = 0.0f;
-        }
+            ObtenerProgresoProyectil(
+                proyectil
+            );
 
         float radioAviso =
             proyectil.radioExplosion *
-            (0.88f + 0.12f *
+            (
+                0.88f +
+                0.12f *
                 std::sin(
                     proyectil.tiempoHastaImpacto *
                     18.0f
-                ));
+                )
+            );
 
         DrawCircle3D(
             Vector3{
@@ -854,21 +1220,32 @@ void MinijuegoIslaFuego::Dibujar(
         );
 
         Vector3 posicionProyectil =
-        {
-            proyectil.puntoImpacto.x,
-            0.55f + progreso * 9.5f,
-            proyectil.puntoImpacto.z
-        };
+            ObtenerPosicionProyectil(
+                proyectil
+            );
 
         DrawSphere(
             posicionProyectil,
-            proyectil.especial
-            ? 0.55f
-            : 0.32f,
+            ObtenerRadioCuerpoProyectil(
+                proyectil
+            ),
             proyectil.especial
             ? MAROON
             : DARKGRAY
         );
+
+        if (mostrarDebug)
+        {
+            DrawSphereWires(
+                posicionProyectil,
+                ObtenerRadioCuerpoProyectil(
+                    proyectil
+                ),
+                10,
+                10,
+                YELLOW
+            );
+        }
     }
 
     DibujarParticulasTierra(
@@ -876,7 +1253,11 @@ void MinijuegoIslaFuego::Dibujar(
         cantidadParticulas
     );
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
     {
         if (estadosJugadores[i].eliminado)
         {
@@ -915,10 +1296,10 @@ void MinijuegoIslaFuego::Dibujar(
     );
 
     DrawText(
-        "SOBREVIVI A LOS IMPACTOS - SALTA CUANDO CAE EL PROYECTIL",
+        "EVITA EL AREA - SI LA BOMBA TE TOCA, TE MANDA A VOLAR Y TE ELIMINA",
         25,
         68,
-        20,
+        19,
         BLACK
     );
 
@@ -954,7 +1335,11 @@ void MinijuegoIslaFuego::Dibujar(
 
     int yEstado = 100;
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
     {
         if (!resultado.participantes[i].participo)
         {
@@ -965,9 +1350,13 @@ void MinijuegoIslaFuego::Dibujar(
             estadosJugadores[i].eliminado
             ? "FUERA"
             : (
-                estadosJugadores[i].tiempoAturdido > 0.0f
-                ? "ATURDIDO"
-                : "EN JUEGO"
+                estadosJugadores[i].impactoDirecto
+                ? "VOLANDO"
+                : (
+                    estadosJugadores[i].tiempoAturdido > 0.0f
+                    ? "ATURDIDO"
+                    : "EN JUEGO"
+                )
             );
 
         DrawText(
@@ -990,7 +1379,9 @@ void MinijuegoIslaFuego::Dibujar(
     if (fase == FASE_ISLA_FUEGO_PREPARACION)
     {
         int numero =
-            (int)std::ceil(tiempoPreparacion);
+            (int)std::ceil(
+                tiempoPreparacion
+            );
 
         if (numero < 1)
         {
@@ -998,7 +1389,10 @@ void MinijuegoIslaFuego::Dibujar(
         }
 
         const char* texto =
-            TextFormat("%d", numero);
+            TextFormat(
+                "%d",
+                numero
+            );
 
         DrawText(
             texto,
@@ -1014,7 +1408,8 @@ void MinijuegoIslaFuego::Dibujar(
         tiempoJugado < DURACION_TEXTO_YA_ISLA
     )
     {
-        const char* texto = "YA";
+        const char* texto =
+            "YA";
 
         DrawText(
             texto,
@@ -1025,7 +1420,9 @@ void MinijuegoIslaFuego::Dibujar(
             LIME
         );
     }
-    else if (fase == FASE_ISLA_FUEGO_TERMINADO)
+    else if (
+        fase == FASE_ISLA_FUEGO_TERMINADO
+    )
     {
         DrawRectangle(
             GetScreenWidth() / 2 - 330,
@@ -1050,7 +1447,9 @@ void MinijuegoIslaFuego::Dibujar(
             : TextFormat(
                 "GANADOR: JUGADOR %d",
                 cantidadGanadores == 1
-                ? participantes[ganadores[0]].numeroJugador
+                ? participantes[
+                    ganadores[0]
+                ].numeroJugador
                 : 0
             );
 
@@ -1066,7 +1465,11 @@ void MinijuegoIslaFuego::Dibujar(
         int y =
             GetScreenHeight() / 2 - 72;
 
-        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        for (
+            int i = 0;
+            i < MAX_PARTICIPANTES;
+            i++
+        )
         {
             if (!resultado.participantes[i].participo)
             {
@@ -1104,6 +1507,10 @@ void MinijuegoIslaFuego::Dibujar(
     }
 }
 
+
+//==================================================
+// RESULTADO PUBLICO
+//==================================================
 
 const ResultadoMinijuego&
 MinijuegoIslaFuego::ObtenerResultado() const
