@@ -10,6 +10,7 @@
 //==================================================
 
 #include "Core/ConfiguracionJuego.h"
+#include "Core/Participante.h"
 #include "Core/WindowUtils.h"
 
 
@@ -102,6 +103,21 @@ struct Juego
     //------------------------------
 
     ConfiguracionJuego config;
+
+
+    //------------------------------
+    // PARTICIPANTES
+    //------------------------------
+
+    Participante participantes[
+        MAX_PARTICIPANTES
+    ];
+
+
+    // Solo puede ser 0 antes de confirmar, o 2/4
+    // cuando exista una seleccion confirmada.
+    int cantidadParticipantes =
+        0;
 
 
     const char* rutaConfiguracion =

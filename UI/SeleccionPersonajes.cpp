@@ -1,5 +1,7 @@
 #include "UI/SeleccionPersonajes.h"
 
+#include "Systems/Input.h"
+
 
 //==================================================
 // COLORES DE JUGADORES
@@ -418,108 +420,26 @@ static void MoverCursor(
 // CONEXIONES
 //==================================================
 
-static void ActualizarConexiones(
-    SeleccionPersonajes& seleccion
+static int ContarParticipantesActivos(
+    const Participante participantes[],
+    int cantidadMaxima
 )
 {
-    //------------------------------
-    // JUGADOR 1 = TECLADO
-    //------------------------------
-
-    seleccion.jugadores[0].conectado =
-        true;
-
-    seleccion.jugadores[0].usaTeclado =
-        true;
-
-    seleccion.jugadores[0].indiceGamepad =
-        -1;
-
-
-    //------------------------------
-    // JUGADORES 2-4 = GAMEPADS
-    //------------------------------
+    int cantidad = 0;
 
     for (
-        int i = 1;
-        i <
-        MAX_JUGADORES_SELECCION;
+        int i = 0;
+        i < cantidadMaxima;
         i++
     )
     {
-        int gamepad =
-            i - 1;
-
-
-        bool conectado =
-            IsGamepadAvailable(
-                gamepad
-            );
-
-
-        if (!conectado)
+        if (participantes[i].activo)
         {
-            seleccion
-                .jugadores[i]
-                .conectado =
-                false;
-
-
-            seleccion
-                .jugadores[i]
-                .usaTeclado =
-                false;
-
-
-            seleccion
-                .jugadores[i]
-                .indiceGamepad =
-                gamepad;
-
-
-            seleccion
-                .jugadores[i]
-                .listo =
-                false;
-
-
-            seleccion
-                .jugadores[i]
-                .personajeConfirmado =
-                -1;
-
-
-            seleccion
-                .jugadores[i]
-                .bloqueoHorizontal =
-                false;
-
-
-            seleccion
-                .jugadores[i]
-                .bloqueoVertical =
-                false;
-        }
-        else
-        {
-            seleccion
-                .jugadores[i]
-                .conectado =
-                true;
-
-
-            seleccion
-                .jugadores[i]
-                .usaTeclado =
-                false;
-
-
-            seleccion
-                .jugadores[i]
-                .indiceGamepad =
-                gamepad;
+            cantidad++;
         }
     }
+
+    return cantidad;
 }
 
 
@@ -528,83 +448,43 @@ static void ActualizarConexiones(
 //==================================================
 
 static void ActualizarTodosListos(
-    SeleccionPersonajes& seleccion
+    SeleccionPersonajes& seleccion,
+    const Participante participantes[],
+    int cantidadMaxima
 )
 {
-    int conectados =
-        0;
+    int activos = ContarParticipantesActivos(
+        participantes,
+        cantidadMaxima
+    );
 
-    int listos =
-        0;
+    bool cantidadValida =
+        activos == 2 || activos == 4;
+
+    bool activosPreparados =
+        cantidadValida;
 
 
     for (
         int i = 0;
-        i <
-        MAX_JUGADORES_SELECCION;
+        i < cantidadMaxima;
         i++
     )
     {
         if (
-            seleccion
-                .jugadores[i]
-                .conectado
+            participantes[i].activo &&
+            (
+                !participantes[i].conectado ||
+                !seleccion.jugadores[i].listo
+            )
         )
         {
-            conectados++;
-
-
-            if (
-                seleccion
-                    .jugadores[i]
-                    .listo
-            )
-            {
-                listos++;
-            }
+            activosPreparados = false;
         }
     }
 
-
-    /*
-        Exigimos al menos 2 jugadores
-        para considerar la partida lista.
-    */
-
     seleccion.todosListos =
-        (
-            conectados >= 2 &&
-            listos ==
-            conectados
-        );
-}
-
-
-//==================================================
-// DISPOSITIVO
-//==================================================
-
-static const char* ObtenerNombreDispositivo(
-    const JugadorSeleccion& jugador,
-    int indiceJugador
-)
-{
-    if (!jugador.conectado)
-    {
-        return "NO CONECTADO";
-    }
-
-
-    if (jugador.usaTeclado)
-    {
-        return "TECLADO";
-    }
-
-
-    return TextFormat(
-        "MANDO %d",
-        indiceJugador
-    );
+        activosPreparados;
 }
 
 
@@ -896,13 +776,15 @@ static void DibujarJugadoresEnCelda(
 static void DibujarMarcadoresConfirmados(
     Rectangle rect,
     const SeleccionPersonajes& seleccion,
+    const Participante participantes[],
+    int cantidadMaxima,
     int indicePersonaje
 )
 {
     for (
         int i = 0;
         i <
-        MAX_JUGADORES_SELECCION;
+        cantidadMaxima;
         i++
     )
     {
@@ -911,9 +793,10 @@ static void DibujarMarcadoresConfirmados(
 
 
         if (
-            !jugador.conectado ||
+            !participantes[i].activo ||
+            !participantes[i].conectado ||
             !jugador.listo ||
-            jugador.personajeConfirmado !=
+            participantes[i].personajeSeleccionado !=
                 indicePersonaje
         )
         {
@@ -1127,7 +1010,10 @@ static void DibujarMarcadoresConfirmados(
 // INICIALIZAR
 //==================================================
 
-void SeleccionPersonajes::Inicializar()
+void SeleccionPersonajes::Inicializar(
+    Participante participantes[],
+    int cantidadMaxima
+)
 {
     //==================================================
     // DEFINIR PERSONAJES
@@ -1224,36 +1110,25 @@ void SeleccionPersonajes::Inicializar()
 
     for (
         int i = 0;
-        i <
-        MAX_JUGADORES_SELECCION;
+        i < cantidadMaxima;
         i++
     )
     {
-        jugadores[i].conectado =
-            (i == 0);
+        participantes[i].activo =
+            false;
 
 
-        jugadores[i].usaTeclado =
-            (i == 0);
+        participantes[i].personajeSeleccionado =
+            -1;
 
 
-        jugadores[i].indiceGamepad =
-            (i == 0)
-            ? -1
-            : i - 1;
-
-
-        jugadores[i].colorJugador =
-            i;
+        participantes[i].color =
+            ObtenerColorJugador(i);
 
 
         jugadores[i].cursorPersonaje =
             i %
             MAX_PERSONAJES_SELECCION;
-
-
-        jugadores[i].personajeConfirmado =
-            -1;
 
 
         jugadores[i].listo =
@@ -1277,6 +1152,10 @@ void SeleccionPersonajes::Inicializar()
         false;
 
 
+    iniciarPartida =
+        false;
+
+
     alphaEntrada =
         0.0f;
 }
@@ -1287,7 +1166,9 @@ void SeleccionPersonajes::Inicializar()
 //==================================================
 
 void SeleccionPersonajes::Actualizar(
-    float deltaTime
+    float deltaTime,
+    Participante participantes[],
+    int cantidadMaxima
 )
 {
     //------------------------------
@@ -1319,8 +1200,9 @@ void SeleccionPersonajes::Actualizar(
     // CONEXIONES
     //------------------------------
 
-    ActualizarConexiones(
-        *this
+    ActualizarConexionesParticipantes(
+        participantes,
+        cantidadMaxima
     );
 
 
@@ -1344,7 +1226,7 @@ void SeleccionPersonajes::Actualizar(
     for (
         int i = 0;
         i <
-        MAX_JUGADORES_SELECCION;
+        cantidadMaxima;
         i++
     )
     {
@@ -1352,8 +1234,33 @@ void SeleccionPersonajes::Actualizar(
             jugadores[i];
 
 
-        if (!jugador.conectado)
+        Participante& participante =
+            participantes[i];
+
+
+        if (!participante.conectado)
         {
+            continue;
+        }
+
+
+        InputSeleccionParticipante entrada =
+            LeerInputSeleccionParticipante(
+                participante
+            );
+
+
+        if (!participante.activo)
+        {
+            if (entrada.confirmar)
+            {
+                participante.activo =
+                    true;
+
+                jugador.listo =
+                    false;
+            }
+
             continue;
         }
 
@@ -1362,12 +1269,12 @@ void SeleccionPersonajes::Actualizar(
         // TECLADO
         //==================================================
 
-        if (jugador.usaTeclado)
+        if (participante.control != CONTROL_GAMEPAD)
         {
             if (!jugador.listo)
             {
                 if (
-                    IsKeyPressed(KEY_A)
+                    entrada.izquierda
                 )
                 {
                     MoverCursor(
@@ -1381,7 +1288,7 @@ void SeleccionPersonajes::Actualizar(
 
 
                 if (
-                    IsKeyPressed(KEY_D)
+                    entrada.derecha
                 )
                 {
                     MoverCursor(
@@ -1395,7 +1302,7 @@ void SeleccionPersonajes::Actualizar(
 
 
                 if (
-                    IsKeyPressed(KEY_W)
+                    entrada.arriba
                 )
                 {
                     MoverCursor(
@@ -1409,7 +1316,7 @@ void SeleccionPersonajes::Actualizar(
 
 
                 if (
-                    IsKeyPressed(KEY_S)
+                    entrada.abajo
                 )
                 {
                     MoverCursor(
@@ -1428,16 +1335,14 @@ void SeleccionPersonajes::Actualizar(
             //------------------------------
 
             if (
-                IsKeyPressed(
-                    KEY_SPACE
-                )
+                entrada.confirmar
             )
             {
                 jugador.listo =
                     true;
 
 
-                jugador.personajeConfirmado =
+                participante.personajeSeleccionado =
                     jugador.cursorPersonaje;
             }
 
@@ -1447,17 +1352,22 @@ void SeleccionPersonajes::Actualizar(
             //------------------------------
 
             if (
-                IsKeyPressed(
-                    KEY_BACKSPACE
-                )
+                entrada.cancelar
             )
             {
-                jugador.listo =
-                    false;
+                if (jugador.listo)
+                {
+                    jugador.listo =
+                        false;
+                }
+                else
+                {
+                    participante.activo =
+                        false;
 
-
-                jugador.personajeConfirmado =
-                    -1;
+                    participante.personajeSeleccionado =
+                        -1;
+                }
             }
         }
 
@@ -1468,56 +1378,20 @@ void SeleccionPersonajes::Actualizar(
 
         else
         {
-            int pad =
-                jugador.indiceGamepad;
-
-
             bool izquierda =
-                IsGamepadButtonDown(
-                    pad,
-                    GAMEPAD_BUTTON_LEFT_FACE_LEFT
-                ) ||
-                GetGamepadAxisMovement(
-                    pad,
-                    GAMEPAD_AXIS_LEFT_X
-                ) <
-                -0.45f;
+                entrada.izquierda;
 
 
             bool derecha =
-                IsGamepadButtonDown(
-                    pad,
-                    GAMEPAD_BUTTON_LEFT_FACE_RIGHT
-                ) ||
-                GetGamepadAxisMovement(
-                    pad,
-                    GAMEPAD_AXIS_LEFT_X
-                ) >
-                0.45f;
+                entrada.derecha;
 
 
             bool arriba =
-                IsGamepadButtonDown(
-                    pad,
-                    GAMEPAD_BUTTON_LEFT_FACE_UP
-                ) ||
-                GetGamepadAxisMovement(
-                    pad,
-                    GAMEPAD_AXIS_LEFT_Y
-                ) <
-                -0.45f;
+                entrada.arriba;
 
 
             bool abajo =
-                IsGamepadButtonDown(
-                    pad,
-                    GAMEPAD_BUTTON_LEFT_FACE_DOWN
-                ) ||
-                GetGamepadAxisMovement(
-                    pad,
-                    GAMEPAD_AXIS_LEFT_Y
-                ) >
-                0.45f;
+                entrada.abajo;
 
 
             if (!jugador.listo)
@@ -1624,17 +1498,14 @@ void SeleccionPersonajes::Actualizar(
             //------------------------------
 
             if (
-                IsGamepadButtonPressed(
-                    pad,
-                    GAMEPAD_BUTTON_RIGHT_FACE_DOWN
-                )
+                entrada.confirmar
             )
             {
                 jugador.listo =
                     true;
 
 
-                jugador.personajeConfirmado =
+                participante.personajeSeleccionado =
                     jugador.cursorPersonaje;
             }
 
@@ -1644,26 +1515,36 @@ void SeleccionPersonajes::Actualizar(
             //------------------------------
 
             if (
-                IsGamepadButtonPressed(
-                    pad,
-                    GAMEPAD_BUTTON_RIGHT_FACE_RIGHT
-                )
+                entrada.cancelar
             )
             {
-                jugador.listo =
-                    false;
+                if (jugador.listo)
+                {
+                    jugador.listo =
+                        false;
+                }
+                else
+                {
+                    participante.activo =
+                        false;
 
-
-                jugador.personajeConfirmado =
-                    -1;
+                    participante.personajeSeleccionado =
+                        -1;
+                }
             }
         }
     }
 
 
     ActualizarTodosListos(
-        *this
+        *this,
+        participantes,
+        cantidadMaxima
     );
+
+
+    iniciarPartida =
+        todosListos;
 }
 
 
@@ -1671,7 +1552,10 @@ void SeleccionPersonajes::Actualizar(
 // DIBUJAR
 //==================================================
 
-void SeleccionPersonajes::Dibujar() const
+void SeleccionPersonajes::Dibujar(
+    const Participante participantes[],
+    int cantidadMaxima
+) const
 {
     float alpha =
         alphaEntrada;
@@ -1838,13 +1722,13 @@ void SeleccionPersonajes::Dibujar() const
 
         for (
             int j = 0;
-            j <
-            MAX_JUGADORES_SELECCION;
+            j < cantidadMaxima;
             j++
         )
         {
             if (
-                jugadores[j].conectado &&
+                participantes[j].activo &&
+                participantes[j].conectado &&
                 jugadores[j].cursorPersonaje ==
                     i
             )
@@ -1949,6 +1833,8 @@ void SeleccionPersonajes::Dibujar() const
         DibujarMarcadoresConfirmados(
             celda,
             *this,
+            participantes,
+            cantidadMaxima,
             i
         );
     }
@@ -1960,8 +1846,7 @@ void SeleccionPersonajes::Dibujar() const
 
     for (
         int i = 0;
-        i <
-        MAX_JUGADORES_SELECCION;
+        i < cantidadMaxima;
         i++
     )
     {
@@ -1969,19 +1854,23 @@ void SeleccionPersonajes::Dibujar() const
             jugadores[i];
 
 
+        const Participante& participante =
+            participantes[i];
+
+
         Rectangle panel =
             ObtenerRectPanelJugador(i);
 
 
         Color colorJugador =
-            ObtenerColorJugador(i);
+            participante.color;
 
 
         //------------------------------
         // NO CONECTADO
         //------------------------------
 
-        if (!jugador.conectado)
+        if (!participante.conectado)
         {
             DrawRectangle(
                 (int)panel.x,
@@ -2031,7 +1920,9 @@ void SeleccionPersonajes::Dibujar() const
 
 
             DrawText(
-                "NO CONECTADO",
+                participante.activo
+                ? "CONTROL DESCONECTADO"
+                : "NO CONECTADO",
 
                 (int)panel.x + 15,
 
@@ -2050,13 +1941,65 @@ void SeleccionPersonajes::Dibujar() const
         }
 
 
+        //------------------------------
+        // DISPONIBLE PARA INCORPORARSE
+        //------------------------------
+
+        if (!participante.activo)
+        {
+            DrawRectangle(
+                (int)panel.x,
+                (int)panel.y,
+                (int)panel.width,
+                (int)panel.height,
+                Fade(BLACK, 0.32f * alpha)
+            );
+
+            DrawRectangleLines(
+                (int)panel.x,
+                (int)panel.y,
+                (int)panel.width,
+                (int)panel.height,
+                Fade(colorJugador, 0.70f * alpha)
+            );
+
+            DrawText(
+                TextFormat("JUGADOR %d", i + 1),
+                (int)panel.x + 15,
+                (int)panel.y + 15,
+                28,
+                Fade(colorJugador, alpha)
+            );
+
+            DrawText(
+                ObtenerNombreControlParticipante(
+                    participante
+                ),
+                (int)panel.x + 15,
+                (int)panel.y + 58,
+                18,
+                Fade(RAYWHITE, alpha)
+            );
+
+            DrawText(
+                "CONFIRMAR PARA UNIRSE",
+                (int)panel.x + 15,
+                (int)panel.y + 95,
+                18,
+                Fade(LIGHTGRAY, alpha)
+            );
+
+            continue;
+        }
+
+
         //==================================================
         // PERSONAJE MOSTRADO
         //==================================================
 
         int indicePersonaje =
             jugador.listo
-            ? jugador.personajeConfirmado
+            ? participante.personajeSeleccionado
             : jugador.cursorPersonaje;
 
 
@@ -2189,9 +2132,8 @@ void SeleccionPersonajes::Dibujar() const
         //------------------------------
 
         DrawText(
-            ObtenerNombreDispositivo(
-                jugador,
-                i
+            ObtenerNombreControlParticipante(
+                participante
             ),
 
             (int)panel.x + 12,

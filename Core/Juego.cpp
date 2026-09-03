@@ -1,6 +1,7 @@
 #include "Core/Juego.h"
 
 #include "raylib.h"
+#include "Systems/Input.h"
 
 
 //==================================================
@@ -271,6 +272,37 @@ void Juego::Inicializar()
 
 
     //==================================================
+    // PARTICIPANTES
+    //==================================================
+
+    cantidadParticipantes =
+        0;
+
+
+    for (
+        int i = 0;
+        i < MAX_PARTICIPANTES;
+        i++
+    )
+    {
+        participantes[i] =
+            Participante{};
+
+
+        participantes[i]
+            .numeroJugador =
+            i + 1;
+    }
+
+
+    ConfigurarControlesParticipantes(
+        participantes,
+        MAX_PARTICIPANTES,
+        config.modoTeclado
+    );
+
+
+    //==================================================
     // FPS
     //==================================================
 
@@ -328,7 +360,10 @@ void Juego::Inicializar()
 
 
     seleccionPersonajes
-        .Inicializar();
+        .Inicializar(
+            participantes,
+            MAX_PARTICIPANTES
+        );
 
 
     //==================================================
@@ -600,31 +635,26 @@ void Juego::Actualizar(
                     false;
 
 
-                /*
-                    TEMPORAL:
-
-                    Mientras desarrollamos gameplay
-                    entramos directamente a la zona
-                    de pruebas.
-
-                    Mas adelante volvera a ser:
-
-                    MENU
-                      ->
-                    SELECCION PERSONAJES
-                      ->
-                    PARTIDA
-                */
+                cantidadParticipantes =
+                    0;
 
 
-                zonaPruebas
+                ConfigurarControlesParticipantes(
+                    participantes,
+                    MAX_PARTICIPANTES,
+                    config.modoTeclado
+                );
+
+
+                seleccionPersonajes
                     .Inicializar(
-                        config.modoTeclado
+                        participantes,
+                        MAX_PARTICIPANTES
                     );
 
 
                 estado =
-                    ESTADO_ZONA_PRUEBAS;
+                    ESTADO_SELECCION_JUGADORES;
             }
 
 
@@ -770,8 +800,61 @@ void Juego::Actualizar(
 
             seleccionPersonajes
                 .Actualizar(
-                    deltaTime
+                    deltaTime,
+                    participantes,
+                    MAX_PARTICIPANTES
                 );
+
+
+            if (
+                seleccionPersonajes
+                    .iniciarPartida
+            )
+            {
+                int cantidadConfirmada =
+                    0;
+
+
+                for (
+                    int i = 0;
+                    i < MAX_PARTICIPANTES;
+                    i++
+                )
+                {
+                    if (participantes[i].activo)
+                    {
+                        cantidadConfirmada++;
+                    }
+                }
+
+
+                if (
+                    cantidadConfirmada == 2 ||
+                    cantidadConfirmada == 4
+                )
+                {
+                    cantidadParticipantes =
+                        cantidadConfirmada;
+
+
+                    seleccionPersonajes
+                        .iniciarPartida =
+                        false;
+
+
+                    zonaPruebas
+                        .Inicializar(
+                            config.modoTeclado
+                        );
+
+
+                    estado =
+                        ESTADO_ZONA_PRUEBAS;
+
+
+                    break;
+                }
+            }
 
 
             if (
@@ -981,7 +1064,10 @@ void Juego::Dibujar()
 
 
             seleccionPersonajes
-                .Dibujar();
+                .Dibujar(
+                    participantes,
+                    MAX_PARTICIPANTES
+                );
 
 
             break;

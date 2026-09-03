@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/Participante.h"
 #include "raylib.h"
 
 
@@ -73,36 +74,11 @@ struct PersonajeSeleccion
 struct JugadorSeleccion
 {
     //------------------------------
-    // CONEXION
-    //------------------------------
-
-    bool conectado =
-        false;
-
-    bool usaTeclado =
-        false;
-
-    int indiceGamepad =
-        -1;
-
-
-    //------------------------------
-    // JUGADOR
-    //------------------------------
-
-    int colorJugador =
-        0;
-
-
-    //------------------------------
     // PERSONAJE
     //------------------------------
 
     int cursorPersonaje =
         0;
-
-    int personajeConfirmado =
-        -1;
 
     bool listo =
         false;
@@ -173,6 +149,9 @@ struct SeleccionPersonajes
     bool todosListos =
         false;
 
+    bool iniciarPartida =
+        false;
+
 
     //------------------------------
     // TRANSICION
@@ -189,13 +168,21 @@ struct SeleccionPersonajes
     // FUNCIONES
     //------------------------------
 
-    void Inicializar();
-
-    void Actualizar(
-        float deltaTime
+    void Inicializar(
+        Participante participantes[],
+        int cantidadMaxima
     );
 
-    void Dibujar() const;
+    void Actualizar(
+        float deltaTime,
+        Participante participantes[],
+        int cantidadMaxima
+    );
+
+    void Dibujar(
+        const Participante participantes[],
+        int cantidadMaxima
+    ) const;
 
     void Descargar();
 };
