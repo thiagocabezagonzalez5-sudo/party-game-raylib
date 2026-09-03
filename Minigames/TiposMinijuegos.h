@@ -95,4 +95,9 @@ struct JugadorPrueba
     bool golpeYaConecto = false;
     float tiempoGolpe = 0.0f;
     float cooldownGolpe = 0.0f;
+
+    // Efecto temporal al recibir un golpe horizontal.
+    // Solo lo usan los minijuegos con jugadores normales;
+    // Pelotas conserva su fisica de inercia y empujones.
+    float tiempoRalentizado = 0.0f;
 };
