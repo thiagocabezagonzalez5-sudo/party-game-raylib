@@ -2,42 +2,71 @@
 
 #include "Minigames/UtilidadesMinijuegos.h"
 
+#include <cmath>
+
 
 //==================================================
 // COLORES
 //==================================================
 
-static Color ObtenerColorArcoiris(
+static Color ObtenerColorPlataforma(
     int indice
 )
 {
+    // Distribucion inspirada en la referencia:
+    // centro blanco y seis colores alrededor.
     switch (indice)
     {
         case 0:
-            return RED;
+            return RAYWHITE;
 
         case 1:
-            return ORANGE;
+            return Color{
+                242,
+                214,
+                74,
+                255
+            };
 
         case 2:
-            return YELLOW;
+            return Color{
+                226,
+                58,
+                55,
+                255
+            };
 
         case 3:
-            return GREEN;
+            return Color{
+                74,
+                184,
+                92,
+                255
+            };
 
         case 4:
-            return BLUE;
+            return Color{
+                228,
+                126,
+                177,
+                255
+            };
 
         case 5:
             return Color{
-                75,
-                0,
-                130,
+                78,
+                92,
+                201,
                 255
             };
 
         case 6:
-            return VIOLET;
+            return Color{
+                71,
+                189,
+                205,
+                255
+            };
     }
 
     return WHITE;
@@ -50,16 +79,158 @@ static const char* NombreColorPlataforma(
 {
     switch (indice)
     {
-        case 0: return "ROJO";
-        case 1: return "NARANJA";
-        case 2: return "AMARILLO";
+        case 0: return "BLANCO";
+        case 1: return "AMARILLO";
+        case 2: return "ROJO";
         case 3: return "VERDE";
-        case 4: return "AZUL";
-        case 5: return "INDIGO";
-        case 6: return "VIOLETA";
+        case 4: return "ROSA";
+        case 5: return "VIOLETA";
+        case 6: return "CELESTE";
     }
 
     return "?";
+}
+
+
+//==================================================
+// PLATAFORMA HEXAGONAL
+//==================================================
+
+static Color OscurecerColorPlataforma(
+    Color color,
+    float factor
+)
+{
+    if (factor < 0.0f)
+    {
+        factor = 0.0f;
+    }
+
+    if (factor > 1.0f)
+    {
+        factor = 1.0f;
+    }
+
+    return Color{
+        (unsigned char)((float)color.r * factor),
+        (unsigned char)((float)color.g * factor),
+        (unsigned char)((float)color.b * factor),
+        color.a
+    };
+}
+
+
+static void DibujarPlataformaHexagonal(
+    const BloquePrueba& plataforma
+)
+{
+    const float RADIO_VISUAL =
+        2.35f;
+
+    const float MITAD_ALTURA =
+        plataforma.tamano.y / 2.0f;
+
+    Vector3 verticesSuperiores[6]{};
+    Vector3 verticesInferiores[6]{};
+
+    // 30 grados hace que el hexagono tenga una punta
+    // hacia adelante/atras y encaje como en la referencia.
+    for (int i = 0; i < 6; i++)
+    {
+        float angulo =
+            (30.0f + 60.0f * (float)i) *
+            DEG2RAD;
+
+        float x =
+            std::cos(angulo) *
+            RADIO_VISUAL;
+
+        float z =
+            std::sin(angulo) *
+            RADIO_VISUAL;
+
+        verticesSuperiores[i] =
+        {
+            plataforma.posicion.x + x,
+            plataforma.posicion.y + MITAD_ALTURA,
+            plataforma.posicion.z + z
+        };
+
+        verticesInferiores[i] =
+        {
+            plataforma.posicion.x + x,
+            plataforma.posicion.y - MITAD_ALTURA,
+            plataforma.posicion.z + z
+        };
+    }
+
+    Vector3 centroSuperior =
+    {
+        plataforma.posicion.x,
+        plataforma.posicion.y + MITAD_ALTURA,
+        plataforma.posicion.z
+    };
+
+    Color colorLateral =
+        OscurecerColorPlataforma(
+            plataforma.color,
+            0.34f
+        );
+
+    Color colorLateralAlterno =
+    {
+        38,
+        40,
+        45,
+        255
+    };
+
+    for (int i = 0; i < 6; i++)
+    {
+        int siguiente =
+            (i + 1) % 6;
+
+        DrawTriangle3D(
+            centroSuperior,
+            verticesSuperiores[i],
+            verticesSuperiores[siguiente],
+            plataforma.color
+        );
+
+        Color colorCara =
+            i % 2 == 0
+            ? colorLateral
+            : colorLateralAlterno;
+
+        DrawTriangle3D(
+            verticesSuperiores[i],
+            verticesInferiores[i],
+            verticesInferiores[siguiente],
+            colorCara
+        );
+
+        DrawTriangle3D(
+            verticesSuperiores[i],
+            verticesInferiores[siguiente],
+            verticesSuperiores[siguiente],
+            colorCara
+        );
+
+        DrawLine3D(
+            verticesSuperiores[i],
+            verticesSuperiores[siguiente],
+            BLACK
+        );
+
+        DrawLine3D(
+            verticesSuperiores[i],
+            verticesInferiores[i],
+            Fade(
+                BLACK,
+                0.72f
+            )
+        );
+    }
 }
 
 
@@ -340,24 +511,62 @@ void MinijuegoColorSeguro::Inicializar()
     cantidadPlataformas =
         0;
 
-    const float RADIO =
-        4.2f;
+    // Siete hexagonos: uno central y seis vecinos.
+    // La separacion corresponde a un hexagono regular
+    // de radio 2.35 para que queden unidos visualmente.
+    const float RADIO_HEXAGONO =
+        2.35f;
 
-    const float X_DIAGONAL =
-        3.64f;
+    const float DISTANCIA_HORIZONTAL =
+        4.07032f;
 
-    const float Z_DIAGONAL =
-        2.10f;
+    const float MEDIO_HORIZONTAL =
+        DISTANCIA_HORIZONTAL / 2.0f;
+
+    const float DISTANCIA_DIAGONAL_Z =
+        RADIO_HEXAGONO * 1.5f;
 
     Vector3 posiciones[CANTIDAD_PLATAFORMAS_COLOR] =
     {
+        // Centro blanco.
         { 0.0f, 0.0f, 0.0f },
-        { 0.0f, 0.0f, -RADIO },
-        { X_DIAGONAL, 0.0f, -Z_DIAGONAL },
-        { X_DIAGONAL, 0.0f, Z_DIAGONAL },
-        { 0.0f, 0.0f, RADIO },
-        { -X_DIAGONAL, 0.0f, Z_DIAGONAL },
-        { -X_DIAGONAL, 0.0f, -Z_DIAGONAL }
+
+        // Fila superior.
+        {
+            -MEDIO_HORIZONTAL,
+            0.0f,
+            -DISTANCIA_DIAGONAL_Z
+        },
+        {
+            MEDIO_HORIZONTAL,
+            0.0f,
+            -DISTANCIA_DIAGONAL_Z
+        },
+
+        // Laterales.
+        {
+            DISTANCIA_HORIZONTAL,
+            0.0f,
+            0.0f
+        },
+
+        // Fila inferior.
+        {
+            MEDIO_HORIZONTAL,
+            0.0f,
+            DISTANCIA_DIAGONAL_Z
+        },
+        {
+            -MEDIO_HORIZONTAL,
+            0.0f,
+            DISTANCIA_DIAGONAL_Z
+        },
+
+        {
+            -DISTANCIA_HORIZONTAL,
+            0.0f,
+            0.0f
+        }
     };
 
     for (
@@ -371,12 +580,17 @@ void MinijuegoColorSeguro::Inicializar()
             cantidadPlataformas,
             CANTIDAD_PLATAFORMAS_COLOR,
             posiciones[i],
+
+            // La colision sigue usando el sistema AABB
+            // compartido por los prototipos. Estas medidas
+            // forman una zona estable dentro del hexagono
+            // y permiten pasar de una pieza a la siguiente.
             Vector3{
-                2.8f,
-                0.60f,
-                2.8f
+                4.10f,
+                0.72f,
+                3.65f
             },
-            ObtenerColorArcoiris(i)
+            ObtenerColorPlataforma(i)
         );
     }
 
@@ -395,15 +609,15 @@ void MinijuegoColorSeguro::Inicializar()
     posicionCamaraBase =
     {
         0.0f,
-        10.0f,
-        15.5f
+        11.4f,
+        15.8f
     };
 
     objetivoCamaraBase =
     {
         0.0f,
-        0.8f,
-        -1.5f
+        0.45f,
+        -0.75f
     };
 
     camara.position =
@@ -708,20 +922,8 @@ void MinijuegoColorSeguro::Dibujar(
         const BloquePrueba& plataforma =
             plataformas[i];
 
-        DrawCube(
-            plataforma.posicion,
-            plataforma.tamano.x,
-            plataforma.tamano.y,
-            plataforma.tamano.z,
-            plataforma.color
-        );
-
-        DrawCubeWires(
-            plataforma.posicion,
-            plataforma.tamano.x,
-            plataforma.tamano.y,
-            plataforma.tamano.z,
-            BLACK
+        DibujarPlataformaHexagonal(
+            plataforma
         );
 
         if (mostrarDebug)
@@ -736,7 +938,7 @@ void MinijuegoColorSeguro::Dibujar(
     }
 
     Color colorPantalla =
-        ObtenerColorArcoiris(
+        ObtenerColorPlataforma(
             indicePlataformaSegura
         );
 
