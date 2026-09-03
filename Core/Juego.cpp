@@ -807,55 +807,78 @@ void Juego::Actualizar(
                 );
 
 
+            // SeleccionPersonajes originalmente validaba solamente
+            // 2 o 4 jugadores. La partida general admite ahora 2,
+            // 3 o 4: recalculamos el estado listo con los jugadores
+            // realmente activos para que el tercer jugador no bloquee
+            // el inicio de la partida.
+            int cantidadConfirmada =
+                0;
+
+            bool activosPreparados =
+                true;
+
+            for (
+                int i = 0;
+                i < MAX_PARTICIPANTES;
+                i++
+            )
+            {
+                if (!participantes[i].activo)
+                {
+                    continue;
+                }
+
+                cantidadConfirmada++;
+
+                if (
+                    !participantes[i].conectado ||
+                    !seleccionPersonajes.jugadores[i].listo
+                )
+                {
+                    activosPreparados =
+                        false;
+                }
+            }
+
+            bool cantidadValida =
+                cantidadConfirmada >= 2 &&
+                cantidadConfirmada <= MAX_PARTICIPANTES;
+
+            seleccionPersonajes.todosListos =
+                cantidadValida &&
+                activosPreparados;
+
+            seleccionPersonajes.iniciarPartida =
+                seleccionPersonajes.todosListos;
+
+
             if (
                 seleccionPersonajes
                     .iniciarPartida
             )
             {
-                int cantidadConfirmada =
-                    0;
+                cantidadParticipantes =
+                    cantidadConfirmada;
 
 
-                for (
-                    int i = 0;
-                    i < MAX_PARTICIPANTES;
-                    i++
-                )
-                {
-                    if (participantes[i].activo)
-                    {
-                        cantidadConfirmada++;
-                    }
-                }
+                seleccionPersonajes
+                    .iniciarPartida =
+                    false;
 
 
-                if (
-                    cantidadConfirmada == 2 ||
-                    cantidadConfirmada == 4
-                )
-                {
-                    cantidadParticipantes =
-                        cantidadConfirmada;
+                zonaPruebas
+                    .Inicializar(
+                        participantes,
+                        cantidadParticipantes
+                    );
 
 
-                    seleccionPersonajes
-                        .iniciarPartida =
-                        false;
+                estado =
+                    ESTADO_ZONA_PRUEBAS;
 
 
-                    zonaPruebas
-                        .Inicializar(
-                            participantes,
-                            cantidadParticipantes
-                        );
-
-
-                    estado =
-                        ESTADO_ZONA_PRUEBAS;
-
-
-                    break;
-                }
+                break;
             }
 
 
