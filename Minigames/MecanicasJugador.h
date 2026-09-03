@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Minigames/ColisionesMinijuegos.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 
 #include <cmath>
@@ -121,6 +122,9 @@ inline void ActualizarJugadorPruebaNormal(
     bool estabaCayendo =
         jugador.cayendo;
 
+    Vector3 posicionAntesColision =
+        jugador.posicion;
+
     ActualizarJugadorPrueba(
         jugador,
         entrada,
@@ -133,6 +137,23 @@ inline void ActualizarJugadorPruebaNormal(
         respawnAutomatico,
         deltaTime
     );
+
+    // La utilidad base hace la primera resolucion por ejes.
+    // Esta segunda pasada usa la posicion anterior para evitar
+    // atravesar bloques o salir por una cara incorrecta si un
+    // frame termina con el jugador superpuesto.
+    if (
+        !estabaCayendo &&
+        !jugador.cayendo
+    )
+    {
+        CorregirMovimientoJugadorContraBloques(
+            jugador,
+            posicionAntesColision,
+            bloques,
+            cantidadBloques
+        );
+    }
 
     jugador.velocidadMovimiento =
         velocidadOriginal;
