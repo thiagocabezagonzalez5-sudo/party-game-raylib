@@ -87,8 +87,8 @@ void PruebaModelos::Inicializar()
     if (modeloCargado)
     {
         // El GLB de Don Sahur fue exportado con el eje
-        // vertical orientado sobre Z. raylib usa Y como
-        // eje vertical, por eso aparecia acostado.
+        // vertical orientado sobre Z. El giro negativo lo
+        // deja de pie y evita que quede bajo la plataforma.
         modelo.transform =
             MatrixRotateX(
                 90.0f * DEG2RAD
@@ -104,7 +104,7 @@ void PruebaModelos::Inicializar()
             -1;
 
         for (
-            unsigned int i = 0;
+            int i = 0;
             animaciones != nullptr &&
             i < cantidadAnimaciones;
             i++
@@ -422,12 +422,12 @@ void PruebaModelos::Dibujar() const
         DrawText(
             animacionIdleActiva
             ? TextFormat(
-                "Idle activo: %s   Clips: %u",
+                "Idle activo: %s   Clips: %d",
                 animaciones[indiceAnimacionIdle].name,
                 cantidadAnimaciones
             )
             : TextFormat(
-                "Idle no encontrado   Clips: %u",
+                "Idle no encontrado   Clips: %d",
                 cantidadAnimaciones
             ),
             25,
