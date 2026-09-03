@@ -4,6 +4,7 @@
 #include "Gameplay/PrototipoTablero.h"
 #include "Minigames/MinijuegoColorSeguro.h"
 #include "Minigames/Minijuego67.h"
+#include "Minigames/MinijuegoIslaFuego.h"
 #include "Minigames/MinijuegoPelotas.h"
 #include "Minigames/MinijuegoTronco.h"
 #include "Minigames/PruebaModelos.h"
@@ -18,7 +19,8 @@ enum ModoZonaPruebas
     PRUEBA_MODELOS = 4,
     PRUEBA_TRONCO_COORDINADO = 5,
     PRUEBA_FABRICA_67 = 6,
-    PRUEBA_TABLERO = 7
+    PRUEBA_TABLERO = 7,
+    PRUEBA_ISLA_FUEGO = 8
 };
 
 
@@ -45,6 +47,7 @@ struct ZonaPruebas
     MinijuegoTronco minijuegoTronco;
     Minijuego67 minijuego67;
     PrototipoTablero prototipoTablero;
+    MinijuegoIslaFuego minijuegoIslaFuego;
 
     bool mostrarDebug = false;
     bool volverAlMenu = false;
