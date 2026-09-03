@@ -22,6 +22,43 @@ static const float X_JUGADOR_67 = 2.35f;
 static const float X_MESA_67 = 4.45f;
 
 
+static void FinalizarResultado67(
+    Minijuego67& minijuego
+)
+{
+    if (
+        minijuego.resultado.estado !=
+        RESULTADO_MINIJUEGO_EN_CURSO
+    )
+    {
+        return;
+    }
+
+    minijuego.resultado.estado =
+        RESULTADO_MINIJUEGO_FINALIZADO;
+
+    minijuego.resultado.desenlace =
+        DESENLACE_COMPLETADO;
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        ResultadoParticipante& participante =
+            minijuego.resultado.participantes[i];
+
+        if (!participante.participo)
+        {
+            continue;
+        }
+
+        participante.posicionFinal = 0;
+        participante.numeroEquipo = -1;
+        participante.puntuacionMinijuego =
+            minijuego.puntos;
+        participante.puntosObtenidos = 0;
+    }
+}
+
+
 //==================================================
 // UTILIDADES DE ESTADO
 //==================================================
@@ -679,6 +716,12 @@ void Minijuego67::Reiniciar(
     int cantidadMaxima
 )
 {
+    InicializarResultadoMinijuego(
+        resultado,
+        participantes,
+        FORMATO_MINIJUEGO_COOPERATIVO
+    );
+
     tiempoPartida = DURACION_PARTIDA_67;
     velocidadCintas = 0.24f;
     desplazamientoVisualCintas = 0.0f;
@@ -806,6 +849,9 @@ void Minijuego67::Actualizar(
     {
         tiempoPartida = 0.0f;
         terminado = true;
+
+        FinalizarResultado67(*this);
+
         return;
     }
 
@@ -1204,6 +1250,12 @@ void Minijuego67::Dibujar(
             RAYWHITE
         );
     }
+}
+
+
+const ResultadoMinijuego& Minijuego67::ObtenerResultado() const
+{
+    return resultado;
 }
 
 

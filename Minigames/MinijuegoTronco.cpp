@@ -17,6 +17,48 @@ static const float DURACION_RONDA_TRONCO =
     2.4f;
 
 
+static void FinalizarResultadoTronco(
+    MinijuegoTronco& minijuego,
+    DesenlaceMinijuego desenlace
+)
+{
+    if (
+        minijuego.resultado.estado !=
+        RESULTADO_MINIJUEGO_EN_CURSO
+    )
+    {
+        return;
+    }
+
+    minijuego.resultado.estado =
+        RESULTADO_MINIJUEGO_FINALIZADO;
+
+    minijuego.resultado.desenlace =
+        desenlace;
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        ResultadoParticipante& participante =
+            minijuego.resultado.participantes[i];
+
+        if (!participante.participo)
+        {
+            continue;
+        }
+
+        participante.posicionFinal =
+            desenlace == DESENLACE_VICTORIA_COOPERATIVA
+            ? 1
+            : 0;
+
+        participante.numeroEquipo = -1;
+        participante.puntuacionMinijuego =
+            minijuego.rondasCompletadas;
+        participante.puntosObtenidos = 0;
+    }
+}
+
+
 //==================================================
 // UTILIDADES DE ENTRADA
 //==================================================
@@ -188,6 +230,12 @@ void MinijuegoTronco::Reiniciar(
     int cantidadMaxima
 )
 {
+    InicializarResultadoMinijuego(
+        resultado,
+        participantes,
+        FORMATO_MINIJUEGO_COOPERATIVO
+    );
+
     estado =
         TRONCO_PREPARANDO;
 
@@ -353,6 +401,11 @@ void MinijuegoTronco::Actualizar(
         estado =
             TRONCO_PERDIDO;
 
+        FinalizarResultadoTronco(
+            *this,
+            DESENLACE_DERROTA_COOPERATIVA
+        );
+
         return;
     }
 
@@ -494,6 +547,11 @@ void MinijuegoTronco::Actualizar(
 
             estado =
                 TRONCO_GANADO;
+
+            FinalizarResultadoTronco(
+                *this,
+                DESENLACE_VICTORIA_COOPERATIVA
+            );
 
             return;
         }
@@ -946,4 +1004,10 @@ void MinijuegoTronco::Dibujar(
             anchoTarjeta +
             separacion;
     }
+}
+
+
+const ResultadoMinijuego& MinijuegoTronco::ObtenerResultado() const
+{
+    return resultado;
 }

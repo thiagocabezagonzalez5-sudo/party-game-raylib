@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Participante.h"
+#include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
 
 
@@ -38,6 +39,8 @@ struct EstadoJugador67
 
 struct Minijuego67
 {
+    ResultadoMinijuego resultado;
+
     EstadoJugador67 estadosJugadores[
         MAX_JUGADORES_PRUEBA
     ];
@@ -99,6 +102,8 @@ struct Minijuego67
         int cantidadMaxima,
         const Participante participantes[]
     ) const;
+
+    const ResultadoMinijuego& ObtenerResultado() const;
 
     void Descargar();
 };

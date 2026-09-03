@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Participante.h"
+#include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
 
 
@@ -36,6 +37,8 @@ struct EstadoJugadorTronco
 
 struct MinijuegoTronco
 {
+    ResultadoMinijuego resultado;
+
     Camera3D camara{};
 
     EstadoJugadorTronco estadosJugadores[
@@ -85,4 +88,6 @@ struct MinijuegoTronco
         int cantidadMaxima,
         const Participante participantes[]
     ) const;
+
+    const ResultadoMinijuego& ObtenerResultado() const;
 };
