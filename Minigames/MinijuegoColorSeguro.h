@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Participante.h"
+#include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
 
 
@@ -14,8 +15,31 @@ enum FaseMinijuegoColor
 };
 
 
+enum EstadoPartidaColorSeguro
+{
+    COLOR_SEGURO_PREPARACION = 0,
+    COLOR_SEGURO_JUGANDO,
+    COLOR_SEGURO_TERMINADO
+};
+
+
+struct EstadoJugadorColorSeguro
+{
+    bool eliminado = false;
+    int posicionFinal = 0;
+    int tiempoSobrevividoMs = 0;
+    int rondasSobrevividas = 0;
+};
+
+
 struct MinijuegoColorSeguro
 {
+    ResultadoMinijuego resultado;
+
+    EstadoJugadorColorSeguro estadosJugadores[
+        MAX_JUGADORES_PRUEBA
+    ];
+
     BloquePrueba plataformas[CANTIDAD_PLATAFORMAS_COLOR];
     int cantidadPlataformas = 0;
 
@@ -27,11 +51,18 @@ struct MinijuegoColorSeguro
     float tiempoTemblorCamara = 0.0f;
     float intensidadTemblorCamara = 0.0f;
 
+    EstadoPartidaColorSeguro estado =
+        COLOR_SEGURO_PREPARACION;
+
     FaseMinijuegoColor fase =
         FASE_ELEGIR_PLATAFORMA;
 
     int indicePlataformaSegura = 0;
     int numeroRonda = 1;
+
+    float tiempoPreparacion = 3.0f;
+    float tiempoRestante = 60.0f;
+    float tiempoJugado = 0.0f;
 
     float tiempoFase = 5.0f;
     float duracionElegirPlataforma = 5.0f;
@@ -66,4 +97,6 @@ struct MinijuegoColorSeguro
         int cantidadParticulas,
         bool mostrarDebug
     ) const;
+
+    const ResultadoMinijuego& ObtenerResultado() const;
 };
