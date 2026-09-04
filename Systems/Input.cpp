@@ -13,25 +13,10 @@ static InputJugador LeerInputTeclado(
         control == CONTROL_TECLADO_WASD
     )
     {
-        if (IsKeyDown(KEY_W))
-        {
-            input.moverZ -= 1.0f;
-        }
-
-        if (IsKeyDown(KEY_S))
-        {
-            input.moverZ += 1.0f;
-        }
-
-        if (IsKeyDown(KEY_A))
-        {
-            input.moverX -= 1.0f;
-        }
-
-        if (IsKeyDown(KEY_D))
-        {
-            input.moverX += 1.0f;
-        }
+        if (IsKeyDown(KEY_W)) input.moverZ -= 1.0f;
+        if (IsKeyDown(KEY_S)) input.moverZ += 1.0f;
+        if (IsKeyDown(KEY_A)) input.moverX -= 1.0f;
+        if (IsKeyDown(KEY_D)) input.moverX += 1.0f;
     }
 
     if (
@@ -39,42 +24,21 @@ static InputJugador LeerInputTeclado(
         control == CONTROL_TECLADO_FLECHAS
     )
     {
-        if (IsKeyDown(KEY_UP))
-        {
-            input.moverZ -= 1.0f;
-        }
-
-        if (IsKeyDown(KEY_DOWN))
-        {
-            input.moverZ += 1.0f;
-        }
-
-        if (IsKeyDown(KEY_LEFT))
-        {
-            input.moverX -= 1.0f;
-        }
-
-        if (IsKeyDown(KEY_RIGHT))
-        {
-            input.moverX += 1.0f;
-        }
+        if (IsKeyDown(KEY_UP)) input.moverZ -= 1.0f;
+        if (IsKeyDown(KEY_DOWN)) input.moverZ += 1.0f;
+        if (IsKeyDown(KEY_LEFT)) input.moverX -= 1.0f;
+        if (IsKeyDown(KEY_RIGHT)) input.moverX += 1.0f;
     }
 
     if (control == CONTROL_TECLADO_FLECHAS)
     {
-        input.saltar =
-            IsKeyPressed(KEY_ENTER);
-
-        input.accion =
-            IsKeyPressed(KEY_RIGHT_SHIFT);
+        input.saltar = IsKeyPressed(KEY_ENTER);
+        input.accion = IsKeyPressed(KEY_RIGHT_SHIFT);
     }
     else
     {
-        input.saltar =
-            IsKeyPressed(KEY_SPACE);
-
-        input.accion =
-            IsKeyPressed(KEY_E);
+        input.saltar = IsKeyPressed(KEY_SPACE);
+        input.accion = IsKeyPressed(KEY_E);
     }
 
     return input;
@@ -132,6 +96,12 @@ void ActualizarConexionParticipante(
     Participante& participante
 )
 {
+    if (participante.esBot)
+    {
+        participante.conectado = true;
+        return;
+    }
+
     if (participante.control == CONTROL_GAMEPAD)
     {
         participante.conectado =
@@ -184,6 +154,7 @@ void ConfigurarControlesParticipantes(
         Participante& participante =
             participantes[i];
 
+        participante.esBot = false;
         participante.indiceGamepad = -1;
 
         if (modoTeclado == TECLADO_COMPLETO && i == 0)
@@ -221,7 +192,10 @@ InputJugador LeerInputParticipante(
     const Participante& participante
 )
 {
-    if (!participante.conectado)
+    if (
+        participante.esBot ||
+        !participante.conectado
+    )
     {
         return InputJugador{};
     }
@@ -254,7 +228,10 @@ InputSeleccionParticipante LeerInputSeleccionParticipante(
 {
     InputSeleccionParticipante entrada{};
 
-    if (!participante.conectado)
+    if (
+        participante.esBot ||
+        !participante.conectado
+    )
     {
         return entrada;
     }
@@ -370,7 +347,10 @@ InputMinijuegoParticipante LeerInputMinijuegoParticipante(
 {
     InputMinijuegoParticipante entrada{};
 
-    if (!participante.conectado)
+    if (
+        participante.esBot ||
+        !participante.conectado
+    )
     {
         return entrada;
     }
@@ -478,7 +458,11 @@ bool AccionDireccionalControlPresionada(
     AccionDireccionalControl accion
 )
 {
-    if (!participante.conectado)
+    if (
+        participante.esBot ||
+        !participante.conectado ||
+        participante.control == CONTROL_NINGUNO
+    )
     {
         return false;
     }
@@ -539,6 +523,11 @@ const char* ObtenerTextoAccionDireccionalControl(
     AccionDireccionalControl accion
 )
 {
+    if (participante.esBot)
+    {
+        return "BOT";
+    }
+
     if (participante.control == CONTROL_GAMEPAD)
     {
         switch (accion)
@@ -577,6 +566,11 @@ const char* ObtenerTextoBotonPrincipal(
     const Participante& participante
 )
 {
+    if (participante.esBot)
+    {
+        return "BOT";
+    }
+
     if (participante.control == CONTROL_GAMEPAD)
     {
         return "A";
@@ -595,6 +589,11 @@ const char* ObtenerNombreControlParticipante(
     const Participante& participante
 )
 {
+    if (participante.esBot)
+    {
+        return "BOT";
+    }
+
     switch (participante.control)
     {
         case CONTROL_TECLADO_COMPLETO:
@@ -628,8 +627,6 @@ InputJugador LeerInputJugador(
 
     if (jugador == 0)
     {
-        // El puente conserva el esquema antiguo:
-        // flechas para mover, Espacio para saltar y E para accion.
         participante.control =
             CONTROL_TECLADO_FLECHAS;
 
