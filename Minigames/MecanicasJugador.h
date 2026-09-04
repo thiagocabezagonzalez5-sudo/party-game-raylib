@@ -21,6 +21,7 @@
 // - ralentizacion al recibir un golpe
 // - particulas amarillas al impactar
 // - colision solida entre jugadores SIN empuje de choque
+// - acompanamiento de plataformas que descienden
 //
 // Los minijuegos con fisica especial (por ejemplo Pelotas)
 // no deben usar este perfil y pueden seguir usando las
@@ -80,6 +81,118 @@ inline void ConfigurarJugadorMinijuegoEstandar(
 
 
 //==================================================
+// PLATAFORMAS MOVILES DESCENDENTES
+//==================================================
+//
+// BloquePrueba ya conoce si esta cayendo y su velocidad vertical.
+// Algunos minijuegos, como Color Seguro, mueven el bloque antes de
+// actualizar al jugador. Sin esta correccion se abre un pequeno hueco
+// entre los pies y la superficie y el jugador deja de estar en suelo.
+//
+// Si estaba apoyado sobre una plataforma que desciende, lo colocamos
+// sobre la nueva altura antes de leer el salto. De esta forma:
+// - baja pegado a la plataforma;
+// - conserva enSuelo;
+// - puede saltar normalmente mientras la plataforma esta cayendo.
+//==================================================
+
+inline void AcompanharPlataformaDescendente(
+    JugadorPrueba& jugador,
+    BloquePrueba bloques[],
+    int cantidadBloques,
+    float deltaTime
+)
+{
+    if (
+        bloques == nullptr ||
+        cantidadBloques <= 0 ||
+        !jugador.enSuelo ||
+        jugador.cayendo ||
+        jugador.velocidad.y > 0.01f
+    )
+    {
+        return;
+    }
+
+    const float mitadX =
+        jugador.tamano.x / 2.0f;
+
+    const float mitadY =
+        jugador.tamano.y / 2.0f;
+
+    const float mitadZ =
+        jugador.tamano.z / 2.0f;
+
+    float piesJugador =
+        jugador.posicion.y -
+        mitadY;
+
+    for (int i = 0; i < cantidadBloques; i++)
+    {
+        const BloquePrueba& bloque =
+            bloques[i];
+
+        if (
+            !bloque.activaColision ||
+            !bloque.cayendo ||
+            bloque.velocidadCaida <= 0.0f
+        )
+        {
+            continue;
+        }
+
+        BoundingBox cajaBloque =
+            CrearHitboxBloquePrueba(
+                bloque
+            );
+
+        bool solapaX =
+            jugador.posicion.x + mitadX > cajaBloque.min.x &&
+            jugador.posicion.x - mitadX < cajaBloque.max.x;
+
+        bool solapaZ =
+            jugador.posicion.z + mitadZ > cajaBloque.min.z &&
+            jugador.posicion.z - mitadZ < cajaBloque.max.z;
+
+        if (!solapaX || !solapaZ)
+        {
+            continue;
+        }
+
+        // La plataforma se actualiza antes que el jugador. El espacio
+        // que aparecio este frame es aproximadamente velocidad * dt.
+        float descensoEsteFrame =
+            bloque.velocidadCaida *
+            deltaTime;
+
+        if (descensoEsteFrame < 0.0f)
+        {
+            descensoEsteFrame = 0.0f;
+        }
+
+        float separacion =
+            piesJugador -
+            cajaBloque.max.y;
+
+        if (
+            separacion >= -0.06f &&
+            separacion <= descensoEsteFrame + 0.10f
+        )
+        {
+            jugador.posicion.y =
+                cajaBloque.max.y +
+                mitadY;
+
+            jugador.velocidad.y = 0.0f;
+            jugador.enSuelo = true;
+
+            return;
+        }
+    }
+}
+
+
+//==================================================
 // MOVIMIENTO NORMAL + RALENTIZACION
 //==================================================
 
@@ -95,6 +208,13 @@ inline void ActualizarJugadorPruebaNormal(
     float deltaTime
 )
 {
+    AcompanharPlataformaDescendente(
+        jugador,
+        bloques,
+        cantidadBloques,
+        deltaTime
+    );
+
     if (jugador.tiempoRalentizado > 0.0f)
     {
         jugador.tiempoRalentizado -=
