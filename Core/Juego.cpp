@@ -5,26 +5,18 @@
 
 
 //==================================================
-// PREPARAR DIRECTORIO DE RECURSOS
+// RECURSOS
 //==================================================
 
 static void PrepararDirectorioDeRecursos()
 {
-    // Si Assets ya existe en la carpeta de trabajo,
-    // no hace falta cambiar nada. Este es el caso
-    // normal cuando se ejecuta desde Visual Studio Code.
     if (DirectoryExists("Assets"))
     {
         return;
     }
 
-
-    // Al abrir directamente el .exe dentro de build,
-    // Windows usa build como carpeta de trabajo.
-    // Buscamos entonces Assets un nivel arriba.
     const char* directorioAplicacion =
         GetApplicationDirectory();
-
 
     if (
         directorioAplicacion != nullptr &&
@@ -43,7 +35,6 @@ static void PrepararDirectorioDeRecursos()
                     directorioAplicacion
                 )
             );
-
 
         if (directorioCambiado)
         {
@@ -72,6 +63,149 @@ static void PrepararDirectorioDeRecursos()
 
 
 //==================================================
+// FLUJO FINAL
+//==================================================
+
+static void PrepararSeleccionDePersonajes(
+    Juego& juego
+)
+{
+    juego.cantidadParticipantes = 0;
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        juego.participantes[i] = Participante{};
+        juego.participantes[i].numeroJugador = i + 1;
+    }
+
+    ConfigurarControlesParticipantes(
+        juego.participantes,
+        MAX_PARTICIPANTES,
+        juego.config.modoTeclado
+    );
+
+    juego.seleccionPersonajes.Inicializar(
+        juego.participantes,
+        MAX_PARTICIPANTES
+    );
+}
+
+
+static ModoZonaPruebas ConvertirCatalogoAModo(
+    int idCatalogo
+)
+{
+    switch (idCatalogo)
+    {
+        case CATALOGO_COLOR_SEGURO:
+            return PRUEBA_COLOR_SEGURO;
+
+        case CATALOGO_PELOTAS:
+            return PRUEBA_PELOTAS_EMPUJON;
+
+        case CATALOGO_TRONCO:
+            return PRUEBA_TRONCO_COORDINADO;
+
+        case CATALOGO_FABRICA_67:
+            return PRUEBA_FABRICA_67;
+
+        case CATALOGO_ISLA_FUEGO:
+            return PRUEBA_ISLA_FUEGO;
+
+        case CATALOGO_CAPITAN_MANDA:
+            return PRUEBA_CAPITAN_MANDA;
+
+        case CATALOGO_BARRA_GIRATORIA:
+            return PRUEBA_BARRA_GIRATORIA;
+    }
+
+    return PRUEBA_COLOR_SEGURO;
+}
+
+
+static bool CancelarPantallaConMando()
+{
+    for (int i = 0; i < 4; i++)
+    {
+        if (
+            IsGamepadAvailable(i) &&
+            IsGamepadButtonPressed(
+                i,
+                GAMEPAD_BUTTON_RIGHT_FACE_RIGHT
+            )
+        )
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+static void DibujarTableroVacio()
+{
+    DrawRectangle(
+        0,
+        0,
+        GetScreenWidth(),
+        GetScreenHeight(),
+        Fade(Color{ 14, 16, 22, 255 }, 0.66f)
+    );
+
+    Rectangle panel =
+    {
+        GetScreenWidth() / 2.0f - 330.0f,
+        GetScreenHeight() / 2.0f - 145.0f,
+        660.0f,
+        290.0f
+    };
+
+    DrawRectangle(
+        (int)panel.x,
+        (int)panel.y,
+        (int)panel.width,
+        (int)panel.height,
+        Fade(BLACK, 0.82f)
+    );
+
+    DrawRectangleLinesEx(
+        panel,
+        4.0f,
+        ORANGE
+    );
+
+    const char* titulo = "TABLERO";
+    const char* estado = "EN CONSTRUCCION";
+    const char* ayuda = "ESC / B PARA VOLVER";
+
+    DrawText(
+        titulo,
+        GetScreenWidth() / 2 - MeasureText(titulo, 44) / 2,
+        (int)panel.y + 52,
+        44,
+        RAYWHITE
+    );
+
+    DrawText(
+        estado,
+        GetScreenWidth() / 2 - MeasureText(estado, 28) / 2,
+        (int)panel.y + 128,
+        28,
+        ORANGE
+    );
+
+    DrawText(
+        ayuda,
+        GetScreenWidth() / 2 - MeasureText(ayuda, 18) / 2,
+        (int)panel.y + 218,
+        18,
+        LIGHTGRAY
+    );
+}
+
+
+//==================================================
 // INICIALIZAR
 //==================================================
 
@@ -83,72 +217,29 @@ void Juego::Inicializar()
         "Juego de Party"
     );
 
-
     PrepararDirectorioDeRecursos();
-
-
-    SetExitKey(
-        KEY_NULL
-    );
-
-
-    //==================================================
-    // RESOLUCIONES
-    //==================================================
+    SetExitKey(KEY_NULL);
 
     InicializarResoluciones();
 
+    int monitor = GetCurrentMonitor();
+    int anchoMonitor = GetMonitorWidth(monitor);
+    int altoMonitor = GetMonitorHeight(monitor);
+    int indiceNativo = 0;
 
-    int monitor =
-        GetCurrentMonitor();
-
-
-    int anchoMonitor =
-        GetMonitorWidth(
-            monitor
-        );
-
-
-    int altoMonitor =
-        GetMonitorHeight(
-            monitor
-        );
-
-
-    int indiceNativo =
-        0;
-
-
-    for (
-        int i = 0;
-        i < cantidadResoluciones;
-        i++
-    )
+    for (int i = 0; i < cantidadResoluciones; i++)
     {
         if (
-            resoluciones[i].ancho ==
-                anchoMonitor &&
-
-            resoluciones[i].alto ==
-                altoMonitor
+            resoluciones[i].ancho == anchoMonitor &&
+            resoluciones[i].alto == altoMonitor
         )
         {
-            indiceNativo =
-                i;
-
-
+            indiceNativo = i;
             break;
         }
     }
 
-
-    //==================================================
-    // CONFIGURACION
-    //==================================================
-
-    config =
-        ConfiguracionJuego{};
-
+    config = ConfiguracionJuego{};
 
     bool configEncontrada =
         CargarConfiguracion(
@@ -156,144 +247,49 @@ void Juego::Inicializar()
             config
         );
 
-
     if (!configEncontrada)
     {
-        config.modoVentana =
-            MODO_PANTALLA_COMPLETA;
-
-
-        config.indiceResolucion =
-            indiceNativo;
-
-
-        config.indiceFPS =
-            1;
+        config.modoVentana = MODO_PANTALLA_COMPLETA;
+        config.indiceResolucion = indiceNativo;
+        config.indiceFPS = 1;
     }
-
-
-    //------------------------------
-    // VALIDAR RESOLUCION
-    //------------------------------
 
     if (
-        config.indiceResolucion <
-            0 ||
-
-        config.indiceResolucion >=
-            cantidadResoluciones
+        config.indiceResolucion < 0 ||
+        config.indiceResolucion >= cantidadResoluciones
     )
     {
-        config.indiceResolucion =
-            indiceNativo;
+        config.indiceResolucion = indiceNativo;
     }
-
-
-    //------------------------------
-    // VALIDAR FPS
-    //------------------------------
 
     if (
-        config.indiceFPS <
-            0 ||
-
-        config.indiceFPS >=
-            CANTIDAD_OPCIONES_FPS
+        config.indiceFPS < 0 ||
+        config.indiceFPS >= CANTIDAD_OPCIONES_FPS
     )
     {
-        config.indiceFPS =
-            1;
+        config.indiceFPS = 1;
     }
-
-
-    //------------------------------
-    // VALIDAR MODO TECLADO
-    //------------------------------
 
     if (
-        config.modoTeclado <
-            TECLADO_COMPLETO ||
-
-        config.modoTeclado >
-            TECLADO_DIVIDIDO
+        config.modoTeclado < TECLADO_COMPLETO ||
+        config.modoTeclado > TECLADO_DIVIDIDO
     )
     {
-        config.modoTeclado =
-            TECLADO_DIVIDIDO;
+        config.modoTeclado = TECLADO_DIVIDIDO;
     }
 
+    if (config.volumenMusica < 0.0f) config.volumenMusica = 0.0f;
+    if (config.volumenMusica > 1.0f) config.volumenMusica = 1.0f;
+    if (config.volumenSonidos < 0.0f) config.volumenSonidos = 0.0f;
+    if (config.volumenSonidos > 1.0f) config.volumenSonidos = 1.0f;
 
-    //------------------------------
-    // VALIDAR VOLUMEN MUSICA
-    //------------------------------
+    cantidadParticipantes = 0;
 
-    if (
-        config.volumenMusica <
-        0.0f
-    )
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        config.volumenMusica =
-            0.0f;
+        participantes[i] = Participante{};
+        participantes[i].numeroJugador = i + 1;
     }
-
-
-    if (
-        config.volumenMusica >
-        1.0f
-    )
-    {
-        config.volumenMusica =
-            1.0f;
-    }
-
-
-    //------------------------------
-    // VALIDAR VOLUMEN SONIDOS
-    //------------------------------
-
-    if (
-        config.volumenSonidos <
-        0.0f
-    )
-    {
-        config.volumenSonidos =
-            0.0f;
-    }
-
-
-    if (
-        config.volumenSonidos >
-        1.0f
-    )
-    {
-        config.volumenSonidos =
-            1.0f;
-    }
-
-
-    //==================================================
-    // PARTICIPANTES
-    //==================================================
-
-    cantidadParticipantes =
-        0;
-
-
-    for (
-        int i = 0;
-        i < MAX_PARTICIPANTES;
-        i++
-    )
-    {
-        participantes[i] =
-            Participante{};
-
-
-        participantes[i]
-            .numeroJugador =
-            i + 1;
-    }
-
 
     ConfigurarControlesParticipantes(
         participantes,
@@ -301,113 +297,46 @@ void Juego::Inicializar()
         config.modoTeclado
     );
 
-
-    //==================================================
-    // FPS
-    //==================================================
-
     SetTargetFPS(
-        opcionesFPS[
-            config.indiceFPS
-        ]
+        opcionesFPS[config.indiceFPS]
     );
 
-
-    //==================================================
-    // MODO DE VENTANA
-    //==================================================
-
-    ModoVentana modoActual =
-        MODO_VENTANA;
-
+    ModoVentana modoActual = MODO_VENTANA;
 
     AplicarModoVentana(
         modoActual,
         config.modoVentana,
-        resoluciones[
-            config.indiceResolucion
-        ]
+        resoluciones[config.indiceResolucion]
     );
 
-
-    config.modoVentana =
-        modoActual;
-
-
-    //==================================================
-    // AUDIO
-    //==================================================
+    config.modoVentana = modoActual;
 
     audio.Inicializar();
+    audio.AplicarVolumenMusica(config.volumenMusica);
+    audio.AplicarVolumenSonidos(config.volumenSonidos);
 
+    menuConfiguracion.Inicializar();
+    menuModoJuego.Inicializar();
+    seleccionMinijuegos.Inicializar();
 
-    audio.AplicarVolumenMusica(
-        config.volumenMusica
+    seleccionPersonajes.Inicializar(
+        participantes,
+        MAX_PARTICIPANTES
     );
 
-
-    audio.AplicarVolumenSonidos(
-        config.volumenSonidos
+    zonaPruebas.Inicializar(
+        participantes,
+        cantidadParticipantes
     );
-
-
-    //==================================================
-    // MENUS
-    //==================================================
-
-    menuConfiguracion
-        .Inicializar();
-
-
-    seleccionPersonajes
-        .Inicializar(
-            participantes,
-            MAX_PARTICIPANTES
-        );
-
-
-    //==================================================
-    // ZONA PRUEBAS
-    //==================================================
-
-    zonaPruebas
-        .Inicializar(
-            participantes,
-            cantidadParticipantes
-        );
-
-
-    //==================================================
-    // LOGO
-    //==================================================
 
     pantallaLogo.Inicializar(
         "Assets/UI/LogoCreador.png"
     );
 
-
-    //==================================================
-    // CARGA
-    //==================================================
-
-    menuPreparado =
-        false;
-
-
-    cargaMenuSolicitada =
-        false;
-
-
-    //==================================================
-    // ESTADO
-    //==================================================
-
-    estado =
-        ESTADO_LOGO;
-
-
-    cerrarJuego =
-        false;
+    menuPreparado = false;
+    cargaMenuSolicitada = false;
+    estado = ESTADO_LOGO;
+    cerrarJuego = false;
 }
 
 
@@ -417,25 +346,11 @@ void Juego::Inicializar()
 
 void Juego::InicializarResoluciones()
 {
-    cantidadResoluciones =
-        0;
+    cantidadResoluciones = 0;
 
-
-    int monitor =
-        GetCurrentMonitor();
-
-
-    int anchoMonitor =
-        GetMonitorWidth(
-            monitor
-        );
-
-
-    int altoMonitor =
-        GetMonitorHeight(
-            monitor
-        );
-
+    int monitor = GetCurrentMonitor();
+    int anchoMonitor = GetMonitorWidth(monitor);
+    int altoMonitor = GetMonitorHeight(monitor);
 
     Resolucion candidatas[] =
     {
@@ -449,25 +364,14 @@ void Juego::InicializarResoluciones()
         { 3840, 2160 }
     };
 
-
     const int cantidadCandidatas =
-        sizeof(candidatas) /
-        sizeof(candidatas[0]);
+        sizeof(candidatas) / sizeof(candidatas[0]);
 
-
-    for (
-        int i = 0;
-        i <
-        cantidadCandidatas;
-        i++
-    )
+    for (int i = 0; i < cantidadCandidatas; i++)
     {
         if (
-            candidatas[i].ancho <=
-                anchoMonitor &&
-
-            candidatas[i].alto <=
-                altoMonitor
+            candidatas[i].ancho <= anchoMonitor &&
+            candidatas[i].alto <= altoMonitor
         )
         {
             AgregarResolucion(
@@ -479,11 +383,6 @@ void Juego::InicializarResoluciones()
             );
         }
     }
-
-
-    //------------------------------
-    // NATIVA
-    //------------------------------
 
     AgregarResolucion(
         resoluciones,
@@ -503,475 +402,301 @@ void Juego::Actualizar(
     float deltaTime
 )
 {
-    //==================================================
-    // AUDIO GLOBAL
-    //==================================================
-
     audio.Actualizar();
-
-
-    //==================================================
-    // ESTADOS
-    //==================================================
 
     switch (estado)
     {
-        //==================================================
-        // LOGO
-        //==================================================
-
         case ESTADO_LOGO:
         {
-            pantallaLogo.Actualizar(
-                deltaTime
-            );
-
-
-            //------------------------------
-            // SOLICITAR CARGA
-            //------------------------------
+            pantallaLogo.Actualizar(deltaTime);
 
             if (
                 !menuPreparado &&
                 !cargaMenuSolicitada &&
-                pantallaLogo.tiempo >=
-                    1.0f
+                pantallaLogo.tiempo >= 1.0f
             )
             {
-                cargaMenuSolicitada =
-                    true;
-
-
+                cargaMenuSolicitada = true;
                 break;
             }
 
-
-            //------------------------------
-            // CARGAR MENU
-            //------------------------------
-
-            if (
-                cargaMenuSolicitada &&
-                !menuPreparado
-            )
+            if (cargaMenuSolicitada && !menuPreparado)
             {
-                menuPrincipal
-                    .Inicializar();
-
+                menuPrincipal.Inicializar();
 
                 audio.CargarMusicaMenu(
                     "Assets/Audio/MusicaMenu.mp3"
                 );
 
-
                 audio.AplicarVolumenMusica(
                     config.volumenMusica
                 );
 
-
-                menuPreparado =
-                    true;
-
-
-                cargaMenuSolicitada =
-                    false;
-
-
-                pantallaLogo.tiempo =
-                    1.5f;
+                menuPreparado = true;
+                cargaMenuSolicitada = false;
+                pantallaLogo.tiempo = 1.5f;
             }
-
-
-            //------------------------------
-            // TERMINAR LOGO
-            //------------------------------
 
             if (
                 menuPreparado &&
                 pantallaLogo.Termino()
             )
             {
-                menuPrincipal
-                    .PrepararEntrada(
-                        true
-                    );
-
-
-                audio
-                    .ReproducirMusicaMenu();
-
-
-                estado =
-                    ESTADO_MENU;
+                menuPrincipal.PrepararEntrada(true);
+                audio.ReproducirMusicaMenu();
+                estado = ESTADO_MENU;
             }
-
 
             break;
         }
-
-
-        //==================================================
-        // MENU PRINCIPAL
-        //==================================================
 
         case ESTADO_MENU:
         {
-            menuPrincipal
-                .Actualizar(
-                    deltaTime
-                );
+            menuPrincipal.Actualizar(deltaTime);
 
-
-            //==================================================
-            // EMPEZAR
-            //==================================================
-
-            if (
-                menuPrincipal
-                    .empezarJuego
-            )
+            if (menuPrincipal.empezarJuego)
             {
-                menuPrincipal
-                    .empezarJuego =
-                    false;
-
-
-                cantidadParticipantes =
-                    0;
-
-
-                ConfigurarControlesParticipantes(
-                    participantes,
-                    MAX_PARTICIPANTES,
-                    config.modoTeclado
-                );
-
-
-                seleccionPersonajes
-                    .Inicializar(
-                        participantes,
-                        MAX_PARTICIPANTES
-                    );
-
-
-                estado =
-                    ESTADO_SELECCION_JUGADORES;
+                menuPrincipal.empezarJuego = false;
+                menuModoJuego.Inicializar();
+                estado = ESTADO_SELECCION_MODO;
             }
 
-
-            //==================================================
-            // CONFIGURACION
-            //==================================================
-
-            if (
-                menuPrincipal
-                    .abrirConfiguracion
-            )
+            if (menuPrincipal.abrirConfiguracion)
             {
-                menuPrincipal
-                    .abrirConfiguracion =
-                    false;
-
-
-                menuConfiguracion
-                    .Inicializar();
-
-
-                estado =
-                    ESTADO_CONFIGURACION;
+                menuPrincipal.abrirConfiguracion = false;
+                menuConfiguracion.Inicializar();
+                estado = ESTADO_CONFIGURACION;
             }
 
-
-            //==================================================
-            // SALIR
-            //==================================================
-
-            if (
-                menuPrincipal
-                    .salir
-            )
+            if (menuPrincipal.salir)
             {
                 GuardarConfiguracion(
                     rutaConfiguracion,
                     config
                 );
 
-
-                cerrarJuego =
-                    true;
+                cerrarJuego = true;
             }
-
 
             break;
         }
-
-
-        //==================================================
-        // CONFIGURACION
-        //==================================================
 
         case ESTADO_CONFIGURACION:
         {
-            menuPrincipal
-                .fondo
-                .Actualizar(
-                    deltaTime
-                );
+            menuPrincipal.fondo.Actualizar(deltaTime);
 
+            menuConfiguracion.Actualizar(
+                config,
+                resoluciones,
+                cantidadResoluciones,
+                opcionesFPS,
+                CANTIDAD_OPCIONES_FPS,
+                audio
+            );
 
-            menuConfiguracion
-                .Actualizar(
-                    config,
-                    resoluciones,
-                    cantidadResoluciones,
-                    opcionesFPS,
-                    CANTIDAD_OPCIONES_FPS,
-                    audio
-                );
-
-
-            //------------------------------
-            // GUARDAR CAMBIOS
-            //------------------------------
-
-            if (
-                menuConfiguracion
-                    .configuracionCambiada
-            )
+            if (menuConfiguracion.configuracionCambiada)
             {
                 GuardarConfiguracion(
                     rutaConfiguracion,
                     config
                 );
 
-
-                menuConfiguracion
-                    .configuracionCambiada =
-                    false;
+                menuConfiguracion.configuracionCambiada = false;
             }
 
-
-            //------------------------------
-            // VOLVER
-            //------------------------------
-
-            if (
-                menuConfiguracion
-                    .volver
-            )
+            if (menuConfiguracion.volver)
             {
-                menuConfiguracion
-                    .volver =
-                    false;
-
+                menuConfiguracion.volver = false;
 
                 GuardarConfiguracion(
                     rutaConfiguracion,
                     config
                 );
 
-
-                menuPrincipal
-                    .PrepararEntrada(
-                        false
-                    );
-
-
-                estado =
-                    ESTADO_MENU;
+                menuPrincipal.PrepararEntrada(false);
+                estado = ESTADO_MENU;
             }
-
 
             break;
         }
 
+        case ESTADO_SELECCION_MODO:
+        {
+            menuPrincipal.fondo.Actualizar(deltaTime);
+            menuModoJuego.Actualizar(deltaTime);
 
-        //==================================================
-        // SELECCION DE PERSONAJES
-        //==================================================
+            if (menuModoJuego.volver)
+            {
+                menuPrincipal.PrepararEntrada(false);
+                estado = ESTADO_MENU;
+                break;
+            }
+
+            if (menuModoJuego.confirmar)
+            {
+                if (
+                    menuModoJuego.opcionSeleccionada ==
+                    MODO_JUEGO_MINIJUEGOS
+                )
+                {
+                    PrepararSeleccionDePersonajes(*this);
+                    estado = ESTADO_SELECCION_JUGADORES;
+                }
+                else
+                {
+                    estado = ESTADO_TABLERO_VACIO;
+                }
+            }
+
+            break;
+        }
+
+        case ESTADO_TABLERO_VACIO:
+        {
+            menuPrincipal.fondo.Actualizar(deltaTime);
+
+            if (
+                IsKeyPressed(KEY_ESCAPE) ||
+                CancelarPantallaConMando()
+            )
+            {
+                menuModoJuego.Inicializar();
+                estado = ESTADO_SELECCION_MODO;
+            }
+
+            break;
+        }
 
         case ESTADO_SELECCION_JUGADORES:
         {
-            menuPrincipal
-                .fondo
-                .Actualizar(
-                    deltaTime
-                );
+            menuPrincipal.fondo.Actualizar(deltaTime);
 
+            seleccionPersonajes.Actualizar(
+                deltaTime,
+                participantes,
+                MAX_PARTICIPANTES
+            );
 
-            seleccionPersonajes
-                .Actualizar(
-                    deltaTime,
-                    participantes,
-                    MAX_PARTICIPANTES
-                );
+            int cantidadHumana = 0;
+            bool activosPreparados = true;
 
-
-            // SeleccionPersonajes originalmente validaba solamente
-            // 2 o 4 jugadores. La partida general admite ahora 2,
-            // 3 o 4: recalculamos el estado listo con los jugadores
-            // realmente activos para que el tercer jugador no bloquee
-            // el inicio de la partida.
-            int cantidadConfirmada =
-                0;
-
-            bool activosPreparados =
-                true;
-
-            for (
-                int i = 0;
-                i < MAX_PARTICIPANTES;
-                i++
-            )
+            for (int i = 0; i < MAX_PARTICIPANTES; i++)
             {
                 if (!participantes[i].activo)
                 {
                     continue;
                 }
 
-                cantidadConfirmada++;
+                cantidadHumana++;
 
                 if (
                     !participantes[i].conectado ||
                     !seleccionPersonajes.jugadores[i].listo
                 )
                 {
-                    activosPreparados =
-                        false;
+                    activosPreparados = false;
                 }
             }
 
+            // J1 tiene que ser humano porque es quien elige el
+            // minijuego en el catalogo de la siguiente pantalla.
             bool cantidadValida =
-                cantidadConfirmada >= 2 &&
-                cantidadConfirmada <= MAX_PARTICIPANTES;
+                cantidadHumana >= 1 &&
+                cantidadHumana <= MAX_PARTICIPANTES &&
+                participantes[0].activo;
 
             seleccionPersonajes.todosListos =
-                cantidadValida &&
-                activosPreparados;
+                cantidadValida && activosPreparados;
 
             seleccionPersonajes.iniciarPartida =
                 seleccionPersonajes.todosListos;
 
-
-            if (
-                seleccionPersonajes
-                    .iniciarPartida
-            )
+            if (seleccionPersonajes.iniciarPartida)
             {
-                cantidadParticipantes =
-                    cantidadConfirmada;
+                seleccionPersonajes.iniciarPartida = false;
 
+                CompletarParticipantesConBots(
+                    participantes,
+                    MAX_PARTICIPANTES
+                );
 
-                seleccionPersonajes
-                    .iniciarPartida =
-                    false;
-
-
-                zonaPruebas
-                    .Inicializar(
-                        participantes,
-                        cantidadParticipantes
-                    );
-
-
-                estado =
-                    ESTADO_ZONA_PRUEBAS;
-
-
+                cantidadParticipantes = MAX_PARTICIPANTES;
+                seleccionMinijuegos.Inicializar();
+                estado = ESTADO_SELECCION_MINIJUEGO;
                 break;
             }
 
-
-            if (
-                seleccionPersonajes
-                    .volverAlMenu
-            )
+            if (seleccionPersonajes.volverAlMenu)
             {
-                seleccionPersonajes
-                    .volverAlMenu =
-                    false;
-
-
-                menuPrincipal
-                    .PrepararEntrada(
-                        false
-                    );
-
-
-                estado =
-                    ESTADO_MENU;
+                seleccionPersonajes.volverAlMenu = false;
+                menuModoJuego.Inicializar();
+                estado = ESTADO_SELECCION_MODO;
             }
-
 
             break;
         }
 
+        case ESTADO_SELECCION_MINIJUEGO:
+        {
+            menuPrincipal.fondo.Actualizar(deltaTime);
 
-        //==================================================
-        // ZONA DE PRUEBAS
-        //==================================================
+            seleccionMinijuegos.Actualizar(
+                deltaTime,
+                participantes[0]
+            );
+
+            if (seleccionMinijuegos.volver)
+            {
+                PrepararSeleccionDePersonajes(*this);
+                estado = ESTADO_SELECCION_JUGADORES;
+                break;
+            }
+
+            if (seleccionMinijuegos.confirmado)
+            {
+                ModoZonaPruebas modoElegido =
+                    ConvertirCatalogoAModo(
+                        seleccionMinijuegos.indiceSeleccionado
+                    );
+
+                zonaPruebas.Inicializar(
+                    participantes,
+                    MAX_PARTICIPANTES
+                );
+
+                zonaPruebas.modoCatalogo = true;
+                zonaPruebas.CambiarModo(modoElegido);
+                estado = ESTADO_ZONA_PRUEBAS;
+            }
+
+            break;
+        }
 
         case ESTADO_ZONA_PRUEBAS:
         {
-            zonaPruebas
-                .Actualizar(
-                    deltaTime
-                );
+            zonaPruebas.Actualizar(deltaTime);
 
-
-            //------------------------------
-            // VOLVER AL MENU
-            //------------------------------
-
-            if (
-                zonaPruebas
-                    .volverAlMenu
-            )
+            if (zonaPruebas.volverAlMenu)
             {
-                zonaPruebas
-                    .volverAlMenu =
-                    false;
+                zonaPruebas.volverAlMenu = false;
 
-
-                menuPrincipal
-                    .PrepararEntrada(
-                        false
-                    );
-
-
-                estado =
-                    ESTADO_MENU;
+                if (zonaPruebas.modoCatalogo)
+                {
+                    zonaPruebas.modoCatalogo = false;
+                    estado = ESTADO_SELECCION_MINIJUEGO;
+                }
+                else
+                {
+                    menuPrincipal.PrepararEntrada(false);
+                    estado = ESTADO_MENU;
+                }
             }
 
-
             break;
         }
-
-
-        //==================================================
-        // PARTIDA
-        //==================================================
 
         case ESTADO_PARTIDA:
-        {
-            break;
-        }
-
-
-        //==================================================
-        // MINIJUEGO
-        //==================================================
-
         case ESTADO_MINIJUEGO:
-        {
-            break;
-        }
-
-
-        //==================================================
-        // RESULTADO
-        //==================================================
-
         case ESTADO_RESULTADO:
         {
             break;
@@ -988,180 +713,114 @@ void Juego::Dibujar()
 {
     switch (estado)
     {
-        //==================================================
-        // LOGO
-        //==================================================
-
         case ESTADO_LOGO:
         {
-            pantallaLogo
-                .Dibujar();
-
+            pantallaLogo.Dibujar();
 
             if (
                 cargaMenuSolicitada &&
                 !menuPreparado
             )
             {
-                const char* texto =
-                    "CARGANDO...";
-
-
-                int tamano =
-                    24;
-
-
-                int ancho =
-                    MeasureText(
-                        texto,
-                        tamano
-                    );
-
+                const char* texto = "CARGANDO...";
 
                 DrawText(
                     texto,
-
-                    GetScreenWidth() /
-                        2 -
-                        ancho /
-                        2,
-
-                    GetScreenHeight() -
-                        100,
-
-                    tamano,
-
+                    GetScreenWidth() / 2 - MeasureText(texto, 24) / 2,
+                    GetScreenHeight() - 100,
+                    24,
                     BLACK
                 );
             }
 
-
             break;
         }
-
-
-        //==================================================
-        // MENU
-        //==================================================
 
         case ESTADO_MENU:
         {
-            menuPrincipal
-                .Dibujar();
-
-
+            menuPrincipal.Dibujar();
             break;
         }
-
-
-        //==================================================
-        // CONFIG
-        //==================================================
 
         case ESTADO_CONFIGURACION:
         {
-            menuPrincipal
-                .fondo
-                .DibujarPantallaCompleta();
+            menuPrincipal.fondo.DibujarPantallaCompleta();
 
-
-            menuConfiguracion
-                .Dibujar(
-                    config,
-                    resoluciones,
-                    opcionesFPS
-                );
-
+            menuConfiguracion.Dibujar(
+                config,
+                resoluciones,
+                opcionesFPS
+            );
 
             break;
         }
 
+        case ESTADO_SELECCION_MODO:
+        {
+            menuPrincipal.fondo.DibujarPantallaCompleta();
+            menuModoJuego.Dibujar();
+            break;
+        }
 
-        //==================================================
-        // SELECCION
-        //==================================================
+        case ESTADO_TABLERO_VACIO:
+        {
+            menuPrincipal.fondo.DibujarPantallaCompleta();
+            DibujarTableroVacio();
+            break;
+        }
 
         case ESTADO_SELECCION_JUGADORES:
         {
-            menuPrincipal
-                .fondo
-                .DibujarPantallaCompleta();
+            menuPrincipal.fondo.DibujarPantallaCompleta();
 
+            seleccionPersonajes.Dibujar(
+                participantes,
+                MAX_PARTICIPANTES
+            );
 
-            seleccionPersonajes
-                .Dibujar(
-                    participantes,
-                    MAX_PARTICIPANTES
+            if (!participantes[0].activo)
+            {
+                const char* aviso =
+                    "JUGADOR 1 DEBE UNIRSE PARA ELEGIR EL MINIJUEGO";
+
+                DrawText(
+                    aviso,
+                    GetScreenWidth() / 2 - MeasureText(aviso, 18) / 2,
+                    GetScreenHeight() - 76,
+                    18,
+                    ORANGE
                 );
-
+            }
 
             break;
         }
 
-
-        //==================================================
-        // ZONA DE PRUEBAS
-        //==================================================
+        case ESTADO_SELECCION_MINIJUEGO:
+        {
+            menuPrincipal.fondo.DibujarPantallaCompleta();
+            seleccionMinijuegos.Dibujar(participantes[0]);
+            break;
+        }
 
         case ESTADO_ZONA_PRUEBAS:
         {
-            zonaPruebas
-                .Dibujar();
-
-
+            zonaPruebas.Dibujar();
             break;
         }
-
-
-        //==================================================
-        // PARTIDA
-        //==================================================
 
         case ESTADO_PARTIDA:
-        {
-            ClearBackground(
-                SKYBLUE
-            );
-
-
-            break;
-        }
-
-
-        //==================================================
-        // MINIJUEGO
-        //==================================================
-
         case ESTADO_MINIJUEGO:
         {
-            ClearBackground(
-                SKYBLUE
-            );
-
-
+            ClearBackground(SKYBLUE);
             break;
         }
-
-
-        //==================================================
-        // RESULTADO
-        //==================================================
 
         case ESTADO_RESULTADO:
         {
-            ClearBackground(
-                BLACK
-            );
-
-
+            ClearBackground(BLACK);
             break;
         }
     }
-
-
-    //==================================================
-    // FPS GLOBAL
-    //==================================================
 
     if (
         config.mostrarFPS &&
@@ -1169,49 +828,24 @@ void Juego::Dibujar()
     )
     {
         const char* texto =
-            TextFormat(
-                "FPS: %d",
-                GetFPS()
-            );
-
-
-        int anchoTexto =
-            MeasureText(
-                texto,
-                20
-            );
-
+            TextFormat("FPS: %d", GetFPS());
 
         DrawText(
             texto,
-
-            GetScreenWidth() -
-                anchoTexto -
-                20,
-
+            GetScreenWidth() - MeasureText(texto, 20) - 20,
             20,
-
             20,
-
             DARKGREEN
         );
     }
 }
 
 
-//==================================================
-// CERRAR
-//==================================================
-
 bool Juego::DebeCerrar()
 {
     return cerrarJuego;
 }
 
-
-//==================================================
-// DESCARGAR
-//==================================================
 
 void Juego::Descargar()
 {
@@ -1220,42 +854,9 @@ void Juego::Descargar()
         config
     );
 
-
-    //------------------------------
-    // ZONA DE PRUEBAS / MODELOS
-    //------------------------------
-
-    zonaPruebas
-        .Descargar();
-
-
-    //------------------------------
-    // PERSONAJES
-    //------------------------------
-
-    seleccionPersonajes
-        .Descargar();
-
-
-    //------------------------------
-    // AUDIO
-    //------------------------------
-
+    zonaPruebas.Descargar();
+    seleccionPersonajes.Descargar();
     audio.Descargar();
-
-
-    //------------------------------
-    // LOGO
-    //------------------------------
-
-    pantallaLogo
-        .Descargar();
-
-
-    //------------------------------
-    // MENU
-    //------------------------------
-
-    menuPrincipal
-        .Descargar();
+    pantallaLogo.Descargar();
+    menuPrincipal.Descargar();
 }
