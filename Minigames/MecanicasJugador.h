@@ -9,25 +9,6 @@
 //==================================================
 // PERFIL ESTANDAR DEL JUGADOR
 //==================================================
-//
-// Este archivo define las mecanicas compartidas por los
-// minijuegos donde el jugador se mueve de forma "normal":
-//
-// - movimiento directo en X/Z
-// - salto
-// - golpe al suelo
-// - golpe horizontal
-// - cooldown del golpe
-// - ralentizacion al recibir un golpe
-// - particulas amarillas al impactar
-// - colision solida entre jugadores SIN empuje de choque
-// - acompanamiento de plataformas que descienden
-//
-// Los minijuegos con fisica especial (por ejemplo Pelotas)
-// no deben usar este perfil y pueden seguir usando las
-// utilidades de bajo nivel de UtilidadesMinijuegos.
-//==================================================
-
 
 const float VELOCIDAD_JUGADOR_ESTANDAR = 5.0f;
 const float FUERZA_SALTO_JUGADOR_ESTANDAR = 7.2f;
@@ -40,60 +21,25 @@ const float DURACION_RALENTIZACION_GOLPE = 0.70f;
 const float MULTIPLICADOR_VELOCIDAD_RALENTIZADO = 0.45f;
 
 
-//==================================================
-// CONFIGURACION
-//==================================================
-
 inline void ConfigurarJugadorMinijuegoEstandar(
     JugadorPrueba& jugador,
     Vector3 posicionSpawn
 )
 {
-    jugador.posicionSpawn =
-        posicionSpawn;
+    jugador.posicionSpawn = posicionSpawn;
+    jugador.tamano = { 0.8f, 1.4f, 0.8f };
+    jugador.velocidadMovimiento = VELOCIDAD_JUGADOR_ESTANDAR;
+    jugador.fuerzaSalto = FUERZA_SALTO_JUGADOR_ESTANDAR;
+    jugador.gravedad = GRAVEDAD_JUGADOR_ESTANDAR;
+    jugador.duracionRespawn = DURACION_RESPAWN_JUGADOR_ESTANDAR;
+    jugador.tiempoRalentizado = 0.0f;
 
-    jugador.tamano =
-    {
-        0.8f,
-        1.4f,
-        0.8f
-    };
-
-    jugador.velocidadMovimiento =
-        VELOCIDAD_JUGADOR_ESTANDAR;
-
-    jugador.fuerzaSalto =
-        FUERZA_SALTO_JUGADOR_ESTANDAR;
-
-    jugador.gravedad =
-        GRAVEDAD_JUGADOR_ESTANDAR;
-
-    jugador.duracionRespawn =
-        DURACION_RESPAWN_JUGADOR_ESTANDAR;
-
-    jugador.tiempoRalentizado =
-        0.0f;
-
-    ReiniciarJugadorPrueba(
-        jugador
-    );
+    ReiniciarJugadorPrueba(jugador);
 }
 
 
 //==================================================
 // PLATAFORMAS MOVILES DESCENDENTES
-//==================================================
-//
-// BloquePrueba ya conoce si esta cayendo y su velocidad vertical.
-// Algunos minijuegos, como Color Seguro, mueven el bloque antes de
-// actualizar al jugador. Sin esta correccion se abre un pequeno hueco
-// entre los pies y la superficie y el jugador deja de estar en suelo.
-//
-// Si estaba apoyado sobre una plataforma que desciende, lo colocamos
-// sobre la nueva altura antes de leer el salto. De esta forma:
-// - baja pegado a la plataforma;
-// - conserva enSuelo;
-// - puede saltar normalmente mientras la plataforma esta cayendo.
 //==================================================
 
 inline void AcompanharPlataformaDescendente(
@@ -114,23 +60,14 @@ inline void AcompanharPlataformaDescendente(
         return;
     }
 
-    const float mitadX =
-        jugador.tamano.x / 2.0f;
-
-    const float mitadY =
-        jugador.tamano.y / 2.0f;
-
-    const float mitadZ =
-        jugador.tamano.z / 2.0f;
-
-    float piesJugador =
-        jugador.posicion.y -
-        mitadY;
+    const float mitadX = jugador.tamano.x / 2.0f;
+    const float mitadY = jugador.tamano.y / 2.0f;
+    const float mitadZ = jugador.tamano.z / 2.0f;
+    const float piesJugador = jugador.posicion.y - mitadY;
 
     for (int i = 0; i < cantidadBloques; i++)
     {
-        const BloquePrueba& bloque =
-            bloques[i];
+        const BloquePrueba& bloque = bloques[i];
 
         if (
             !bloque.activaColision ||
@@ -141,10 +78,7 @@ inline void AcompanharPlataformaDescendente(
             continue;
         }
 
-        BoundingBox cajaBloque =
-            CrearHitboxBloquePrueba(
-                bloque
-            );
+        BoundingBox cajaBloque = CrearHitboxBloquePrueba(bloque);
 
         bool solapaX =
             jugador.posicion.x + mitadX > cajaBloque.min.x &&
@@ -159,33 +93,19 @@ inline void AcompanharPlataformaDescendente(
             continue;
         }
 
-        // La plataforma se actualiza antes que el jugador. El espacio
-        // que aparecio este frame es aproximadamente velocidad * dt.
-        float descensoEsteFrame =
-            bloque.velocidadCaida *
-            deltaTime;
+        float descensoEsteFrame = bloque.velocidadCaida * deltaTime;
+        if (descensoEsteFrame < 0.0f) descensoEsteFrame = 0.0f;
 
-        if (descensoEsteFrame < 0.0f)
-        {
-            descensoEsteFrame = 0.0f;
-        }
-
-        float separacion =
-            piesJugador -
-            cajaBloque.max.y;
+        float separacion = piesJugador - cajaBloque.max.y;
 
         if (
             separacion >= -0.06f &&
             separacion <= descensoEsteFrame + 0.10f
         )
         {
-            jugador.posicion.y =
-                cajaBloque.max.y +
-                mitadY;
-
+            jugador.posicion.y = cajaBloque.max.y + mitadY;
             jugador.velocidad.y = 0.0f;
             jugador.enSuelo = true;
-
             return;
         }
     }
@@ -217,18 +137,14 @@ inline void ActualizarJugadorPruebaNormal(
 
     if (jugador.tiempoRalentizado > 0.0f)
     {
-        jugador.tiempoRalentizado -=
-            deltaTime;
-
+        jugador.tiempoRalentizado -= deltaTime;
         if (jugador.tiempoRalentizado < 0.0f)
         {
-            jugador.tiempoRalentizado =
-                0.0f;
+            jugador.tiempoRalentizado = 0.0f;
         }
     }
 
-    float velocidadOriginal =
-        jugador.velocidadMovimiento;
+    float velocidadOriginal = jugador.velocidadMovimiento;
 
     if (jugador.tiempoRalentizado > 0.0f)
     {
@@ -236,14 +152,9 @@ inline void ActualizarJugadorPruebaNormal(
             MULTIPLICADOR_VELOCIDAD_RALENTIZADO;
     }
 
-    bool golpeandoAntes =
-        jugador.golpeando;
-
-    bool estabaCayendo =
-        jugador.cayendo;
-
-    Vector3 posicionAntesColision =
-        jugador.posicion;
+    bool golpeandoAntes = jugador.golpeando;
+    bool estabaCayendo = jugador.cayendo;
+    Vector3 posicionAntesColision = jugador.posicion;
 
     ActualizarJugadorPrueba(
         jugador,
@@ -258,14 +169,7 @@ inline void ActualizarJugadorPruebaNormal(
         deltaTime
     );
 
-    // La utilidad base hace la primera resolucion por ejes.
-    // Esta segunda pasada usa la posicion anterior para evitar
-    // atravesar bloques o salir por una cara incorrecta si un
-    // frame termina con el jugador superpuesto.
-    if (
-        !estabaCayendo &&
-        !jugador.cayendo
-    )
+    if (!estabaCayendo && !jugador.cayendo)
     {
         CorregirMovimientoJugadorContraBloques(
             jugador,
@@ -275,29 +179,16 @@ inline void ActualizarJugadorPruebaNormal(
         );
     }
 
-    jugador.velocidadMovimiento =
-        velocidadOriginal;
+    jugador.velocidadMovimiento = velocidadOriginal;
 
-    // ActualizarJugadorPrueba inicia el golpe. Aqui fijamos
-    // el cooldown comun para todos los minijuegos estandar.
-    if (
-        !golpeandoAntes &&
-        jugador.golpeando
-    )
+    if (!golpeandoAntes && jugador.golpeando)
     {
-        jugador.cooldownGolpe =
-            COOLDOWN_GOLPE_JUGADOR_ESTANDAR;
+        jugador.cooldownGolpe = COOLDOWN_GOLPE_JUGADOR_ESTANDAR;
     }
 
-    // Un respawn empieza limpio, sin conservar el efecto
-    // de ralentizacion de una vida anterior.
-    if (
-        estabaCayendo &&
-        !jugador.cayendo
-    )
+    if (estabaCayendo && !jugador.cayendo)
     {
-        jugador.tiempoRalentizado =
-            0.0f;
+        jugador.tiempoRalentizado = 0.0f;
     }
 }
 
@@ -322,10 +213,7 @@ inline void ActualizarJugadorMinijuegoEstandar(
 
     if (participante.conectado)
     {
-        entrada =
-            LeerInputMinijuegoParticipante(
-                participante
-            );
+        entrada = LeerInputMinijuegoParticipante(participante);
     }
 
     ActualizarJugadorPruebaNormal(
@@ -343,14 +231,11 @@ inline void ActualizarJugadorMinijuegoEstandar(
 
 
 //==================================================
-// COLISION SOLIDA ENTRE JUGADORES
+// COLISION SOLIDA ENTRE JUGADORES SIN EMPUJE
 //==================================================
-//
-// Esta colision solo impide que dos jugadores se atraviesen.
-// No genera impulso, no suma velocidad y no lanza al rival.
-// Si uno avanza contra otro quieto, retrocede el que avanzo.
-// Si ambos avanzan uno contra otro, se reparte solamente la
-// correccion necesaria para que dejen de superponerse.
+// La correccion se aplica solamente al jugador que esta entrando
+// en el otro. Nunca se reparte el solape entre ambos, porque repartirlo
+// hace que un jugador quieto sea desplazado solo por contacto.
 //==================================================
 
 inline void ResolverColisionesJugadoresSinEmpuje(
@@ -359,13 +244,11 @@ inline void ResolverColisionesJugadoresSinEmpuje(
     int cantidadMaxima
 )
 {
-    const float MARGEN =
-        0.001f;
+    const float MARGEN = 0.001f;
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
-        JugadorPrueba& a =
-            jugadores[i];
+        JugadorPrueba& a = jugadores[i];
 
         if (
             !participantes[i].activo ||
@@ -378,8 +261,7 @@ inline void ResolverColisionesJugadoresSinEmpuje(
 
         for (int j = i + 1; j < cantidadMaxima; j++)
         {
-            JugadorPrueba& b =
-                jugadores[j];
+            JugadorPrueba& b = jugadores[j];
 
             if (
                 !participantes[j].activo ||
@@ -390,11 +272,8 @@ inline void ResolverColisionesJugadoresSinEmpuje(
                 continue;
             }
 
-            BoundingBox cajaA =
-                CrearHitboxJugadorPrueba(a);
-
-            BoundingBox cajaB =
-                CrearHitboxJugadorPrueba(b);
+            BoundingBox cajaA = CrearHitboxJugadorPrueba(a);
+            BoundingBox cajaB = CrearHitboxJugadorPrueba(b);
 
             bool seSolapan =
                 cajaA.min.x < cajaB.max.x &&
@@ -421,126 +300,98 @@ inline void ResolverColisionesJugadoresSinEmpuje(
 
             if (solapeX < solapeZ)
             {
-                bool aEstaALaIzquierda =
-                    a.posicion.x < b.posicion.x;
+                bool aEstaALaIzquierda = a.posicion.x < b.posicion.x;
+                bool aVaHaciaB = aEstaALaIzquierda
+                    ? a.velocidad.x > 0.001f
+                    : a.velocidad.x < -0.001f;
+                bool bVaHaciaA = aEstaALaIzquierda
+                    ? b.velocidad.x < -0.001f
+                    : b.velocidad.x > 0.001f;
 
-                bool aVaHaciaB =
-                    aEstaALaIzquierda
-                    ? a.velocidad.x > 0.0f
-                    : a.velocidad.x < 0.0f;
-
-                bool bVaHaciaA =
-                    aEstaALaIzquierda
-                    ? b.velocidad.x < 0.0f
-                    : b.velocidad.x > 0.0f;
-
-                float correccion =
-                    solapeX + MARGEN;
+                bool corregirA = false;
 
                 if (aVaHaciaB && !bVaHaciaA)
                 {
-                    a.posicion.x +=
-                        aEstaALaIzquierda
-                        ? -correccion
-                        : correccion;
-
-                    a.velocidad.x = 0.0f;
+                    corregirA = true;
                 }
                 else if (bVaHaciaA && !aVaHaciaB)
                 {
-                    b.posicion.x +=
-                        aEstaALaIzquierda
-                        ? correccion
-                        : -correccion;
-
-                    b.velocidad.x = 0.0f;
+                    corregirA = false;
                 }
                 else
                 {
-                    float mitad =
-                        correccion / 2.0f;
+                    // Si ambos avanzan o ninguno tiene una direccion
+                    // concluyente, retrocede el que tenga mas movimiento.
+                    // En empate elegimos A solo para resolver el solape
+                    // sin desplazar simultaneamente a los dos.
+                    corregirA =
+                        std::fabs(a.velocidad.x) >=
+                        std::fabs(b.velocidad.x);
+                }
 
-                    a.posicion.x +=
-                        aEstaALaIzquierda
-                        ? -mitad
-                        : mitad;
+                float correccion = solapeX + MARGEN;
 
-                    b.posicion.x +=
-                        aEstaALaIzquierda
-                        ? mitad
-                        : -mitad;
-
-                    if (aVaHaciaB)
-                    {
-                        a.velocidad.x = 0.0f;
-                    }
-
-                    if (bVaHaciaA)
-                    {
-                        b.velocidad.x = 0.0f;
-                    }
+                if (corregirA)
+                {
+                    a.posicion.x += aEstaALaIzquierda
+                        ? -correccion
+                        : correccion;
+                    a.velocidad.x = 0.0f;
+                    a.empuje.x = 0.0f;
+                }
+                else
+                {
+                    b.posicion.x += aEstaALaIzquierda
+                        ? correccion
+                        : -correccion;
+                    b.velocidad.x = 0.0f;
+                    b.empuje.x = 0.0f;
                 }
             }
             else
             {
-                bool aEstaArriba =
-                    a.posicion.z < b.posicion.z;
+                bool aEstaArriba = a.posicion.z < b.posicion.z;
+                bool aVaHaciaB = aEstaArriba
+                    ? a.velocidad.z > 0.001f
+                    : a.velocidad.z < -0.001f;
+                bool bVaHaciaA = aEstaArriba
+                    ? b.velocidad.z < -0.001f
+                    : b.velocidad.z > 0.001f;
 
-                bool aVaHaciaB =
-                    aEstaArriba
-                    ? a.velocidad.z > 0.0f
-                    : a.velocidad.z < 0.0f;
-
-                bool bVaHaciaA =
-                    aEstaArriba
-                    ? b.velocidad.z < 0.0f
-                    : b.velocidad.z > 0.0f;
-
-                float correccion =
-                    solapeZ + MARGEN;
+                bool corregirA = false;
 
                 if (aVaHaciaB && !bVaHaciaA)
                 {
-                    a.posicion.z +=
-                        aEstaArriba
-                        ? -correccion
-                        : correccion;
-
-                    a.velocidad.z = 0.0f;
+                    corregirA = true;
                 }
                 else if (bVaHaciaA && !aVaHaciaB)
                 {
-                    b.posicion.z +=
-                        aEstaArriba
-                        ? correccion
-                        : -correccion;
-
-                    b.velocidad.z = 0.0f;
+                    corregirA = false;
                 }
                 else
                 {
-                    float mitad =
-                        correccion / 2.0f;
+                    corregirA =
+                        std::fabs(a.velocidad.z) >=
+                        std::fabs(b.velocidad.z);
+                }
 
-                    a.posicion.z +=
-                        aEstaArriba
-                        ? -mitad
-                        : mitad;
+                float correccion = solapeZ + MARGEN;
 
-                    b.posicion.z +=
-                        aEstaArriba
-                        ? mitad
-                        : -mitad;
-
-                    if (aVaHaciaB)
-                    {
-                        a.velocidad.z = 0.0f;
-                    }
-
-                    if (bVaHaciaA)
-                    {
-                        b.velocidad.z = 0.0f;
-                    }
+                if (corregirA)
+                {
+                    a.posicion.z += aEstaArriba
+                        ? -correccion
+                        : correccion;
+                    a.velocidad.z = 0.0f;
+                    a.empuje.z = 0.0f;
+                }
+                else
+                {
+                    b.posicion.z += aEstaArriba
+                        ? correccion
+                        : -correccion;
+                    b.velocidad.z = 0.0f;
+                    b.empuje.z = 0.0f;
                 }
             }
         }
@@ -558,48 +409,29 @@ inline void CrearParticulasImpactoGolpe(
     Vector3 posicionImpacto
 )
 {
-    if (
-        particulas == nullptr ||
-        cantidadMaxima <= 0
-    )
+    if (particulas == nullptr || cantidadMaxima <= 0)
     {
         return;
     }
 
-    const int CANTIDAD_CREAR =
-        18;
-
-    int creadas =
-        0;
+    const int CANTIDAD_CREAR = 18;
+    int creadas = 0;
 
     for (
         int i = 0;
-        i < cantidadMaxima &&
-        creadas < CANTIDAD_CREAR;
+        i < cantidadMaxima && creadas < CANTIDAD_CREAR;
         i++
     )
     {
-        ParticulaTierra& particula =
-            particulas[i];
+        ParticulaTierra& particula = particulas[i];
+        if (particula.activa) continue;
 
-        if (particula.activa)
-        {
-            continue;
-        }
-
-        float direccionX =
-            (float)GetRandomValue(-100, 100) /
-            100.0f;
-
-        float direccionZ =
-            (float)GetRandomValue(-100, 100) /
-            100.0f;
-
-        float longitud =
-            std::sqrt(
-                direccionX * direccionX +
-                direccionZ * direccionZ
-            );
+        float direccionX = (float)GetRandomValue(-100, 100) / 100.0f;
+        float direccionZ = (float)GetRandomValue(-100, 100) / 100.0f;
+        float longitud = std::sqrt(
+            direccionX * direccionX +
+            direccionZ * direccionZ
+        );
 
         if (longitud < 0.01f)
         {
@@ -612,49 +444,28 @@ inline void CrearParticulasImpactoGolpe(
         direccionZ /= longitud;
 
         float velocidadHorizontal =
-            (float)GetRandomValue(18, 42) /
-            10.0f;
+            (float)GetRandomValue(18, 42) / 10.0f;
 
-        particula.activa =
-            true;
-
+        particula.activa = true;
         particula.posicion =
         {
-            posicionImpacto.x +
-                (float)GetRandomValue(-12, 12) /
-                100.0f,
-
-            posicionImpacto.y +
-                (float)GetRandomValue(-8, 18) /
-                100.0f,
-
-            posicionImpacto.z +
-                (float)GetRandomValue(-12, 12) /
-                100.0f
+            posicionImpacto.x + (float)GetRandomValue(-12, 12) / 100.0f,
+            posicionImpacto.y + (float)GetRandomValue(-8, 18) / 100.0f,
+            posicionImpacto.z + (float)GetRandomValue(-12, 12) / 100.0f
         };
-
         particula.velocidad =
         {
             direccionX * velocidadHorizontal,
             (float)GetRandomValue(18, 45) / 10.0f,
             direccionZ * velocidadHorizontal
         };
-
         particula.vidaMaxima =
-            (float)GetRandomValue(18, 34) /
-            100.0f;
-
-        particula.vida =
-            particula.vidaMaxima;
-
+            (float)GetRandomValue(18, 34) / 100.0f;
+        particula.vida = particula.vidaMaxima;
         particula.tamano =
-            (float)GetRandomValue(7, 14) /
-            100.0f;
-
+            (float)GetRandomValue(7, 14) / 100.0f;
         particula.color =
-            GetRandomValue(0, 1) == 0
-            ? YELLOW
-            : GOLD;
+            GetRandomValue(0, 1) == 0 ? YELLOW : GOLD;
 
         creadas++;
     }
@@ -675,8 +486,7 @@ inline void ResolverGolpesJugadoresConEfectos(
 {
     for (int i = 0; i < cantidadMaxima; i++)
     {
-        JugadorPrueba& atacante =
-            jugadores[i];
+        JugadorPrueba& atacante = jugadores[i];
 
         if (
             !participantes[i].activo ||
@@ -692,13 +502,9 @@ inline void ResolverGolpesJugadoresConEfectos(
 
         for (int j = 0; j < cantidadMaxima; j++)
         {
-            if (i == j)
-            {
-                continue;
-            }
+            if (i == j) continue;
 
-            JugadorPrueba& objetivo =
-                jugadores[j];
+            JugadorPrueba& objetivo = jugadores[j];
 
             if (
                 !participantes[j].activo ||
@@ -711,44 +517,26 @@ inline void ResolverGolpesJugadoresConEfectos(
                 continue;
             }
 
-            float dx =
-                objetivo.posicion.x -
-                atacante.posicion.x;
+            float dx = objetivo.posicion.x - atacante.posicion.x;
+            float dz = objetivo.posicion.z - atacante.posicion.z;
+            float distancia = std::sqrt(dx * dx + dz * dz);
 
-            float dz =
-                objetivo.posicion.z -
-                atacante.posicion.z;
-
-            float distancia =
-                std::sqrt(
-                    dx * dx +
-                    dz * dz
-                );
-
-            if (
-                distancia < 0.001f ||
-                distancia > 1.55f
-            )
+            if (distancia < 0.001f || distancia > 1.55f)
             {
                 continue;
             }
 
             if (
                 std::fabs(
-                    objetivo.posicion.y -
-                    atacante.posicion.y
+                    objetivo.posicion.y - atacante.posicion.y
                 ) > 1.0f
             )
             {
                 continue;
             }
 
-            float normalX =
-                dx / distancia;
-
-            float normalZ =
-                dz / distancia;
-
+            float normalX = dx / distancia;
+            float normalZ = dz / distancia;
             float frente =
                 normalX * atacante.direccionMirada.x +
                 normalZ * atacante.direccionMirada.z;
@@ -758,31 +546,18 @@ inline void ResolverGolpesJugadoresConEfectos(
                 continue;
             }
 
-            // El golpe SI puede desplazar: el empuje viene de una
-            // accion deliberada del jugador, no del simple contacto.
             objetivo.empuje.x +=
                 normalX * FUERZA_GOLPE_JUGADOR_ESTANDAR;
-
             objetivo.empuje.z +=
                 normalZ * FUERZA_GOLPE_JUGADOR_ESTANDAR;
-
             objetivo.tiempoRalentizado =
                 DURACION_RALENTIZACION_GOLPE;
 
             Vector3 posicionImpacto =
             {
-                atacante.posicion.x +
-                    normalX * 0.82f,
-
-                (
-                    atacante.posicion.y +
-                    objetivo.posicion.y
-                ) /
-                2.0f +
-                0.12f,
-
-                atacante.posicion.z +
-                    normalZ * 0.82f
+                atacante.posicion.x + normalX * 0.82f,
+                (atacante.posicion.y + objetivo.posicion.y) / 2.0f + 0.12f,
+                atacante.posicion.z + normalZ * 0.82f
             };
 
             CrearParticulasImpactoGolpe(
@@ -791,18 +566,12 @@ inline void ResolverGolpesJugadoresConEfectos(
                 posicionImpacto
             );
 
-            atacante.golpeYaConecto =
-                true;
-
+            atacante.golpeYaConecto = true;
             break;
         }
     }
 }
 
-
-//==================================================
-// INTERACCIONES ESTANDAR
-//==================================================
 
 inline bool ResolverInteraccionesJugadoresMinijuegoEstandar(
     JugadorPrueba jugadores[],
@@ -812,12 +581,11 @@ inline bool ResolverInteraccionesJugadoresMinijuegoEstandar(
     int cantidadParticulas
 )
 {
-    bool huboGolpeSuelo =
-        ResolverGolpesSuelo(
-            jugadores,
-            participantes,
-            cantidadMaxima
-        );
+    bool huboGolpeSuelo = ResolverGolpesSuelo(
+        jugadores,
+        participantes,
+        cantidadMaxima
+    );
 
     ResolverGolpesJugadoresConEfectos(
         jugadores,
