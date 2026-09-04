@@ -2,6 +2,7 @@
 
 #include "Core/Participante.h"
 #include "Gameplay/PrototipoTablero.h"
+#include "Minigames/MinijuegoCapitanManda.h"
 #include "Minigames/MinijuegoColorSeguro.h"
 #include "Minigames/Minijuego67.h"
 #include "Minigames/MinijuegoIslaFuego.h"
@@ -20,7 +21,8 @@ enum ModoZonaPruebas
     PRUEBA_TRONCO_COORDINADO = 5,
     PRUEBA_FABRICA_67 = 6,
     PRUEBA_TABLERO = 7,
-    PRUEBA_ISLA_FUEGO = 8
+    PRUEBA_ISLA_FUEGO = 8,
+    PRUEBA_CAPITAN_MANDA = 9
 };
 
 
@@ -48,6 +50,7 @@ struct ZonaPruebas
     Minijuego67 minijuego67;
     PrototipoTablero prototipoTablero;
     MinijuegoIslaFuego minijuegoIslaFuego;
+    MinijuegoCapitanManda minijuegoCapitanManda;
 
     bool mostrarDebug = false;
     bool volverAlMenu = false;
