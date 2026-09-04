@@ -2,6 +2,7 @@
 
 #include "Core/Participante.h"
 #include "Gameplay/PrototipoTablero.h"
+#include "Minigames/MinijuegoBarraGiratoria.h"
 #include "Minigames/MinijuegoCapitanManda.h"
 #include "Minigames/MinijuegoColorSeguro.h"
 #include "Minigames/Minijuego67.h"
@@ -22,7 +23,8 @@ enum ModoZonaPruebas
     PRUEBA_FABRICA_67 = 6,
     PRUEBA_TABLERO = 7,
     PRUEBA_ISLA_FUEGO = 8,
-    PRUEBA_CAPITAN_MANDA = 9
+    PRUEBA_CAPITAN_MANDA = 9,
+    PRUEBA_BARRA_GIRATORIA = 10
 };
 
 
@@ -51,6 +53,11 @@ struct ZonaPruebas
     PrototipoTablero prototipoTablero;
     MinijuegoIslaFuego minijuegoIslaFuego;
     MinijuegoCapitanManda minijuegoCapitanManda;
+    MinijuegoBarraGiratoria minijuegoBarraGiratoria;
+
+    // Cuando viene del catalogo final, oculta el HUD y los atajos
+    // numericos propios del entorno de desarrollo.
+    bool modoCatalogo = false;
 
     bool mostrarDebug = false;
     bool volverAlMenu = false;
