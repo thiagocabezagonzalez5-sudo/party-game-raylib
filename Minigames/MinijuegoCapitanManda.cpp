@@ -605,7 +605,7 @@ void MinijuegoCapitanManda::Dibujar(
     DrawText(
         "MINIJUEGO 9 - CAPITAN MANDA",
         25,
-        24,
+        20,
         30,
         BLACK
     );
@@ -613,9 +613,43 @@ void MinijuegoCapitanManda::Dibujar(
     DrawText(
         "COPIA LA DIRECCION. SI FALLAS O TARDAS, QUEDAS FUERA.",
         25,
-        63,
+        57,
         19,
         DARKGRAY
+    );
+
+    // Ayuda fija y separada del titulo. En gamepad las acciones
+    // direccionales del minijuego usan los botones de cara X/B.
+    DrawRectangle(
+        20,
+        84,
+        520,
+        54,
+        Fade(RAYWHITE, 0.82f)
+    );
+
+    DrawRectangleLines(
+        20,
+        84,
+        520,
+        54,
+        Fade(DARKGRAY, 0.65f)
+    );
+
+    DrawText(
+        "TECLADO: A/D O FLECHA IZQ/DER",
+        30,
+        90,
+        17,
+        DARKGRAY
+    );
+
+    DrawText(
+        "MANDO: X = IZQUIERDA    B = DERECHA",
+        30,
+        113,
+        18,
+        DARKBLUE
     );
 
     if (fase == FASE_CAPITAN_PREPARACION)
@@ -637,7 +671,7 @@ void MinijuegoCapitanManda::Dibujar(
             texto,
             GetScreenWidth() / 2 -
                 MeasureText(texto, 90) / 2,
-            125,
+            150,
             90,
             GOLD
         );
@@ -658,7 +692,7 @@ void MinijuegoCapitanManda::Dibujar(
             direccion,
             GetScreenWidth() / 2 -
                 MeasureText(direccion, tamano) / 2,
-            115,
+            150,
             tamano,
             ordenActual == CONTROL_DIRECCION_IZQUIERDA
             ? Color{ 25, 155, 205, 255 }
@@ -673,14 +707,14 @@ void MinijuegoCapitanManda::Dibujar(
                 ahora,
                 GetScreenWidth() / 2 -
                     MeasureText(ahora, 28) / 2,
-                174,
+                208,
                 28,
                 LIME
             );
 
             DrawRectangle(
                 GetScreenWidth() / 2 - 160,
-                208,
+                243,
                 320,
                 16,
                 Fade(BLACK, 0.35f)
@@ -698,7 +732,7 @@ void MinijuegoCapitanManda::Dibujar(
 
             DrawRectangle(
                 GetScreenWidth() / 2 - 160,
-                208,
+                243,
                 (int)(320.0f * porcentaje),
                 16,
                 porcentaje < 0.30f
@@ -716,7 +750,17 @@ void MinijuegoCapitanManda::Dibujar(
         DARKBLUE
     );
 
-    int y = GetScreenHeight() - 205;
+    // El panel global de ZonaPruebas ocupa la franja inferior.
+    // Subimos este bloque para que ningun control quede tapado.
+    int y = GetScreenHeight() - 305;
+
+    DrawRectangle(
+        18,
+        y - 10,
+        640,
+        120,
+        Fade(BLACK, 0.46f)
+    );
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
