@@ -4,95 +4,49 @@
 #include "Minigames/UtilidadesMinijuegos.h"
 
 
-//==================================================
-// NOMBRE DEL PROTOTIPO
-//==================================================
-
 static const char* NombreModoPrueba(
     ModoZonaPruebas modo
 )
 {
     switch (modo)
     {
-        case PRUEBA_ZONA_PRINCIPAL:
-            return "1 - ZONA PRINCIPAL";
-
-        case PRUEBA_COLOR_SEGURO:
-            return "2 - COLOR SEGURO";
-
-        case PRUEBA_PELOTAS_EMPUJON:
-            return "3 - PELOTAS / EMPUJONES";
-
-        case PRUEBA_MODELOS:
-            return "4 - PRUEBA DE MODELOS";
-
-        case PRUEBA_TRONCO_COORDINADO:
-            return "5 - TRONCO COORDINADO";
-
-        case PRUEBA_FABRICA_67:
-            return "6 - FABRICA 67";
-
-        case PRUEBA_TABLERO:
-            return "7 - TABLERO";
-
-        case PRUEBA_ISLA_FUEGO:
-            return "8 - ISLA BAJO FUEGO";
-
-        case PRUEBA_CAPITAN_MANDA:
-            return "9 - CAPITAN MANDA";
+        case PRUEBA_ZONA_PRINCIPAL: return "1 - ZONA PRINCIPAL";
+        case PRUEBA_COLOR_SEGURO: return "2 - COLOR SEGURO";
+        case PRUEBA_PELOTAS_EMPUJON: return "3 - PELOTAS / EMPUJONES";
+        case PRUEBA_MODELOS: return "4 - PRUEBA DE MODELOS";
+        case PRUEBA_TRONCO_COORDINADO: return "5 - TRONCO COORDINADO";
+        case PRUEBA_FABRICA_67: return "6 - FABRICA 67";
+        case PRUEBA_TABLERO: return "7 - TABLERO";
+        case PRUEBA_ISLA_FUEGO: return "8 - ISLA BAJO FUEGO";
+        case PRUEBA_CAPITAN_MANDA: return "9 - CAPITAN MANDA";
+        case PRUEBA_BARRA_GIRATORIA: return "10 - BARRA GIRATORIA";
     }
 
     return "PRUEBA";
 }
 
 
-//==================================================
-// ZONA PRINCIPAL
-//==================================================
-
 static void ConfigurarZonaPrincipal(
     ZonaPruebas& zona
 )
 {
-    zona.cantidadBloquesPrincipal =
-        0;
+    zona.cantidadBloquesPrincipal = 0;
 
     AgregarBloquePrueba(
         zona.bloquesPrincipal,
         zona.cantidadBloquesPrincipal,
         MAX_BLOQUES_PRUEBA,
-        Vector3{
-            0.0f,
-            -0.5f,
-            0.0f
-        },
-        Vector3{
-            14.0f,
-            1.0f,
-            14.0f
-        },
-        Color{
-            105,
-            105,
-            115,
-            255
-        }
+        Vector3{ 0.0f, -0.5f, 0.0f },
+        Vector3{ 14.0f, 1.0f, 14.0f },
+        Color{ 105, 105, 115, 255 }
     );
 
     AgregarBloquePrueba(
         zona.bloquesPrincipal,
         zona.cantidadBloquesPrincipal,
         MAX_BLOQUES_PRUEBA,
-        Vector3{
-            -3.0f,
-            0.5f,
-            -2.0f
-        },
-        Vector3{
-            2.5f,
-            1.0f,
-            2.5f
-        },
+        Vector3{ -3.0f, 0.5f, -2.0f },
+        Vector3{ 2.5f, 1.0f, 2.5f },
         ORANGE
     );
 
@@ -100,45 +54,19 @@ static void ConfigurarZonaPrincipal(
         zona.bloquesPrincipal,
         zona.cantidadBloquesPrincipal,
         MAX_BLOQUES_PRUEBA,
-        Vector3{
-            2.0f,
-            1.0f,
-            -1.0f
-        },
-        Vector3{
-            3.0f,
-            2.0f,
-            3.0f
-        },
+        Vector3{ 2.0f, 1.0f, -1.0f },
+        Vector3{ 3.0f, 2.0f, 3.0f },
         BLUE
     );
 
     zona.camaraPrincipal.position =
-    {
-        0.0f,
-        6.5f,
-        13.0f
-    };
-
+        { 0.0f, 6.5f, 13.0f };
     zona.camaraPrincipal.target =
-    {
-        0.0f,
-        1.0f,
-        -1.0f
-    };
-
+        { 0.0f, 1.0f, -1.0f };
     zona.camaraPrincipal.up =
-    {
-        0.0f,
-        1.0f,
-        0.0f
-    };
-
-    zona.camaraPrincipal.fovy =
-        50.0f;
-
-    zona.camaraPrincipal.projection =
-        CAMERA_PERSPECTIVE;
+        { 0.0f, 1.0f, 0.0f };
+    zona.camaraPrincipal.fovy = 50.0f;
+    zona.camaraPrincipal.projection = CAMERA_PERSPECTIVE;
 }
 
 
@@ -154,11 +82,7 @@ static void ConfigurarJugadoresPrincipal(
         { 2.4f, 1.0f, 3.0f }
     };
 
-    for (
-        int i = 0;
-        i < MAX_JUGADORES_PRUEBA;
-        i++
-    )
+    for (int i = 0; i < MAX_JUGADORES_PRUEBA; i++)
     {
         ConfigurarJugadorMinijuegoEstandar(
             zona.jugadores[i],
@@ -173,15 +97,8 @@ static void ActualizarZonaPrincipal(
     float deltaTime
 )
 {
-    for (
-        int i = 0;
-        i < MAX_JUGADORES_PRUEBA;
-        i++
-    )
+    for (int i = 0; i < MAX_JUGADORES_PRUEBA; i++)
     {
-        JugadorPrueba& jugador =
-            zona.jugadores[i];
-
         const Participante& participante =
             zona.participantes[i];
 
@@ -191,7 +108,7 @@ static void ActualizarZonaPrincipal(
         }
 
         ActualizarJugadorMinijuegoEstandar(
-            jugador,
+            zona.jugadores[i],
             participante,
             zona.bloquesPrincipal,
             zona.cantidadBloquesPrincipal,
@@ -216,24 +133,11 @@ static void DibujarZonaPrincipal(
     const ZonaPruebas& zona
 )
 {
-    ClearBackground(
-        Color{
-            125,
-            190,
-            220,
-            255
-        }
-    );
+    ClearBackground(Color{ 125, 190, 220, 255 });
 
-    BeginMode3D(
-        zona.camaraPrincipal
-    );
+    BeginMode3D(zona.camaraPrincipal);
 
-    for (
-        int i = 0;
-        i < zona.cantidadBloquesPrincipal;
-        i++
-    )
+    for (int i = 0; i < zona.cantidadBloquesPrincipal; i++)
     {
         const BloquePrueba& bloque =
             zona.bloquesPrincipal[i];
@@ -257,9 +161,7 @@ static void DibujarZonaPrincipal(
         if (zona.mostrarDebug)
         {
             DrawBoundingBox(
-                CrearHitboxBloquePrueba(
-                    bloque
-                ),
+                CrearHitboxBloquePrueba(bloque),
                 YELLOW
             );
         }
@@ -270,11 +172,7 @@ static void DibujarZonaPrincipal(
         MAX_PARTICULAS_TIERRA
     );
 
-    for (
-        int i = 0;
-        i < MAX_JUGADORES_PRUEBA;
-        i++
-    )
+    for (int i = 0; i < MAX_JUGADORES_PRUEBA; i++)
     {
         DibujarJugadorCuboPrueba(
             zona.jugadores[i],
@@ -289,19 +187,13 @@ static void DibujarZonaPrincipal(
         )
         {
             DrawBoundingBox(
-                CrearHitboxJugadorPrueba(
-                    zona.jugadores[i]
-                ),
+                CrearHitboxJugadorPrueba(zona.jugadores[i]),
                 LIME
             );
         }
     }
 
-    DrawGrid(
-        30,
-        1.0f
-    );
-
+    DrawGrid(30, 1.0f);
     EndMode3D();
 
     DrawText(
@@ -330,40 +222,24 @@ static void DibujarZonaPrincipal(
 }
 
 
-//==================================================
-// INICIALIZAR
-//==================================================
-
 void ZonaPruebas::Inicializar(
     Participante participantesJuego[],
     int cantidadParticipantesJuego
 )
 {
-    volverAlMenu =
-        false;
+    volverAlMenu = false;
+    mostrarDebug = false;
+    modoCatalogo = false;
 
-    mostrarDebug =
-        false;
+    participantes = participantesJuego;
+    cantidadParticipantes = cantidadParticipantesJuego;
 
-    participantes =
-        participantesJuego;
-
-    cantidadParticipantes =
-        cantidadParticipantesJuego;
-
-    for (
-        int i = 0;
-        i < MAX_PARTICULAS_TIERRA;
-        i++
-    )
+    for (int i = 0; i < MAX_PARTICULAS_TIERRA; i++)
     {
-        particulas[i].activa =
-            false;
+        particulas[i].activa = false;
     }
 
-    ConfigurarZonaPrincipal(
-        *this
-    );
+    ConfigurarZonaPrincipal(*this);
 
     minijuegoColor.Inicializar();
     minijuegoPelotas.Inicializar();
@@ -371,143 +247,96 @@ void ZonaPruebas::Inicializar(
     minijuego67.Inicializar();
     minijuegoIslaFuego.Inicializar();
     minijuegoCapitanManda.Inicializar();
+    minijuegoBarraGiratoria.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
         cantidadParticipantes
     );
 
-    CambiarModo(
-        PRUEBA_ZONA_PRINCIPAL
-    );
+    CambiarModo(PRUEBA_ZONA_PRINCIPAL);
 }
 
-
-//==================================================
-// CAMBIAR PROTOTIPO
-//==================================================
 
 void ZonaPruebas::CambiarModo(
     ModoZonaPruebas nuevoModo
 )
 {
-    modoActual =
-        nuevoModo;
+    modoActual = nuevoModo;
 
-    for (
-        int i = 0;
-        i < MAX_PARTICULAS_TIERRA;
-        i++
-    )
+    for (int i = 0; i < MAX_PARTICULAS_TIERRA; i++)
     {
-        particulas[i].activa =
-            false;
+        particulas[i].activa = false;
     }
 
-    if (
-        modoActual ==
-        PRUEBA_ZONA_PRINCIPAL
-    )
+    if (modoActual == PRUEBA_ZONA_PRINCIPAL)
     {
-        ConfigurarZonaPrincipal(
-            *this
-        );
-
-        ConfigurarJugadoresPrincipal(
-            *this
-        );
+        ConfigurarZonaPrincipal(*this);
+        ConfigurarJugadoresPrincipal(*this);
     }
-    else if (
-        modoActual ==
-        PRUEBA_COLOR_SEGURO
-    )
+    else if (modoActual == PRUEBA_COLOR_SEGURO)
     {
         minijuegoColor.Inicializar();
-
         minijuegoColor.ConfigurarJugadores(
             jugadores,
             MAX_JUGADORES_PRUEBA
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_PELOTAS_EMPUJON
-    )
+    else if (modoActual == PRUEBA_PELOTAS_EMPUJON)
     {
         minijuegoPelotas.Inicializar();
-
         minijuegoPelotas.ConfigurarJugadores(
             jugadores,
             MAX_JUGADORES_PRUEBA
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_MODELOS
-    )
+    else if (modoActual == PRUEBA_MODELOS)
     {
         pruebaModelos.Inicializar();
     }
-    else if (
-        modoActual ==
-        PRUEBA_TRONCO_COORDINADO
-    )
+    else if (modoActual == PRUEBA_TRONCO_COORDINADO)
     {
         minijuegoTronco.Inicializar();
-
         minijuegoTronco.ConfigurarJugadores(
             jugadores,
             MAX_JUGADORES_PRUEBA
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_FABRICA_67
-    )
+    else if (modoActual == PRUEBA_FABRICA_67)
     {
         minijuego67.Inicializar();
     }
-    else if (
-        modoActual ==
-        PRUEBA_TABLERO
-    )
+    else if (modoActual == PRUEBA_TABLERO)
     {
         prototipoTablero.Reiniciar();
     }
-    else if (
-        modoActual ==
-        PRUEBA_ISLA_FUEGO
-    )
+    else if (modoActual == PRUEBA_ISLA_FUEGO)
     {
         minijuegoIslaFuego.Inicializar();
-
         minijuegoIslaFuego.ConfigurarJugadores(
             jugadores,
             MAX_JUGADORES_PRUEBA
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_CAPITAN_MANDA
-    )
+    else if (modoActual == PRUEBA_CAPITAN_MANDA)
     {
-        minijuegoCapitanManda.Reiniciar(
-            participantes
+        minijuegoCapitanManda.Reiniciar(participantes);
+    }
+    else if (modoActual == PRUEBA_BARRA_GIRATORIA)
+    {
+        minijuegoBarraGiratoria.Inicializar();
+        minijuegoBarraGiratoria.ConfigurarJugadores(
+            jugadores,
+            MAX_JUGADORES_PRUEBA
         );
     }
 
-    if (
-        modoActual !=
-        PRUEBA_MODELOS
-    )
+    if (modoActual != PRUEBA_MODELOS)
     {
         ReiniciarJugadores();
     }
 
-    if (
-        modoActual ==
-        PRUEBA_TRONCO_COORDINADO
-    )
+    if (modoActual == PRUEBA_TRONCO_COORDINADO)
     {
         minijuegoTronco.Reiniciar(
             participantes,
@@ -515,10 +344,7 @@ void ZonaPruebas::CambiarModo(
         );
     }
 
-    if (
-        modoActual ==
-        PRUEBA_FABRICA_67
-    )
+    if (modoActual == PRUEBA_FABRICA_67)
     {
         minijuego67.Reiniciar(
             participantes,
@@ -527,10 +353,6 @@ void ZonaPruebas::CambiarModo(
     }
 }
 
-
-//==================================================
-// REINICIAR
-//==================================================
 
 void ZonaPruebas::ReiniciarJugador(
     int indice
@@ -544,28 +366,18 @@ void ZonaPruebas::ReiniciarJugador(
         return;
     }
 
-    ReiniciarJugadorPrueba(
-        jugadores[indice]
-    );
+    ReiniciarJugadorPrueba(jugadores[indice]);
 }
 
 
 void ZonaPruebas::ReiniciarJugadores()
 {
-    for (
-        int i = 0;
-        i < MAX_JUGADORES_PRUEBA;
-        i++
-    )
+    for (int i = 0; i < MAX_JUGADORES_PRUEBA; i++)
     {
         ReiniciarJugador(i);
     }
 }
 
-
-//==================================================
-// ACTUALIZAR
-//==================================================
 
 void ZonaPruebas::Actualizar(
     float deltaTime
@@ -573,181 +385,136 @@ void ZonaPruebas::Actualizar(
 {
     if (IsKeyPressed(KEY_ESCAPE))
     {
-        volverAlMenu =
-            true;
-
+        volverAlMenu = true;
         return;
     }
 
     if (IsKeyPressed(KEY_F3))
     {
-        mostrarDebug =
-            !mostrarDebug;
+        mostrarDebug = !mostrarDebug;
     }
 
-    if (IsKeyPressed(KEY_ONE))
+    if (!modoCatalogo)
     {
-        CambiarModo(
-            PRUEBA_ZONA_PRINCIPAL
-        );
+        if (IsKeyPressed(KEY_ONE))
+        {
+            CambiarModo(PRUEBA_ZONA_PRINCIPAL);
+            return;
+        }
 
-        return;
-    }
+        if (IsKeyPressed(KEY_TWO))
+        {
+            CambiarModo(PRUEBA_COLOR_SEGURO);
+            return;
+        }
 
-    if (IsKeyPressed(KEY_TWO))
-    {
-        CambiarModo(
-            PRUEBA_COLOR_SEGURO
-        );
+        if (IsKeyPressed(KEY_THREE))
+        {
+            CambiarModo(PRUEBA_PELOTAS_EMPUJON);
+            return;
+        }
 
-        return;
-    }
+        if (IsKeyPressed(KEY_FOUR))
+        {
+            CambiarModo(PRUEBA_MODELOS);
+            return;
+        }
 
-    if (IsKeyPressed(KEY_THREE))
-    {
-        CambiarModo(
-            PRUEBA_PELOTAS_EMPUJON
-        );
+        if (IsKeyPressed(KEY_FIVE))
+        {
+            CambiarModo(PRUEBA_TRONCO_COORDINADO);
+            return;
+        }
 
-        return;
-    }
+        if (IsKeyPressed(KEY_SIX))
+        {
+            CambiarModo(PRUEBA_FABRICA_67);
+            return;
+        }
 
-    if (IsKeyPressed(KEY_FOUR))
-    {
-        CambiarModo(
-            PRUEBA_MODELOS
-        );
+        if (IsKeyPressed(KEY_SEVEN))
+        {
+            CambiarModo(PRUEBA_TABLERO);
+            return;
+        }
 
-        return;
-    }
+        if (IsKeyPressed(KEY_EIGHT))
+        {
+            CambiarModo(PRUEBA_ISLA_FUEGO);
+            return;
+        }
 
-    if (IsKeyPressed(KEY_FIVE))
-    {
-        CambiarModo(
-            PRUEBA_TRONCO_COORDINADO
-        );
+        if (IsKeyPressed(KEY_NINE))
+        {
+            CambiarModo(PRUEBA_CAPITAN_MANDA);
+            return;
+        }
 
-        return;
-    }
-
-    if (IsKeyPressed(KEY_SIX))
-    {
-        CambiarModo(
-            PRUEBA_FABRICA_67
-        );
-
-        return;
-    }
-
-    if (IsKeyPressed(KEY_SEVEN))
-    {
-        CambiarModo(
-            PRUEBA_TABLERO
-        );
-
-        return;
-    }
-
-    if (IsKeyPressed(KEY_EIGHT))
-    {
-        CambiarModo(
-            PRUEBA_ISLA_FUEGO
-        );
-
-        return;
-    }
-
-    if (IsKeyPressed(KEY_NINE))
-    {
-        CambiarModo(
-            PRUEBA_CAPITAN_MANDA
-        );
-
-        return;
+        if (IsKeyPressed(KEY_ZERO))
+        {
+            CambiarModo(PRUEBA_BARRA_GIRATORIA);
+            return;
+        }
     }
 
     if (IsKeyPressed(KEY_R))
     {
-        if (
-            modoActual ==
-            PRUEBA_ZONA_PRINCIPAL
-        )
+        if (modoActual == PRUEBA_ZONA_PRINCIPAL)
         {
-            ConfigurarJugadoresPrincipal(
-                *this
-            );
+            ConfigurarJugadoresPrincipal(*this);
         }
-        else if (
-            modoActual ==
-            PRUEBA_COLOR_SEGURO
-        )
+        else if (modoActual == PRUEBA_COLOR_SEGURO)
         {
             minijuegoColor.Reiniciar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA
             );
         }
-        else if (
-            modoActual ==
-            PRUEBA_PELOTAS_EMPUJON
-        )
+        else if (modoActual == PRUEBA_PELOTAS_EMPUJON)
         {
             minijuegoPelotas.Reiniciar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA
             );
         }
-        else if (
-            modoActual ==
-            PRUEBA_MODELOS
-        )
+        else if (modoActual == PRUEBA_MODELOS)
         {
             pruebaModelos.Reiniciar();
         }
-        else if (
-            modoActual ==
-            PRUEBA_TRONCO_COORDINADO
-        )
+        else if (modoActual == PRUEBA_TRONCO_COORDINADO)
         {
             minijuegoTronco.Reiniciar(
                 participantes,
                 MAX_JUGADORES_PRUEBA
             );
         }
-        else if (
-            modoActual ==
-            PRUEBA_FABRICA_67
-        )
+        else if (modoActual == PRUEBA_FABRICA_67)
         {
             minijuego67.Reiniciar(
                 participantes,
                 MAX_JUGADORES_PRUEBA
             );
         }
-        else if (
-            modoActual ==
-            PRUEBA_TABLERO
-        )
+        else if (modoActual == PRUEBA_TABLERO)
         {
             prototipoTablero.Reiniciar();
         }
-        else if (
-            modoActual ==
-            PRUEBA_ISLA_FUEGO
-        )
+        else if (modoActual == PRUEBA_ISLA_FUEGO)
         {
             minijuegoIslaFuego.Reiniciar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA
             );
         }
-        else if (
-            modoActual ==
-            PRUEBA_CAPITAN_MANDA
-        )
+        else if (modoActual == PRUEBA_CAPITAN_MANDA)
         {
-            minijuegoCapitanManda.Reiniciar(
-                participantes
+            minijuegoCapitanManda.Reiniciar(participantes);
+        }
+        else if (modoActual == PRUEBA_BARRA_GIRATORIA)
+        {
+            minijuegoBarraGiratoria.Reiniciar(
+                jugadores,
+                MAX_JUGADORES_PRUEBA
             );
         }
 
@@ -760,26 +527,17 @@ void ZonaPruebas::Actualizar(
         deltaTime
     );
 
-    if (
-        modoActual !=
-        PRUEBA_MODELOS
-    )
+    if (modoActual != PRUEBA_MODELOS)
     {
-        for (
-            int i = 0;
-            i < MAX_PARTICIPANTES;
-            i++
-        )
+        for (int i = 0; i < MAX_PARTICIPANTES; i++)
         {
-            bool estabaConectado =
-                participantes[i].conectado;
+            bool estabaConectado = participantes[i].conectado;
 
-            ActualizarConexionParticipante(
-                participantes[i]
-            );
+            ActualizarConexionParticipante(participantes[i]);
 
             if (
                 !participantes[i].activo ||
+                participantes[i].esBot ||
                 participantes[i].conectado == estabaConectado
             )
             {
@@ -788,9 +546,7 @@ void ZonaPruebas::Actualizar(
 
             if (participantes[i].conectado)
             {
-                ReiniciarJugadorPrueba(
-                    jugadores[i]
-                );
+                ReiniciarJugadorPrueba(jugadores[i]);
             }
             else
             {
@@ -802,20 +558,11 @@ void ZonaPruebas::Actualizar(
         }
     }
 
-    if (
-        modoActual ==
-        PRUEBA_ZONA_PRINCIPAL
-    )
+    if (modoActual == PRUEBA_ZONA_PRINCIPAL)
     {
-        ActualizarZonaPrincipal(
-            *this,
-            deltaTime
-        );
+        ActualizarZonaPrincipal(*this, deltaTime);
     }
-    else if (
-        modoActual ==
-        PRUEBA_COLOR_SEGURO
-    )
+    else if (modoActual == PRUEBA_COLOR_SEGURO)
     {
         minijuegoColor.Actualizar(
             deltaTime,
@@ -826,10 +573,7 @@ void ZonaPruebas::Actualizar(
             MAX_PARTICULAS_TIERRA
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_PELOTAS_EMPUJON
-    )
+    else if (modoActual == PRUEBA_PELOTAS_EMPUJON)
     {
         minijuegoPelotas.Actualizar(
             deltaTime,
@@ -840,19 +584,11 @@ void ZonaPruebas::Actualizar(
             MAX_PARTICULAS_TIERRA
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_MODELOS
-    )
+    else if (modoActual == PRUEBA_MODELOS)
     {
-        pruebaModelos.Actualizar(
-            deltaTime
-        );
+        pruebaModelos.Actualizar(deltaTime);
     }
-    else if (
-        modoActual ==
-        PRUEBA_TRONCO_COORDINADO
-    )
+    else if (modoActual == PRUEBA_TRONCO_COORDINADO)
     {
         minijuegoTronco.Actualizar(
             deltaTime,
@@ -860,10 +596,7 @@ void ZonaPruebas::Actualizar(
             participantes
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_FABRICA_67
-    )
+    else if (modoActual == PRUEBA_FABRICA_67)
     {
         minijuego67.Actualizar(
             deltaTime,
@@ -871,19 +604,11 @@ void ZonaPruebas::Actualizar(
             participantes
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_TABLERO
-    )
+    else if (modoActual == PRUEBA_TABLERO)
     {
-        prototipoTablero.Actualizar(
-            deltaTime
-        );
+        prototipoTablero.Actualizar(deltaTime);
     }
-    else if (
-        modoActual ==
-        PRUEBA_ISLA_FUEGO
-    )
+    else if (modoActual == PRUEBA_ISLA_FUEGO)
     {
         minijuegoIslaFuego.Actualizar(
             deltaTime,
@@ -894,38 +619,34 @@ void ZonaPruebas::Actualizar(
             MAX_PARTICULAS_TIERRA
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_CAPITAN_MANDA
-    )
+    else if (modoActual == PRUEBA_CAPITAN_MANDA)
     {
         minijuegoCapitanManda.Actualizar(
             deltaTime,
             participantes
         );
     }
+    else if (modoActual == PRUEBA_BARRA_GIRATORIA)
+    {
+        minijuegoBarraGiratoria.Actualizar(
+            deltaTime,
+            jugadores,
+            MAX_JUGADORES_PRUEBA,
+            participantes,
+            particulas,
+            MAX_PARTICULAS_TIERRA
+        );
+    }
 }
 
 
-//==================================================
-// DIBUJAR
-//==================================================
-
 void ZonaPruebas::Dibujar() const
 {
-    if (
-        modoActual ==
-        PRUEBA_ZONA_PRINCIPAL
-    )
+    if (modoActual == PRUEBA_ZONA_PRINCIPAL)
     {
-        DibujarZonaPrincipal(
-            *this
-        );
+        DibujarZonaPrincipal(*this);
     }
-    else if (
-        modoActual ==
-        PRUEBA_COLOR_SEGURO
-    )
+    else if (modoActual == PRUEBA_COLOR_SEGURO)
     {
         minijuegoColor.Dibujar(
             jugadores,
@@ -936,10 +657,7 @@ void ZonaPruebas::Dibujar() const
             mostrarDebug
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_PELOTAS_EMPUJON
-    )
+    else if (modoActual == PRUEBA_PELOTAS_EMPUJON)
     {
         minijuegoPelotas.Dibujar(
             jugadores,
@@ -948,17 +666,11 @@ void ZonaPruebas::Dibujar() const
             mostrarDebug
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_MODELOS
-    )
+    else if (modoActual == PRUEBA_MODELOS)
     {
         pruebaModelos.Dibujar();
     }
-    else if (
-        modoActual ==
-        PRUEBA_TRONCO_COORDINADO
-    )
+    else if (modoActual == PRUEBA_TRONCO_COORDINADO)
     {
         minijuegoTronco.Dibujar(
             jugadores,
@@ -966,29 +678,18 @@ void ZonaPruebas::Dibujar() const
             participantes
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_FABRICA_67
-    )
+    else if (modoActual == PRUEBA_FABRICA_67)
     {
         minijuego67.Dibujar(
             MAX_JUGADORES_PRUEBA,
             participantes
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_TABLERO
-    )
+    else if (modoActual == PRUEBA_TABLERO)
     {
-        prototipoTablero.Dibujar(
-            mostrarDebug
-        );
+        prototipoTablero.Dibujar(mostrarDebug);
     }
-    else if (
-        modoActual ==
-        PRUEBA_ISLA_FUEGO
-    )
+    else if (modoActual == PRUEBA_ISLA_FUEGO)
     {
         minijuegoIslaFuego.Dibujar(
             jugadores,
@@ -999,14 +700,41 @@ void ZonaPruebas::Dibujar() const
             mostrarDebug
         );
     }
-    else if (
-        modoActual ==
-        PRUEBA_CAPITAN_MANDA
-    )
+    else if (modoActual == PRUEBA_CAPITAN_MANDA)
     {
-        minijuegoCapitanManda.Dibujar(
-            participantes
+        minijuegoCapitanManda.Dibujar(participantes);
+    }
+    else if (modoActual == PRUEBA_BARRA_GIRATORIA)
+    {
+        minijuegoBarraGiratoria.Dibujar(
+            jugadores,
+            MAX_JUGADORES_PRUEBA,
+            participantes,
+            particulas,
+            MAX_PARTICULAS_TIERRA,
+            mostrarDebug
         );
+    }
+
+    if (modoCatalogo)
+    {
+        DrawRectangle(
+            18,
+            GetScreenHeight() - 54,
+            430,
+            36,
+            Fade(BLACK, 0.60f)
+        );
+
+        DrawText(
+            "R REINICIAR   F3 DEBUG   ESC VOLVER AL CATALOGO",
+            28,
+            GetScreenHeight() - 45,
+            17,
+            RAYWHITE
+        );
+
+        return;
     }
 
     DrawRectangle(
@@ -1014,27 +742,19 @@ void ZonaPruebas::Dibujar() const
         GetScreenHeight() - 148,
         1240,
         126,
-        Fade(
-            RAYWHITE,
-            0.86f
-        )
+        Fade(RAYWHITE, 0.86f)
     );
 
     DrawText(
-        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO  8 ISLA  9 CAPITAN",
+        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO  8 ISLA  9 CAPITAN  0 BARRA",
         30,
         GetScreenHeight() - 133,
-        17,
+        16,
         BLACK
     );
 
     DrawText(
-        TextFormat(
-            "ACTUAL: %s",
-            NombreModoPrueba(
-                modoActual
-            )
-        ),
+        TextFormat("ACTUAL: %s", NombreModoPrueba(modoActual)),
         30,
         GetScreenHeight() - 101,
         20,
@@ -1049,10 +769,7 @@ void ZonaPruebas::Dibujar() const
         DARKGRAY
     );
 
-    if (
-        modoActual !=
-        PRUEBA_MODELOS
-    )
+    if (modoActual != PRUEBA_MODELOS)
     {
         DrawText(
             TextFormat(
@@ -1067,10 +784,6 @@ void ZonaPruebas::Dibujar() const
     }
 }
 
-
-//==================================================
-// DESCARGAR
-//==================================================
 
 void ZonaPruebas::Descargar()
 {
