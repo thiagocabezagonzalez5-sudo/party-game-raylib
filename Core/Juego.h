@@ -4,142 +4,54 @@
 
 #include "raylib.h"
 
-
-//==================================================
-// CORE
-//==================================================
-
 #include "Core/ConfiguracionJuego.h"
 #include "Core/Participante.h"
 #include "Core/WindowUtils.h"
 
-
-//==================================================
-// SYSTEMS
-//==================================================
-
 #include "Systems/Audio.h"
-
-
-//==================================================
-// UI
-//==================================================
 
 #include "UI/MenuPrincipal.h"
 #include "UI/MenuConfiguracion.h"
+#include "UI/MenuModoJuego.h"
 #include "UI/PantallaLogo.h"
+#include "UI/SeleccionMinijuegos.h"
 #include "UI/SeleccionPersonajes.h"
-
-
-//==================================================
-// GAMEPLAY
-//==================================================
 
 #include "Gameplay/ZonaPruebas.h"
 
 
-//==================================================
-// JUEGO
-//==================================================
-
 struct Juego
 {
-    //------------------------------
-    // CONSTANTES
-    //------------------------------
+    static const int MAX_RESOLUCIONES = 10;
+    static const int CANTIDAD_OPCIONES_FPS = 5;
 
-    static const int MAX_RESOLUCIONES =
-        10;
-
-
-    static const int CANTIDAD_OPCIONES_FPS =
-        5;
-
-
-    //------------------------------
-    // ESTADO
-    //------------------------------
-
-    EstadoJuego estado =
-        ESTADO_LOGO;
-
-
-    bool cerrarJuego =
-        false;
-
-
-    //------------------------------
-    // MENUS / PANTALLAS
-    //------------------------------
+    EstadoJuego estado = ESTADO_LOGO;
+    bool cerrarJuego = false;
 
     MenuPrincipal menuPrincipal;
-
-
     MenuConfiguracion menuConfiguracion;
-
-
+    MenuModoJuego menuModoJuego;
     PantallaLogo pantallaLogo;
-
-
     SeleccionPersonajes seleccionPersonajes;
-
-
-    //------------------------------
-    // GAMEPLAY
-    //------------------------------
+    SeleccionMinijuegos seleccionMinijuegos;
 
     ZonaPruebas zonaPruebas;
 
-
-    //------------------------------
-    // AUDIO
-    //------------------------------
-
     AudioJuego audio;
-
-
-    //------------------------------
-    // CONFIGURACION
-    //------------------------------
-
     ConfiguracionJuego config;
 
+    Participante participantes[MAX_PARTICIPANTES];
 
-    //------------------------------
-    // PARTICIPANTES
-    //------------------------------
+    // En el juego final siempre habra cuatro puestos activos.
+    // Antes de confirmar personajes puede ser 0.
+    int cantidadParticipantes = 0;
 
-    Participante participantes[
-        MAX_PARTICIPANTES
-    ];
+    const char* rutaConfiguracion = "config.ini";
 
+    Resolucion resoluciones[MAX_RESOLUCIONES];
+    int cantidadResoluciones = 0;
 
-    // Solo puede ser 0 antes de confirmar, o 2/3/4
-    // cuando exista una seleccion confirmada.
-    int cantidadParticipantes =
-        0;
-
-
-    const char* rutaConfiguracion =
-        "config.ini";
-
-
-    //------------------------------
-    // RESOLUCIONES
-    //------------------------------
-
-    Resolucion resoluciones[
-        MAX_RESOLUCIONES
-    ];
-
-
-    int cantidadResoluciones =
-        0;
-
-
-    int opcionesFPS[
-        CANTIDAD_OPCIONES_FPS
-    ] =
+    int opcionesFPS[CANTIDAD_OPCIONES_FPS] =
     {
         30,
         60,
@@ -148,39 +60,18 @@ struct Juego
         240
     };
 
-
-    //------------------------------
-    // LOGO / CARGA
-    //------------------------------
-
-    bool menuPreparado =
-        false;
-
-
-    bool cargaMenuSolicitada =
-        false;
-
-
-    //------------------------------
-    // FUNCIONES
-    //------------------------------
+    bool menuPreparado = false;
+    bool cargaMenuSolicitada = false;
 
     void Inicializar();
-
-
     void InicializarResoluciones();
-
 
     void Actualizar(
         float deltaTime
     );
 
-
     void Dibujar();
 
-
     bool DebeCerrar();
-
-
     void Descargar();
 };
