@@ -37,6 +37,9 @@ static const char* NombreModoPrueba(
 
         case PRUEBA_ISLA_FUEGO:
             return "8 - ISLA BAJO FUEGO";
+
+        case PRUEBA_CAPITAN_MANDA:
+            return "9 - CAPITAN MANDA";
     }
 
     return "PRUEBA";
@@ -367,6 +370,7 @@ void ZonaPruebas::Inicializar(
     minijuegoTronco.Inicializar();
     minijuego67.Inicializar();
     minijuegoIslaFuego.Inicializar();
+    minijuegoCapitanManda.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
@@ -480,6 +484,15 @@ void ZonaPruebas::CambiarModo(
         minijuegoIslaFuego.ConfigurarJugadores(
             jugadores,
             MAX_JUGADORES_PRUEBA
+        );
+    }
+    else if (
+        modoActual ==
+        PRUEBA_CAPITAN_MANDA
+    )
+    {
+        minijuegoCapitanManda.Reiniciar(
+            participantes
         );
     }
 
@@ -644,6 +657,15 @@ void ZonaPruebas::Actualizar(
         return;
     }
 
+    if (IsKeyPressed(KEY_NINE))
+    {
+        CambiarModo(
+            PRUEBA_CAPITAN_MANDA
+        );
+
+        return;
+    }
+
     if (IsKeyPressed(KEY_R))
     {
         if (
@@ -717,6 +739,15 @@ void ZonaPruebas::Actualizar(
             minijuegoIslaFuego.Reiniciar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA
+            );
+        }
+        else if (
+            modoActual ==
+            PRUEBA_CAPITAN_MANDA
+        )
+        {
+            minijuegoCapitanManda.Reiniciar(
+                participantes
             );
         }
 
@@ -863,6 +894,16 @@ void ZonaPruebas::Actualizar(
             MAX_PARTICULAS_TIERRA
         );
     }
+    else if (
+        modoActual ==
+        PRUEBA_CAPITAN_MANDA
+    )
+    {
+        minijuegoCapitanManda.Actualizar(
+            deltaTime,
+            participantes
+        );
+    }
 }
 
 
@@ -958,6 +999,15 @@ void ZonaPruebas::Dibujar() const
             mostrarDebug
         );
     }
+    else if (
+        modoActual ==
+        PRUEBA_CAPITAN_MANDA
+    )
+    {
+        minijuegoCapitanManda.Dibujar(
+            participantes
+        );
+    }
 
     DrawRectangle(
         18,
@@ -971,10 +1021,10 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO  8 ISLA",
+        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO  8 ISLA  9 CAPITAN",
         30,
         GetScreenHeight() - 133,
-        19,
+        17,
         BLACK
     );
 
