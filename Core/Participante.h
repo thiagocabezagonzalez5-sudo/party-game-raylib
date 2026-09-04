@@ -20,6 +20,10 @@ struct Participante
 {
     bool activo = false;
 
+    // Los bots ocupan un puesto real de la partida, pero no leen
+    // ningun dispositivo. Por ahora son deliberadamente inmoviles.
+    bool esBot = false;
+
     int numeroJugador = 1;
 
     TipoControl control =
@@ -57,4 +61,57 @@ inline int ObtenerIndicesParticipantesActivos(
     }
 
     return cantidad;
+}
+
+
+inline int ContarParticipantesHumanos(
+    const Participante participantes[]
+)
+{
+    int cantidad = 0;
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (
+            participantes[i].activo &&
+            !participantes[i].esBot
+        )
+        {
+            cantidad++;
+        }
+    }
+
+    return cantidad;
+}
+
+
+inline void CompletarParticipantesConBots(
+    Participante participantes[],
+    int cantidadMaxima
+)
+{
+    int limite =
+        cantidadMaxima < MAX_PARTICIPANTES
+        ? cantidadMaxima
+        : MAX_PARTICIPANTES;
+
+    for (int i = 0; i < limite; i++)
+    {
+        Participante& participante =
+            participantes[i];
+
+        if (participante.activo)
+        {
+            participante.esBot = false;
+            continue;
+        }
+
+        participante.activo = true;
+        participante.esBot = true;
+        participante.conectado = true;
+        participante.control = CONTROL_NINGUNO;
+        participante.indiceGamepad = -1;
+        participante.personajeSeleccionado = i;
+        participante.color = Color{ 145, 145, 152, 255 };
+    }
 }
