@@ -7,10 +7,12 @@
 #include "Minigames/MinijuegoColorSeguro.h"
 #include "Minigames/Minijuego67.h"
 #include "Minigames/MinijuegoIslaFuego.h"
+#include "Minigames/MinijuegoNucleosEnergia.h"
 #include "Minigames/MinijuegoPelotas.h"
 #include "Minigames/MinijuegoTronco.h"
 #include "Minigames/PruebaModelos.h"
 #include "Minigames/TiposMinijuegos.h"
+#include "Systems/Audio.h"
 
 
 enum ModoZonaPruebas
@@ -24,7 +26,8 @@ enum ModoZonaPruebas
     PRUEBA_TABLERO = 7,
     PRUEBA_ISLA_FUEGO = 8,
     PRUEBA_CAPITAN_MANDA = 9,
-    PRUEBA_BARRA_GIRATORIA = 10
+    PRUEBA_BARRA_GIRATORIA = 10,
+    PRUEBA_NUCLEOS_ENERGIA = 11
 };
 
 
@@ -37,6 +40,8 @@ struct ZonaPruebas
 
     Participante* participantes = nullptr;
     int cantidadParticipantes = 0;
+
+    AudioJuego* audio = nullptr;
 
     ParticulaTierra particulas[MAX_PARTICULAS_TIERRA];
 
@@ -54,6 +59,7 @@ struct ZonaPruebas
     MinijuegoIslaFuego minijuegoIslaFuego;
     MinijuegoCapitanManda minijuegoCapitanManda;
     MinijuegoBarraGiratoria minijuegoBarraGiratoria;
+    MinijuegoNucleosEnergia minijuegoNucleosEnergia;
 
     // Cuando viene del catalogo final, oculta el HUD y los atajos
     // numericos propios del entorno de desarrollo.
@@ -64,7 +70,8 @@ struct ZonaPruebas
 
     void Inicializar(
         Participante participantesJuego[],
-        int cantidadParticipantesJuego
+        int cantidadParticipantesJuego,
+        AudioJuego* audioJuego = nullptr
     );
 
     void CambiarModo(

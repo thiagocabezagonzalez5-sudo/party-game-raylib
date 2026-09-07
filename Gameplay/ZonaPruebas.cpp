@@ -20,6 +20,7 @@ static const char* NombreModoPrueba(
         case PRUEBA_ISLA_FUEGO: return "8 - ISLA BAJO FUEGO";
         case PRUEBA_CAPITAN_MANDA: return "9 - CAPITAN MANDA";
         case PRUEBA_BARRA_GIRATORIA: return "10 - BARRA GIRATORIA";
+        case PRUEBA_NUCLEOS_ENERGIA: return "F10 - NUCLEOS DE ENERGIA";
     }
 
     return "PRUEBA";
@@ -224,7 +225,8 @@ static void DibujarZonaPrincipal(
 
 void ZonaPruebas::Inicializar(
     Participante participantesJuego[],
-    int cantidadParticipantesJuego
+    int cantidadParticipantesJuego,
+    AudioJuego* audioJuego
 )
 {
     volverAlMenu = false;
@@ -233,6 +235,7 @@ void ZonaPruebas::Inicializar(
 
     participantes = participantesJuego;
     cantidadParticipantes = cantidadParticipantesJuego;
+    audio = audioJuego;
 
     for (int i = 0; i < MAX_PARTICULAS_TIERRA; i++)
     {
@@ -248,6 +251,7 @@ void ZonaPruebas::Inicializar(
     minijuegoIslaFuego.Inicializar();
     minijuegoCapitanManda.Inicializar();
     minijuegoBarraGiratoria.Inicializar();
+    minijuegoNucleosEnergia.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
@@ -326,6 +330,14 @@ void ZonaPruebas::CambiarModo(
     {
         minijuegoBarraGiratoria.Inicializar();
         minijuegoBarraGiratoria.ConfigurarJugadores(
+            jugadores,
+            MAX_JUGADORES_PRUEBA
+        );
+    }
+    else if (modoActual == PRUEBA_NUCLEOS_ENERGIA)
+    {
+        minijuegoNucleosEnergia.Inicializar();
+        minijuegoNucleosEnergia.ConfigurarJugadores(
             jugadores,
             MAX_JUGADORES_PRUEBA
         );
@@ -455,6 +467,12 @@ void ZonaPruebas::Actualizar(
             CambiarModo(PRUEBA_BARRA_GIRATORIA);
             return;
         }
+
+        if (IsKeyPressed(KEY_F10))
+        {
+            CambiarModo(PRUEBA_NUCLEOS_ENERGIA);
+            return;
+        }
     }
 
     if (IsKeyPressed(KEY_R))
@@ -513,6 +531,13 @@ void ZonaPruebas::Actualizar(
         else if (modoActual == PRUEBA_BARRA_GIRATORIA)
         {
             minijuegoBarraGiratoria.Reiniciar(
+                jugadores,
+                MAX_JUGADORES_PRUEBA
+            );
+        }
+        else if (modoActual == PRUEBA_NUCLEOS_ENERGIA)
+        {
+            minijuegoNucleosEnergia.Reiniciar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA
             );
@@ -637,6 +662,18 @@ void ZonaPruebas::Actualizar(
             MAX_PARTICULAS_TIERRA
         );
     }
+    else if (modoActual == PRUEBA_NUCLEOS_ENERGIA)
+    {
+        minijuegoNucleosEnergia.Actualizar(
+            deltaTime,
+            jugadores,
+            MAX_JUGADORES_PRUEBA,
+            participantes,
+            particulas,
+            MAX_PARTICULAS_TIERRA,
+            audio
+        );
+    }
 }
 
 
@@ -715,6 +752,15 @@ void ZonaPruebas::Dibujar() const
             mostrarDebug
         );
     }
+    else if (modoActual == PRUEBA_NUCLEOS_ENERGIA)
+    {
+        minijuegoNucleosEnergia.Dibujar(
+            jugadores,
+            MAX_JUGADORES_PRUEBA,
+            participantes,
+            mostrarDebug
+        );
+    }
 
     if (modoCatalogo)
     {
@@ -746,10 +792,10 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO  8 ISLA  9 CAPITAN  0 BARRA",
+        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO  8 ISLA  9 CAPITAN  0 BARRA  F10 NUCLEOS",
         30,
         GetScreenHeight() - 133,
-        16,
+        15,
         BLACK
     );
 

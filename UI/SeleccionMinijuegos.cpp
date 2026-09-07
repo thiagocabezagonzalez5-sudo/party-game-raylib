@@ -51,6 +51,11 @@ static const DatosMinijuegoCatalogo DATOS_CATALOGO[
         "BARRA GIRATORIA",
         "Salta la barra que gira y acelera. El ultimo jugador sobre la arena gana.",
         Color{ 67, 196, 143, 255 }
+    },
+    {
+        "NUCLEOS DE ENERGIA",
+        "Recolecta nucleos azules y dorados. Al terminar el tiempo gana quien tenga mas energia.",
+        Color{ 70, 205, 225, 255 }
     }
 };
 
@@ -193,6 +198,15 @@ static void DibujarMiniatura(
                 ORANGE
             );
             DrawCircle((int)cx, (int)cy, 10.0f, DARKGRAY);
+            break;
+        }
+
+        case CATALOGO_NUCLEOS_ENERGIA:
+        {
+            DrawCircle((int)cx - 28, (int)cy + 5, 22.0f, SKYBLUE);
+            DrawCircle((int)cx + 28, (int)cy - 8, 27.0f, GOLD);
+            DrawCircleLines((int)cx - 28, (int)cy + 5, 30.0f, RAYWHITE);
+            DrawCircleLines((int)cx + 28, (int)cy - 8, 36.0f, ORANGE);
             break;
         }
     }

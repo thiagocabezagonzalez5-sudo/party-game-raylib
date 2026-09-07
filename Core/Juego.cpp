@@ -117,6 +117,9 @@ static ModoZonaPruebas ConvertirCatalogoAModo(
 
         case CATALOGO_BARRA_GIRATORIA:
             return PRUEBA_BARRA_GIRATORIA;
+
+        case CATALOGO_NUCLEOS_ENERGIA:
+            return PRUEBA_NUCLEOS_ENERGIA;
     }
 
     return PRUEBA_COLOR_SEGURO;
@@ -326,7 +329,8 @@ void Juego::Inicializar()
 
     zonaPruebas.Inicializar(
         participantes,
-        cantidadParticipantes
+        cantidadParticipantes,
+        &audio
     );
 
     pantallaLogo.Inicializar(
@@ -452,10 +456,27 @@ void Juego::Actualizar(
 
         case ESTADO_MENU:
         {
+            int opcionAnterior =
+                menuPrincipal.opcionSeleccionada;
+
             menuPrincipal.Actualizar(deltaTime);
+
+            if (
+                opcionAnterior !=
+                menuPrincipal.opcionSeleccionada
+            )
+            {
+                audio.ReproducirSonido(
+                    SONIDO_UI_MOVER
+                );
+            }
 
             if (menuPrincipal.empezarJuego)
             {
+                audio.ReproducirSonido(
+                    SONIDO_UI_CONFIRMAR
+                );
+
                 menuPrincipal.empezarJuego = false;
                 menuModoJuego.Inicializar();
                 estado = ESTADO_SELECCION_MODO;
@@ -463,6 +484,10 @@ void Juego::Actualizar(
 
             if (menuPrincipal.abrirConfiguracion)
             {
+                audio.ReproducirSonido(
+                    SONIDO_UI_CONFIRMAR
+                );
+
                 menuPrincipal.abrirConfiguracion = false;
                 menuConfiguracion.Inicializar();
                 estado = ESTADO_CONFIGURACION;
@@ -470,6 +495,10 @@ void Juego::Actualizar(
 
             if (menuPrincipal.salir)
             {
+                audio.ReproducirSonido(
+                    SONIDO_UI_CONFIRMAR
+                );
+
                 GuardarConfiguracion(
                     rutaConfiguracion,
                     config
@@ -523,7 +552,21 @@ void Juego::Actualizar(
         case ESTADO_SELECCION_MODO:
         {
             menuPrincipal.fondo.Actualizar(deltaTime);
+
+            int opcionAnterior =
+                menuModoJuego.opcionSeleccionada;
+
             menuModoJuego.Actualizar(deltaTime);
+
+            if (
+                opcionAnterior !=
+                menuModoJuego.opcionSeleccionada
+            )
+            {
+                audio.ReproducirSonido(
+                    SONIDO_UI_MOVER
+                );
+            }
 
             if (menuModoJuego.volver)
             {
@@ -534,6 +577,10 @@ void Juego::Actualizar(
 
             if (menuModoJuego.confirmar)
             {
+                audio.ReproducirSonido(
+                    SONIDO_UI_CONFIRMAR
+                );
+
                 if (
                     menuModoJuego.opcionSeleccionada ==
                     MODO_JUEGO_MINIJUEGOS
@@ -598,8 +645,6 @@ void Juego::Actualizar(
                 }
             }
 
-            // J1 tiene que ser humano porque es quien elige el
-            // minijuego en el catalogo de la siguiente pantalla.
             bool cantidadValida =
                 cantidadHumana >= 1 &&
                 cantidadHumana <= MAX_PARTICIPANTES &&
@@ -614,6 +659,10 @@ void Juego::Actualizar(
             if (seleccionPersonajes.iniciarPartida)
             {
                 seleccionPersonajes.iniciarPartida = false;
+
+                audio.ReproducirSonido(
+                    SONIDO_UI_CONFIRMAR
+                );
 
                 CompletarParticipantesConBots(
                     participantes,
@@ -640,10 +689,23 @@ void Juego::Actualizar(
         {
             menuPrincipal.fondo.Actualizar(deltaTime);
 
+            int indiceAnterior =
+                seleccionMinijuegos.indiceSeleccionado;
+
             seleccionMinijuegos.Actualizar(
                 deltaTime,
                 participantes[0]
             );
+
+            if (
+                indiceAnterior !=
+                seleccionMinijuegos.indiceSeleccionado
+            )
+            {
+                audio.ReproducirSonido(
+                    SONIDO_UI_MOVER
+                );
+            }
 
             if (seleccionMinijuegos.volver)
             {
@@ -654,6 +716,10 @@ void Juego::Actualizar(
 
             if (seleccionMinijuegos.confirmado)
             {
+                audio.ReproducirSonido(
+                    SONIDO_UI_CONFIRMAR
+                );
+
                 ModoZonaPruebas modoElegido =
                     ConvertirCatalogoAModo(
                         seleccionMinijuegos.indiceSeleccionado
@@ -661,7 +727,8 @@ void Juego::Actualizar(
 
                 zonaPruebas.Inicializar(
                     participantes,
-                    MAX_PARTICIPANTES
+                    MAX_PARTICIPANTES,
+                    &audio
                 );
 
                 zonaPruebas.modoCatalogo = true;
