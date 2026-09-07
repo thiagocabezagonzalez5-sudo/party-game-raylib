@@ -1,8 +1,5 @@
 #include "Systems/Audio.h"
 
-#include <cmath>
-#include <vector>
-
 
 static float LimitarFloat(
     float valor,
@@ -16,109 +13,51 @@ static float LimitarFloat(
 }
 
 
-static Sound CrearTonoProcedural(
-    float frecuenciaInicial,
-    float frecuenciaFinal,
-    float duracion,
-    float amplitud
-)
-{
-    const int FRECUENCIA_MUESTREO = 44100;
-
-    int cantidadFrames =
-        (int)(duracion * FRECUENCIA_MUESTREO);
-
-    if (cantidadFrames < 1)
-    {
-        cantidadFrames = 1;
-    }
-
-    std::vector<short> muestras(
-        cantidadFrames
-    );
-
-    double fase = 0.0;
-
-    for (int i = 0; i < cantidadFrames; i++)
-    {
-        float progreso =
-            cantidadFrames > 1
-            ? (float)i / (float)(cantidadFrames - 1)
-            : 1.0f;
-
-        float frecuencia =
-            frecuenciaInicial +
-            (frecuenciaFinal - frecuenciaInicial) * progreso;
-
-        fase +=
-            6.28318530718 *
-            (double)frecuencia /
-            (double)FRECUENCIA_MUESTREO;
-
-        float ataque =
-            progreso < 0.08f
-            ? progreso / 0.08f
-            : 1.0f;
-
-        float salida =
-            1.0f - progreso;
-
-        float envolvente =
-            ataque * salida * salida;
-
-        double onda =
-            std::sin(fase) * 0.82 +
-            std::sin(fase * 2.0) * 0.18;
-
-        float muestra =
-            (float)onda *
-            amplitud *
-            envolvente;
-
-        muestra = LimitarFloat(
-            muestra,
-            -1.0f,
-            1.0f
-        );
-
-        muestras[i] =
-            (short)(muestra * 32767.0f);
-    }
-
-    Wave onda{};
-    onda.frameCount = (unsigned int)cantidadFrames;
-    onda.sampleRate = FRECUENCIA_MUESTREO;
-    onda.sampleSize = 16;
-    onda.channels = 1;
-    onda.data = muestras.data();
-
-    return LoadSoundFromWave(onda);
-}
-
-
-static void CargarSonidoProcedural(
+static void CargarSonidoDesdeArchivo(
     AudioJuego& audio,
     TipoSonidoJuego tipo,
-    float frecuenciaInicial,
-    float frecuenciaFinal,
-    float duracion,
-    float amplitud
+    const char* rutaWav,
+    const char* rutaMp3
 )
 {
-    Sound sonido =
-        CrearTonoProcedural(
-            frecuenciaInicial,
-            frecuenciaFinal,
-            duracion,
-            amplitud
+    if (!audio.dispositivoInicializado)
+    {
+        return;
+    }
+
+    const char* rutaElegida = nullptr;
+
+    // Para efectos cortos preferimos WAV. Si no existe,
+    // permitimos MP3 con el mismo nombre como alternativa.
+    if (FileExists(rutaWav))
+    {
+        rutaElegida = rutaWav;
+    }
+    else if (FileExists(rutaMp3))
+    {
+        rutaElegida = rutaMp3;
+    }
+    else
+    {
+        TraceLog(
+            LOG_WARNING,
+            "No se encontro SFX. Agrega %s o %s",
+            rutaWav,
+            rutaMp3
         );
+
+        return;
+    }
+
+    Sound sonido =
+        LoadSound(rutaElegida);
 
     if (!IsSoundValid(sonido))
     {
         TraceLog(
             LOG_WARNING,
-            "No se pudo crear sonido procedural %d",
-            (int)tipo
+            "No se pudo cargar SFX: %s",
+            rutaElegida
         );
 
         return;
@@ -130,6 +69,12 @@ static void CargarSonidoProcedural(
     SetSoundVolume(
         audio.sonidos[tipo],
         audio.volumenSonidos
+    );
+
+    TraceLog(
+        LOG_INFO,
+        "SFX cargado: %s",
+        rutaElegida
     );
 }
 
@@ -151,76 +96,69 @@ void AudioJuego::Inicializar()
         return;
     }
 
-    CargarSonidoProcedural(
+    for (
+        int i = 0;
+        i < CANTIDAD_SONIDOS_JUEGO;
+        i++
+    )
+    {
+        sonidosCargados[i] = false;
+    }
+
+    CargarSonidoDesdeArchivo(
         *this,
         SONIDO_UI_MOVER,
-        520.0f,
-        640.0f,
-        0.07f,
-        0.62f
+        "Assets/Audio/SFX/ui_mover.wav",
+        "Assets/Audio/SFX/ui_mover.mp3"
     );
 
-    CargarSonidoProcedural(
+    CargarSonidoDesdeArchivo(
         *this,
         SONIDO_UI_CONFIRMAR,
-        650.0f,
-        980.0f,
-        0.12f,
-        0.72f
+        "Assets/Audio/SFX/ui_confirmar.wav",
+        "Assets/Audio/SFX/ui_confirmar.mp3"
     );
 
-    CargarSonidoProcedural(
+    CargarSonidoDesdeArchivo(
         *this,
         SONIDO_CUENTA_REGRESIVA,
-        430.0f,
-        350.0f,
-        0.11f,
-        0.72f
+        "Assets/Audio/SFX/cuenta_regresiva.wav",
+        "Assets/Audio/SFX/cuenta_regresiva.mp3"
     );
 
-    CargarSonidoProcedural(
+    CargarSonidoDesdeArchivo(
         *this,
         SONIDO_INICIO_MINIJUEGO,
-        520.0f,
-        1180.0f,
-        0.25f,
-        0.78f
+        "Assets/Audio/SFX/inicio_minijuego.wav",
+        "Assets/Audio/SFX/inicio_minijuego.mp3"
     );
 
-    CargarSonidoProcedural(
+    CargarSonidoDesdeArchivo(
         *this,
         SONIDO_RECOGER_NUCLEO,
-        820.0f,
-        1280.0f,
-        0.11f,
-        0.66f
+        "Assets/Audio/SFX/recoger_nucleo.wav",
+        "Assets/Audio/SFX/recoger_nucleo.mp3"
     );
 
-    CargarSonidoProcedural(
+    CargarSonidoDesdeArchivo(
         *this,
         SONIDO_RECOGER_NUCLEO_ESPECIAL,
-        920.0f,
-        1760.0f,
-        0.19f,
-        0.78f
+        "Assets/Audio/SFX/recoger_nucleo_especial.wav",
+        "Assets/Audio/SFX/recoger_nucleo_especial.mp3"
     );
 
-    CargarSonidoProcedural(
+    CargarSonidoDesdeArchivo(
         *this,
         SONIDO_ALERTA_TIEMPO,
-        320.0f,
-        260.0f,
-        0.12f,
-        0.72f
+        "Assets/Audio/SFX/alerta_tiempo.wav",
+        "Assets/Audio/SFX/alerta_tiempo.mp3"
     );
 
-    CargarSonidoProcedural(
+    CargarSonidoDesdeArchivo(
         *this,
         SONIDO_RESULTADO,
-        580.0f,
-        1320.0f,
-        0.38f,
-        0.80f
+        "Assets/Audio/SFX/resultado.wav",
+        "Assets/Audio/SFX/resultado.mp3"
     );
 }
 
@@ -252,8 +190,18 @@ void AudioJuego::CargarMusicaMenu(
 
     musicaMenu = LoadMusicStream(ruta);
 
-    musicaMenu.looping = true;
+    if (!IsMusicValid(musicaMenu))
+    {
+        TraceLog(
+            LOG_WARNING,
+            "No se pudo cargar musica del menu: %s",
+            ruta
+        );
 
+        return;
+    }
+
+    musicaMenu.looping = true;
     musicaMenuCargada = true;
 
     SetMusicVolume(
