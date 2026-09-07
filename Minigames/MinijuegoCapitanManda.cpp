@@ -1,10 +1,6 @@
 #include "Minigames/MinijuegoCapitanManda.h"
 
-#include <cmath>
 
-
-static const float DURACION_PREPARACION_CAPITAN = 3.0f;
-static const float DURACION_MOSTRAR_ORDEN = 0.72f;
 static const float DURACION_RESOLUCION = 0.85f;
 static const int MAX_RONDAS_CAPITAN = 20;
 
@@ -83,11 +79,13 @@ static void PrepararNuevaRonda(
             minijuego.numeroRonda
         );
 
+    // La bandera y la ventana de reaccion aparecen al mismo tiempo.
+    // No hay una fase previa donde el jugador pueda memorizar la orden.
     minijuego.tiempoFase =
-        DURACION_MOSTRAR_ORDEN;
+        minijuego.tiempoRespuesta;
 
     minijuego.fase =
-        FASE_CAPITAN_MOSTRANDO;
+        FASE_CAPITAN_RESPONDIENDO;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -249,6 +247,8 @@ void MinijuegoCapitanManda::Inicializar()
         jugadores[i] = {};
     }
 
+    // Se conserva el enum antiguo por compatibilidad, pero la
+    // preparacion dura cero y la primera orden comienza al instante.
     fase =
         FASE_CAPITAN_PREPARACION;
 
@@ -256,10 +256,7 @@ void MinijuegoCapitanManda::Inicializar()
         CONTROL_DIRECCION_IZQUIERDA;
 
     numeroRonda = 0;
-
-    tiempoPreparacion =
-        DURACION_PREPARACION_CAPITAN;
-
+    tiempoPreparacion = 0.0f;
     tiempoFase = 0.0f;
     tiempoRespuesta = 1.55f;
 
@@ -273,16 +270,20 @@ void MinijuegoCapitanManda::Reiniciar(
 {
     Inicializar();
 
-    if (participantes != nullptr)
+    if (participantes == nullptr)
     {
-        InicializarResultadoMinijuego(
-            resultado,
-            participantes,
-            FORMATO_MINIJUEGO_INDIVIDUAL
-        );
-
-        resultadoInicializado = true;
+        return;
     }
+
+    InicializarResultadoMinijuego(
+        resultado,
+        participantes,
+        FORMATO_MINIJUEGO_INDIVIDUAL
+    );
+
+    resultadoInicializado = true;
+
+    PrepararNuevaRonda(*this);
 }
 
 
@@ -305,6 +306,7 @@ void MinijuegoCapitanManda::Actualizar(
         );
 
         resultadoInicializado = true;
+        PrepararNuevaRonda(*this);
     }
 
     if (fase == FASE_CAPITAN_TERMINADO)
@@ -312,30 +314,14 @@ void MinijuegoCapitanManda::Actualizar(
         return;
     }
 
-    if (fase == FASE_CAPITAN_PREPARACION)
+    // Estados heredados de la version anterior: si alguna entrada
+    // llega aqui, no esperamos y empezamos la reaccion inmediatamente.
+    if (
+        fase == FASE_CAPITAN_PREPARACION ||
+        fase == FASE_CAPITAN_MOSTRANDO
+    )
     {
-        tiempoPreparacion -= deltaTime;
-
-        if (tiempoPreparacion <= 0.0f)
-        {
-            tiempoPreparacion = 0.0f;
-            PrepararNuevaRonda(*this);
-        }
-
-        return;
-    }
-
-    if (fase == FASE_CAPITAN_MOSTRANDO)
-    {
-        tiempoFase -= deltaTime;
-
-        if (tiempoFase <= 0.0f)
-        {
-            tiempoFase = tiempoRespuesta;
-            fase = FASE_CAPITAN_RESPONDIENDO;
-        }
-
-        return;
+        PrepararNuevaRonda(*this);
     }
 
     if (fase == FASE_CAPITAN_RESPONDIENDO)
@@ -438,7 +424,6 @@ static void DibujarCapitan3D(
     );
 
     bool mostrarOrden =
-        fase == FASE_CAPITAN_MOSTRANDO ||
         fase == FASE_CAPITAN_RESPONDIENDO;
 
     float alturaIzquierda =
@@ -611,15 +596,13 @@ void MinijuegoCapitanManda::Dibujar(
     );
 
     DrawText(
-        "COPIA LA DIRECCION. SI FALLAS O TARDAS, QUEDAS FUERA.",
+        "LA BANDERA ES LA SENAL: REACCIONA EN EL MISMO INSTANTE.",
         25,
         57,
         19,
         DARKGRAY
     );
 
-    // Ayuda fija y separada del titulo. En gamepad las acciones
-    // direccionales del minijuego usan los botones de cara X/B.
     DrawRectangle(
         20,
         84,
@@ -652,34 +635,7 @@ void MinijuegoCapitanManda::Dibujar(
         DARKBLUE
     );
 
-    if (fase == FASE_CAPITAN_PREPARACION)
-    {
-        int numero =
-            (int)std::ceil(
-                tiempoPreparacion
-            );
-
-        if (numero < 1)
-        {
-            numero = 1;
-        }
-
-        const char* texto =
-            TextFormat("%d", numero);
-
-        DrawText(
-            texto,
-            GetScreenWidth() / 2 -
-                MeasureText(texto, 90) / 2,
-            150,
-            90,
-            GOLD
-        );
-    }
-    else if (
-        fase == FASE_CAPITAN_MOSTRANDO ||
-        fase == FASE_CAPITAN_RESPONDIENDO
-    )
+    if (fase == FASE_CAPITAN_RESPONDIENDO)
     {
         const char* direccion =
             ordenActual == CONTROL_DIRECCION_IZQUIERDA
@@ -699,47 +655,44 @@ void MinijuegoCapitanManda::Dibujar(
             : ORANGE
         );
 
-        if (fase == FASE_CAPITAN_RESPONDIENDO)
+        const char* reaccion = "REACCIONA!";
+
+        DrawText(
+            reaccion,
+            GetScreenWidth() / 2 -
+                MeasureText(reaccion, 28) / 2,
+            208,
+            28,
+            LIME
+        );
+
+        DrawRectangle(
+            GetScreenWidth() / 2 - 160,
+            243,
+            320,
+            16,
+            Fade(BLACK, 0.35f)
+        );
+
+        float porcentaje =
+            tiempoRespuesta > 0.0f
+            ? tiempoFase / tiempoRespuesta
+            : 0.0f;
+
+        if (porcentaje < 0.0f)
         {
-            const char* ahora = "AHORA";
-
-            DrawText(
-                ahora,
-                GetScreenWidth() / 2 -
-                    MeasureText(ahora, 28) / 2,
-                208,
-                28,
-                LIME
-            );
-
-            DrawRectangle(
-                GetScreenWidth() / 2 - 160,
-                243,
-                320,
-                16,
-                Fade(BLACK, 0.35f)
-            );
-
-            float porcentaje =
-                tiempoRespuesta > 0.0f
-                ? tiempoFase / tiempoRespuesta
-                : 0.0f;
-
-            if (porcentaje < 0.0f)
-            {
-                porcentaje = 0.0f;
-            }
-
-            DrawRectangle(
-                GetScreenWidth() / 2 - 160,
-                243,
-                (int)(320.0f * porcentaje),
-                16,
-                porcentaje < 0.30f
-                ? RED
-                : GOLD
-            );
+            porcentaje = 0.0f;
         }
+
+        DrawRectangle(
+            GetScreenWidth() / 2 - 160,
+            243,
+            (int)(320.0f * porcentaje),
+            16,
+            porcentaje < 0.30f
+            ? RED
+            : GOLD
+        );
     }
 
     DrawText(
@@ -750,8 +703,6 @@ void MinijuegoCapitanManda::Dibujar(
         DARKBLUE
     );
 
-    // El panel global de ZonaPruebas ocupa la franja inferior.
-    // Subimos este bloque para que ningun control quede tapado.
     int y = GetScreenHeight() - 305;
 
     DrawRectangle(
