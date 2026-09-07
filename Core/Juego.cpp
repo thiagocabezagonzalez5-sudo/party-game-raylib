@@ -122,6 +122,9 @@ static ModoZonaPruebas ConvertirCatalogoAModo(
 
         case CATALOGO_MUROS_LOCOS:
             return PRUEBA_MUROS_LOCOS;
+
+        case CATALOGO_TORMENTA_MAGNETICA:
+            return PRUEBA_TORMENTA_MAGNETICA;
     }
 
     return PRUEBA_COLOR_SEGURO;
@@ -131,8 +134,8 @@ static ModoZonaPruebas ConvertirCatalogoAModo(
 static ModoZonaPruebas ElegirMinijuegoAleatorioTablero()
 {
     // Tronco y Fabrica siguen fuera del sorteo automatico porque sus
-    // bots aun no juegan. Los dos 1v3 nuevos si entran: tienen IA
-    // especializada aislada en BotsMinijuegos1v3.
+    // bots aun no juegan. Los 1v3 tienen IA especializada y el resto
+    // funciona aunque los bots comunes permanezcan quietos.
     const ModoZonaPruebas opciones[] =
     {
         PRUEBA_COLOR_SEGURO,
@@ -143,7 +146,8 @@ static ModoZonaPruebas ElegirMinijuegoAleatorioTablero()
         PRUEBA_NUCLEOS_ENERGIA,
         PRUEBA_REFUGIO_PINCHOS,
         PRUEBA_MIRADAS_CRUZADAS,
-        PRUEBA_MUROS_LOCOS
+        PRUEBA_MUROS_LOCOS,
+        PRUEBA_TORMENTA_MAGNETICA
     };
 
     const int cantidadOpciones =
@@ -193,6 +197,9 @@ static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
 
         case PRUEBA_MUROS_LOCOS:
             return &zona.minijuegoMurosLocos.ObtenerResultado();
+
+        case PRUEBA_TORMENTA_MAGNETICA:
+            return &zona.minijuegoTormentaMagnetica.ObtenerResultado();
 
         case PRUEBA_ZONA_PRINCIPAL:
         case PRUEBA_MODELOS:
