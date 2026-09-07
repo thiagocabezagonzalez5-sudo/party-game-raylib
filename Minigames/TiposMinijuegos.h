@@ -2,6 +2,9 @@
 
 #include "raylib.h"
 
+#define SOMBRAS_RETRO_AUTOMATICAS
+#include "Minigames/SombrasRetro.h"
+
 
 const int MAX_JUGADORES_PRUEBA = 4;
 const int MAX_BLOQUES_PRUEBA = 8;
