@@ -15,25 +15,18 @@ static void PrepararDirectorioDeRecursos()
         return;
     }
 
-    const char* directorioAplicacion =
-        GetApplicationDirectory();
+    const char* directorioAplicacion = GetApplicationDirectory();
 
     if (
         directorioAplicacion != nullptr &&
         DirectoryExists(
-            TextFormat(
-                "%s../Assets",
-                directorioAplicacion
-            )
+            TextFormat("%s../Assets", directorioAplicacion)
         )
     )
     {
         bool directorioCambiado =
             ChangeDirectory(
-                TextFormat(
-                    "%s..",
-                    directorioAplicacion
-                )
+                TextFormat("%s..", directorioAplicacion)
             );
 
         if (directorioCambiado)
@@ -120,6 +113,12 @@ static ModoZonaPruebas ConvertirCatalogoAModo(
 
         case CATALOGO_NUCLEOS_ENERGIA:
             return PRUEBA_NUCLEOS_ENERGIA;
+
+        case CATALOGO_REFUGIO_PINCHOS:
+            return PRUEBA_REFUGIO_PINCHOS;
+
+        case CATALOGO_MIRADAS_CRUZADAS:
+            return PRUEBA_MIRADAS_CRUZADAS;
     }
 
     return PRUEBA_COLOR_SEGURO;
@@ -128,8 +127,9 @@ static ModoZonaPruebas ConvertirCatalogoAModo(
 
 static ModoZonaPruebas ElegirMinijuegoAleatorioTablero()
 {
-    // Para el tablero usamos minijuegos individuales. De esta
-    // manera un bot inmovil no vuelve imposible una ronda 2v2.
+    // Tronco y Fabrica siguen fuera del sorteo automatico porque sus
+    // bots aun no juegan. Los dos 1v3 nuevos si entran: tienen IA
+    // especializada aislada en BotsMinijuegos1v3.
     const ModoZonaPruebas opciones[] =
     {
         PRUEBA_COLOR_SEGURO,
@@ -137,7 +137,9 @@ static ModoZonaPruebas ElegirMinijuegoAleatorioTablero()
         PRUEBA_ISLA_FUEGO,
         PRUEBA_CAPITAN_MANDA,
         PRUEBA_BARRA_GIRATORIA,
-        PRUEBA_NUCLEOS_ENERGIA
+        PRUEBA_NUCLEOS_ENERGIA,
+        PRUEBA_REFUGIO_PINCHOS,
+        PRUEBA_MIRADAS_CRUZADAS
     };
 
     const int cantidadOpciones =
@@ -179,6 +181,12 @@ static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
         case PRUEBA_NUCLEOS_ENERGIA:
             return &zona.minijuegoNucleosEnergia.resultado;
 
+        case PRUEBA_REFUGIO_PINCHOS:
+            return &zona.minijuegoRefugioPinchos.ObtenerResultado();
+
+        case PRUEBA_MIRADAS_CRUZADAS:
+            return &zona.minijuegoMiradasCruzadas.ObtenerResultado();
+
         case PRUEBA_ZONA_PRINCIPAL:
         case PRUEBA_MODELOS:
         case PRUEBA_TABLERO:
@@ -205,9 +213,7 @@ static bool ConfirmarConParticipanteHumano(
         }
 
         InputSeleccionParticipante entrada =
-            LeerInputSeleccionParticipante(
-                participantes[i]
-            );
+            LeerInputSeleccionParticipante(participantes[i]);
 
         if (entrada.confirmar)
         {
@@ -241,8 +247,6 @@ static bool CancelarPantallaConMando()
 
 static void DibujarTableroVacio()
 {
-    // Se conserva como respaldo para estados antiguos guardados
-    // durante desarrollo. El flujo final ya no entra aqui.
     DrawRectangle(
         0,
         0,
@@ -267,14 +271,10 @@ static void DibujarTableroVacio()
         Fade(BLACK, 0.82f)
     );
 
-    DrawRectangleLinesEx(
-        panel,
-        4.0f,
-        ORANGE
-    );
+    DrawRectangleLinesEx(panel, 4.0f, ORANGE);
 
     const char* titulo = "TABLERO";
-    const char* estado = "ESTADO ANTIGUO";
+    const char* estadoTexto = "ESTADO ANTIGUO";
     const char* ayuda = "ESC / B PARA VOLVER";
 
     DrawText(
@@ -286,8 +286,8 @@ static void DibujarTableroVacio()
     );
 
     DrawText(
-        estado,
-        GetScreenWidth() / 2 - MeasureText(estado, 28) / 2,
+        estadoTexto,
+        GetScreenWidth() / 2 - MeasureText(estadoTexto, 28) / 2,
         (int)panel.y + 128,
         28,
         ORANGE
@@ -309,11 +309,7 @@ static void DibujarTableroVacio()
 
 void Juego::Inicializar()
 {
-    InitWindow(
-        1280,
-        720,
-        "Juego de Party"
-    );
+    InitWindow(1280, 720, "Juego de Party");
 
     PrepararDirectorioDeRecursos();
     SetExitKey(KEY_NULL);
@@ -340,10 +336,7 @@ void Juego::Inicializar()
     config = ConfiguracionJuego{};
 
     bool configEncontrada =
-        CargarConfiguracion(
-            rutaConfiguracion,
-            config
-        );
+        CargarConfiguracion(rutaConfiguracion, config);
 
     if (!configEncontrada)
     {
@@ -395,9 +388,7 @@ void Juego::Inicializar()
         config.modoTeclado
     );
 
-    SetTargetFPS(
-        opcionesFPS[config.indiceFPS]
-    );
+    SetTargetFPS(opcionesFPS[config.indiceFPS]);
 
     ModoVentana modoActual = MODO_VENTANA;
 
@@ -428,9 +419,7 @@ void Juego::Inicializar()
         &audio
     );
 
-    pantallaLogo.Inicializar(
-        "Assets/UI/LogoCreador.png"
-    );
+    pantallaLogo.Inicializar("Assets/UI/LogoCreador.png");
 
     menuPreparado = false;
     cargaMenuSolicitada = false;
@@ -524,13 +513,13 @@ void Juego::Actualizar(
             {
                 menuPrincipal.Inicializar();
 
+                // Se mantiene la ruta del repositorio. Si existe una
+                // correccion local distinta, Git puede fusionarla aparte.
                 audio.CargarMusicaMenu(
                     "Assets/Audio/MusicaMenu.mp3"
                 );
 
-                audio.AplicarVolumenMusica(
-                    config.volumenMusica
-                );
+                audio.AplicarVolumenMusica(config.volumenMusica);
 
                 menuPreparado = true;
                 cargaMenuSolicitada = false;
@@ -552,27 +541,17 @@ void Juego::Actualizar(
 
         case ESTADO_MENU:
         {
-            int opcionAnterior =
-                menuPrincipal.opcionSeleccionada;
-
+            int opcionAnterior = menuPrincipal.opcionSeleccionada;
             menuPrincipal.Actualizar(deltaTime);
 
-            if (
-                opcionAnterior !=
-                menuPrincipal.opcionSeleccionada
-            )
+            if (opcionAnterior != menuPrincipal.opcionSeleccionada)
             {
-                audio.ReproducirSonido(
-                    SONIDO_UI_MOVER
-                );
+                audio.ReproducirSonido(SONIDO_UI_MOVER);
             }
 
             if (menuPrincipal.empezarJuego)
             {
-                audio.ReproducirSonido(
-                    SONIDO_UI_CONFIRMAR
-                );
-
+                audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
                 menuPrincipal.empezarJuego = false;
                 menuModoJuego.Inicializar();
                 estado = ESTADO_SELECCION_MODO;
@@ -580,10 +559,7 @@ void Juego::Actualizar(
 
             if (menuPrincipal.abrirConfiguracion)
             {
-                audio.ReproducirSonido(
-                    SONIDO_UI_CONFIRMAR
-                );
-
+                audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
                 menuPrincipal.abrirConfiguracion = false;
                 menuConfiguracion.Inicializar();
                 estado = ESTADO_CONFIGURACION;
@@ -591,15 +567,8 @@ void Juego::Actualizar(
 
             if (menuPrincipal.salir)
             {
-                audio.ReproducirSonido(
-                    SONIDO_UI_CONFIRMAR
-                );
-
-                GuardarConfiguracion(
-                    rutaConfiguracion,
-                    config
-                );
-
+                audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
+                GuardarConfiguracion(rutaConfiguracion, config);
                 cerrarJuego = true;
             }
 
@@ -621,23 +590,14 @@ void Juego::Actualizar(
 
             if (menuConfiguracion.configuracionCambiada)
             {
-                GuardarConfiguracion(
-                    rutaConfiguracion,
-                    config
-                );
-
+                GuardarConfiguracion(rutaConfiguracion, config);
                 menuConfiguracion.configuracionCambiada = false;
             }
 
             if (menuConfiguracion.volver)
             {
                 menuConfiguracion.volver = false;
-
-                GuardarConfiguracion(
-                    rutaConfiguracion,
-                    config
-                );
-
+                GuardarConfiguracion(rutaConfiguracion, config);
                 menuPrincipal.PrepararEntrada(false);
                 estado = ESTADO_MENU;
             }
@@ -649,19 +609,12 @@ void Juego::Actualizar(
         {
             menuPrincipal.fondo.Actualizar(deltaTime);
 
-            int opcionAnterior =
-                menuModoJuego.opcionSeleccionada;
-
+            int opcionAnterior = menuModoJuego.opcionSeleccionada;
             menuModoJuego.Actualizar(deltaTime);
 
-            if (
-                opcionAnterior !=
-                menuModoJuego.opcionSeleccionada
-            )
+            if (opcionAnterior != menuModoJuego.opcionSeleccionada)
             {
-                audio.ReproducirSonido(
-                    SONIDO_UI_MOVER
-                );
+                audio.ReproducirSonido(SONIDO_UI_MOVER);
             }
 
             if (menuModoJuego.volver)
@@ -673,12 +626,7 @@ void Juego::Actualizar(
 
             if (menuModoJuego.confirmar)
             {
-                audio.ReproducirSonido(
-                    SONIDO_UI_CONFIRMAR
-                );
-
-                // Los dos modos pasan por la misma seleccion de
-                // personajes. El destino se decide al confirmar.
+                audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
                 PrepararSeleccionDePersonajes(*this);
                 estado = ESTADO_SELECCION_JUGADORES;
             }
@@ -688,7 +636,6 @@ void Juego::Actualizar(
 
         case ESTADO_TABLERO_VACIO:
         {
-            // Estado heredado de la primera maqueta.
             menuPrincipal.fondo.Actualizar(deltaTime);
 
             if (
@@ -738,16 +685,10 @@ void Juego::Actualizar(
                 menuModoJuego.opcionSeleccionada ==
                 MODO_JUEGO_MINIJUEGOS;
 
-            // En el catalogo J1 tiene que ser humano porque es quien
-            // elige el minijuego. En Tablero cualquier jugador humano
-            // puede ser el primero conectado.
             bool cantidadValida =
                 cantidadHumana >= 1 &&
                 cantidadHumana <= MAX_PARTICIPANTES &&
-                (
-                    !modoMinijuegos ||
-                    participantes[0].activo
-                );
+                (!modoMinijuegos || participantes[0].activo);
 
             seleccionPersonajes.todosListos =
                 cantidadValida && activosPreparados;
@@ -758,10 +699,7 @@ void Juego::Actualizar(
             if (seleccionPersonajes.iniciarPartida)
             {
                 seleccionPersonajes.iniciarPartida = false;
-
-                audio.ReproducirSonido(
-                    SONIDO_UI_CONFIRMAR
-                );
+                audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
 
                 CompletarParticipantesConBots(
                     participantes,
@@ -803,22 +741,16 @@ void Juego::Actualizar(
         {
             menuPrincipal.fondo.Actualizar(deltaTime);
 
-            int indiceAnterior =
-                seleccionMinijuegos.indiceSeleccionado;
+            int indiceAnterior = seleccionMinijuegos.indiceSeleccionado;
 
             seleccionMinijuegos.Actualizar(
                 deltaTime,
                 participantes[0]
             );
 
-            if (
-                indiceAnterior !=
-                seleccionMinijuegos.indiceSeleccionado
-            )
+            if (indiceAnterior != seleccionMinijuegos.indiceSeleccionado)
             {
-                audio.ReproducirSonido(
-                    SONIDO_UI_MOVER
-                );
+                audio.ReproducirSonido(SONIDO_UI_MOVER);
             }
 
             if (seleccionMinijuegos.volver)
@@ -830,9 +762,7 @@ void Juego::Actualizar(
 
             if (seleccionMinijuegos.confirmado)
             {
-                audio.ReproducirSonido(
-                    SONIDO_UI_CONFIRMAR
-                );
+                audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
 
                 ModoZonaPruebas modoElegido =
                     ConvertirCatalogoAModo(
@@ -917,9 +847,6 @@ void Juego::Actualizar(
         {
             zonaPruebas.Actualizar(deltaTime);
 
-            // ESC durante el minijuego de ronda permite volver al
-            // tablero sin premio. Es util para desarrollo y si una
-            // ronda queda trabada por un control desconectado.
             if (zonaPruebas.volverAlMenu)
             {
                 zonaPruebas.volverAlMenu = false;
@@ -950,15 +877,9 @@ void Juego::Actualizar(
             bool continuarAutomaticamente =
                 tiempoResultadoMinijuegoTablero >= 3.0f;
 
-            if (
-                confirmar ||
-                continuarAutomaticamente
-            )
+            if (confirmar || continuarAutomaticamente)
             {
-                partidaTablero.AplicarResultadoMinijuego(
-                    *resultado
-                );
-
+                partidaTablero.AplicarResultadoMinijuego(*resultado);
                 partidaTablero.ContinuarTrasMinijuego();
                 zonaPruebas.modoCatalogo = false;
                 tiempoResultadoMinijuegoTablero = 0.0f;
@@ -969,9 +890,7 @@ void Juego::Actualizar(
         }
 
         case ESTADO_RESULTADO:
-        {
             break;
-        }
     }
 }
 
@@ -988,10 +907,7 @@ void Juego::Dibujar()
         {
             pantallaLogo.Dibujar();
 
-            if (
-                cargaMenuSolicitada &&
-                !menuPreparado
-            )
+            if (cargaMenuSolicitada && !menuPreparado)
             {
                 const char* texto = "CARGANDO...";
 
@@ -1008,37 +924,27 @@ void Juego::Dibujar()
         }
 
         case ESTADO_MENU:
-        {
             menuPrincipal.Dibujar();
             break;
-        }
 
         case ESTADO_CONFIGURACION:
-        {
             menuPrincipal.fondo.DibujarPantallaCompleta();
-
             menuConfiguracion.Dibujar(
                 config,
                 resoluciones,
                 opcionesFPS
             );
-
             break;
-        }
 
         case ESTADO_SELECCION_MODO:
-        {
             menuPrincipal.fondo.DibujarPantallaCompleta();
             menuModoJuego.Dibujar();
             break;
-        }
 
         case ESTADO_TABLERO_VACIO:
-        {
             menuPrincipal.fondo.DibujarPantallaCompleta();
             DibujarTableroVacio();
             break;
-        }
 
         case ESTADO_SELECCION_JUGADORES:
         {
@@ -1053,10 +959,7 @@ void Juego::Dibujar()
                 menuModoJuego.opcionSeleccionada ==
                 MODO_JUEGO_MINIJUEGOS;
 
-            if (
-                modoMinijuegos &&
-                !participantes[0].activo
-            )
+            if (modoMinijuegos && !participantes[0].activo)
             {
                 const char* aviso =
                     "JUGADOR 1 DEBE UNIRSE PARA ELEGIR EL MINIJUEGO";
@@ -1074,23 +977,17 @@ void Juego::Dibujar()
         }
 
         case ESTADO_SELECCION_MINIJUEGO:
-        {
             menuPrincipal.fondo.DibujarPantallaCompleta();
             seleccionMinijuegos.Dibujar(participantes[0]);
             break;
-        }
 
         case ESTADO_ZONA_PRUEBAS:
-        {
             zonaPruebas.Dibujar();
             break;
-        }
 
         case ESTADO_PARTIDA:
-        {
             partidaTablero.Dibujar();
             break;
-        }
 
         case ESTADO_MINIJUEGO:
         {
@@ -1113,8 +1010,8 @@ void Juego::Dibujar()
 
             const char* texto =
                 terminado
-                ? "RESULTADO LISTO | CONFIRMAR PARA VOLVER AL TABLERO"
-                : "MINIJUEGO DE RONDA | ESC: SALTAR Y VOLVER AL TABLERO";
+                    ? "RESULTADO LISTO | CONFIRMAR PARA VOLVER AL TABLERO"
+                    : "MINIJUEGO DE RONDA | ESC: SALTAR Y VOLVER AL TABLERO";
 
             DrawText(
                 texto,
@@ -1128,10 +1025,8 @@ void Juego::Dibujar()
         }
 
         case ESTADO_RESULTADO:
-        {
             ClearBackground(BLACK);
             break;
-        }
     }
 
     if (
@@ -1139,8 +1034,7 @@ void Juego::Dibujar()
         estado != ESTADO_LOGO
     )
     {
-        const char* texto =
-            TextFormat("FPS: %d", GetFPS());
+        const char* texto = TextFormat("FPS: %d", GetFPS());
 
         DrawText(
             texto,
@@ -1161,10 +1055,7 @@ bool Juego::DebeCerrar()
 
 void Juego::Descargar()
 {
-    GuardarConfiguracion(
-        rutaConfiguracion,
-        config
-    );
+    GuardarConfiguracion(rutaConfiguracion, config);
 
     zonaPruebas.Descargar();
     seleccionPersonajes.Descargar();
