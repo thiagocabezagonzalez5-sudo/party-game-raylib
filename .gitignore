@@ -5,6 +5,10 @@
 # Archivos temporales de Dev-C++
 *.layout
 
+# Backups y conflictos temporales de codigo
+*.bak.cpp
+*.conflicto*.cpp
+
 # Sistema
 .DS_Store
 Thumbs.db
