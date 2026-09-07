@@ -15,3 +15,5 @@ Thumbs.db
 
 # CMake
 /build/
+
+.bak
