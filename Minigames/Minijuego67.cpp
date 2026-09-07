@@ -15,35 +15,36 @@
 static const float DURACION_PREPARACION_67 = 2.5f;
 static const float DURACION_PARTIDA_67 = 30.0f;
 
-static const float INICIO_ZONA_RECOGIDA_67 = 0.67f;
-static const float FIN_ZONA_RECOGIDA_67 = 0.86f;
-static const float CENTRO_ZONA_RECOGIDA_67 =
-    (INICIO_ZONA_RECOGIDA_67 + FIN_ZONA_RECOGIDA_67) / 2.0f;
+// La ventana anterior era demasiado ancha. Ahora hay que esperar
+// a que la pieza quede realmente a mano del jugador.
+static const float INICIO_ZONA_RECOGIDA_67 = 0.755f;
+static const float FIN_ZONA_RECOGIDA_67 = 0.815f;
 
 static const float X_INICIO_CINTA_67 = -6.3f;
 static const float LARGO_CINTA_67 = 9.0f;
-static const float X_JUGADOR_67 = 1.45f;
-static const float X_MESA_67 = 3.35f;
+static const float X_JUGADOR_67 = 1.35f;
+static const float X_MESA_67 = 3.45f;
 
-// Las dos cintas quedan a los lados y los jugadores trabajan
-// dentro del pasillo central, en vez de estar parados sobre ellas.
 static const float Z_CINTA_6_67 = -2.35f;
 static const float Z_CINTA_7_67 = 2.35f;
 static const float Z_JUGADOR_6_67 = -0.72f;
 static const float Z_JUGADOR_7_67 = 0.72f;
 
-static const int CANTIDAD_PIEZAS_VISUALES_67 = 7;
-static const float DESFASE_CARRIL_7_67 =
-    0.5f / (float)CANTIDAD_PIEZAS_VISUALES_67;
+// Antes se mostraban siete piezas por cinta. Cuatro dejan mas aire
+// visual y obligan a leer mejor el ritmo de la cinta.
+static const int CANTIDAD_PIEZAS_CINTA_67 = 4;
+static const float DESFASE_CINTA_7_67 = 0.125f;
 
 static const float DURACION_GIRO_67 = 0.24f;
 static const float DURACION_STUN_67 = 0.42f;
 static const float DURACION_MESA_COMPLETA_67 = 0.48f;
 static const float DURACION_FEEDBACK_67 = 0.55f;
+static const float COOLDOWN_TRAS_AGARRAR_67 = 0.30f;
+static const float COOLDOWN_TRAS_COLOCAR_67 = 0.38f;
 
 
 //==================================================
-// UTILIDADES GENERALES
+// UTILIDADES
 //==================================================
 
 static int ContarParticipantesActivos67(
@@ -102,35 +103,12 @@ static int CrearMascaraParticipantes67(
 
             if (participantes[i].conectado)
             {
-                mascara |=
-                    1 << (i + MAX_JUGADORES_PRUEBA);
+                mascara |= 1 << (i + MAX_JUGADORES_PRUEBA);
             }
         }
     }
 
     return mascara;
-}
-
-
-static bool NombreEsIdle67(const char* nombre)
-{
-    if (nombre == nullptr)
-    {
-        return false;
-    }
-
-    return
-        std::strstr(nombre, "Idle") != nullptr ||
-        std::strstr(nombre, "idle") != nullptr ||
-        std::strstr(nombre, "IDLE") != nullptr;
-}
-
-
-static Color ObtenerColorEquipo67(int equipo)
-{
-    return equipo == 0
-        ? Color{ 238, 55, 66, 255 }
-        : Color{ 40, 159, 224, 255 };
 }
 
 
@@ -149,111 +127,75 @@ static float NormalizarProgreso67(float progreso)
 
 static float ObtenerXObjeto67(float progreso)
 {
-    return
-        X_INICIO_CINTA_67 +
-        progreso * LARGO_CINTA_67;
+    return X_INICIO_CINTA_67 + progreso * LARGO_CINTA_67;
 }
 
 
-static float ObtenerZCintaPorTipo67(
-    TipoPieza67 tipo
-)
-{
-    return tipo == PIEZA_NUMERO_6
-        ? Z_CINTA_6_67
-        : Z_CINTA_7_67;
-}
-
-
-static float ObtenerZJugadorEquipo67(
-    const Minijuego67& minijuego,
-    int indiceJugador
-)
-{
-    int equipo =
-        minijuego.equipoPorJugador[indiceJugador];
-
-    if (equipo < 0 || equipo > 1)
-    {
-        return 0.0f;
-    }
-
-    if (minijuego.cantidadJugadoresEquipo[equipo] <= 1)
-    {
-        return 0.0f;
-    }
-
-    return
-        minijuego.ordenEnEquipoPorJugador[indiceJugador] == 0
-        ? Z_JUGADOR_6_67
-        : Z_JUGADOR_7_67;
-}
-
-
-static float ObtenerProgresoPiezaVisual67(
-    const EstadoJugador67& estado,
-    TipoPieza67 tipo,
+static float ObtenerProgresoPieza67(
+    float progresoBase,
     int indicePieza
 )
 {
     float separacion =
-        1.0f /
-        (float)CANTIDAD_PIEZAS_VISUALES_67;
-
-    float desfaseTipo =
-        tipo == PIEZA_NUMERO_7
-        ? DESFASE_CARRIL_7_67
-        : 0.0f;
+        1.0f / (float)CANTIDAD_PIEZAS_CINTA_67;
 
     return NormalizarProgreso67(
-        estado.progresoObjeto +
-        separacion * (float)indicePieza +
-        desfaseTipo
+        progresoBase +
+        separacion * (float)indicePieza
     );
 }
 
 
 static bool HayPiezaAlAlcance67(
-    const EstadoJugador67& estado,
+    const EstadoEquipo67& equipo,
     TipoPieza67 tipo
 )
 {
-    float mejorDistancia = 1000.0f;
+    float progresoBase =
+        tipo == PIEZA_NUMERO_6
+        ? equipo.progresoCinta6
+        : equipo.progresoCinta7;
 
-    for (
-        int i = 0;
-        i < CANTIDAD_PIEZAS_VISUALES_67;
-        i++
-    )
+    for (int i = 0; i < CANTIDAD_PIEZAS_CINTA_67; i++)
     {
         float progreso =
-            ObtenerProgresoPiezaVisual67(
-                estado,
-                tipo,
+            ObtenerProgresoPieza67(
+                progresoBase,
                 i
             );
 
         if (
-            progreso < INICIO_ZONA_RECOGIDA_67 ||
-            progreso > FIN_ZONA_RECOGIDA_67
+            progreso >= INICIO_ZONA_RECOGIDA_67 &&
+            progreso <= FIN_ZONA_RECOGIDA_67
         )
         {
-            continue;
-        }
-
-        float distancia =
-            std::fabs(
-                progreso -
-                CENTRO_ZONA_RECOGIDA_67
-            );
-
-        if (distancia < mejorDistancia)
-        {
-            mejorDistancia = distancia;
+            return true;
         }
     }
 
-    return mejorDistancia < 1000.0f;
+    return false;
+}
+
+
+static Color ObtenerColorEquipo67(int equipo)
+{
+    return equipo == 0
+        ? Color{ 238, 55, 66, 255 }
+        : Color{ 40, 159, 224, 255 };
+}
+
+
+static bool NombreEsIdle67(const char* nombre)
+{
+    if (nombre == nullptr)
+    {
+        return false;
+    }
+
+    return
+        std::strstr(nombre, "Idle") != nullptr ||
+        std::strstr(nombre, "idle") != nullptr ||
+        std::strstr(nombre, "IDLE") != nullptr;
 }
 
 
@@ -275,29 +217,7 @@ static int BuscarJugadorUnicoEquipo67(
 }
 
 
-static int BuscarJugadorRol67(
-    const Minijuego67& minijuego,
-    int equipo,
-    TipoPieza67 tipo,
-    int cantidadMaxima
-)
-{
-    for (int i = 0; i < cantidadMaxima; i++)
-    {
-        if (
-            minijuego.equipoPorJugador[i] == equipo &&
-            minijuego.estadosJugadores[i].tipoPieza == tipo
-        )
-        {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
-
-static void ActualizarTipoPiezaModoPrueba67(
+static void ActualizarRolJugadorUnico67(
     Minijuego67& minijuego,
     int equipo,
     int cantidadMaxima
@@ -312,27 +232,51 @@ static void ActualizarTipoPiezaModoPrueba67(
         return;
     }
 
-    int indiceJugador =
+    int indice =
         BuscarJugadorUnicoEquipo67(
             minijuego,
             equipo,
             cantidadMaxima
         );
 
-    if (indiceJugador < 0)
+    if (indice < 0)
     {
         return;
     }
 
-    minijuego.estadosJugadores[indiceJugador].tipoPieza =
+    minijuego.estadosJugadores[indice].tipoPieza =
         minijuego.equipos[equipo].mesa == MESA_67_CON_6
         ? PIEZA_NUMERO_7
         : PIEZA_NUMERO_6;
 }
 
 
+static float ObtenerZJugador67(
+    const Minijuego67& minijuego,
+    int indiceJugador
+)
+{
+    int equipo = minijuego.equipoPorJugador[indiceJugador];
+
+    if (equipo < 0 || equipo > 1)
+    {
+        return 0.0f;
+    }
+
+    if (minijuego.cantidadJugadoresEquipo[equipo] <= 1)
+    {
+        return 0.0f;
+    }
+
+    return
+        minijuego.ordenEnEquipoPorJugador[indiceJugador] == 0
+        ? Z_JUGADOR_6_67
+        : Z_JUGADOR_7_67;
+}
+
+
 //==================================================
-// RENDER TEXTURES PARA PANTALLA DIVIDIDA
+// RENDER TEXTURES
 //==================================================
 
 static void DescargarVistasEquipo67(
@@ -343,10 +287,7 @@ static void DescargarVistasEquipo67(
     {
         if (minijuego.vistasEquipo[equipo].id != 0)
         {
-            UnloadRenderTexture(
-                minijuego.vistasEquipo[equipo]
-            );
-
+            UnloadRenderTexture(minijuego.vistasEquipo[equipo]);
             minijuego.vistasEquipo[equipo] = {};
         }
     }
@@ -380,11 +321,8 @@ static void AsegurarVistasEquipo67(
 
     DescargarVistasEquipo67(minijuego);
 
-    minijuego.vistasEquipo[0] =
-        LoadRenderTexture(ancho, alto);
-
-    minijuego.vistasEquipo[1] =
-        LoadRenderTexture(ancho, alto);
+    minijuego.vistasEquipo[0] = LoadRenderTexture(ancho, alto);
+    minijuego.vistasEquipo[1] = LoadRenderTexture(ancho, alto);
 
     minijuego.vistasEquipoCargadas =
         minijuego.vistasEquipo[0].id != 0 &&
@@ -402,7 +340,7 @@ static void AsegurarVistasEquipo67(
 
 
 //==================================================
-// RESULTADO POR EQUIPOS
+// RESULTADO
 //==================================================
 
 static void FinalizarResultado67(
@@ -411,76 +349,64 @@ static void FinalizarResultado67(
 )
 {
     if (
-        minijuego.resultado.estado !=
-        RESULTADO_MINIJUEGO_EN_CURSO ||
+        minijuego.resultado.estado != RESULTADO_MINIJUEGO_EN_CURSO ||
         !minijuego.partidaValida
     )
     {
         return;
     }
 
-    int puntosEquipo0 = minijuego.equipos[0].puntos;
-    int puntosEquipo1 = minijuego.equipos[1].puntos;
+    int puntos0 = minijuego.equipos[0].puntos;
+    int puntos1 = minijuego.equipos[1].puntos;
 
-    minijuego.empate =
-        puntosEquipo0 == puntosEquipo1;
-
+    minijuego.empate = puntos0 == puntos1;
     minijuego.equipoGanador = -1;
 
     if (!minijuego.empate)
     {
-        minijuego.equipoGanador =
-            puntosEquipo0 > puntosEquipo1
-            ? 0
-            : 1;
+        minijuego.equipoGanador = puntos0 > puntos1 ? 0 : 1;
     }
 
-    minijuego.resultado.estado =
-        RESULTADO_MINIJUEGO_FINALIZADO;
-
+    minijuego.resultado.estado = RESULTADO_MINIJUEGO_FINALIZADO;
     minijuego.resultado.desenlace =
         minijuego.empate
         ? DESENLACE_EMPATE
         : DESENLACE_CON_GANADOR;
-
     minijuego.resultado.cantidadEquipos = 2;
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
-        ResultadoParticipante& participanteResultado =
+        ResultadoParticipante& resultadoJugador =
             minijuego.resultado.participantes[i];
 
-        if (!participanteResultado.participo)
+        if (!resultadoJugador.participo)
         {
             continue;
         }
 
         int equipo = minijuego.equipoPorJugador[i];
-
-        participanteResultado.numeroEquipo = equipo;
-        participanteResultado.puntuacionMinijuego =
+        resultadoJugador.numeroEquipo = equipo;
+        resultadoJugador.puntuacionMinijuego =
             equipo >= 0 && equipo < 2
             ? minijuego.equipos[equipo].puntos
             : 0;
-        participanteResultado.puntosObtenidos = 0;
+        resultadoJugador.puntosObtenidos = 0;
 
         if (minijuego.empate)
         {
-            participanteResultado.posicionFinal = 1;
+            resultadoJugador.posicionFinal = 1;
         }
         else
         {
-            participanteResultado.posicionFinal =
-                equipo == minijuego.equipoGanador
-                ? 1
-                : 2;
+            resultadoJugador.posicionFinal =
+                equipo == minijuego.equipoGanador ? 1 : 2;
         }
     }
 }
 
 
 //==================================================
-// LOGICA DE COLOCACION
+// LOGICA DE PIEZAS
 //==================================================
 
 static void ColocarPieza67(
@@ -489,60 +415,59 @@ static void ColocarPieza67(
     int cantidadMaxima
 )
 {
-    int equipo =
-        minijuego.equipoPorJugador[indiceJugador];
+    int equipo = minijuego.equipoPorJugador[indiceJugador];
 
     if (equipo < 0 || equipo > 1)
     {
         return;
     }
 
-    EstadoJugador67& estadoJugador =
+    EstadoJugador67& jugador =
         minijuego.estadosJugadores[indiceJugador];
 
     EstadoEquipo67& estadoEquipo =
         minijuego.equipos[equipo];
 
-    bool colocacionCorrecta = false;
+    bool correcto = false;
 
     if (
-        estadoJugador.tipoPieza == PIEZA_NUMERO_6 &&
+        jugador.tipoPieza == PIEZA_NUMERO_6 &&
         estadoEquipo.mesa == MESA_67_VACIA
     )
     {
         estadoEquipo.mesa = MESA_67_CON_6;
-        colocacionCorrecta = true;
+        correcto = true;
     }
     else if (
-        estadoJugador.tipoPieza == PIEZA_NUMERO_7 &&
+        jugador.tipoPieza == PIEZA_NUMERO_7 &&
         estadoEquipo.mesa == MESA_67_CON_6
     )
     {
         estadoEquipo.mesa = MESA_67_COMPLETA;
-        estadoEquipo.tiempoMesaCompleta =
-            DURACION_MESA_COMPLETA_67;
+        estadoEquipo.tiempoMesaCompleta = DURACION_MESA_COMPLETA_67;
         estadoEquipo.puntos++;
-        colocacionCorrecta = true;
+        correcto = true;
     }
 
-    estadoEquipo.ultimoAcierto = colocacionCorrecta;
+    estadoEquipo.ultimoAcierto = correcto;
     estadoEquipo.tiempoFeedback = DURACION_FEEDBACK_67;
 
-    if (!colocacionCorrecta)
+    jugador.llevaPieza = false;
+    jugador.mirandoMesa = false;
+    jugador.tiempoGiro = 0.0f;
+    jugador.tiempoCooldownInteraccion = COOLDOWN_TRAS_COLOCAR_67;
+
+    if (!correcto)
     {
-        estadoJugador.tiempoStun = DURACION_STUN_67;
+        jugador.tiempoStun = DURACION_STUN_67;
     }
 
-    estadoJugador.llevaPieza = false;
-    estadoJugador.mirandoMesa = false;
-    estadoJugador.tiempoGiro = 0.0f;
-
     if (
-        colocacionCorrecta &&
+        correcto &&
         minijuego.cantidadJugadoresEquipo[equipo] == 1
     )
     {
-        ActualizarTipoPiezaModoPrueba67(
+        ActualizarRolJugadorUnico67(
             minijuego,
             equipo,
             cantidadMaxima
@@ -552,7 +477,7 @@ static void ColocarPieza67(
 
 
 //==================================================
-// DIBUJO DE NUMEROS
+// DIBUJO DE NUMEROS Y FABRICA
 //==================================================
 
 static void DibujarSegmentoNumero67(
@@ -562,23 +487,12 @@ static void DibujarSegmentoNumero67(
     Color color
 )
 {
-    float ancho = horizontal ? 0.62f : 0.13f;
-    float alto = horizontal ? 0.13f : 0.52f;
-
     DrawCube(
         posicion,
-        ancho * escala,
-        alto * escala,
+        (horizontal ? 0.62f : 0.13f) * escala,
+        (horizontal ? 0.13f : 0.52f) * escala,
         0.20f * escala,
         color
-    );
-
-    DrawCubeWires(
-        posicion,
-        ancho * escala,
-        alto * escala,
-        0.20f * escala,
-        Fade(BLACK, 0.62f)
     );
 }
 
@@ -590,11 +504,11 @@ static void DibujarNumero3D67(
     Color color
 )
 {
-    const float X_LADO = 0.31f * escala;
-    const float Y_EXTREMO = 0.55f * escala;
-    const float Y_MEDIO_LADO = 0.275f * escala;
+    const float xLado = 0.31f * escala;
+    const float yExtremo = 0.55f * escala;
+    const float yMedio = 0.275f * escala;
 
-    bool segmentos[7] = {};
+    bool segmentos[7]{};
 
     if (numero == 6)
     {
@@ -612,340 +526,226 @@ static void DibujarNumero3D67(
         segmentos[2] = true;
     }
 
-    if (segmentos[0])
-        DibujarSegmentoNumero67(
-            { centro.x, centro.y + Y_EXTREMO, centro.z },
-            true, escala, color
-        );
-
-    if (segmentos[1])
-        DibujarSegmentoNumero67(
-            { centro.x + X_LADO, centro.y + Y_MEDIO_LADO, centro.z },
-            false, escala, color
-        );
-
-    if (segmentos[2])
-        DibujarSegmentoNumero67(
-            { centro.x + X_LADO, centro.y - Y_MEDIO_LADO, centro.z },
-            false, escala, color
-        );
-
-    if (segmentos[3])
-        DibujarSegmentoNumero67(
-            { centro.x, centro.y - Y_EXTREMO, centro.z },
-            true, escala, color
-        );
-
-    if (segmentos[4])
-        DibujarSegmentoNumero67(
-            { centro.x - X_LADO, centro.y - Y_MEDIO_LADO, centro.z },
-            false, escala, color
-        );
-
-    if (segmentos[5])
-        DibujarSegmentoNumero67(
-            { centro.x - X_LADO, centro.y + Y_MEDIO_LADO, centro.z },
-            false, escala, color
-        );
-
-    if (segmentos[6])
-        DibujarSegmentoNumero67(
-            centro,
-            true, escala, color
-        );
+    if (segmentos[0]) DibujarSegmentoNumero67({centro.x, centro.y + yExtremo, centro.z}, true, escala, color);
+    if (segmentos[1]) DibujarSegmentoNumero67({centro.x + xLado, centro.y + yMedio, centro.z}, false, escala, color);
+    if (segmentos[2]) DibujarSegmentoNumero67({centro.x + xLado, centro.y - yMedio, centro.z}, false, escala, color);
+    if (segmentos[3]) DibujarSegmentoNumero67({centro.x, centro.y - yExtremo, centro.z}, true, escala, color);
+    if (segmentos[4]) DibujarSegmentoNumero67({centro.x - xLado, centro.y - yMedio, centro.z}, false, escala, color);
+    if (segmentos[5]) DibujarSegmentoNumero67({centro.x - xLado, centro.y + yMedio, centro.z}, false, escala, color);
+    if (segmentos[6]) DibujarSegmentoNumero67(centro, true, escala, color);
 }
 
 
-//==================================================
-// DIBUJO DE CINTAS Y PIEZAS
-//==================================================
-
 static void DibujarCinta67(
     float z,
-    float desplazamiento,
-    Color colorEquipo,
-    TipoPieza67 tipo
+    Color colorEquipo
 )
 {
-    float centroX =
-        X_INICIO_CINTA_67 +
-        LARGO_CINTA_67 / 2.0f;
+    float centroX = X_INICIO_CINTA_67 + LARGO_CINTA_67 / 2.0f;
 
     DrawCube(
         { centroX, 0.20f, z },
-        LARGO_CINTA_67 + 0.45f,
-        0.40f,
-        1.25f,
-        Color{ 48, 52, 60, 255 }
-    );
-
-    DrawCubeWires(
-        { centroX, 0.20f, z },
-        LARGO_CINTA_67 + 0.45f,
-        0.40f,
-        1.25f,
-        BLACK
+        LARGO_CINTA_67 + 0.40f,
+        0.42f,
+        1.22f,
+        Color{ 45, 49, 56, 255 }
     );
 
     DrawCube(
-        { centroX, 0.44f, z },
+        { centroX, 0.46f, z },
         LARGO_CINTA_67,
         0.08f,
         1.02f,
-        tipo == PIEZA_NUMERO_6
-        ? Color{ 111, 88, 68, 255 }
-        : Color{ 71, 91, 114, 255 }
+        Color{ 88, 95, 105, 255 }
     );
 
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < 12; i++)
     {
-        float avance =
-            std::fmod(
-                i * 0.58f + desplazamiento,
-                LARGO_CINTA_67
-            );
-
-        float x = X_INICIO_CINTA_67 + avance;
+        float x = X_INICIO_CINTA_67 + 0.35f + i * 0.72f;
 
         DrawCube(
-            { x, 0.50f, z },
-            0.065f,
-            0.035f,
+            { x, 0.52f, z },
+            0.06f,
+            0.03f,
             0.98f,
-            Color{ 194, 196, 201, 255 }
+            Color{ 177, 184, 192, 255 }
         );
     }
 
-    float xZonaInicio =
-        ObtenerXObjeto67(INICIO_ZONA_RECOGIDA_67);
-
-    float xZonaFin =
-        ObtenerXObjeto67(FIN_ZONA_RECOGIDA_67);
+    float xInicio = ObtenerXObjeto67(INICIO_ZONA_RECOGIDA_67);
+    float xFin = ObtenerXObjeto67(FIN_ZONA_RECOGIDA_67);
 
     DrawCube(
-        {
-            (xZonaInicio + xZonaFin) / 2.0f,
-            0.535f,
-            z
-        },
-        xZonaFin - xZonaInicio,
+        { (xInicio + xFin) / 2.0f, 0.575f, z },
+        xFin - xInicio,
         0.035f,
-        1.06f,
-        Fade(YELLOW, 0.34f)
+        1.07f,
+        Fade(YELLOW, 0.58f)
     );
 
     for (int lado = -1; lado <= 1; lado += 2)
     {
         DrawCube(
-            { centroX, 0.60f, z + lado * 0.62f },
+            { centroX, 0.65f, z + lado * 0.61f },
             LARGO_CINTA_67 + 0.45f,
-            0.16f,
+            0.17f,
             0.10f,
-            Color{ 42, 46, 53, 255 }
-        );
-    }
-
-    for (int pata = 0; pata < 4; pata++)
-    {
-        float xPata =
-            X_INICIO_CINTA_67 +
-            0.7f +
-            pata * 2.55f;
-
-        DrawCube(
-            { xPata, -0.02f, z },
-            0.18f,
-            0.52f,
-            0.84f,
-            Color{ 48, 52, 58, 255 }
+            Color{ 39, 43, 49, 255 }
         );
     }
 
     DrawCube(
-        { X_INICIO_CINTA_67 - 0.44f, 1.10f, z },
-        0.70f,
-        2.05f,
-        1.54f,
-        Color{ 58, 63, 71, 255 }
+        { X_INICIO_CINTA_67 - 0.42f, 1.1f, z },
+        0.65f,
+        2.0f,
+        1.5f,
+        Color{ 55, 60, 68, 255 }
     );
 
     DrawCube(
-        { X_INICIO_CINTA_67 - 0.05f, 1.16f, z },
-        0.08f,
-        1.28f,
-        1.12f,
-        Fade(colorEquipo, 0.72f)
+        { X_INICIO_CINTA_67 - 0.06f, 1.18f, z },
+        0.07f,
+        1.25f,
+        1.08f,
+        Fade(colorEquipo, 0.78f)
     );
 }
 
 
 static void DibujarFlujoPiezas67(
-    const EstadoJugador67& estado,
-    TipoPieza67 tipo,
-    float z
+    const EstadoEquipo67& equipo
 )
 {
-    Color color =
-        tipo == PIEZA_NUMERO_6
-        ? ORANGE
-        : SKYBLUE;
-
-    for (
-        int i = 0;
-        i < CANTIDAD_PIEZAS_VISUALES_67;
-        i++
-    )
+    for (int i = 0; i < CANTIDAD_PIEZAS_CINTA_67; i++)
     {
-        float progreso =
-            ObtenerProgresoPiezaVisual67(
-                estado,
-                tipo,
-                i
-            );
+        float progreso6 =
+            ObtenerProgresoPieza67(equipo.progresoCinta6, i);
+
+        float progreso7 =
+            ObtenerProgresoPieza67(equipo.progresoCinta7, i);
 
         DibujarNumero3D67(
-            tipo == PIEZA_NUMERO_6 ? 6 : 7,
-            {
-                ObtenerXObjeto67(progreso),
-                0.91f,
-                z
-            },
+            6,
+            { ObtenerXObjeto67(progreso6), 0.96f, Z_CINTA_6_67 },
             0.56f,
-            color
+            ORANGE
+        );
+
+        DibujarNumero3D67(
+            7,
+            { ObtenerXObjeto67(progreso7), 0.96f, Z_CINTA_7_67 },
+            0.56f,
+            SKYBLUE
         );
     }
 }
 
 
 static void DibujarMesa67(
-    EstadoMesa67 estado,
-    float tiempoCompleta,
+    const EstadoEquipo67& equipo,
     Color colorEquipo
 )
 {
-    Color colorBase =
-        tiempoCompleta > 0.0f
-        ? Color{ 72, 188, 99, 255 }
-        : Color{ 54, 57, 65, 255 };
-
+    // Mesa mas chica: la zona de colocacion deja de dominar el pasillo.
     DrawCylinder(
         { X_MESA_67, 0.12f, 0.0f },
-        1.12f,
-        1.12f,
-        0.24f,
-        32,
-        Color{ 27, 29, 34, 255 }
+        0.88f,
+        0.88f,
+        0.22f,
+        28,
+        Color{ 25, 27, 31, 255 }
     );
 
     DrawCylinder(
-        { X_MESA_67, 0.28f, 0.0f },
-        0.96f,
-        0.96f,
-        0.11f,
-        32,
-        colorBase
+        { X_MESA_67, 0.27f, 0.0f },
+        0.72f,
+        0.72f,
+        0.10f,
+        28,
+        equipo.tiempoMesaCompleta > 0.0f
+            ? Color{ 72, 188, 99, 255 }
+            : Color{ 49, 52, 58, 255 }
     );
 
     DrawCylinder(
-        { X_MESA_67, 0.37f, 0.0f },
-        0.80f,
-        0.80f,
-        0.045f,
-        32,
-        Fade(colorEquipo, 0.58f)
+        { X_MESA_67, 0.35f, 0.0f },
+        0.60f,
+        0.60f,
+        0.04f,
+        28,
+        Fade(colorEquipo, 0.55f)
     );
 
     DibujarNumero3D67(
         6,
-        { X_MESA_67 - 0.33f, 0.79f, 0.0f },
-        0.45f,
-        estado == MESA_67_VACIA
-        ? Fade(RAYWHITE, 0.25f)
-        : ORANGE
+        { X_MESA_67 - 0.26f, 0.73f, 0.0f },
+        0.37f,
+        equipo.mesa == MESA_67_VACIA
+            ? Fade(RAYWHITE, 0.25f)
+            : ORANGE
     );
 
     DibujarNumero3D67(
         7,
-        { X_MESA_67 + 0.33f, 0.79f, 0.0f },
-        0.45f,
-        estado == MESA_67_COMPLETA
-        ? SKYBLUE
-        : Fade(RAYWHITE, 0.25f)
+        { X_MESA_67 + 0.27f, 0.73f, 0.0f },
+        0.37f,
+        equipo.mesa == MESA_67_COMPLETA
+            ? SKYBLUE
+            : Fade(RAYWHITE, 0.25f)
     );
-
-    if (estado == MESA_67_COMPLETA)
-    {
-        DrawCylinder(
-            { X_MESA_67, 0.45f, 0.0f },
-            0.88f,
-            0.88f,
-            0.035f,
-            32,
-            Fade(LIME, 0.45f)
-        );
-    }
 }
 
 
-static void DibujarJugador3D67(
+static void DibujarJugador67(
     const Minijuego67& minijuego,
-    const Participante& participante,
-    const EstadoJugador67& estado,
-    float z
+    int indice,
+    const Participante& participante
 )
 {
-    // Mirando a su cinta cuando espera y a la mesa cuando lleva pieza.
-    float giroCinta =
-        estado.tipoPieza == PIEZA_NUMERO_6
-        ? 180.0f
-        : 0.0f;
+    const EstadoJugador67& estado = minijuego.estadosJugadores[indice];
+    float z = ObtenerZJugador67(minijuego, indice);
 
-    float giroMesa = 90.0f;
-    float giro = giroCinta;
-
-    if (estado.llevaPieza)
-    {
-        float progresoGiro =
-            1.0f -
-            estado.tiempoGiro / DURACION_GIRO_67;
-
-        if (progresoGiro < 0.0f) progresoGiro = 0.0f;
-        if (progresoGiro > 1.0f) progresoGiro = 1.0f;
-
-        giro =
-            giroCinta +
-            (giroMesa - giroCinta) *
-            progresoGiro;
-    }
-
-    float alturaBase =
-        estado.tiempoStun > 0.0f
-        ? 0.03f
-        : 0.16f;
-
-    Color colorModelo =
+    Color color =
         estado.tiempoStun > 0.0f
         ? Fade(RED, 0.72f)
         : participante.color;
 
+    float giro = -90.0f;
+
+    if (estado.llevaPieza)
+    {
+        float progreso = 1.0f;
+
+        if (estado.tiempoGiro > 0.0f)
+        {
+            progreso =
+                1.0f - estado.tiempoGiro / DURACION_GIRO_67;
+        }
+
+        if (progreso < 0.0f) progreso = 0.0f;
+        if (progreso > 1.0f) progreso = 1.0f;
+
+        giro = -90.0f + 180.0f * progreso;
+    }
+
     DrawCylinder(
-        { X_JUGADOR_67, 0.06f, z },
+        { X_JUGADOR_67, 0.07f, z },
         0.56f,
         0.56f,
-        0.12f,
+        0.14f,
         24,
-        Fade(participante.color, 0.56f)
+        Fade(participante.color, 0.62f)
     );
 
     if (minijuego.modeloJugadorCargado)
     {
         DrawModelEx(
             minijuego.modeloJugador,
-            { X_JUGADOR_67, alturaBase, z },
+            { X_JUGADOR_67, 0.16f, z },
             { 0.0f, 1.0f, 0.0f },
             giro,
             { 0.25f, 0.25f, 0.25f },
-            colorModelo
+            color
         );
     }
     else
@@ -955,32 +755,19 @@ static void DibujarJugador3D67(
             0.72f,
             1.55f,
             0.72f,
-            colorModelo
-        );
-
-        DrawCubeWires(
-            { X_JUGADOR_67, 0.90f, z },
-            0.72f,
-            1.55f,
-            0.72f,
-            BLACK
+            color
         );
     }
 
     if (estado.llevaPieza)
     {
-        Color colorPieza =
-            estado.tipoPieza == PIEZA_NUMERO_6
-            ? ORANGE
-            : SKYBLUE;
+        bool es6 = estado.tipoPieza == PIEZA_NUMERO_6;
 
         DibujarNumero3D67(
-            estado.tipoPieza == PIEZA_NUMERO_6
-            ? 6
-            : 7,
-            { X_JUGADOR_67, 2.16f, z },
-            0.60f,
-            colorPieza
+            es6 ? 6 : 7,
+            { X_JUGADOR_67, 2.10f, z },
+            0.52f,
+            es6 ? ORANGE : SKYBLUE
         );
     }
 }
@@ -993,110 +780,45 @@ static void DibujarFabricaEquipo67(
     Color colorEquipo = ObtenerColorEquipo67(equipo);
 
     DrawPlane(
-        { 0.0f, -0.30f, 0.0f },
-        { 19.0f, 11.0f },
+        { 0.0f, -0.31f, 0.0f },
+        { 18.0f, 10.0f },
         equipo == 0
-        ? Color{ 95, 58, 62, 255 }
-        : Color{ 51, 74, 91, 255 }
+            ? Color{ 76, 43, 47, 255 }
+            : Color{ 36, 59, 75, 255 }
     );
 
     DrawCube(
-        { 0.0f, 2.45f, -4.85f },
-        18.0f,
-        5.5f,
+        { 0.0f, 2.35f, -4.55f },
+        17.0f,
+        5.3f,
         0.25f,
-        Color{ 70, 75, 84, 255 }
+        Color{ 63, 68, 76, 255 }
     );
 
     DrawCube(
-        { 0.0f, 4.65f, -4.68f },
-        17.4f,
-        0.55f,
+        { 0.0f, 4.55f, -4.38f },
+        16.2f,
+        0.50f,
         0.10f,
-        Fade(colorEquipo, 0.86f)
+        Fade(colorEquipo, 0.82f)
     );
 
-    // Pasillo central: esta zona deja claro que los jugadores estan
-    // entre las dos cintas y no encima de ellas.
+    // Pasillo central donde trabajan ambos jugadores.
     DrawCube(
-        { -0.80f, -0.20f, 0.0f },
-        13.4f,
-        0.08f,
-        2.05f,
-        Color{ 129, 132, 139, 255 }
+        { -0.5f, -0.03f, 0.0f },
+        12.6f,
+        0.05f,
+        2.45f,
+        Fade(RAYWHITE, 0.12f)
     );
-
-    DrawCubeWires(
-        { -0.80f, -0.20f, 0.0f },
-        13.4f,
-        0.08f,
-        2.05f,
-        Fade(BLACK, 0.42f)
-    );
-
-    // Carteles de los dos carriles.
-    DrawCube(
-        { -4.95f, 3.55f, -4.55f },
-        2.1f,
-        1.25f,
-        0.08f,
-        Fade(ORANGE, 0.58f)
-    );
-
-    DrawCube(
-        { -1.95f, 3.55f, -4.55f },
-        2.1f,
-        1.25f,
-        0.08f,
-        Fade(SKYBLUE, 0.58f)
-    );
-
-    DibujarNumero3D67(
-        6,
-        { -4.95f, 3.55f, -4.40f },
-        0.75f,
-        ORANGE
-    );
-
-    DibujarNumero3D67(
-        7,
-        { -1.95f, 3.55f, -4.40f },
-        0.75f,
-        SKYBLUE
-    );
-
-    for (int i = 0; i < 4; i++)
-    {
-        DrawCube(
-            { -6.0f + i * 3.85f, 2.0f, -4.50f },
-            0.26f,
-            4.0f,
-            0.26f,
-            Color{ 51, 56, 64, 255 }
-        );
-    }
 }
 
 
-//==================================================
-// HUD DE CADA EQUIPO
-//==================================================
-
-static const char* ObtenerTextoMesa67(
-    EstadoMesa67 mesa
-)
+static const char* TextoMesa67(EstadoMesa67 mesa)
 {
-    if (mesa == MESA_67_VACIA)
-    {
-        return "MESA: FALTA EL 6";
-    }
-
-    if (mesa == MESA_67_CON_6)
-    {
-        return "MESA: FALTA EL 7";
-    }
-
-    return "MESA COMPLETA +1";
+    if (mesa == MESA_67_VACIA) return "FALTA 6";
+    if (mesa == MESA_67_CON_6) return "FALTA 7";
+    return "67 COMPLETO +1";
 }
 
 
@@ -1110,224 +832,87 @@ static void DibujarHudEquipo67(
     int ancho = minijuego.anchoVistaEquipos;
     int alto = minijuego.altoVistaEquipos;
 
-    if (ancho <= 0 || alto <= 0)
-    {
-        return;
-    }
+    DrawRectangle(12, 10, ancho - 24, 76, Fade(BLACK, 0.74f));
+    DrawRectangle(12, 10, 7, 76, ObtenerColorEquipo67(equipo));
 
-    Color colorEquipo = ObtenerColorEquipo67(equipo);
-    const EstadoEquipo67& estadoEquipo =
-        minijuego.equipos[equipo];
+    DrawText(TextFormat("EQUIPO %d", equipo + 1), 29, 17, 23, RAYWHITE);
+    DrawText(TextFormat("PUNTOS %d", minijuego.equipos[equipo].puntos), 29, 48, 18, LIME);
 
-    DrawRectangle(
-        12,
-        10,
-        ancho - 24,
-        82,
-        Fade(BLACK, 0.74f)
-    );
-
-    DrawRectangle(
-        12,
-        10,
-        8,
-        82,
-        colorEquipo
-    );
-
+    const char* tiempo = TextFormat("%.1f s", minijuego.tiempoPartida);
     DrawText(
-        TextFormat("EQUIPO %d", equipo + 1),
-        30,
-        18,
-        25,
-        RAYWHITE
-    );
-
-    DrawText(
-        TextFormat("PUNTOS %d", estadoEquipo.puntos),
-        30,
-        52,
+        tiempo,
+        ancho - MeasureText(tiempo, 21) - 22,
         19,
-        LIME
+        21,
+        minijuego.tiempoPartida <= 7.0f ? RED : SKYBLUE
     );
 
-    const char* textoTiempo =
-        TextFormat("%.1f s", minijuego.tiempoPartida);
-
+    const char* mesa = TextoMesa67(minijuego.equipos[equipo].mesa);
     DrawText(
-        textoTiempo,
-        ancho - MeasureText(textoTiempo, 22) - 24,
-        22,
-        22,
-        minijuego.tiempoPartida <= 7.0f
-        ? RED
-        : SKYBLUE
-    );
-
-    const char* textoMesa =
-        ObtenerTextoMesa67(estadoEquipo.mesa);
-
-    DrawText(
-        textoMesa,
-        ancho - MeasureText(textoMesa, 14) - 24,
-        56,
-        14,
+        mesa,
+        ancho - MeasureText(mesa, 15) - 22,
+        50,
+        15,
         LIGHTGRAY
     );
 
-    int indiceRol6 =
-        BuscarJugadorRol67(
-            minijuego,
-            equipo,
-            PIEZA_NUMERO_6,
-            cantidadMaxima
-        );
+    int y = 106;
 
-    int indiceRol7 =
-        BuscarJugadorRol67(
-            minijuego,
-            equipo,
-            PIEZA_NUMERO_7,
-            cantidadMaxima
-        );
-
-    int indiceUnico =
-        BuscarJugadorUnicoEquipo67(
-            minijuego,
-            equipo,
-            cantidadMaxima
-        );
-
-    int anchoTarjeta = ancho < 640 ? 185 : 215;
-    int xTarjeta = ancho - anchoTarjeta - 18;
-
-    auto DibujarTarjetaRol =
-        [&](int indiceJugador, int numero, int y)
-        {
-            if (indiceJugador < 0)
-            {
-                return;
-            }
-
-            const EstadoJugador67& estado =
-                minijuego.estadosJugadores[indiceJugador];
-
-            DrawRectangle(
-                xTarjeta,
-                y,
-                anchoTarjeta,
-                62,
-                Fade(BLACK, 0.80f)
-            );
-
-            DrawRectangleLinesEx(
-                Rectangle{
-                    (float)xTarjeta,
-                    (float)y,
-                    (float)anchoTarjeta,
-                    62.0f
-                },
-                2.0f,
-                participantes[indiceJugador].color
-            );
-
-            DrawText(
-                TextFormat(
-                    "J%d  ->  %d",
-                    participantes[indiceJugador].numeroJugador,
-                    numero
-                ),
-                xTarjeta + 9,
-                y + 7,
-                19,
-                numero == 6 ? ORANGE : SKYBLUE
-            );
-
-            const char* accion =
-                estado.tiempoStun > 0.0f
-                ? "FALLO"
-                : (
-                    estado.llevaPieza
-                    ? (
-                        estado.mirandoMesa
-                        ? "COLOCAR"
-                        : "GIRANDO"
-                    )
-                    : "AGARRAR"
-                );
-
-            DrawText(
-                TextFormat(
-                    "[%s] %s",
-                    ObtenerTextoBotonPrincipal(
-                        participantes[indiceJugador]
-                    ),
-                    accion
-                ),
-                xTarjeta + 9,
-                y + 36,
-                14,
-                estado.tiempoStun > 0.0f
-                ? RED
-                : RAYWHITE
-            );
-        };
-
-    if (minijuego.cantidadJugadoresEquipo[equipo] == 1)
+    for (int i = 0; i < cantidadMaxima; i++)
     {
-        if (indiceUnico >= 0)
+        if (
+            minijuego.equipoPorJugador[i] != equipo ||
+            !participantes[i].activo
+        )
         {
-            int numeroActual =
-                minijuego.estadosJugadores[indiceUnico].tipoPieza ==
-                PIEZA_NUMERO_6
-                ? 6
-                : 7;
-
-            DibujarTarjetaRol(
-                indiceUnico,
-                numeroActual,
-                alto / 2 - 31
-            );
+            continue;
         }
-    }
-    else
-    {
-        DibujarTarjetaRol(
-            indiceRol6,
-            6,
-            alto / 2 - 150
+
+        const EstadoJugador67& jugador = minijuego.estadosJugadores[i];
+        int numero = jugador.tipoPieza == PIEZA_NUMERO_6 ? 6 : 7;
+
+        const char* accion =
+            jugador.tiempoStun > 0.0f
+            ? "FALLO"
+            : (
+                jugador.tiempoCooldownInteraccion > 0.0f
+                ? "ESPERA"
+                : (jugador.llevaPieza ? "COLOCAR" : "AGARRAR")
+            );
+
+        DrawText(
+            TextFormat(
+                "J%d %s  %d  [%s] %s",
+                participantes[i].numeroJugador,
+                participantes[i].esBot ? "BOT" : "",
+                numero,
+                ObtenerTextoBotonPrincipal(participantes[i]),
+                accion
+            ),
+            25,
+            y,
+            15,
+            jugador.tiempoStun > 0.0f
+                ? RED
+                : participantes[i].color
         );
 
-        DibujarTarjetaRol(
-            indiceRol7,
-            7,
-            alto / 2 + 88
-        );
+        y += 24;
     }
 
-    if (estadoEquipo.tiempoFeedback > 0.0f)
+    if (minijuego.equipos[equipo].tiempoFeedback > 0.0f)
     {
-        const char* textoFeedback =
-            estadoEquipo.ultimoAcierto
+        const char* texto =
+            minijuego.equipos[equipo].ultimoAcierto
             ? "BIEN!"
             : "ORDEN INCORRECTO";
 
-        DrawRectangle(
-            18,
-            alto / 2 - 28,
-            MeasureText(textoFeedback, 20) + 24,
-            42,
-            Fade(BLACK, 0.78f)
-        );
-
         DrawText(
-            textoFeedback,
-            30,
-            alto / 2 - 18,
-            20,
-            estadoEquipo.ultimoAcierto
-            ? LIME
-            : RED
+            texto,
+            25,
+            alto - 85,
+            22,
+            minijuego.equipos[equipo].ultimoAcierto ? LIME : RED
         );
     }
 }
@@ -1340,135 +925,33 @@ static void DibujarVistaEquipo67(
     const Participante participantes[]
 )
 {
-    BeginTextureMode(
-        minijuego.vistasEquipo[equipo]
-    );
-
-    Color colorEquipo = ObtenerColorEquipo67(equipo);
+    BeginTextureMode(minijuego.vistasEquipo[equipo]);
 
     ClearBackground(
         equipo == 0
-        ? Color{ 98, 38, 44, 255 }
-        : Color{ 27, 73, 102, 255 }
+            ? Color{ 92, 28, 34, 255 }
+            : Color{ 20, 70, 100, 255 }
     );
 
-    BeginMode3D(
-        minijuego.camarasEquipo[equipo]
-    );
+    BeginMode3D(minijuego.camarasEquipo[equipo]);
 
     DibujarFabricaEquipo67(equipo);
-
-    // Las dos cintas siempre existen y los objetos estan desfasados.
-    DibujarCinta67(
-        Z_CINTA_6_67,
-        minijuego.desplazamientoVisualCintas,
-        colorEquipo,
-        PIEZA_NUMERO_6
-    );
-
-    DibujarCinta67(
-        Z_CINTA_7_67,
-        minijuego.desplazamientoVisualCintas + 0.31f,
-        colorEquipo,
-        PIEZA_NUMERO_7
-    );
-
-    int indice6 =
-        BuscarJugadorRol67(
-            minijuego,
-            equipo,
-            PIEZA_NUMERO_6,
-            cantidadMaxima
-        );
-
-    int indice7 =
-        BuscarJugadorRol67(
-            minijuego,
-            equipo,
-            PIEZA_NUMERO_7,
-            cantidadMaxima
-        );
-
-    int indiceUnico =
-        BuscarJugadorUnicoEquipo67(
-            minijuego,
-            equipo,
-            cantidadMaxima
-        );
-
-    if (minijuego.cantidadJugadoresEquipo[equipo] == 1)
-    {
-        if (indiceUnico >= 0)
-        {
-            const EstadoJugador67& estado =
-                minijuego.estadosJugadores[indiceUnico];
-
-            // En 1v1 se muestran ambos flujos; el rol del jugador cambia
-            // segun lo que necesita la mesa.
-            DibujarFlujoPiezas67(
-                estado,
-                PIEZA_NUMERO_6,
-                Z_CINTA_6_67
-            );
-
-            DibujarFlujoPiezas67(
-                estado,
-                PIEZA_NUMERO_7,
-                Z_CINTA_7_67
-            );
-        }
-    }
-    else
-    {
-        if (indice6 >= 0)
-        {
-            DibujarFlujoPiezas67(
-                minijuego.estadosJugadores[indice6],
-                PIEZA_NUMERO_6,
-                Z_CINTA_6_67
-            );
-        }
-
-        if (indice7 >= 0)
-        {
-            DibujarFlujoPiezas67(
-                minijuego.estadosJugadores[indice7],
-                PIEZA_NUMERO_7,
-                Z_CINTA_7_67
-            );
-        }
-    }
+    DibujarCinta67(Z_CINTA_6_67, ObtenerColorEquipo67(equipo));
+    DibujarCinta67(Z_CINTA_7_67, ObtenerColorEquipo67(equipo));
+    DibujarFlujoPiezas67(minijuego.equipos[equipo]);
+    DibujarMesa67(minijuego.equipos[equipo], ObtenerColorEquipo67(equipo));
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
         if (
-            minijuego.equipoPorJugador[i] != equipo ||
-            !participantes[i].activo ||
-            !participantes[i].conectado
+            minijuego.equipoPorJugador[i] == equipo &&
+            participantes[i].activo &&
+            participantes[i].conectado
         )
         {
-            continue;
+            DibujarJugador67(minijuego, i, participantes[i]);
         }
-
-        float zJugador =
-            ObtenerZJugadorEquipo67(
-                minijuego,
-                i
-            );
-
-        DibujarJugador3D67(
-            minijuego,
-            participantes[i],
-            minijuego.estadosJugadores[i],
-            zJugador
-        );
     }
-
-    DibujarMesa67(
-        minijuego.equipos[equipo].mesa,
-        minijuego.equipos[equipo].tiempoMesaCompleta,
-        colorEquipo
-    );
 
     EndMode3D();
 
@@ -1484,14 +967,14 @@ static void DibujarVistaEquipo67(
 
 
 //==================================================
-// INICIALIZAR / REINICIAR
+// INICIALIZACION
 //==================================================
 
 void Minijuego67::Inicializar()
 {
     tiempoPreparacion = DURACION_PREPARACION_67;
     tiempoPartida = DURACION_PARTIDA_67;
-    velocidadCintas = 0.22f;
+    velocidadCintas = 0.23f;
     desplazamientoVisualCintas = 0.0f;
     jugadoresEnPartida = 0;
     mascaraJugadoresEnPartida = 0;
@@ -1502,16 +985,10 @@ void Minijuego67::Inicializar()
 
     for (int equipo = 0; equipo < 2; equipo++)
     {
-        camarasEquipo[equipo].position =
-            { 8.4f, 10.6f, 12.8f };
-
-        camarasEquipo[equipo].target =
-            { -1.15f, 0.60f, 0.0f };
-
-        camarasEquipo[equipo].up =
-            { 0.0f, 1.0f, 0.0f };
-
-        camarasEquipo[equipo].fovy = 12.4f;
+        camarasEquipo[equipo].position = { 7.8f, 10.7f, 12.4f };
+        camarasEquipo[equipo].target = { -1.0f, 0.55f, 0.0f };
+        camarasEquipo[equipo].up = { 0.0f, 1.0f, 0.0f };
+        camarasEquipo[equipo].fovy = 12.2f;
         camarasEquipo[equipo].projection = CAMERA_ORTHOGRAPHIC;
     }
 
@@ -1529,7 +1006,6 @@ void Minijuego67::Inicializar()
             "No se encontro el modelo para Fabrica 67: %s",
             rutaModeloJugador
         );
-
         return;
     }
 
@@ -1538,16 +1014,10 @@ void Minijuego67::Inicializar()
 
     if (!modeloJugadorCargado)
     {
-        TraceLog(
-            LOG_WARNING,
-            "No se pudo cargar el modelo para Fabrica 67"
-        );
-
         return;
     }
 
-    modeloJugador.transform =
-        MatrixRotateX(90.0f * DEG2RAD);
+    modeloJugador.transform = MatrixRotateX(90.0f * DEG2RAD);
 
     animacionesJugador =
         LoadModelAnimations(
@@ -1559,8 +1029,7 @@ void Minijuego67::Inicializar()
 
     for (
         int i = 0;
-        animacionesJugador != nullptr &&
-        i < cantidadAnimacionesJugador;
+        animacionesJugador != nullptr && i < cantidadAnimacionesJugador;
         i++
     )
     {
@@ -1587,8 +1056,7 @@ void Minijuego67::Inicializar()
             modeloJugador,
             animacionesJugador[indiceAnimacionIdle]
         ) &&
-        animacionesJugador[indiceAnimacionIdle]
-            .keyframeCount > 0;
+        animacionesJugador[indiceAnimacionIdle].keyframeCount > 0;
 }
 
 
@@ -1606,99 +1074,67 @@ void Minijuego67::PrepararEquipos(
     cantidadJugadoresEquipo[0] = 0;
     cantidadJugadoresEquipo[1] = 0;
 
-    int cantidadActivos =
-        ContarParticipantesActivos67(
-            participantes,
-            cantidadMaxima
-        );
-
-    int cantidadDisponibles =
-        ContarParticipantesDisponibles67(
-            participantes,
-            cantidadMaxima
-        );
+    int activos = ContarParticipantesActivos67(participantes, cantidadMaxima);
+    int disponibles = ContarParticipantesDisponibles67(participantes, cantidadMaxima);
 
     partidaValida =
-        cantidadActivos == cantidadDisponibles &&
-        (
-            cantidadActivos == 2 ||
-            cantidadActivos == 4
-        );
+        activos == disponibles &&
+        (activos == 2 || activos == 4);
 
-    jugadoresEnPartida = cantidadDisponibles;
+    jugadoresEnPartida = disponibles;
     mascaraJugadoresEnPartida =
-        CrearMascaraParticipantes67(
-            participantes,
-            cantidadMaxima
-        );
+        CrearMascaraParticipantes67(participantes, cantidadMaxima);
 
-    resultado.cantidadEquipos =
-        partidaValida
-        ? 2
-        : 0;
+    resultado.cantidadEquipos = partidaValida ? 2 : 0;
 
     if (!partidaValida)
     {
-        estadoPartida =
-            FABRICA_67_ESPERANDO_JUGADORES;
-
+        estadoPartida = FABRICA_67_ESPERANDO_JUGADORES;
         return;
     }
 
-    int indicesActivos[MAX_PARTICIPANTES]{};
+    int indices[MAX_PARTICIPANTES]{};
     int cantidadIndices = 0;
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
-        if (
-            participantes[i].activo &&
-            participantes[i].conectado &&
-            cantidadIndices < MAX_PARTICIPANTES
-        )
+        if (participantes[i].activo && participantes[i].conectado)
         {
-            indicesActivos[cantidadIndices] = i;
-            cantidadIndices++;
+            indices[cantidadIndices++] = i;
         }
     }
 
     for (int i = cantidadIndices - 1; i > 0; i--)
     {
-        int otroIndice = GetRandomValue(0, i);
-
-        int temporal = indicesActivos[i];
-        indicesActivos[i] = indicesActivos[otroIndice];
-        indicesActivos[otroIndice] = temporal;
+        int otro = GetRandomValue(0, i);
+        int temporal = indices[i];
+        indices[i] = indices[otro];
+        indices[otro] = temporal;
     }
 
-    if (cantidadActivos == 4)
+    if (activos == 4)
     {
         for (int orden = 0; orden < 4; orden++)
         {
-            int indiceJugador = indicesActivos[orden];
+            int indice = indices[orden];
             int equipo = orden < 2 ? 0 : 1;
             int ordenEquipo = orden % 2;
 
-            equipoPorJugador[indiceJugador] = equipo;
-            ordenEnEquipoPorJugador[indiceJugador] = ordenEquipo;
+            equipoPorJugador[indice] = equipo;
+            ordenEnEquipoPorJugador[indice] = ordenEquipo;
             cantidadJugadoresEquipo[equipo]++;
-
-            resultado.participantes[indiceJugador]
-                .numeroEquipo = equipo;
+            resultado.participantes[indice].numeroEquipo = equipo;
         }
     }
     else
     {
         for (int orden = 0; orden < 2; orden++)
         {
-            int indiceJugador = indicesActivos[orden];
-            int equipo = orden;
-
-            equipoPorJugador[indiceJugador] = equipo;
-            ordenEnEquipoPorJugador[indiceJugador] = 0;
-            cantidadJugadoresEquipo[equipo] = 1;
-
-            resultado.participantes[indiceJugador]
-                .numeroEquipo = equipo;
+            int indice = indices[orden];
+            equipoPorJugador[indice] = orden;
+            ordenEnEquipoPorJugador[indice] = 0;
+            cantidadJugadoresEquipo[orden] = 1;
+            resultado.participantes[indice].numeroEquipo = orden;
         }
     }
 
@@ -1719,8 +1155,7 @@ void Minijuego67::Reiniciar(
 
     tiempoPreparacion = DURACION_PREPARACION_67;
     tiempoPartida = DURACION_PARTIDA_67;
-    velocidadCintas = 0.22f;
-    desplazamientoVisualCintas = 0.0f;
+    velocidadCintas = 0.23f;
     fotogramaAnimacionIdle = 0.0f;
     equipoGanador = -1;
     empate = false;
@@ -1728,24 +1163,21 @@ void Minijuego67::Reiniciar(
     for (int equipo = 0; equipo < 2; equipo++)
     {
         equipos[equipo] = {};
+        equipos[equipo].progresoCinta6 =
+            equipo == 0 ? 0.02f : 0.11f;
+        equipos[equipo].progresoCinta7 =
+            NormalizarProgreso67(
+                equipos[equipo].progresoCinta6 +
+                DESFASE_CINTA_7_67
+            );
     }
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
         estadosJugadores[i] = {};
-
-        // Cada jugador parte en una fase distinta. Ademas el carril 7
-        // suma su propio desfase, por lo que 6 y 7 nunca quedan alineados.
-        estadosJugadores[i].progresoObjeto =
-            NormalizarProgreso67(
-                0.037f * (float)i
-            );
     }
 
-    PrepararEquipos(
-        participantes,
-        cantidadMaxima
-    );
+    PrepararEquipos(participantes, cantidadMaxima);
 
     if (!partidaValida)
     {
@@ -1763,8 +1195,7 @@ void Minijuego67::Reiniciar(
 
         if (cantidadJugadoresEquipo[equipo] == 1)
         {
-            estadosJugadores[i].tipoPieza =
-                PIEZA_NUMERO_6;
+            estadosJugadores[i].tipoPieza = PIEZA_NUMERO_6;
         }
         else
         {
@@ -1789,53 +1220,29 @@ void Minijuego67::Actualizar(
 {
     AsegurarVistasEquipo67(*this);
 
-    desplazamientoVisualCintas +=
-        velocidadCintas * 9.0f * deltaTime;
-
-    if (desplazamientoVisualCintas >= LARGO_CINTA_67)
-    {
-        desplazamientoVisualCintas =
-            std::fmod(
-                desplazamientoVisualCintas,
-                LARGO_CINTA_67
-            );
-    }
-
     if (animacionIdleActiva)
     {
         fotogramaAnimacionIdle += 30.0f * deltaTime;
 
         int cantidadFotogramas =
-            animacionesJugador[indiceAnimacionIdle]
-                .keyframeCount;
+            animacionesJugador[indiceAnimacionIdle].keyframeCount;
 
         if (cantidadFotogramas > 0)
         {
-            int fotogramaActual =
-                (int)fotogramaAnimacionIdle %
-                cantidadFotogramas;
-
             UpdateModelAnimation(
                 modeloJugador,
                 animacionesJugador[indiceAnimacionIdle],
-                fotogramaActual
+                (int)fotogramaAnimacionIdle % cantidadFotogramas
             );
         }
     }
 
     int mascaraActual =
-        CrearMascaraParticipantes67(
-            participantes,
-            cantidadMaxima
-        );
+        CrearMascaraParticipantes67(participantes, cantidadMaxima);
 
     if (mascaraActual != mascaraJugadoresEnPartida)
     {
-        Reiniciar(
-            participantes,
-            cantidadMaxima
-        );
-
+        Reiniciar(participantes, cantidadMaxima);
         return;
     }
 
@@ -1868,35 +1275,36 @@ void Minijuego67::Actualizar(
     {
         tiempoPartida = 0.0f;
         estadoPartida = FABRICA_67_FINALIZADO;
-
-        FinalizarResultado67(
-            *this,
-            cantidadMaxima
-        );
-
+        FinalizarResultado67(*this, cantidadMaxima);
         return;
     }
 
-    float porcentajeTiempo =
-        1.0f -
-        tiempoPartida / DURACION_PARTIDA_67;
+    float progresoPartida =
+        1.0f - tiempoPartida / DURACION_PARTIDA_67;
 
-    velocidadCintas =
-        0.22f + porcentajeTiempo * 0.22f;
+    velocidadCintas = 0.23f + progresoPartida * 0.16f;
 
     for (int equipo = 0; equipo < 2; equipo++)
     {
-        EstadoEquipo67& estadoEquipo =
-            equipos[equipo];
+        EstadoEquipo67& estadoEquipo = equipos[equipo];
+
+        estadoEquipo.progresoCinta6 =
+            NormalizarProgreso67(
+                estadoEquipo.progresoCinta6 +
+                velocidadCintas * deltaTime
+            );
+
+        estadoEquipo.progresoCinta7 =
+            NormalizarProgreso67(
+                estadoEquipo.progresoCinta7 +
+                velocidadCintas * deltaTime
+            );
 
         if (estadoEquipo.tiempoFeedback > 0.0f)
         {
             estadoEquipo.tiempoFeedback -= deltaTime;
-
             if (estadoEquipo.tiempoFeedback < 0.0f)
-            {
                 estadoEquipo.tiempoFeedback = 0.0f;
-            }
         }
 
         if (estadoEquipo.tiempoMesaCompleta > 0.0f)
@@ -1907,20 +1315,17 @@ void Minijuego67::Actualizar(
             {
                 estadoEquipo.tiempoMesaCompleta = 0.0f;
                 estadoEquipo.mesa = MESA_67_VACIA;
-
-                ActualizarTipoPiezaModoPrueba67(
-                    *this,
-                    equipo,
-                    cantidadMaxima
-                );
+                ActualizarRolJugadorUnico67(*this, equipo, cantidadMaxima);
             }
         }
     }
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
+        int equipo = equipoPorJugador[i];
+
         if (
-            equipoPorJugador[i] < 0 ||
+            equipo < 0 ||
             !participantes[i].activo ||
             !participantes[i].conectado
         )
@@ -1928,95 +1333,74 @@ void Minijuego67::Actualizar(
             continue;
         }
 
-        EstadoJugador67& estado =
-            estadosJugadores[i];
+        EstadoJugador67& jugador = estadosJugadores[i];
 
-        // La cinta nunca se detiene cuando alguien toma una pieza.
-        // Hay una secuencia continua de varios 6/7 pasando.
-        estado.progresoObjeto =
-            NormalizarProgreso67(
-                estado.progresoObjeto +
-                velocidadCintas * deltaTime
-            );
-
-        if (estado.tiempoStun > 0.0f)
+        if (jugador.tiempoStun > 0.0f)
         {
-            estado.tiempoStun -= deltaTime;
+            jugador.tiempoStun -= deltaTime;
+            if (jugador.tiempoStun < 0.0f) jugador.tiempoStun = 0.0f;
+        }
 
-            if (estado.tiempoStun < 0.0f)
+        if (jugador.tiempoCooldownInteraccion > 0.0f)
+        {
+            jugador.tiempoCooldownInteraccion -= deltaTime;
+            if (jugador.tiempoCooldownInteraccion < 0.0f)
+                jugador.tiempoCooldownInteraccion = 0.0f;
+        }
+
+        if (jugador.llevaPieza && jugador.tiempoGiro > 0.0f)
+        {
+            jugador.tiempoGiro -= deltaTime;
+
+            if (jugador.tiempoGiro <= 0.0f)
             {
-                estado.tiempoStun = 0.0f;
+                jugador.tiempoGiro = 0.0f;
+                jugador.mirandoMesa = true;
             }
         }
 
         if (
-            estado.llevaPieza &&
-            estado.tiempoGiro > 0.0f
+            jugador.tiempoStun > 0.0f ||
+            jugador.tiempoCooldownInteraccion > 0.0f
         )
-        {
-            estado.tiempoGiro -= deltaTime;
-
-            if (estado.tiempoGiro <= 0.0f)
-            {
-                estado.tiempoGiro = 0.0f;
-                estado.mirandoMesa = true;
-            }
-        }
-
-        if (estado.tiempoStun > 0.0f)
         {
             continue;
         }
 
         InputMinijuegoParticipante entrada =
-            LeerInputMinijuegoParticipante(
-                participantes[i]
-            );
+            LeerInputMinijuegoParticipante(participantes[i]);
 
         if (!entrada.saltar)
         {
             continue;
         }
 
-        if (estado.llevaPieza)
+        if (jugador.llevaPieza)
         {
-            if (estado.mirandoMesa)
+            if (jugador.mirandoMesa)
             {
-                ColocarPieza67(
-                    *this,
-                    i,
-                    cantidadMaxima
-                );
+                ColocarPieza67(*this, i, cantidadMaxima);
             }
 
             continue;
         }
 
-        bool piezaEnLaMano =
+        bool alAlcance =
             HayPiezaAlAlcance67(
-                estado,
-                estado.tipoPieza
+                equipos[equipo],
+                jugador.tipoPieza
             );
 
-        if (piezaEnLaMano)
+        if (alAlcance)
         {
-            estado.llevaPieza = true;
-            estado.mirandoMesa = false;
-            estado.tiempoGiro = DURACION_GIRO_67;
-
-            // Pequenio corrimiento para evitar volver a capturar el mismo
-            // elemento del flujo inmediatamente despues de colocarlo.
-            estado.progresoObjeto =
-                NormalizarProgreso67(
-                    estado.progresoObjeto +
-                    0.035f
-                );
+            jugador.llevaPieza = true;
+            jugador.mirandoMesa = false;
+            jugador.tiempoGiro = DURACION_GIRO_67;
+            jugador.tiempoCooldownInteraccion = COOLDOWN_TRAS_AGARRAR_67;
         }
         else
         {
-            int equipo = equipoPorJugador[i];
-
-            estado.tiempoStun = 0.26f;
+            jugador.tiempoStun = 0.22f;
             equipos[equipo].ultimoAcierto = false;
             equipos[equipo].tiempoFeedback = 0.34f;
         }
@@ -2037,18 +1421,14 @@ void Minijuego67::Dibujar(
 
     if (!vistasEquipoCargadas)
     {
-        const char* texto =
-            "NO SE PUDO CREAR LA PANTALLA DIVIDIDA";
-
+        const char* texto = "NO SE PUDO CREAR LA PANTALLA DIVIDIDA";
         DrawText(
             texto,
-            GetScreenWidth() / 2 -
-                MeasureText(texto, 26) / 2,
+            GetScreenWidth() / 2 - MeasureText(texto, 26) / 2,
             GetScreenHeight() / 2 - 13,
             26,
             RED
         );
-
         return;
     }
 
@@ -2062,9 +1442,9 @@ void Minijuego67::Dibujar(
         );
     }
 
-    int anchoPantalla = GetScreenWidth();
-    int altoPantalla = GetScreenHeight();
-    int anchoMitad = anchoPantalla / 2;
+    int ancho = GetScreenWidth();
+    int alto = GetScreenHeight();
+    int mitad = ancho / 2;
 
     Rectangle origen =
     {
@@ -2074,26 +1454,10 @@ void Minijuego67::Dibujar(
         -(float)altoVistaEquipos
     };
 
-    Rectangle destinoIzquierdo =
-    {
-        0.0f,
-        0.0f,
-        (float)anchoMitad,
-        (float)altoPantalla
-    };
-
-    Rectangle destinoDerecho =
-    {
-        (float)anchoMitad,
-        0.0f,
-        (float)(anchoPantalla - anchoMitad),
-        (float)altoPantalla
-    };
-
     DrawTexturePro(
         vistasEquipo[0].texture,
         origen,
-        destinoIzquierdo,
+        { 0.0f, 0.0f, (float)mitad, (float)alto },
         { 0.0f, 0.0f },
         0.0f,
         WHITE
@@ -2102,187 +1466,106 @@ void Minijuego67::Dibujar(
     DrawTexturePro(
         vistasEquipo[1].texture,
         origen,
-        destinoDerecho,
+        { (float)mitad, 0.0f, (float)(ancho - mitad), (float)alto },
         { 0.0f, 0.0f },
         0.0f,
         WHITE
     );
 
-    DrawRectangle(
-        anchoMitad - 3,
-        0,
-        6,
-        altoPantalla,
-        BLACK
-    );
-
-    DrawRectangle(
-        anchoMitad - 44,
-        altoPantalla / 2 - 24,
-        88,
-        48,
-        Fade(BLACK, 0.90f)
-    );
-
-    const char* textoVersus =
-        jugadoresEnPartida == 4
-        ? "VS"
-        : "1V1";
-
-    DrawText(
-        textoVersus,
-        anchoMitad -
-            MeasureText(textoVersus, 22) / 2,
-        altoPantalla / 2 - 11,
-        22,
-        RAYWHITE
-    );
+    DrawRectangle(mitad - 3, 0, 6, alto, BLACK);
 
     if (estadoPartida == FABRICA_67_ESPERANDO_JUGADORES)
     {
         DrawRectangle(
-            anchoPantalla / 2 - 330,
-            altoPantalla / 2 - 68,
+            ancho / 2 - 330,
+            alto / 2 - 70,
             660,
-            136,
+            140,
             Fade(BLACK, 0.91f)
         );
 
-        const char* titulo =
-            "FABRICA 67 - EQUIPOS";
-
-        const char* detalle =
-            "SE NECESITAN 4 JUGADORES PARA 2 VS 2";
-
-        const char* detallePrueba =
-            "CON 2 JUGADORES SE ACTIVA EL MODO DE PRUEBA 1 VS 1";
-
         DrawText(
-            titulo,
-            anchoPantalla / 2 -
-                MeasureText(titulo, 30) / 2,
-            altoPantalla / 2 - 48,
+            "FABRICA 67 - EQUIPOS",
+            ancho / 2 - MeasureText("FABRICA 67 - EQUIPOS", 30) / 2,
+            alto / 2 - 48,
             30,
             ORANGE
         );
 
         DrawText(
-            detalle,
-            anchoPantalla / 2 -
-                MeasureText(detalle, 19) / 2,
-            altoPantalla / 2 - 2,
-            19,
+            "SE NECESITAN 4 JUGADORES PARA 2 VS 2",
+            ancho / 2 - MeasureText("SE NECESITAN 4 JUGADORES PARA 2 VS 2", 18) / 2,
+            alto / 2,
+            18,
             RAYWHITE
         );
 
         DrawText(
-            detallePrueba,
-            anchoPantalla / 2 -
-                MeasureText(detallePrueba, 16) / 2,
-            altoPantalla / 2 + 30,
+            "CON 2 JUGADORES: MODO DE PRUEBA 1 VS 1",
+            ancho / 2 - MeasureText("CON 2 JUGADORES: MODO DE PRUEBA 1 VS 1", 16) / 2,
+            alto / 2 + 32,
             16,
             LIGHTGRAY
         );
-
         return;
     }
 
     if (estadoPartida == FABRICA_67_PREPARANDO)
     {
-        int numeroCuenta =
-            (int)std::ceil(tiempoPreparacion);
+        int numero = (int)std::ceil(tiempoPreparacion);
+        if (numero < 1) numero = 1;
 
-        if (numeroCuenta < 1)
-        {
-            numeroCuenta = 1;
-        }
-
-        const char* texto =
-            TextFormat("%d", numeroCuenta);
-
-        DrawCircle(
-            anchoPantalla / 2,
-            altoPantalla / 2,
-            58.0f,
-            Fade(BLACK, 0.86f)
-        );
-
+        const char* texto = TextFormat("%d", numero);
+        DrawCircle(ancho / 2, alto / 2, 58.0f, Fade(BLACK, 0.86f));
         DrawText(
             texto,
-            anchoPantalla / 2 -
-                MeasureText(texto, 58) / 2,
-            altoPantalla / 2 - 30,
+            ancho / 2 - MeasureText(texto, 58) / 2,
+            alto / 2 - 30,
             58,
             YELLOW
         );
-
         return;
     }
 
     if (estadoPartida == FABRICA_67_FINALIZADO)
     {
         DrawRectangle(
-            anchoPantalla / 2 - 330,
-            altoPantalla / 2 - 78,
+            ancho / 2 - 330,
+            alto / 2 - 78,
             660,
             156,
             Fade(BLACK, 0.92f)
         );
 
-        const char* tituloFinal = nullptr;
-        Color colorTitulo = RAYWHITE;
-
-        if (empate)
-        {
-            tituloFinal = "EMPATE";
-            colorTitulo = YELLOW;
-        }
-        else
-        {
-            tituloFinal =
-                TextFormat(
-                    "GANA EL EQUIPO %d",
-                    equipoGanador + 1
-                );
-
-            colorTitulo =
-                ObtenerColorEquipo67(equipoGanador);
-        }
+        const char* titulo =
+            empate
+            ? "EMPATE"
+            : TextFormat("GANA EL EQUIPO %d", equipoGanador + 1);
 
         DrawText(
-            tituloFinal,
-            anchoPantalla / 2 -
-                MeasureText(tituloFinal, 34) / 2,
-            altoPantalla / 2 - 52,
+            titulo,
+            ancho / 2 - MeasureText(titulo, 34) / 2,
+            alto / 2 - 52,
             34,
-            colorTitulo
+            empate ? YELLOW : ObtenerColorEquipo67(equipoGanador)
         );
 
         const char* marcador =
-            TextFormat(
-                "%d  -  %d",
-                equipos[0].puntos,
-                equipos[1].puntos
-            );
+            TextFormat("%d  -  %d", equipos[0].puntos, equipos[1].puntos);
 
         DrawText(
             marcador,
-            anchoPantalla / 2 -
-                MeasureText(marcador, 30) / 2,
-            altoPantalla / 2 + 4,
+            ancho / 2 - MeasureText(marcador, 30) / 2,
+            alto / 2 + 4,
             30,
             RAYWHITE
         );
 
         DrawText(
-            "R PARA REINICIAR EN ZONA DE PRUEBAS",
-            anchoPantalla / 2 -
-                MeasureText(
-                    "R PARA REINICIAR EN ZONA DE PRUEBAS",
-                    16
-                ) / 2,
-            altoPantalla / 2 + 48,
-            16,
+            "R PARA REINICIAR",
+            ancho / 2 - MeasureText("R PARA REINICIAR", 17) / 2,
+            alto / 2 + 49,
+            17,
             LIGHTGRAY
         );
     }
@@ -2294,10 +1577,6 @@ const ResultadoMinijuego& Minijuego67::ObtenerResultado() const
     return resultado;
 }
 
-
-//==================================================
-// DESCARGAR
-//==================================================
 
 void Minijuego67::Descargar()
 {
@@ -2319,7 +1598,6 @@ void Minijuego67::Descargar()
     if (modeloJugadorCargado)
     {
         UnloadModel(modeloJugador);
-
         modeloJugador = {};
         modeloJugadorCargado = false;
     }
