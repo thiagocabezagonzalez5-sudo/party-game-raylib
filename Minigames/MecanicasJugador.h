@@ -60,55 +60,109 @@ inline void AcompanharPlataformaDescendente(
         return;
     }
 
-    const float mitadX = jugador.tamano.x / 2.0f;
     const float mitadY = jugador.tamano.y / 2.0f;
-    const float mitadZ = jugador.tamano.z / 2.0f;
     const float piesJugador = jugador.posicion.y - mitadY;
+
+    // No elegimos la primera plataforma que solape el hitbox completo.
+    // En Color Seguro los rectangulos internos de dos hexagonos vecinos
+    // pueden superponerse. Cuando el jugador queda justo en la union,
+    // eso hacia que un bloque que caia lo "adoptara" aunque realmente
+    // estuviera mas apoyado en el vecino y su Y saltaba bruscamente.
+    //
+    // Usamos el centro XZ del jugador y elegimos el soporte horizontal
+    // mas cercano. Si dos soportes quedan practicamente empatados, damos
+    // prioridad al que NO cae. Asi una union entre plataforma segura y
+    // plataforma descendente nunca arrastra al jugador por error.
+    int indiceSoporte = -1;
+    float mejorDistancia = 1000000.0f;
 
     for (int i = 0; i < cantidadBloques; i++)
     {
         const BloquePrueba& bloque = bloques[i];
 
-        if (
-            !bloque.activaColision ||
-            !bloque.cayendo ||
-            bloque.velocidadCaida <= 0.0f
-        )
+        if (!bloque.activaColision)
         {
             continue;
         }
 
         BoundingBox cajaBloque = CrearHitboxBloquePrueba(bloque);
 
-        bool solapaX =
-            jugador.posicion.x + mitadX > cajaBloque.min.x &&
-            jugador.posicion.x - mitadX < cajaBloque.max.x;
+        const float MARGEN_CENTRO = 0.035f;
 
-        bool solapaZ =
-            jugador.posicion.z + mitadZ > cajaBloque.min.z &&
-            jugador.posicion.z - mitadZ < cajaBloque.max.z;
+        bool centroDentro =
+            jugador.posicion.x >= cajaBloque.min.x - MARGEN_CENTRO &&
+            jugador.posicion.x <= cajaBloque.max.x + MARGEN_CENTRO &&
+            jugador.posicion.z >= cajaBloque.min.z - MARGEN_CENTRO &&
+            jugador.posicion.z <= cajaBloque.max.z + MARGEN_CENTRO;
 
-        if (!solapaX || !solapaZ)
+        if (!centroDentro)
         {
             continue;
         }
 
-        float descensoEsteFrame = bloque.velocidadCaida * deltaTime;
-        if (descensoEsteFrame < 0.0f) descensoEsteFrame = 0.0f;
+        float descensoEsteFrame =
+            bloque.cayendo && bloque.velocidadCaida > 0.0f
+            ? bloque.velocidadCaida * deltaTime
+            : 0.0f;
+
+        if (descensoEsteFrame < 0.0f)
+        {
+            descensoEsteFrame = 0.0f;
+        }
 
         float separacion = piesJugador - cajaBloque.max.y;
 
         if (
-            separacion >= -0.06f &&
-            separacion <= descensoEsteFrame + 0.10f
+            separacion < -0.075f ||
+            separacion > descensoEsteFrame + 0.11f
         )
         {
-            jugador.posicion.y = cajaBloque.max.y + mitadY;
-            jugador.velocidad.y = 0.0f;
-            jugador.enSuelo = true;
-            return;
+            continue;
+        }
+
+        float dx = jugador.posicion.x - bloque.posicion.x;
+        float dz = jugador.posicion.z - bloque.posicion.z;
+        float distancia = dx * dx + dz * dz;
+
+        bool mejorCandidato =
+            distancia < mejorDistancia - 0.0005f;
+
+        bool empateCasiExacto =
+            std::fabs(distancia - mejorDistancia) <= 0.0005f;
+
+        bool priorizarEstable =
+            empateCasiExacto &&
+            indiceSoporte >= 0 &&
+            bloques[indiceSoporte].cayendo &&
+            !bloque.cayendo;
+
+        if (mejorCandidato || priorizarEstable)
+        {
+            indiceSoporte = i;
+            mejorDistancia = distancia;
         }
     }
+
+    if (indiceSoporte < 0)
+    {
+        return;
+    }
+
+    const BloquePrueba& soporte = bloques[indiceSoporte];
+
+    if (
+        !soporte.cayendo ||
+        soporte.velocidadCaida <= 0.0f
+    )
+    {
+        return;
+    }
+
+    BoundingBox cajaSoporte = CrearHitboxBloquePrueba(soporte);
+
+    jugador.posicion.y = cajaSoporte.max.y + mitadY;
+    jugador.velocidad.y = 0.0f;
+    jugador.enSuelo = true;
 }
 
 
