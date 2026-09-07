@@ -9,6 +9,8 @@
 
 const int MAX_NUCLEOS_ENERGIA = 6;
 const int MAX_BLOQUES_NUCLEOS = 5;
+const int MAX_HISTORIAL_NUCLEOS = 512;
+const int MAX_NUCLEOS_CAIDOS = 32;
 
 
 enum FaseMinijuegoNucleos
@@ -31,6 +33,29 @@ struct NucleoEnergia
 };
 
 
+struct NucleoEnergiaCaido
+{
+    Vector3 posicion{};
+    Vector3 velocidad{};
+
+    bool activo = false;
+    bool especial = false;
+
+    // Durante unos instantes el jugador golpeado no puede volver
+    // a recoger exactamente los mismos nucleos que acaba de perder.
+    int jugadorBloqueado = -1;
+    float tiempoBloqueo = 0.0f;
+    float tiempoVida = 0.0f;
+};
+
+
+struct HistorialNucleosJugador
+{
+    bool especiales[MAX_HISTORIAL_NUCLEOS]{};
+    int cantidad = 0;
+};
+
+
 struct MinijuegoNucleosEnergia
 {
     Camera3D camara{};
@@ -39,6 +64,8 @@ struct MinijuegoNucleosEnergia
     int cantidadBloques = 0;
 
     NucleoEnergia nucleos[MAX_NUCLEOS_ENERGIA];
+    NucleoEnergiaCaido nucleosCaidos[MAX_NUCLEOS_CAIDOS];
+    HistorialNucleosJugador historial[MAX_PARTICIPANTES];
 
     int puntuaciones[MAX_PARTICIPANTES]{};
 
