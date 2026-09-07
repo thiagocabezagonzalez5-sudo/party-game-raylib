@@ -48,6 +48,21 @@ file(
     "${CMAKE_CURRENT_SOURCE_DIR}/Entities/*.cpp"
 )
 
+# Un backup que conserve extension .cpp no debe convertirse por accidente
+# en una unidad de compilacion. Esto evita compilar archivos temporales como
+# MinijuegoColorSeguro.conflicto.bak.cpp.
+list(
+    FILTER PARTY_SOURCES
+    EXCLUDE REGEX
+    ".*\\.bak\\.cpp$"
+)
+
+list(
+    FILTER PARTY_SOURCES
+    EXCLUDE REGEX
+    ".*\\.conflicto\\..*\\.cpp$"
+)
+
 
 # ================================================
 # EJECUTABLE
