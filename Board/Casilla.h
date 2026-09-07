@@ -2,6 +2,9 @@
 
 #include "raylib.h"
 
+#define SOMBRAS_RETRO_AUTOMATICAS
+#include "Minigames/SombrasRetro.h"
+
 
 //==================================================
 // TIPOS DE CASILLA
