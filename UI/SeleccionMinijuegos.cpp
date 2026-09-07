@@ -19,12 +19,12 @@ static const DatosMinijuegoCatalogo DATOS_CATALOGO[
 {
     {
         "COLOR SEGURO",
-        "Corre al color indicado antes de que las otras plataformas caigan.",
+        "Corre a la isla del color indicado sobre un mar de lava rodeado de volcanes.",
         Color{ 235, 92, 85, 255 }
     },
     {
         "PELOTAS",
-        "Gana velocidad, choca contra los rivales y trata de tirarlos de la montana.",
+        "Deslizate sobre una cumbre nevada altisima, choca rivales y tiralos de la montana.",
         Color{ 102, 184, 235, 255 }
     },
     {
@@ -54,12 +54,12 @@ static const DatosMinijuegoCatalogo DATOS_CATALOGO[
     },
     {
         "NUCLEOS ENERGIA",
-        "Recolecta energia. Un golpe hace que el rival suelte sus ultimas tres recogidas.",
+        "Recolecta energia. Un golpe suelta 3 recogidas y un ground pound puede soltar 5.",
         Color{ 70, 205, 225, 255 }
     },
     {
-        "REFUGIO PINCHOS",
-        "1 vs 3: uno controla desde que lado atacan los pinchos y el equipo se cubre tras bloques.",
+        "REFUGIO TALADROS",
+        "1 vs 3 en una cueva: uno elige desde que lado avanzan los taladros y el equipo se cubre.",
         Color{ 178, 99, 74, 255 }
     },
     {
@@ -71,6 +71,11 @@ static const DatosMinijuegoCatalogo DATOS_CATALOGO[
         "MUROS LOCOS",
         "Busca el hueco de cada muro. Cada oleada acelera y los golpes pueden sacarte de la arena.",
         Color{ 231, 106, 72, 255 }
+    },
+    {
+        "TORMENTA MAGNETICA",
+        "Sobrevive a un nucleo que alterna atraccion y repulsion mientras cambia de posicion.",
+        Color{ 74, 191, 220, 255 }
     }
 };
 
@@ -137,17 +142,22 @@ static void DibujarMiniatura(
     {
         case CATALOGO_COLOR_SEGURO:
         {
-            DrawPoly({ cx, cy }, 6, 34.0f, 30.0f, RAYWHITE);
-            DrawPolyLines({ cx, cy }, 6, 34.0f, 30.0f, RED);
+            DrawCircle((int)cx, (int)cy + 25, 44.0f, ORANGE);
+            DrawPoly({ cx, cy - 5.0f }, 6, 31.0f, 30.0f, RAYWHITE);
+            DrawPolyLines({ cx, cy - 5.0f }, 6, 31.0f, 30.0f, RED);
             break;
         }
 
         case CATALOGO_PELOTAS:
         {
-            DrawCircle((int)cx - 23, (int)cy, 22.0f, SKYBLUE);
-            DrawCircle((int)cx + 23, (int)cy, 22.0f, ORANGE);
-            DrawCircleLines((int)cx - 23, (int)cy, 22.0f, DARKBLUE);
-            DrawCircleLines((int)cx + 23, (int)cy, 22.0f, MAROON);
+            DrawTriangle(
+                { cx - 48.0f, cy + 34.0f },
+                { cx, cy - 43.0f },
+                { cx + 48.0f, cy + 34.0f },
+                RAYWHITE
+            );
+            DrawCircle((int)cx - 20, (int)cy + 7, 18.0f, SKYBLUE);
+            DrawCircle((int)cx + 20, (int)cy + 7, 18.0f, ORANGE);
             break;
         }
 
@@ -207,21 +217,22 @@ static void DibujarMiniatura(
 
         case CATALOGO_REFUGIO_PINCHOS:
         {
-            DrawRectangle((int)cx - 16, (int)cy - 16, 32, 32, GRAY);
-            DrawRectangle((int)cx - 50, (int)cy - 7, 23, 14, DARKGRAY);
-            DrawRectangle((int)cx + 27, (int)cy - 7, 23, 14, DARKGRAY);
+            DrawRectangle((int)cx - 14, (int)cy - 14, 28, 28, GRAY);
+            DrawRectangle((int)cx - 53, (int)cy - 6, 25, 12, DARKGRAY);
             DrawTriangle(
-                { cx - 27.0f, cy },
-                { cx - 14.0f, cy - 11.0f },
-                { cx - 14.0f, cy + 11.0f },
-                RED
+                { cx - 28.0f, cy },
+                { cx - 12.0f, cy - 14.0f },
+                { cx - 12.0f, cy + 14.0f },
+                LIGHTGRAY
             );
+            DrawRectangle((int)cx + 28, (int)cy - 6, 25, 12, DARKGRAY);
             DrawTriangle(
-                { cx + 27.0f, cy },
-                { cx + 14.0f, cy + 11.0f },
-                { cx + 14.0f, cy - 11.0f },
-                RED
+                { cx + 28.0f, cy },
+                { cx + 12.0f, cy + 14.0f },
+                { cx + 12.0f, cy - 14.0f },
+                LIGHTGRAY
             );
+            DrawCircleLines((int)cx, (int)cy, 48.0f, BROWN);
             break;
         }
 
@@ -242,6 +253,16 @@ static void DibujarMiniatura(
             DrawRectangleLines((int)cx - 52, (int)cy - 30, 37, 64, BLACK);
             DrawRectangleLines((int)cx + 16, (int)cy - 30, 36, 64, BLACK);
             DrawCircle((int)cx, (int)cy + 18, 10.0f, SKYBLUE);
+            break;
+        }
+
+        case CATALOGO_TORMENTA_MAGNETICA:
+        {
+            DrawCircle((int)cx, (int)cy, 23.0f, SKYBLUE);
+            DrawCircleLines((int)cx, (int)cy, 36.0f, RAYWHITE);
+            DrawCircleLines((int)cx, (int)cy, 48.0f, PINK);
+            DrawText("<", (int)cx - 62, (int)cy - 15, 30, SKYBLUE);
+            DrawText(">", (int)cx + 42, (int)cy - 15, 30, PINK);
             break;
         }
 
