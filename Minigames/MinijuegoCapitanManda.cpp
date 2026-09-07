@@ -1,6 +1,12 @@
 #include "Minigames/MinijuegoCapitanManda.h"
 
+#define SOMBRAS_RETRO_AUTOMATICAS
+#include "Minigames/SombrasRetro.h"
 
+#include <cmath>
+
+
+static const float DURACION_PREPARACION_CAPITAN = 3.0f;
 static const float DURACION_RESOLUCION = 0.85f;
 static const int MAX_RONDAS_CAPITAN = 20;
 
@@ -79,8 +85,8 @@ static void PrepararNuevaRonda(
             minijuego.numeroRonda
         );
 
-    // La bandera y la ventana de reaccion aparecen al mismo tiempo.
-    // No hay una fase previa donde el jugador pueda memorizar la orden.
+    // Una vez terminada la cuenta regresiva no hay aviso extra:
+    // la bandera y la ventana de reaccion aparecen en el mismo frame.
     minijuego.tiempoFase =
         minijuego.tiempoRespuesta;
 
@@ -203,16 +209,13 @@ static void ResolverRonda(
         if (!jugador.respondio || !jugador.acerto)
         {
             jugador.eliminado = true;
-            jugador.posicionFinal =
-                posicionEliminados;
-            jugador.tiempoFeedback =
-                DURACION_RESOLUCION;
+            jugador.posicionFinal = posicionEliminados;
+            jugador.tiempoFeedback = DURACION_RESOLUCION;
         }
         else
         {
             jugador.rondasSuperadas++;
-            jugador.tiempoFeedback =
-                DURACION_RESOLUCION;
+            jugador.tiempoFeedback = DURACION_RESOLUCION;
         }
     }
 
@@ -247,19 +250,12 @@ void MinijuegoCapitanManda::Inicializar()
         jugadores[i] = {};
     }
 
-    // Se conserva el enum antiguo por compatibilidad, pero la
-    // preparacion dura cero y la primera orden comienza al instante.
-    fase =
-        FASE_CAPITAN_PREPARACION;
-
-    ordenActual =
-        CONTROL_DIRECCION_IZQUIERDA;
-
+    fase = FASE_CAPITAN_PREPARACION;
+    ordenActual = CONTROL_DIRECCION_IZQUIERDA;
     numeroRonda = 0;
-    tiempoPreparacion = 0.0f;
+    tiempoPreparacion = DURACION_PREPARACION_CAPITAN;
     tiempoFase = 0.0f;
     tiempoRespuesta = 1.55f;
-
     resultadoInicializado = false;
 }
 
@@ -282,8 +278,6 @@ void MinijuegoCapitanManda::Reiniciar(
     );
 
     resultadoInicializado = true;
-
-    PrepararNuevaRonda(*this);
 }
 
 
@@ -306,7 +300,8 @@ void MinijuegoCapitanManda::Actualizar(
         );
 
         resultadoInicializado = true;
-        PrepararNuevaRonda(*this);
+        fase = FASE_CAPITAN_PREPARACION;
+        tiempoPreparacion = DURACION_PREPARACION_CAPITAN;
     }
 
     if (fase == FASE_CAPITAN_TERMINADO)
@@ -314,12 +309,22 @@ void MinijuegoCapitanManda::Actualizar(
         return;
     }
 
-    // Estados heredados de la version anterior: si alguna entrada
-    // llega aqui, no esperamos y empezamos la reaccion inmediatamente.
-    if (
-        fase == FASE_CAPITAN_PREPARACION ||
-        fase == FASE_CAPITAN_MOSTRANDO
-    )
+    if (fase == FASE_CAPITAN_PREPARACION)
+    {
+        tiempoPreparacion -= deltaTime;
+
+        if (tiempoPreparacion <= 0.0f)
+        {
+            tiempoPreparacion = 0.0f;
+            PrepararNuevaRonda(*this);
+        }
+
+        return;
+    }
+
+    // Compatibilidad con el estado antiguo. No agrega una demora entre
+    // mostrar la bandera y aceptar la respuesta.
+    if (fase == FASE_CAPITAN_MOSTRANDO)
     {
         PrepararNuevaRonda(*this);
     }
@@ -357,17 +362,13 @@ void MinijuegoCapitanManda::Actualizar(
 
             jugadores[i].respondio = true;
 
-            if (
-                ordenActual == CONTROL_DIRECCION_IZQUIERDA
-            )
+            if (ordenActual == CONTROL_DIRECCION_IZQUIERDA)
             {
-                jugadores[i].acerto =
-                    izquierda && !derecha;
+                jugadores[i].acerto = izquierda && !derecha;
             }
             else
             {
-                jugadores[i].acerto =
-                    derecha && !izquierda;
+                jugadores[i].acerto = derecha && !izquierda;
             }
         }
 
@@ -427,14 +428,12 @@ static void DibujarCapitan3D(
         fase == FASE_CAPITAN_RESPONDIENDO;
 
     float alturaIzquierda =
-        mostrarOrden &&
-        orden == CONTROL_DIRECCION_IZQUIERDA
+        mostrarOrden && orden == CONTROL_DIRECCION_IZQUIERDA
         ? 2.95f
         : 1.55f;
 
     float alturaDerecha =
-        mostrarOrden &&
-        orden == CONTROL_DIRECCION_DERECHA
+        mostrarOrden && orden == CONTROL_DIRECCION_DERECHA
         ? 2.95f
         : 1.55f;
 
@@ -494,16 +493,14 @@ static void DibujarJugadoresCapitan3D(
             continue;
         }
 
-        Color color =
-            participantes[i].color;
+        Color color = participantes[i].color;
 
         if (minijuego.jugadores[i].eliminado)
         {
             color = Fade(color, 0.28f);
         }
 
-        Vector3 base =
-            posiciones[i];
+        Vector3 base = posiciones[i];
 
         DrawCylinder(
             Vector3{ base.x, 0.03f, base.z },
@@ -542,20 +539,14 @@ void MinijuegoCapitanManda::Dibujar(
     const Participante participantes[]
 ) const
 {
-    ClearBackground(
-        Color{ 118, 188, 220, 255 }
-    );
+    ClearBackground(Color{ 118, 188, 220, 255 });
 
     Camera3D camara{};
-    camara.position =
-        { 0.0f, 7.8f, 12.8f };
-    camara.target =
-        { 0.0f, 1.1f, 0.3f };
-    camara.up =
-        { 0.0f, 1.0f, 0.0f };
+    camara.position = { 0.0f, 7.8f, 12.8f };
+    camara.target = { 0.0f, 1.1f, 0.3f };
+    camara.up = { 0.0f, 1.0f, 0.0f };
     camara.fovy = 47.0f;
-    camara.projection =
-        CAMERA_PERSPECTIVE;
+    camara.projection = CAMERA_PERSPECTIVE;
 
     BeginMode3D(camara);
 
@@ -575,67 +566,41 @@ void MinijuegoCapitanManda::Dibujar(
         DARKBROWN
     );
 
-    DibujarCapitan3D(
-        ordenActual,
-        fase
-    );
-
-    DibujarJugadoresCapitan3D(
-        *this,
-        participantes
-    );
+    DibujarCapitan3D(ordenActual, fase);
+    DibujarJugadoresCapitan3D(*this, participantes);
 
     EndMode3D();
 
+    DrawText("MINIJUEGO 9 - CAPITAN MANDA", 25, 20, 30, BLACK);
     DrawText(
-        "MINIJUEGO 9 - CAPITAN MANDA",
-        25,
-        20,
-        30,
-        BLACK
-    );
-
-    DrawText(
-        "LA BANDERA ES LA SENAL: REACCIONA EN EL MISMO INSTANTE.",
+        "AL TERMINAR LA CUENTA, LA BANDERA ES LA SENAL: REACCIONA AL INSTANTE.",
         25,
         57,
-        19,
-        DARKGRAY
-    );
-
-    DrawRectangle(
-        20,
-        84,
-        520,
-        54,
-        Fade(RAYWHITE, 0.82f)
-    );
-
-    DrawRectangleLines(
-        20,
-        84,
-        520,
-        54,
-        Fade(DARKGRAY, 0.65f)
-    );
-
-    DrawText(
-        "TECLADO: A/D O FLECHA IZQ/DER",
-        30,
-        90,
-        17,
-        DARKGRAY
-    );
-
-    DrawText(
-        "MANDO: X = IZQUIERDA    B = DERECHA",
-        30,
-        113,
         18,
-        DARKBLUE
+        DARKGRAY
     );
 
-    if (fase == FASE_CAPITAN_RESPONDIENDO)
+    DrawRectangle(20, 84, 520, 54, Fade(RAYWHITE, 0.82f));
+    DrawRectangleLines(20, 84, 520, 54, Fade(DARKGRAY, 0.65f));
+    DrawText("TECLADO: A/D O FLECHA IZQ/DER", 30, 90, 17, DARKGRAY);
+    DrawText("MANDO: X = IZQUIERDA    B = DERECHA", 30, 113, 18, DARKBLUE);
+
+    if (fase == FASE_CAPITAN_PREPARACION)
+    {
+        int numero = (int)std::ceil(tiempoPreparacion);
+        if (numero < 1) numero = 1;
+
+        const char* texto = TextFormat("%d", numero);
+
+        DrawText(
+            texto,
+            GetScreenWidth() / 2 - MeasureText(texto, 92) / 2,
+            GetScreenHeight() / 2 - 72,
+            92,
+            GOLD
+        );
+    }
+    else if (fase == FASE_CAPITAN_RESPONDIENDO)
     {
         const char* direccion =
             ordenActual == CONTROL_DIRECCION_IZQUIERDA
@@ -646,8 +611,7 @@ void MinijuegoCapitanManda::Dibujar(
 
         DrawText(
             direccion,
-            GetScreenWidth() / 2 -
-                MeasureText(direccion, tamano) / 2,
+            GetScreenWidth() / 2 - MeasureText(direccion, tamano) / 2,
             150,
             tamano,
             ordenActual == CONTROL_DIRECCION_IZQUIERDA
@@ -656,11 +620,9 @@ void MinijuegoCapitanManda::Dibujar(
         );
 
         const char* reaccion = "REACCIONA!";
-
         DrawText(
             reaccion,
-            GetScreenWidth() / 2 -
-                MeasureText(reaccion, 28) / 2,
+            GetScreenWidth() / 2 - MeasureText(reaccion, 28) / 2,
             208,
             28,
             LIME
@@ -679,24 +641,21 @@ void MinijuegoCapitanManda::Dibujar(
             ? tiempoFase / tiempoRespuesta
             : 0.0f;
 
-        if (porcentaje < 0.0f)
-        {
-            porcentaje = 0.0f;
-        }
+        if (porcentaje < 0.0f) porcentaje = 0.0f;
 
         DrawRectangle(
             GetScreenWidth() / 2 - 160,
             243,
             (int)(320.0f * porcentaje),
             16,
-            porcentaje < 0.30f
-            ? RED
-            : GOLD
+            porcentaje < 0.30f ? RED : GOLD
         );
     }
 
     DrawText(
-        TextFormat("RONDA %d", numeroRonda),
+        fase == FASE_CAPITAN_PREPARACION
+            ? "RONDA 0"
+            : TextFormat("RONDA %d", numeroRonda),
         GetScreenWidth() - 180,
         25,
         24,
@@ -704,14 +663,7 @@ void MinijuegoCapitanManda::Dibujar(
     );
 
     int y = GetScreenHeight() - 305;
-
-    DrawRectangle(
-        18,
-        y - 10,
-        640,
-        120,
-        Fade(BLACK, 0.46f)
-    );
+    DrawRectangle(18, y - 10, 640, 120, Fade(BLACK, 0.46f));
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -720,16 +672,19 @@ void MinijuegoCapitanManda::Dibujar(
             continue;
         }
 
-        const EstadoJugadorCapitanManda& jugador =
-            jugadores[i];
+        const EstadoJugadorCapitanManda& jugador = jugadores[i];
 
-        const char* estado =
+        const char* estadoJugador =
             jugador.eliminado
             ? "FUERA"
             : (
-                jugador.respondio
-                ? (jugador.acerto ? "OK" : "ERROR")
-                : "ESPERANDO"
+                fase == FASE_CAPITAN_PREPARACION
+                ? "LISTO"
+                : (
+                    jugador.respondio
+                    ? (jugador.acerto ? "OK" : "ERROR")
+                    : "ESPERANDO"
+                )
             );
 
         const char* izquierda =
@@ -748,16 +703,14 @@ void MinijuegoCapitanManda::Dibujar(
             TextFormat(
                 "J%d  %s   IZQ:%s  DER:%s",
                 participantes[i].numeroJugador,
-                estado,
+                estadoJugador,
                 izquierda,
                 derecha
             ),
             28,
             y,
             18,
-            jugador.eliminado
-            ? GRAY
-            : participantes[i].color
+            jugador.eliminado ? GRAY : participantes[i].color
         );
 
         y += 27;
@@ -794,15 +747,13 @@ void MinijuegoCapitanManda::Dibujar(
 
         DrawText(
             titulo,
-            GetScreenWidth() / 2 -
-                MeasureText(titulo, 34) / 2,
+            GetScreenWidth() / 2 - MeasureText(titulo, 34) / 2,
             GetScreenHeight() / 2 - 118,
             34,
             GOLD
         );
 
-        int fila =
-            GetScreenHeight() / 2 - 62;
+        int fila = GetScreenHeight() / 2 - 62;
 
         for (int i = 0; i < MAX_PARTICIPANTES; i++)
         {
@@ -827,13 +778,10 @@ void MinijuegoCapitanManda::Dibujar(
             fila += 29;
         }
 
-        const char* reiniciar =
-            "R PARA REINICIAR";
-
+        const char* reiniciar = "R PARA REINICIAR";
         DrawText(
             reiniciar,
-            GetScreenWidth() / 2 -
-                MeasureText(reiniciar, 22) / 2,
+            GetScreenWidth() / 2 - MeasureText(reiniciar, 22) / 2,
             GetScreenHeight() / 2 + 105,
             22,
             RAYWHITE
