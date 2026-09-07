@@ -126,6 +126,99 @@ static ModoZonaPruebas ConvertirCatalogoAModo(
 }
 
 
+static ModoZonaPruebas ElegirMinijuegoAleatorioTablero()
+{
+    // Para el tablero usamos minijuegos individuales. De esta
+    // manera un bot inmovil no vuelve imposible una ronda 2v2.
+    const ModoZonaPruebas opciones[] =
+    {
+        PRUEBA_COLOR_SEGURO,
+        PRUEBA_PELOTAS_EMPUJON,
+        PRUEBA_ISLA_FUEGO,
+        PRUEBA_CAPITAN_MANDA,
+        PRUEBA_BARRA_GIRATORIA,
+        PRUEBA_NUCLEOS_ENERGIA
+    };
+
+    const int cantidadOpciones =
+        sizeof(opciones) / sizeof(opciones[0]);
+
+    return opciones[
+        GetRandomValue(0, cantidadOpciones - 1)
+    ];
+}
+
+
+static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
+    const ZonaPruebas& zona
+)
+{
+    switch (zona.modoActual)
+    {
+        case PRUEBA_COLOR_SEGURO:
+            return &zona.minijuegoColor.ObtenerResultado();
+
+        case PRUEBA_PELOTAS_EMPUJON:
+            return &zona.minijuegoPelotas.ObtenerResultado();
+
+        case PRUEBA_TRONCO_COORDINADO:
+            return &zona.minijuegoTronco.ObtenerResultado();
+
+        case PRUEBA_FABRICA_67:
+            return &zona.minijuego67.ObtenerResultado();
+
+        case PRUEBA_ISLA_FUEGO:
+            return &zona.minijuegoIslaFuego.ObtenerResultado();
+
+        case PRUEBA_CAPITAN_MANDA:
+            return &zona.minijuegoCapitanManda.ObtenerResultado();
+
+        case PRUEBA_BARRA_GIRATORIA:
+            return &zona.minijuegoBarraGiratoria.ObtenerResultado();
+
+        case PRUEBA_NUCLEOS_ENERGIA:
+            return &zona.minijuegoNucleosEnergia.resultado;
+
+        case PRUEBA_ZONA_PRINCIPAL:
+        case PRUEBA_MODELOS:
+        case PRUEBA_TABLERO:
+            break;
+    }
+
+    return nullptr;
+}
+
+
+static bool ConfirmarConParticipanteHumano(
+    const Participante participantes[]
+)
+{
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (
+            !participantes[i].activo ||
+            participantes[i].esBot ||
+            !participantes[i].conectado
+        )
+        {
+            continue;
+        }
+
+        InputSeleccionParticipante entrada =
+            LeerInputSeleccionParticipante(
+                participantes[i]
+            );
+
+        if (entrada.confirmar)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 static bool CancelarPantallaConMando()
 {
     for (int i = 0; i < 4; i++)
@@ -148,6 +241,8 @@ static bool CancelarPantallaConMando()
 
 static void DibujarTableroVacio()
 {
+    // Se conserva como respaldo para estados antiguos guardados
+    // durante desarrollo. El flujo final ya no entra aqui.
     DrawRectangle(
         0,
         0,
@@ -179,7 +274,7 @@ static void DibujarTableroVacio()
     );
 
     const char* titulo = "TABLERO";
-    const char* estado = "EN CONSTRUCCION";
+    const char* estado = "ESTADO ANTIGUO";
     const char* ayuda = "ESC / B PARA VOLVER";
 
     DrawText(
@@ -339,6 +434,7 @@ void Juego::Inicializar()
 
     menuPreparado = false;
     cargaMenuSolicitada = false;
+    tiempoResultadoMinijuegoTablero = 0.0f;
     estado = ESTADO_LOGO;
     cerrarJuego = false;
 }
@@ -581,18 +677,10 @@ void Juego::Actualizar(
                     SONIDO_UI_CONFIRMAR
                 );
 
-                if (
-                    menuModoJuego.opcionSeleccionada ==
-                    MODO_JUEGO_MINIJUEGOS
-                )
-                {
-                    PrepararSeleccionDePersonajes(*this);
-                    estado = ESTADO_SELECCION_JUGADORES;
-                }
-                else
-                {
-                    estado = ESTADO_TABLERO_VACIO;
-                }
+                // Los dos modos pasan por la misma seleccion de
+                // personajes. El destino se decide al confirmar.
+                PrepararSeleccionDePersonajes(*this);
+                estado = ESTADO_SELECCION_JUGADORES;
             }
 
             break;
@@ -600,6 +688,7 @@ void Juego::Actualizar(
 
         case ESTADO_TABLERO_VACIO:
         {
+            // Estado heredado de la primera maqueta.
             menuPrincipal.fondo.Actualizar(deltaTime);
 
             if (
@@ -645,10 +734,20 @@ void Juego::Actualizar(
                 }
             }
 
+            bool modoMinijuegos =
+                menuModoJuego.opcionSeleccionada ==
+                MODO_JUEGO_MINIJUEGOS;
+
+            // En el catalogo J1 tiene que ser humano porque es quien
+            // elige el minijuego. En Tablero cualquier jugador humano
+            // puede ser el primero conectado.
             bool cantidadValida =
                 cantidadHumana >= 1 &&
                 cantidadHumana <= MAX_PARTICIPANTES &&
-                participantes[0].activo;
+                (
+                    !modoMinijuegos ||
+                    participantes[0].activo
+                );
 
             seleccionPersonajes.todosListos =
                 cantidadValida && activosPreparados;
@@ -670,8 +769,23 @@ void Juego::Actualizar(
                 );
 
                 cantidadParticipantes = MAX_PARTICIPANTES;
-                seleccionMinijuegos.Inicializar();
-                estado = ESTADO_SELECCION_MINIJUEGO;
+
+                if (modoMinijuegos)
+                {
+                    seleccionMinijuegos.Inicializar();
+                    estado = ESTADO_SELECCION_MINIJUEGO;
+                }
+                else
+                {
+                    partidaTablero.Inicializar(
+                        participantes,
+                        MAX_PARTICIPANTES,
+                        &audio
+                    );
+
+                    estado = ESTADO_PARTIDA;
+                }
+
                 break;
             }
 
@@ -763,7 +877,97 @@ void Juego::Actualizar(
         }
 
         case ESTADO_PARTIDA:
+        {
+            ActualizarConexionesParticipantes(
+                participantes,
+                MAX_PARTICIPANTES
+            );
+
+            partidaTablero.Actualizar(deltaTime);
+
+            if (partidaTablero.SolicitaSalida())
+            {
+                menuModoJuego.Inicializar();
+                estado = ESTADO_SELECCION_MODO;
+                break;
+            }
+
+            if (partidaTablero.SolicitaMinijuego())
+            {
+                ModoZonaPruebas modoElegido =
+                    ElegirMinijuegoAleatorioTablero();
+
+                zonaPruebas.Inicializar(
+                    participantes,
+                    MAX_PARTICIPANTES,
+                    &audio
+                );
+
+                zonaPruebas.modoCatalogo = true;
+                zonaPruebas.CambiarModo(modoElegido);
+
+                tiempoResultadoMinijuegoTablero = 0.0f;
+                estado = ESTADO_MINIJUEGO;
+            }
+
+            break;
+        }
+
         case ESTADO_MINIJUEGO:
+        {
+            zonaPruebas.Actualizar(deltaTime);
+
+            // ESC durante el minijuego de ronda permite volver al
+            // tablero sin premio. Es util para desarrollo y si una
+            // ronda queda trabada por un control desconectado.
+            if (zonaPruebas.volverAlMenu)
+            {
+                zonaPruebas.volverAlMenu = false;
+                zonaPruebas.modoCatalogo = false;
+                partidaTablero.ContinuarTrasMinijuego();
+                estado = ESTADO_PARTIDA;
+                break;
+            }
+
+            const ResultadoMinijuego* resultado =
+                ObtenerResultadoZonaPruebas(zonaPruebas);
+
+            if (
+                resultado == nullptr ||
+                !ResultadoMinijuegoFinalizado(*resultado)
+            )
+            {
+                tiempoResultadoMinijuegoTablero = 0.0f;
+                break;
+            }
+
+            tiempoResultadoMinijuegoTablero += deltaTime;
+
+            bool confirmar =
+                tiempoResultadoMinijuegoTablero >= 1.0f &&
+                ConfirmarConParticipanteHumano(participantes);
+
+            bool continuarAutomaticamente =
+                tiempoResultadoMinijuegoTablero >= 3.0f;
+
+            if (
+                confirmar ||
+                continuarAutomaticamente
+            )
+            {
+                partidaTablero.AplicarResultadoMinijuego(
+                    *resultado
+                );
+
+                partidaTablero.ContinuarTrasMinijuego();
+                zonaPruebas.modoCatalogo = false;
+                tiempoResultadoMinijuegoTablero = 0.0f;
+                estado = ESTADO_PARTIDA;
+            }
+
+            break;
+        }
+
         case ESTADO_RESULTADO:
         {
             break;
@@ -845,7 +1049,14 @@ void Juego::Dibujar()
                 MAX_PARTICIPANTES
             );
 
-            if (!participantes[0].activo)
+            bool modoMinijuegos =
+                menuModoJuego.opcionSeleccionada ==
+                MODO_JUEGO_MINIJUEGOS;
+
+            if (
+                modoMinijuegos &&
+                !participantes[0].activo
+            )
             {
                 const char* aviso =
                     "JUGADOR 1 DEBE UNIRSE PARA ELEGIR EL MINIJUEGO";
@@ -876,9 +1087,43 @@ void Juego::Dibujar()
         }
 
         case ESTADO_PARTIDA:
+        {
+            partidaTablero.Dibujar();
+            break;
+        }
+
         case ESTADO_MINIJUEGO:
         {
-            ClearBackground(SKYBLUE);
+            zonaPruebas.Dibujar();
+
+            const ResultadoMinijuego* resultado =
+                ObtenerResultadoZonaPruebas(zonaPruebas);
+
+            bool terminado =
+                resultado != nullptr &&
+                ResultadoMinijuegoFinalizado(*resultado);
+
+            DrawRectangle(
+                0,
+                GetScreenHeight() - 58,
+                GetScreenWidth(),
+                58,
+                Fade(BLACK, 0.82f)
+            );
+
+            const char* texto =
+                terminado
+                ? "RESULTADO LISTO | CONFIRMAR PARA VOLVER AL TABLERO"
+                : "MINIJUEGO DE RONDA | ESC: SALTAR Y VOLVER AL TABLERO";
+
+            DrawText(
+                texto,
+                GetScreenWidth() / 2 - MeasureText(texto, 18) / 2,
+                GetScreenHeight() - 39,
+                18,
+                RAYWHITE
+            );
+
             break;
         }
 
