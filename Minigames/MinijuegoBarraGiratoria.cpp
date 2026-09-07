@@ -234,15 +234,17 @@ void MinijuegoBarraGiratoria::Inicializar()
         estadosJugadores[i] = {};
     }
 
+    // La superficie visual y la colision terminan en y=0.
+    // Asi los pies quedan por encima de una plataforma plana.
     suelo = {};
     suelo.posicion =
-        { 0.0f, -0.35f, 0.0f };
+        { 0.0f, -0.30f, 0.0f };
     suelo.posicionInicial =
         suelo.posicion;
     suelo.tamano =
-        { 11.6f, 0.70f, 11.6f };
+        { 11.6f, 0.60f, 11.6f };
     suelo.color =
-        Color{ 79, 126, 91, 255 };
+        Color{ 145, 147, 154, 255 };
     suelo.activaColision = true;
 
     fase = FASE_BARRA_PREPARACION;
@@ -571,31 +573,50 @@ void MinijuegoBarraGiratoria::Dibujar(
 
     BeginMode3D(camara);
 
+    // Plataforma plana sin pasto. El borde queda por debajo de los pies,
+    // por lo que visualmente el jugador ya no atraviesa una capa superior.
     DrawCylinder(
-        Vector3{ 0.0f, -0.25f, 0.0f },
+        Vector3{ 0.0f, -0.18f, 0.0f },
         RADIO_ARENA_BARRA,
-        RADIO_ARENA_BARRA + 0.30f,
-        0.50f,
-        48,
-        Color{ 74, 121, 83, 255 }
+        RADIO_ARENA_BARRA,
+        0.18f,
+        64,
+        Color{ 152, 154, 162, 255 }
+    );
+
+    DrawCylinder(
+        Vector3{ 0.0f, -0.30f, 0.0f },
+        RADIO_ARENA_BARRA + 0.12f,
+        RADIO_ARENA_BARRA + 0.12f,
+        0.12f,
+        64,
+        Color{ 65, 69, 78, 255 }
+    );
+
+    DrawCircle3D(
+        Vector3{ 0.0f, 0.005f, 0.0f },
+        RADIO_ARENA_BARRA,
+        Vector3{ 1.0f, 0.0f, 0.0f },
+        90.0f,
+        Fade(DARKGRAY, 0.90f)
+    );
+
+    DrawCylinder(
+        Vector3{ 0.0f, 0.44f, 0.0f },
+        0.40f,
+        0.40f,
+        0.88f,
+        20,
+        DARKGRAY
     );
 
     DrawCylinder(
         Vector3{ 0.0f, 0.02f, 0.0f },
-        RADIO_ARENA_BARRA,
-        RADIO_ARENA_BARRA,
-        0.10f,
-        48,
-        Color{ 104, 174, 112, 255 }
-    );
-
-    DrawCylinder(
-        Vector3{ 0.0f, 0.52f, 0.0f },
-        0.40f,
-        0.40f,
-        1.10f,
-        20,
-        DARKGRAY
+        0.72f,
+        0.72f,
+        0.04f,
+        24,
+        Color{ 85, 89, 98, 255 }
     );
 
     DibujarBarraSegmentada(
@@ -644,7 +665,7 @@ void MinijuegoBarraGiratoria::Dibujar(
     );
 
     DrawText(
-        "SALTA LA BARRA Y NO TE CAIGAS DE LA ARENA",
+        "SALTA LA BARRA Y NO TE CAIGAS DE LA PLATAFORMA",
         25,
         66,
         20,
