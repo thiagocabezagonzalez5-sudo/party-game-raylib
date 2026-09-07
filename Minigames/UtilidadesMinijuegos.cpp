@@ -1538,6 +1538,9 @@ void ResolverColisionesPelotas(
                 distanciaMinima -
                 distancia;
 
+            // Los dos cuerpos tienen la misma masa: la correccion de
+            // posicion siempre se reparte 50/50, sin depender de cual
+            // jugador tenga el indice menor.
             a.posicion.x -=
                 nx *
                 solape /
@@ -1574,9 +1577,10 @@ void ResolverColisionesPelotas(
                 b.cooldownChoque <= 0.0f
             )
             {
-                // La fuerza nace de la velocidad relativa:
-                // un roce lento mueve poco y una embestida
-                // a velocidad alta lanza mucho mas lejos.
+                // Antes el jugador A recibia solo el 35% del impulso
+                // y B el 100%. Como A siempre era el indice menor,
+                // J1 tenia una ventaja sistematica contra J2.
+                // Ahora el impulso es igual y opuesto para ambos.
                 float fuerza =
                     0.65f +
                     relativo *
@@ -1588,21 +1592,20 @@ void ResolverColisionesPelotas(
                         16.0f;
                 }
 
+                const float REPARTO_SIMETRICO = 0.82f;
+                float impulso = fuerza * REPARTO_SIMETRICO;
+
                 a.empuje.x -=
-                    nx *
-                    fuerza *
-                    0.35f;
+                    nx * impulso;
 
                 a.empuje.z -=
-                    nz *
-                    fuerza *
-                    0.35f;
+                    nz * impulso;
 
                 b.empuje.x +=
-                    nx * fuerza;
+                    nx * impulso;
 
                 b.empuje.z +=
-                    nz * fuerza;
+                    nz * impulso;
 
                 a.cooldownChoque =
                     0.14f;
@@ -1866,6 +1869,40 @@ void ResolverGolpesJugadores(
 // DIBUJO
 //==================================================
 
+static void DibujarSombraRetroJugador(
+    const JugadorPrueba& jugador,
+    float radio
+)
+{
+    if (
+        jugador.cayendo ||
+        !jugador.enSuelo
+    )
+    {
+        return;
+    }
+
+    Vector3 posicionSombra =
+    {
+        jugador.posicion.x,
+        jugador.posicion.y - jugador.tamano.y / 2.0f + 0.012f,
+        jugador.posicion.z
+    };
+
+    // Sombra intencionalmente simple: un disco de pocos lados, sin
+    // iluminacion dinamica ni suavizado realista. Ayuda a leer la
+    // posicion del personaje sin romper el aspecto low-poly/retro.
+    DrawCylinder(
+        posicionSombra,
+        radio,
+        radio,
+        0.018f,
+        10,
+        Fade(BLACK, 0.28f)
+    );
+}
+
+
 void DibujarJugadorCuboPrueba(
     const JugadorPrueba& jugador,
     const Participante& participante
@@ -1879,6 +1916,11 @@ void DibujarJugadorCuboPrueba(
     {
         return;
     }
+
+    DibujarSombraRetroJugador(
+        jugador,
+        jugador.tamano.x * 0.48f
+    );
 
     float alturaVisual =
         jugador.aplastado
@@ -1992,6 +2034,11 @@ void DibujarJugadorPelotaPrueba(
     float radio =
         jugador.tamano.x /
         2.0f;
+
+    DibujarSombraRetroJugador(
+        jugador,
+        radio * 0.78f
+    );
 
     DrawSphere(
         jugador.posicion,
