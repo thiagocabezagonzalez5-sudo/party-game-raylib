@@ -31,8 +31,10 @@ inline void DibujarCilindroConSombraRetro(Vector3 posicion,float radioSuperior,f
 inline void DibujarModeloExConSombraRetro(Model modelo,Vector3 posicion,Vector3 ejeRotacion,float anguloRotacion,Vector3 escala,Color tinte){float radioX=std::fabs(escala.x)*0.52f;float radioZ=std::fabs(escala.z)*0.44f;if(radioX<0.24f)radioX=0.24f;if(radioZ<0.20f)radioZ=0.20f;DibujarSombraRetroCircular(posicion,radioX,radioZ);DrawModelEx(modelo,posicion,ejeRotacion,anguloRotacion,escala,tinte);}
 
 #ifdef SOMBRAS_RETRO_AUTOMATICAS
-#define DrawCube(posicion,ancho,alto,largo,color) DibujarCuboConSombraRetro(posicion,ancho,alto,largo,color)
-#define DrawSphere(posicion,radio,color) DibujarEsferaConSombraRetro(posicion,radio,color)
-#define DrawCylinder(posicion,radioSuperior,radioInferior,alto,lados,color) DibujarCilindroConSombraRetro(posicion,radioSuperior,radioInferior,alto,lados,color)
-#define DrawModelEx(modelo,posicion,eje,angulo,escala,tinte) DibujarModeloExConSombraRetro(modelo,posicion,eje,angulo,escala,tinte)
+// Variadicas para aceptar llamadas con Vector3{ x, y, z } sin que las
+// comas del inicializador confundan al preprocesador.
+#define DrawCube(...) DibujarCuboConSombraRetro(__VA_ARGS__)
+#define DrawSphere(...) DibujarEsferaConSombraRetro(__VA_ARGS__)
+#define DrawCylinder(...) DibujarCilindroConSombraRetro(__VA_ARGS__)
+#define DrawModelEx(...) DibujarModeloExConSombraRetro(__VA_ARGS__)
 #endif
