@@ -23,6 +23,7 @@ static const char* NombreModoPrueba(
         case PRUEBA_NUCLEOS_ENERGIA: return "F10 - NUCLEOS DE ENERGIA";
         case PRUEBA_REFUGIO_PINCHOS: return "F11 - REFUGIO DE PINCHOS";
         case PRUEBA_MIRADAS_CRUZADAS: return "F12 - MIRADAS CRUZADAS";
+        case PRUEBA_MUROS_LOCOS: return "F9 - MUROS LOCOS";
     }
 
     return "PRUEBA";
@@ -240,6 +241,7 @@ void ZonaPruebas::Inicializar(
     minijuegoNucleosEnergia.Inicializar();
     minijuegoRefugioPinchos.Inicializar();
     minijuegoMiradasCruzadas.Inicializar();
+    minijuegoMurosLocos.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
@@ -338,6 +340,14 @@ void ZonaPruebas::CambiarModo(
 
         case PRUEBA_MIRADAS_CRUZADAS:
             minijuegoMiradasCruzadas.Inicializar();
+            break;
+
+        case PRUEBA_MUROS_LOCOS:
+            minijuegoMurosLocos.Inicializar();
+            minijuegoMurosLocos.ConfigurarJugadores(
+                jugadores,
+                MAX_JUGADORES_PRUEBA
+            );
             break;
     }
 
@@ -482,6 +492,13 @@ static void ReiniciarModoActual(
         case PRUEBA_MIRADAS_CRUZADAS:
             zona.minijuegoMiradasCruzadas.Reiniciar(zona.participantes);
             break;
+
+        case PRUEBA_MUROS_LOCOS:
+            zona.minijuegoMurosLocos.Reiniciar(
+                zona.jugadores,
+                MAX_JUGADORES_PRUEBA
+            );
+            break;
     }
 }
 
@@ -513,6 +530,7 @@ void ZonaPruebas::Actualizar(
         if (IsKeyPressed(KEY_EIGHT)) { CambiarModo(PRUEBA_ISLA_FUEGO); return; }
         if (IsKeyPressed(KEY_NINE)) { CambiarModo(PRUEBA_CAPITAN_MANDA); return; }
         if (IsKeyPressed(KEY_ZERO)) { CambiarModo(PRUEBA_BARRA_GIRATORIA); return; }
+        if (IsKeyPressed(KEY_F9)) { CambiarModo(PRUEBA_MUROS_LOCOS); return; }
         if (IsKeyPressed(KEY_F10)) { CambiarModo(PRUEBA_NUCLEOS_ENERGIA); return; }
         if (IsKeyPressed(KEY_F11)) { CambiarModo(PRUEBA_REFUGIO_PINCHOS); return; }
         if (IsKeyPressed(KEY_F12)) { CambiarModo(PRUEBA_MIRADAS_CRUZADAS); return; }
@@ -671,6 +689,17 @@ void ZonaPruebas::Actualizar(
                 participantes
             );
             break;
+
+        case PRUEBA_MUROS_LOCOS:
+            minijuegoMurosLocos.Actualizar(
+                deltaTime,
+                jugadores,
+                MAX_JUGADORES_PRUEBA,
+                participantes,
+                particulas,
+                MAX_PARTICULAS_TIERRA
+            );
+            break;
     }
 }
 
@@ -773,6 +802,17 @@ void ZonaPruebas::Dibujar() const
         case PRUEBA_MIRADAS_CRUZADAS:
             minijuegoMiradasCruzadas.Dibujar(participantes);
             break;
+
+        case PRUEBA_MUROS_LOCOS:
+            minijuegoMurosLocos.Dibujar(
+                jugadores,
+                MAX_JUGADORES_PRUEBA,
+                participantes,
+                particulas,
+                MAX_PARTICULAS_TIERRA,
+                mostrarDebug
+            );
+            break;
     }
 
     if (modoCatalogo)
@@ -813,7 +853,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "F10 NUCLEOS   F11 PINCHOS   F12 MIRADAS",
+        "F9 MUROS   F10 NUCLEOS   F11 PINCHOS   F12 MIRADAS",
         30,
         GetScreenHeight() - 116,
         15,
