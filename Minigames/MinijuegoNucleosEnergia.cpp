@@ -191,9 +191,6 @@ static void AgregarAlHistorialNucleos(
 
     if (historial.cantidad >= MAX_HISTORIAL_NUCLEOS)
     {
-        // Caso extremo: descartamos solamente la entrada mas vieja.
-        // Lo reciente, que es lo que puede perderse al recibir un golpe,
-        // queda siempre preservado.
         for (int i = 1; i < MAX_HISTORIAL_NUCLEOS; i++)
         {
             historial.especiales[i - 1] = historial.especiales[i];
@@ -435,7 +432,6 @@ static void ActualizarNucleosCaidos(
             caido.velocidad.z *= 0.93f;
         }
 
-        // Las paredes de la arena tambien contienen a los nucleos.
         if (caido.posicion.x < -6.55f)
         {
             caido.posicion.x = -6.55f;
@@ -761,8 +757,6 @@ void MinijuegoNucleosEnergia::Actualizar(
             entrada = LeerInputMinijuegoParticipante(participantes[i]);
         }
 
-        // Usa el mismo movimiento, salto, golpe horizontal y golpe al
-        // suelo que Color Seguro. Los bots siguen inmoviles aqui.
         ActualizarJugadorPruebaNormal(
             jugadores[i],
             entrada,
@@ -776,9 +770,6 @@ void MinijuegoNucleosEnergia::Actualizar(
         );
     }
 
-    // Guardamos el valor justo antes de resolver los golpes. El golpe
-    // horizontal comun aumenta tiempoRalentizado; asi detectamos a la
-    // victima sin duplicar la deteccion de impacto de MecanicasJugador.
     float ralentizacionAntes[MAX_PARTICIPANTES]{};
 
     for (int i = 0; i < limite; i++)
@@ -990,8 +981,6 @@ void MinijuegoNucleosEnergia::Dibujar(
             Fade(nucleosCaidos[i].especial ? GOLD : SKYBLUE, 0.50f)
         );
     }
-
-    DibujarParticulasTierra(particulas, cantidadParticulas);
 
     int limite =
         cantidadMaxima < MAX_JUGADORES_PRUEBA
