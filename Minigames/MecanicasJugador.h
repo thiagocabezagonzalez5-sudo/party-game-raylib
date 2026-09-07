@@ -3,6 +3,9 @@
 #include "Minigames/ColisionesMinijuegos.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 
+#define SOMBRAS_RETRO_AUTOMATICAS
+#include "Minigames/SombrasRetro.h"
+
 #include <cmath>
 
 
@@ -42,6 +45,31 @@ inline void ConfigurarJugadorMinijuegoEstandar(
 // PLATAFORMAS MOVILES DESCENDENTES
 //==================================================
 
+inline bool HayBloquesDescendiendo(
+    const BloquePrueba bloques[],
+    int cantidadBloques
+)
+{
+    if (bloques == nullptr)
+    {
+        return false;
+    }
+
+    for (int i = 0; i < cantidadBloques; i++)
+    {
+        if (
+            bloques[i].activaColision &&
+            bloques[i].cayendo
+        )
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 inline void AcompanharPlataformaDescendente(
     JugadorPrueba& jugador,
     BloquePrueba bloques[],
@@ -63,16 +91,6 @@ inline void AcompanharPlataformaDescendente(
     const float mitadY = jugador.tamano.y / 2.0f;
     const float piesJugador = jugador.posicion.y - mitadY;
 
-    // No elegimos la primera plataforma que solape el hitbox completo.
-    // En Color Seguro los rectangulos internos de dos hexagonos vecinos
-    // pueden superponerse. Cuando el jugador queda justo en la union,
-    // eso hacia que un bloque que caia lo "adoptara" aunque realmente
-    // estuviera mas apoyado en el vecino y su Y saltaba bruscamente.
-    //
-    // Usamos el centro XZ del jugador y elegimos el soporte horizontal
-    // mas cercano. Si dos soportes quedan practicamente empatados, damos
-    // prioridad al que NO cae. Asi una union entre plataforma segura y
-    // plataforma descendente nunca arrastra al jugador por error.
     int indiceSoporte = -1;
     float mejorDistancia = 1000000.0f;
 
@@ -86,7 +104,6 @@ inline void AcompanharPlataformaDescendente(
         }
 
         BoundingBox cajaBloque = CrearHitboxBloquePrueba(bloque);
-
         const float MARGEN_CENTRO = 0.035f;
 
         bool centroDentro =
@@ -182,12 +199,27 @@ inline void ActualizarJugadorPruebaNormal(
     float deltaTime
 )
 {
-    AcompanharPlataformaDescendente(
-        jugador,
-        bloques,
-        cantidadBloques,
-        deltaTime
-    );
+    bool hayPlataformasMoviles =
+        HayBloquesDescendiendo(
+            bloques,
+            cantidadBloques
+        );
+
+    // Color Seguro es el unico escenario actual con varias plataformas
+    // adyacentes que descienden. El arreglo anterior intentaba pegar al
+    // jugador a una plataforma en movimiento y luego corregir solapes.
+    // En una union de dos AABB eso podia producir un salto brusco de Y o
+    // X/Z. Mientras haya una plataforma bajando dejamos que la gravedad
+    // y la colision vertical normal hagan el trabajo, sin snaps extra.
+    if (!hayPlataformasMoviles)
+    {
+        AcompanharPlataformaDescendente(
+            jugador,
+            bloques,
+            cantidadBloques,
+            deltaTime
+        );
+    }
 
     if (jugador.tiempoRalentizado > 0.0f)
     {
@@ -223,7 +255,11 @@ inline void ActualizarJugadorPruebaNormal(
         deltaTime
     );
 
-    if (!estabaCayendo && !jugador.cayendo)
+    if (
+        !hayPlataformasMoviles &&
+        !estabaCayendo &&
+        !jugador.cayendo
+    )
     {
         CorregirMovimientoJugadorContraBloques(
             jugador,
@@ -286,10 +322,6 @@ inline void ActualizarJugadorMinijuegoEstandar(
 
 //==================================================
 // COLISION SOLIDA ENTRE JUGADORES SIN EMPUJE
-//==================================================
-// La correccion se aplica solamente al jugador que esta entrando
-// en el otro. Nunca se reparte el solape entre ambos, porque repartirlo
-// hace que un jugador quieto sea desplazado solo por contacto.
 //==================================================
 
 inline void ResolverColisionesJugadoresSinEmpuje(
@@ -365,39 +397,23 @@ inline void ResolverColisionesJugadoresSinEmpuje(
                 bool corregirA = false;
 
                 if (aVaHaciaB && !bVaHaciaA)
-                {
                     corregirA = true;
-                }
                 else if (bVaHaciaA && !aVaHaciaB)
-                {
                     corregirA = false;
-                }
                 else
-                {
-                    // Si ambos avanzan o ninguno tiene una direccion
-                    // concluyente, retrocede el que tenga mas movimiento.
-                    // En empate elegimos A solo para resolver el solape
-                    // sin desplazar simultaneamente a los dos.
-                    corregirA =
-                        std::fabs(a.velocidad.x) >=
-                        std::fabs(b.velocidad.x);
-                }
+                    corregirA = std::fabs(a.velocidad.x) >= std::fabs(b.velocidad.x);
 
                 float correccion = solapeX + MARGEN;
 
                 if (corregirA)
                 {
-                    a.posicion.x += aEstaALaIzquierda
-                        ? -correccion
-                        : correccion;
+                    a.posicion.x += aEstaALaIzquierda ? -correccion : correccion;
                     a.velocidad.x = 0.0f;
                     a.empuje.x = 0.0f;
                 }
                 else
                 {
-                    b.posicion.x += aEstaALaIzquierda
-                        ? correccion
-                        : -correccion;
+                    b.posicion.x += aEstaALaIzquierda ? correccion : -correccion;
                     b.velocidad.x = 0.0f;
                     b.empuje.x = 0.0f;
                 }
@@ -415,35 +431,23 @@ inline void ResolverColisionesJugadoresSinEmpuje(
                 bool corregirA = false;
 
                 if (aVaHaciaB && !bVaHaciaA)
-                {
                     corregirA = true;
-                }
                 else if (bVaHaciaA && !aVaHaciaB)
-                {
                     corregirA = false;
-                }
                 else
-                {
-                    corregirA =
-                        std::fabs(a.velocidad.z) >=
-                        std::fabs(b.velocidad.z);
-                }
+                    corregirA = std::fabs(a.velocidad.z) >= std::fabs(b.velocidad.z);
 
                 float correccion = solapeZ + MARGEN;
 
                 if (corregirA)
                 {
-                    a.posicion.z += aEstaArriba
-                        ? -correccion
-                        : correccion;
+                    a.posicion.z += aEstaArriba ? -correccion : correccion;
                     a.velocidad.z = 0.0f;
                     a.empuje.z = 0.0f;
                 }
                 else
                 {
-                    b.posicion.z += aEstaArriba
-                        ? correccion
-                        : -correccion;
+                    b.posicion.z += aEstaArriba ? correccion : -correccion;
                     b.velocidad.z = 0.0f;
                     b.empuje.z = 0.0f;
                 }
@@ -471,21 +475,14 @@ inline void CrearParticulasImpactoGolpe(
     const int CANTIDAD_CREAR = 18;
     int creadas = 0;
 
-    for (
-        int i = 0;
-        i < cantidadMaxima && creadas < CANTIDAD_CREAR;
-        i++
-    )
+    for (int i = 0; i < cantidadMaxima && creadas < CANTIDAD_CREAR; i++)
     {
         ParticulaTierra& particula = particulas[i];
         if (particula.activa) continue;
 
         float direccionX = (float)GetRandomValue(-100, 100) / 100.0f;
         float direccionZ = (float)GetRandomValue(-100, 100) / 100.0f;
-        float longitud = std::sqrt(
-            direccionX * direccionX +
-            direccionZ * direccionZ
-        );
+        float longitud = std::sqrt(direccionX * direccionX + direccionZ * direccionZ);
 
         if (longitud < 0.01f)
         {
@@ -497,8 +494,7 @@ inline void CrearParticulasImpactoGolpe(
         direccionX /= longitud;
         direccionZ /= longitud;
 
-        float velocidadHorizontal =
-            (float)GetRandomValue(18, 42) / 10.0f;
+        float velocidadHorizontal = (float)GetRandomValue(18, 42) / 10.0f;
 
         particula.activa = true;
         particula.posicion =
@@ -513,14 +509,10 @@ inline void CrearParticulasImpactoGolpe(
             (float)GetRandomValue(18, 45) / 10.0f,
             direccionZ * velocidadHorizontal
         };
-        particula.vidaMaxima =
-            (float)GetRandomValue(18, 34) / 100.0f;
+        particula.vidaMaxima = (float)GetRandomValue(18, 34) / 100.0f;
         particula.vida = particula.vidaMaxima;
-        particula.tamano =
-            (float)GetRandomValue(7, 14) / 100.0f;
-        particula.color =
-            GetRandomValue(0, 1) == 0 ? YELLOW : GOLD;
-
+        particula.tamano = (float)GetRandomValue(7, 14) / 100.0f;
+        particula.color = GetRandomValue(0, 1) == 0 ? YELLOW : GOLD;
         creadas++;
     }
 }
@@ -576,18 +568,10 @@ inline void ResolverGolpesJugadoresConEfectos(
             float distancia = std::sqrt(dx * dx + dz * dz);
 
             if (distancia < 0.001f || distancia > 1.55f)
-            {
                 continue;
-            }
 
-            if (
-                std::fabs(
-                    objetivo.posicion.y - atacante.posicion.y
-                ) > 1.0f
-            )
-            {
+            if (std::fabs(objetivo.posicion.y - atacante.posicion.y) > 1.0f)
                 continue;
-            }
 
             float normalX = dx / distancia;
             float normalZ = dz / distancia;
@@ -596,16 +580,11 @@ inline void ResolverGolpesJugadoresConEfectos(
                 normalZ * atacante.direccionMirada.z;
 
             if (frente < 0.25f)
-            {
                 continue;
-            }
 
-            objetivo.empuje.x +=
-                normalX * FUERZA_GOLPE_JUGADOR_ESTANDAR;
-            objetivo.empuje.z +=
-                normalZ * FUERZA_GOLPE_JUGADOR_ESTANDAR;
-            objetivo.tiempoRalentizado =
-                DURACION_RALENTIZACION_GOLPE;
+            objetivo.empuje.x += normalX * FUERZA_GOLPE_JUGADOR_ESTANDAR;
+            objetivo.empuje.z += normalZ * FUERZA_GOLPE_JUGADOR_ESTANDAR;
+            objetivo.tiempoRalentizado = DURACION_RALENTIZACION_GOLPE;
 
             Vector3 posicionImpacto =
             {
