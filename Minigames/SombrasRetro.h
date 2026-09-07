@@ -22,9 +22,61 @@ inline void DibujarSombraRetroRectangular(Vector3 posicionObjeto,float ancho,flo
 
 inline bool EsSuperficieBaseRetro(float ancho,float alto,float largo){return alto<=0.82f&&ancho*largo>=18.0f;}
 
-inline void DibujarCuboConSombraRetro(Vector3 posicion,float ancho,float alto,float largo,Color color){if(!EsSuperficieBaseRetro(ancho,alto,largo)&&ancho>=0.16f&&largo>=0.16f&&alto>=0.08f)DibujarSombraRetroRectangular(posicion,ancho*0.92f,largo*0.92f);DrawCube(posicion,ancho,alto,largo,color);}
+inline bool EsCuboJugadorEstandarRetro(float ancho,float alto,float largo)
+{
+    bool plantaJugador =
+        std::fabs(ancho - 0.80f) <= 0.09f &&
+        std::fabs(largo - 0.80f) <= 0.09f;
 
-inline void DibujarEsferaConSombraRetro(Vector3 posicion,float radio,Color color){if(radio>=0.10f)DibujarSombraRetroCircular(posicion,radio*0.92f,radio*0.72f);DrawSphere(posicion,radio,color);}
+    bool alturaNormal = alto >= 1.18f && alto <= 1.52f;
+    bool alturaAplastada = alto >= 0.20f && alto <= 0.42f;
+
+    return plantaJugador && (alturaNormal || alturaAplastada);
+}
+
+inline void DibujarCuboConSombraRetro(Vector3 posicion,float ancho,float alto,float largo,Color color)
+{
+    bool yaTieneSombraDeJugador =
+        EsCuboJugadorEstandarRetro(ancho,alto,largo);
+
+    bool objetoVisible =
+        ancho >= 0.20f &&
+        largo >= 0.20f &&
+        alto >= 0.08f;
+
+    if(
+        !yaTieneSombraDeJugador &&
+        !EsSuperficieBaseRetro(ancho,alto,largo) &&
+        objetoVisible
+    )
+    {
+        DibujarSombraRetroRectangular(
+            posicion,
+            ancho*0.92f,
+            largo*0.92f
+        );
+    }
+
+    DrawCube(posicion,ancho,alto,largo,color);
+}
+
+inline void DibujarEsferaConSombraRetro(Vector3 posicion,float radio,Color color)
+{
+    // Las pelotas-jugador ya proyectan su propia sombra desde
+    // UtilidadesMinijuegos. Evitamos dibujarla dos veces.
+    bool pelotaJugador = radio >= 0.60f && radio <= 0.70f;
+
+    if(!pelotaJugador && radio>=0.10f)
+    {
+        DibujarSombraRetroCircular(
+            posicion,
+            radio*0.92f,
+            radio*0.72f
+        );
+    }
+
+    DrawSphere(posicion,radio,color);
+}
 
 inline void DibujarCilindroConSombraRetro(Vector3 posicion,float radioSuperior,float radioInferior,float alto,int lados,Color color){float radio=radioSuperior>radioInferior?radioSuperior:radioInferior;bool esBaseGrande=alto<=0.82f&&radio>=2.35f;if(!esBaseGrande&&radio>=0.10f&&alto>=0.07f)DibujarSombraRetroCircular(posicion,radio*0.92f,radio*0.72f);DrawCylinder(posicion,radioSuperior,radioInferior,alto,lados,color);}
 
