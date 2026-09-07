@@ -41,8 +41,7 @@ static const Vector3 PUNTOS_NUCLEOS[] =
 
 
 static const int CANTIDAD_PUNTOS_NUCLEOS =
-    sizeof(PUNTOS_NUCLEOS) /
-    sizeof(PUNTOS_NUCLEOS[0]);
+    sizeof(PUNTOS_NUCLEOS) / sizeof(PUNTOS_NUCLEOS[0]);
 
 
 static int ValorNucleo(bool especial)
@@ -59,10 +58,7 @@ static bool PuntoOcupadoPorOtroNucleo(
 {
     for (int i = 0; i < MAX_NUCLEOS_ENERGIA; i++)
     {
-        if (
-            i == indiceIgnorado ||
-            !minijuego.nucleos[i].activo
-        )
+        if (i == indiceIgnorado || !minijuego.nucleos[i].activo)
         {
             continue;
         }
@@ -91,13 +87,11 @@ static void ReubicarNucleo(
     {
         int candidato = GetRandomValue(0, CANTIDAD_PUNTOS_NUCLEOS - 1);
 
-        if (
-            !PuntoOcupadoPorOtroNucleo(
-                minijuego,
-                indice,
-                PUNTOS_NUCLEOS[candidato]
-            )
-        )
+        if (!PuntoOcupadoPorOtroNucleo(
+            minijuego,
+            indice,
+            PUNTOS_NUCLEOS[candidato]
+        ))
         {
             puntoElegido = candidato;
             break;
@@ -108,9 +102,7 @@ static void ReubicarNucleo(
     nucleo.posicion = PUNTOS_NUCLEOS[puntoElegido];
 
     int probabilidadEspecial =
-        minijuego.tiempoRestante <= 10.0f
-        ? 30
-        : 16;
+        minijuego.tiempoRestante <= 10.0f ? 30 : 16;
 
     nucleo.especial =
         GetRandomValue(1, 100) <= probabilidadEspecial;
@@ -122,9 +114,7 @@ static void ReubicarNucleo(
 }
 
 
-static void ConfigurarArenaNucleos(
-    MinijuegoNucleosEnergia& minijuego
-)
+static void ConfigurarArenaNucleos(MinijuegoNucleosEnergia& minijuego)
 {
     minijuego.cantidadBloques = 0;
 
@@ -186,8 +176,7 @@ static void AgregarAlHistorialNucleos(
         return;
     }
 
-    HistorialNucleosJugador& historial =
-        minijuego.historial[jugador];
+    HistorialNucleosJugador& historial = minijuego.historial[jugador];
 
     if (historial.cantidad >= MAX_HISTORIAL_NUCLEOS)
     {
@@ -204,9 +193,7 @@ static void AgregarAlHistorialNucleos(
 }
 
 
-static int BuscarSlotNucleoCaido(
-    MinijuegoNucleosEnergia& minijuego
-)
+static int BuscarSlotNucleoCaido(MinijuegoNucleosEnergia& minijuego)
 {
     int mejor = 0;
     float menorVida = 100000.0f;
@@ -241,11 +228,10 @@ static void SoltarNucleoPorGolpe(
     NucleoEnergiaCaido& caido = minijuego.nucleosCaidos[slot];
 
     float angulo =
-        ((float)GetRandomValue(0, 6283) / 1000.0f) +
-        indiceSalida * 2.05f;
+        (float)GetRandomValue(0, 6283) / 1000.0f +
+        indiceSalida * 1.27f;
 
-    float fuerza =
-        (float)GetRandomValue(24, 42) / 10.0f;
+    float fuerza = (float)GetRandomValue(24, 42) / 10.0f;
 
     caido = {};
     caido.activo = true;
@@ -268,20 +254,25 @@ static void PerderUltimosNucleosPorGolpe(
     MinijuegoNucleosEnergia& minijuego,
     int jugador,
     Vector3 posicionJugador,
+    int maximoPerder,
     ParticulaTierra particulas[],
     int cantidadParticulas
 )
 {
-    if (jugador < 0 || jugador >= MAX_PARTICIPANTES)
+    if (
+        jugador < 0 ||
+        jugador >= MAX_PARTICIPANTES ||
+        maximoPerder <= 0
+    )
     {
         return;
     }
 
     HistorialNucleosJugador& historial = minijuego.historial[jugador];
 
-    int cantidadPerder = historial.cantidad < 3
+    int cantidadPerder = historial.cantidad < maximoPerder
         ? historial.cantidad
-        : 3;
+        : maximoPerder;
 
     if (cantidadPerder <= 0)
     {
@@ -295,6 +286,7 @@ static void PerderUltimosNucleosPorGolpe(
         historial.cantidad--;
 
         minijuego.puntuaciones[jugador] -= ValorNucleo(especial);
+
         if (minijuego.puntuaciones[jugador] < 0)
         {
             minijuego.puntuaciones[jugador] = 0;
@@ -469,13 +461,11 @@ static void ActualizarNucleosCaidos(
                 continue;
             }
 
-            if (
-                !JugadorTocaPuntoNucleo(
-                    jugadores[i],
-                    caido.posicion,
-                    RADIO_RECOLECCION_CAIDO
-                )
-            )
+            if (!JugadorTocaPuntoNucleo(
+                jugadores[i],
+                caido.posicion,
+                RADIO_RECOLECCION_CAIDO
+            ))
             {
                 continue;
             }
@@ -502,10 +492,7 @@ static void FinalizarNucleos(
     AudioJuego* audio
 )
 {
-    if (
-        minijuego.resultado.estado !=
-        RESULTADO_MINIJUEGO_EN_CURSO
-    )
+    if (minijuego.resultado.estado != RESULTADO_MINIJUEGO_EN_CURSO)
     {
         return;
     }
@@ -632,10 +619,9 @@ void MinijuegoNucleosEnergia::ConfigurarJugadores(
         {  4.8f, 1.0f, -4.8f }
     };
 
-    int limite =
-        cantidadMaxima < MAX_JUGADORES_PRUEBA
-            ? cantidadMaxima
-            : MAX_JUGADORES_PRUEBA;
+    int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
+        ? cantidadMaxima
+        : MAX_JUGADORES_PRUEBA;
 
     for (int i = 0; i < limite; i++)
     {
@@ -738,10 +724,9 @@ void MinijuegoNucleosEnergia::Actualizar(
         }
     }
 
-    int limite =
-        cantidadMaxima < MAX_JUGADORES_PRUEBA
-            ? cantidadMaxima
-            : MAX_JUGADORES_PRUEBA;
+    int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
+        ? cantidadMaxima
+        : MAX_JUGADORES_PRUEBA;
 
     for (int i = 0; i < limite; i++)
     {
@@ -787,6 +772,20 @@ void MinijuegoNucleosEnergia::Actualizar(
 
     for (int i = 0; i < limite; i++)
     {
+        if (jugadores[i].golpeSueloRecibido)
+        {
+            PerderUltimosNucleosPorGolpe(
+                *this,
+                i,
+                jugadores[i].posicion,
+                5,
+                particulas,
+                cantidadParticulas
+            );
+
+            continue;
+        }
+
         if (
             jugadores[i].tiempoRalentizado >
                 ralentizacionAntes[i] + 0.20f
@@ -796,6 +795,7 @@ void MinijuegoNucleosEnergia::Actualizar(
                 *this,
                 i,
                 jugadores[i].posicion,
+                3,
                 particulas,
                 cantidadParticulas
             );
@@ -825,13 +825,11 @@ void MinijuegoNucleosEnergia::Actualizar(
                 continue;
             }
 
-            if (
-                !JugadorTocaPuntoNucleo(
-                    jugadores[i],
-                    nucleo.posicion,
-                    RADIO_RECOLECCION_NUCLEO
-                )
-            )
+            if (!JugadorTocaPuntoNucleo(
+                jugadores[i],
+                nucleo.posicion,
+                RADIO_RECOLECCION_NUCLEO
+            ))
             {
                 continue;
             }
@@ -982,10 +980,9 @@ void MinijuegoNucleosEnergia::Dibujar(
         );
     }
 
-    int limite =
-        cantidadMaxima < MAX_JUGADORES_PRUEBA
-            ? cantidadMaxima
-            : MAX_JUGADORES_PRUEBA;
+    int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
+        ? cantidadMaxima
+        : MAX_JUGADORES_PRUEBA;
 
     for (int i = 0; i < limite; i++)
     {
@@ -1006,7 +1003,7 @@ void MinijuegoNucleosEnergia::Dibujar(
 
     DrawText("NUCLEOS DE ENERGIA", 24, 22, 30, RAYWHITE);
     DrawText(
-        "RECOLECTA ENERGIA. SI TE GOLPEAN, SUELTAS TUS ULTIMAS 3 RECOGIDAS.",
+        "GOLPE NORMAL: SUELTAS 3. GROUND POUND: SUELTAS HASTA 5 RECOGIDAS.",
         24,
         60,
         18,
@@ -1014,7 +1011,7 @@ void MinijuegoNucleosEnergia::Dibujar(
     );
 
     DrawText(
-        "GOLPE: E / SHIFT / B   |   GOLPE AL SUELO: SALTO EN EL AIRE",
+        "GOLPE: E / SHIFT / B   |   GROUND POUND: SALTO EN EL AIRE + 0.5 s",
         24,
         86,
         16,
