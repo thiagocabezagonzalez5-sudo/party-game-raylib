@@ -186,7 +186,7 @@ void MenuModoJuego::Dibujar() const
     const char* descripciones[2] =
     {
         "Elegi personajes y despues un minijuego",
-        "Modo tablero - en construccion"
+        "Turnos, dado, trofeos y minijuego por ronda"
     };
 
     for (int i = 0; i < 2; i++)
