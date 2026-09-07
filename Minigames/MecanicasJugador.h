@@ -23,6 +23,10 @@ const float FUERZA_GOLPE_JUGADOR_ESTANDAR = 4.2f;
 const float DURACION_RALENTIZACION_GOLPE = 0.70f;
 const float MULTIPLICADOR_VELOCIDAD_RALENTIZADO = 0.45f;
 
+const float DURACION_PREPARACION_GROUND_POUND = 0.48f;
+const float DURACION_APLASTADO_GROUND_POUND = 2.35f;
+const float MULTIPLICADOR_APLASTADO_GROUND_POUND = 0.12f;
+
 
 inline void ConfigurarJugadorMinijuegoEstandar(
     JugadorPrueba& jugador,
@@ -36,6 +40,11 @@ inline void ConfigurarJugadorMinijuegoEstandar(
     jugador.gravedad = GRAVEDAD_JUGADOR_ESTANDAR;
     jugador.duracionRespawn = DURACION_RESPAWN_JUGADOR_ESTANDAR;
     jugador.tiempoRalentizado = 0.0f;
+    jugador.multiplicadorRalentizacion = 1.0f;
+
+    jugador.preparandoGolpeSuelo = false;
+    jugador.tiempoPreparacionGolpeSuelo = 0.0f;
+    jugador.golpeSueloRecibido = false;
 
     ReiniciarJugadorPrueba(jugador);
 }
@@ -199,18 +208,16 @@ inline void ActualizarJugadorPruebaNormal(
     float deltaTime
 )
 {
+    jugador.golpeSueloRecibido = false;
+
     bool hayPlataformasMoviles =
         HayBloquesDescendiendo(
             bloques,
             cantidadBloques
         );
 
-    // Color Seguro es el unico escenario actual con varias plataformas
-    // adyacentes que descienden. El arreglo anterior intentaba pegar al
-    // jugador a una plataforma en movimiento y luego corregir solapes.
-    // En una union de dos AABB eso podia producir un salto brusco de Y o
-    // X/Z. Mientras haya una plataforma bajando dejamos que la gravedad
-    // y la colision vertical normal hagan el trabajo, sin snaps extra.
+    // Color Seguro usa varias plataformas vecinas que descienden. En sus
+    // uniones evitamos correcciones extra porque sus AABB se superponen.
     if (!hayPlataformasMoviles)
     {
         AcompanharPlataformaDescendente(
@@ -224,18 +231,83 @@ inline void ActualizarJugadorPruebaNormal(
     if (jugador.tiempoRalentizado > 0.0f)
     {
         jugador.tiempoRalentizado -= deltaTime;
-        if (jugador.tiempoRalentizado < 0.0f)
+
+        if (jugador.tiempoRalentizado <= 0.0f)
         {
             jugador.tiempoRalentizado = 0.0f;
+            jugador.multiplicadorRalentizacion = 1.0f;
         }
+    }
+
+    InputMinijuegoParticipante entradaProcesada = entrada;
+
+    // Segundo toque en el aire: primero se prepara el ground pound. Durante
+    // casi medio segundo el personaje queda practicamente suspendido y no
+    // puede encadenar golpe horizontal ni otra accion de salto.
+    if (
+        permitirSalto &&
+        !jugador.enSuelo &&
+        entradaProcesada.saltar &&
+        !jugador.golpeSueloActivo &&
+        !jugador.preparandoGolpeSuelo
+    )
+    {
+        jugador.preparandoGolpeSuelo = true;
+        jugador.tiempoPreparacionGolpeSuelo =
+            DURACION_PREPARACION_GROUND_POUND;
+        jugador.golpeando = false;
+    }
+
+    if (jugador.enSuelo && jugador.preparandoGolpeSuelo)
+    {
+        jugador.preparandoGolpeSuelo = false;
+        jugador.tiempoPreparacionGolpeSuelo = 0.0f;
+    }
+
+    if (jugador.preparandoGolpeSuelo)
+    {
+        entradaProcesada.saltar = false;
+        entradaProcesada.golpear = false;
+
+        jugador.velocidad.y = 0.0f;
+        jugador.tiempoPreparacionGolpeSuelo -= deltaTime;
+
+        if (jugador.tiempoPreparacionGolpeSuelo <= 0.0f)
+        {
+            jugador.preparandoGolpeSuelo = false;
+            jugador.tiempoPreparacionGolpeSuelo = 0.0f;
+            jugador.golpeSueloActivo = true;
+            jugador.velocidad.y = -24.0f;
+        }
+    }
+
+    bool estabaAplastado = jugador.aplastado;
+    float tiempoAplastadoRestante = jugador.tiempoAplastado;
+
+    // La implementacion base inmovilizaba completamente a un aplastado.
+    // Aqui anulamos temporalmente ese bloqueo, reducimos muchisimo su
+    // velocidad y restauramos el estado visual despues de actualizar.
+    if (estabaAplastado)
+    {
+        jugador.aplastado = false;
+        entradaProcesada.saltar = false;
+        entradaProcesada.golpear = false;
     }
 
     float velocidadOriginal = jugador.velocidadMovimiento;
 
     if (jugador.tiempoRalentizado > 0.0f)
     {
+        float factor = jugador.multiplicadorRalentizacion;
+        if (factor < 0.05f) factor = 0.05f;
+        if (factor > 1.0f) factor = 1.0f;
+        jugador.velocidadMovimiento *= factor;
+    }
+
+    if (estabaAplastado)
+    {
         jugador.velocidadMovimiento *=
-            MULTIPLICADOR_VELOCIDAD_RALENTIZADO;
+            MULTIPLICADOR_APLASTADO_GROUND_POUND;
     }
 
     bool golpeandoAntes = jugador.golpeando;
@@ -244,7 +316,7 @@ inline void ActualizarJugadorPruebaNormal(
 
     ActualizarJugadorPrueba(
         jugador,
-        entrada,
+        entradaProcesada,
         bloques,
         cantidadBloques,
         particulas,
@@ -271,6 +343,30 @@ inline void ActualizarJugadorPruebaNormal(
 
     jugador.velocidadMovimiento = velocidadOriginal;
 
+    if (estabaAplastado)
+    {
+        tiempoAplastadoRestante -= deltaTime;
+
+        if (
+            tiempoAplastadoRestante > 0.0f &&
+            !jugador.cayendo
+        )
+        {
+            jugador.aplastado = true;
+            jugador.tiempoAplastado = tiempoAplastadoRestante;
+        }
+        else
+        {
+            jugador.aplastado = false;
+            jugador.tiempoAplastado = 0.0f;
+
+            if (!jugador.cayendo && jugador.tiempoInmunidad < 0.65f)
+            {
+                jugador.tiempoInmunidad = 0.65f;
+            }
+        }
+    }
+
     if (!golpeandoAntes && jugador.golpeando)
     {
         jugador.cooldownGolpe = COOLDOWN_GOLPE_JUGADOR_ESTANDAR;
@@ -279,6 +375,10 @@ inline void ActualizarJugadorPruebaNormal(
     if (estabaCayendo && !jugador.cayendo)
     {
         jugador.tiempoRalentizado = 0.0f;
+        jugador.multiplicadorRalentizacion = 1.0f;
+        jugador.preparandoGolpeSuelo = false;
+        jugador.tiempoPreparacionGolpeSuelo = 0.0f;
+        jugador.golpeSueloRecibido = false;
     }
 }
 
@@ -585,6 +685,8 @@ inline void ResolverGolpesJugadoresConEfectos(
             objetivo.empuje.x += normalX * FUERZA_GOLPE_JUGADOR_ESTANDAR;
             objetivo.empuje.z += normalZ * FUERZA_GOLPE_JUGADOR_ESTANDAR;
             objetivo.tiempoRalentizado = DURACION_RALENTIZACION_GOLPE;
+            objetivo.multiplicadorRalentizacion =
+                MULTIPLICADOR_VELOCIDAD_RALENTIZADO;
 
             Vector3 posicionImpacto =
             {
@@ -614,11 +716,40 @@ inline bool ResolverInteraccionesJugadoresMinijuegoEstandar(
     int cantidadParticulas
 )
 {
+    bool aplastadosAntes[MAX_JUGADORES_PRUEBA]{};
+
+    int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
+        ? cantidadMaxima
+        : MAX_JUGADORES_PRUEBA;
+
+    for (int i = 0; i < limite; i++)
+    {
+        aplastadosAntes[i] = jugadores[i].aplastado;
+    }
+
     bool huboGolpeSuelo = ResolverGolpesSuelo(
         jugadores,
         participantes,
         cantidadMaxima
     );
+
+    if (huboGolpeSuelo)
+    {
+        ActivarTemblorCamaraGeneral(0.18f, 0.28f);
+    }
+
+    for (int i = 0; i < limite; i++)
+    {
+        if (!aplastadosAntes[i] && jugadores[i].aplastado)
+        {
+            jugadores[i].tiempoAplastado =
+                DURACION_APLASTADO_GROUND_POUND;
+            jugadores[i].golpeSueloRecibido = true;
+            jugadores[i].preparandoGolpeSuelo = false;
+            jugadores[i].tiempoPreparacionGolpeSuelo = 0.0f;
+            jugadores[i].golpeSueloActivo = false;
+        }
+    }
 
     ResolverGolpesJugadoresConEfectos(
         jugadores,
