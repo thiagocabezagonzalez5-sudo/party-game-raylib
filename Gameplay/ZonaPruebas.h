@@ -7,8 +7,10 @@
 #include "Minigames/MinijuegoColorSeguro.h"
 #include "Minigames/Minijuego67.h"
 #include "Minigames/MinijuegoIslaFuego.h"
+#include "Minigames/MinijuegoMiradasCruzadas.h"
 #include "Minigames/MinijuegoNucleosEnergia.h"
 #include "Minigames/MinijuegoPelotas.h"
+#include "Minigames/MinijuegoRefugioPinchos.h"
 #include "Minigames/MinijuegoTronco.h"
 #include "Minigames/PruebaModelos.h"
 #include "Minigames/TiposMinijuegos.h"
@@ -27,14 +29,15 @@ enum ModoZonaPruebas
     PRUEBA_ISLA_FUEGO = 8,
     PRUEBA_CAPITAN_MANDA = 9,
     PRUEBA_BARRA_GIRATORIA = 10,
-    PRUEBA_NUCLEOS_ENERGIA = 11
+    PRUEBA_NUCLEOS_ENERGIA = 11,
+    PRUEBA_REFUGIO_PINCHOS = 12,
+    PRUEBA_MIRADAS_CRUZADAS = 13
 };
 
 
 struct ZonaPruebas
 {
-    ModoZonaPruebas modoActual =
-        PRUEBA_ZONA_PRINCIPAL;
+    ModoZonaPruebas modoActual = PRUEBA_ZONA_PRINCIPAL;
 
     JugadorPrueba jugadores[MAX_JUGADORES_PRUEBA];
 
@@ -60,11 +63,10 @@ struct ZonaPruebas
     MinijuegoCapitanManda minijuegoCapitanManda;
     MinijuegoBarraGiratoria minijuegoBarraGiratoria;
     MinijuegoNucleosEnergia minijuegoNucleosEnergia;
+    MinijuegoRefugioPinchos minijuegoRefugioPinchos;
+    MinijuegoMiradasCruzadas minijuegoMiradasCruzadas;
 
-    // Cuando viene del catalogo final, oculta el HUD y los atajos
-    // numericos propios del entorno de desarrollo.
     bool modoCatalogo = false;
-
     bool mostrarDebug = false;
     bool volverAlMenu = false;
 
