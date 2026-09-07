@@ -119,6 +119,9 @@ static ModoZonaPruebas ConvertirCatalogoAModo(
 
         case CATALOGO_MIRADAS_CRUZADAS:
             return PRUEBA_MIRADAS_CRUZADAS;
+
+        case CATALOGO_MUROS_LOCOS:
+            return PRUEBA_MUROS_LOCOS;
     }
 
     return PRUEBA_COLOR_SEGURO;
@@ -139,7 +142,8 @@ static ModoZonaPruebas ElegirMinijuegoAleatorioTablero()
         PRUEBA_BARRA_GIRATORIA,
         PRUEBA_NUCLEOS_ENERGIA,
         PRUEBA_REFUGIO_PINCHOS,
-        PRUEBA_MIRADAS_CRUZADAS
+        PRUEBA_MIRADAS_CRUZADAS,
+        PRUEBA_MUROS_LOCOS
     };
 
     const int cantidadOpciones =
@@ -186,6 +190,9 @@ static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
 
         case PRUEBA_MIRADAS_CRUZADAS:
             return &zona.minijuegoMiradasCruzadas.ObtenerResultado();
+
+        case PRUEBA_MUROS_LOCOS:
+            return &zona.minijuegoMurosLocos.ObtenerResultado();
 
         case PRUEBA_ZONA_PRINCIPAL:
         case PRUEBA_MODELOS:
