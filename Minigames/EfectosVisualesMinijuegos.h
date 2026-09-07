@@ -23,9 +23,8 @@ enum TemaVisualMinijuego
 // TEXTURAS OPCIONALES
 //==================================================
 //
-// Estos slots permiten empezar a meter arte sin obligar a que los
-// archivos existan desde ahora. Si falta una textura el juego sigue
-// usando primitivas y colores como fallback.
+// Son puntos de entrada para arte real. Ninguna textura es obligatoria:
+// mientras el archivo no exista el escenario sigue usando primitivas 3D.
 //==================================================
 
 struct TexturaOpcionalMinijuego
@@ -40,10 +39,13 @@ struct TexturasTematicasMinijuegos
 {
     TexturaOpcionalMinijuego lavaSuelo;
     TexturaOpcionalMinijuego lavaFondo;
+
     TexturaOpcionalMinijuego nieveSuelo;
     TexturaOpcionalMinijuego nieveFondo;
+
     TexturaOpcionalMinijuego cuevaRoca;
     TexturaOpcionalMinijuego cuevaTaladro;
+
     TexturaOpcionalMinijuego magneticoMetal;
     TexturaOpcionalMinijuego magneticoEnergia;
 
@@ -61,23 +63,22 @@ struct EstadoEfectosVisualesMinijuegos
     float duracionTemblor = 0.0f;
     float intensidadTemblor = 0.0f;
 
-    // Datos visuales del minijuego de la cueva. Se mantienen aqui
-    // para que el decorado pueda dibujar los taladros antes de que
-    // cada minijuego pinte sus objetos principales.
     int direccionTaladros = 0;
     float progresoTaladros = 0.0f;
     bool taladrosSeleccionados = false;
 };
 
 
-inline EstadoEfectosVisualesMinijuegos& ObtenerEstadoEfectosVisualesMinijuegos()
+inline EstadoEfectosVisualesMinijuegos&
+ObtenerEstadoEfectosVisualesMinijuegos()
 {
     static EstadoEfectosVisualesMinijuegos estado;
     return estado;
 }
 
 
-inline TexturasTematicasMinijuegos& ObtenerTexturasTematicasMinijuegos()
+inline TexturasTematicasMinijuegos&
+ObtenerTexturasTematicasMinijuegos()
 {
     static TexturasTematicasMinijuegos texturas;
     return texturas;
@@ -89,9 +90,8 @@ inline void PrepararSlotTexturaMinijuego(
     const char* ruta
 )
 {
+    slot = {};
     slot.ruta = ruta;
-    slot.cargada = false;
-    slot.textura = {};
 
     if (ruta == nullptr || !FileExists(ruta))
     {
@@ -104,7 +104,11 @@ inline void PrepararSlotTexturaMinijuego(
     if (!slot.cargada)
     {
         slot.textura = {};
-        TraceLog(LOG_WARNING, "No se pudo cargar textura opcional: %s", ruta);
+        TraceLog(
+            LOG_WARNING,
+            "No se pudo cargar textura opcional: %s",
+            ruta
+        );
     }
 }
 
@@ -200,10 +204,12 @@ inline void DescargarTexturasTematicasMinijuegos()
 
 
 //==================================================
-// TEMBLOR GENERAL
+// TEMBLOR DE CAMARA GENERAL
 //==================================================
 
-inline void ActualizarEfectosVisualesMinijuegos(float deltaTime)
+inline void ActualizarEfectosVisualesMinijuegos(
+    float deltaTime
+)
 {
     EstadoEfectosVisualesMinijuegos& estado =
         ObtenerEstadoEfectosVisualesMinijuegos();
@@ -230,7 +236,10 @@ inline void ActivarTemblorCamaraGeneral(
     EstadoEfectosVisualesMinijuegos& estado =
         ObtenerEstadoEfectosVisualesMinijuegos();
 
-    if (intensidad > estado.intensidadTemblor || estado.tiempoTemblor <= 0.0f)
+    if (
+        intensidad > estado.intensidadTemblor ||
+        estado.tiempoTemblor <= 0.0f
+    )
     {
         estado.intensidadTemblor = intensidad;
     }
@@ -243,7 +252,9 @@ inline void ActivarTemblorCamaraGeneral(
 }
 
 
-inline Camera3D AplicarTemblorGeneralACamara(Camera3D camara)
+inline Camera3D AplicarTemblorGeneralACamara(
+    Camera3D camara
+)
 {
     EstadoEfectosVisualesMinijuegos& estado =
         ObtenerEstadoEfectosVisualesMinijuegos();
@@ -255,17 +266,25 @@ inline Camera3D AplicarTemblorGeneralACamara(Camera3D camara)
 
     float porcentaje =
         estado.duracionTemblor > 0.0f
-        ? estado.tiempoTemblor / estado.duracionTemblor
-        : 0.0f;
+            ? estado.tiempoTemblor / estado.duracionTemblor
+            : 0.0f;
 
     if (porcentaje < 0.0f) porcentaje = 0.0f;
     if (porcentaje > 1.0f) porcentaje = 1.0f;
 
-    float amplitud = estado.intensidadTemblor * porcentaje;
+    float amplitud =
+        estado.intensidadTemblor * porcentaje;
 
-    float dx = std::sin(estado.tiempoGlobal * 47.0f) * amplitud;
-    float dy = std::cos(estado.tiempoGlobal * 61.0f) * amplitud * 0.72f;
-    float dz = std::sin(estado.tiempoGlobal * 37.0f + 0.8f) * amplitud * 0.46f;
+    float dx =
+        std::sin(estado.tiempoGlobal * 47.0f) * amplitud;
+
+    float dy =
+        std::cos(estado.tiempoGlobal * 61.0f) *
+        amplitud * 0.72f;
+
+    float dz =
+        std::sin(estado.tiempoGlobal * 37.0f + 0.8f) *
+        amplitud * 0.46f;
 
     camara.position.x += dx;
     camara.position.y += dy;
@@ -283,7 +302,9 @@ inline Camera3D AplicarTemblorGeneralACamara(Camera3D camara)
 // CONFIGURACION DE TEMAS
 //==================================================
 
-inline void SeleccionarTemaVisualMinijuego(TemaVisualMinijuego tema)
+inline void SeleccionarTemaVisualMinijuego(
+    TemaVisualMinijuego tema
+)
 {
     ObtenerEstadoEfectosVisualesMinijuegos().tema = tema;
 }
@@ -308,13 +329,11 @@ inline void ConfigurarTaladrosVisualesMinijuego(
 
 
 //==================================================
-// DECORACION LAVA
+// LAVA / VOLCANES
 //==================================================
 
 inline void DibujarTemaLava()
 {
-    // Mar de lava por debajo de las plataformas. Da sensacion de altura
-    // y hace que las plataformas de colores parezcan islas volcanicas.
     DrawCube(
         { 0.0f, -4.8f, 0.0f },
         42.0f,
@@ -343,7 +362,12 @@ inline void DibujarTemaLava()
     for (int i = 0; i < 5; i++)
     {
         Vector3 base = volcanes[i];
-        Vector3 cima = { base.x, 5.0f + (i % 2) * 1.4f, base.z };
+        Vector3 cima =
+        {
+            base.x,
+            5.0f + (i % 2) * 1.4f,
+            base.z
+        };
 
         DrawCylinderEx(
             base,
@@ -364,9 +388,12 @@ inline void DibujarTemaLava()
         );
     }
 
-    float pulso = 0.65f + std::sin(
-        ObtenerEstadoEfectosVisualesMinijuegos().tiempoGlobal * 2.6f
-    ) * 0.10f;
+    float pulso =
+        0.65f +
+        std::sin(
+            ObtenerEstadoEfectosVisualesMinijuegos().tiempoGlobal *
+            2.6f
+        ) * 0.10f;
 
     DrawSphere(
         { 2.5f, 6.0f, -20.0f },
@@ -377,13 +404,13 @@ inline void DibujarTemaLava()
 
 
 //==================================================
-// DECORACION NIEVE / CUMBRE ALTA
+// NIEVE / CUMBRE ALTA
 //==================================================
 
 inline void DibujarTemaNieve()
 {
-    // Cuerpo de la montana debajo de la arena para que el escenario
-    // deje de parecer una plataforma flotando a pocos metros del suelo.
+    // Dos cuerpos bajo la arena prolongan visualmente la montana muchos
+    // metros hacia abajo para que la cumbre se sienta realmente alta.
     DrawCylinderEx(
         { 0.0f, -25.0f, 0.0f },
         { 0.0f, -0.85f, 0.0f },
@@ -444,7 +471,7 @@ inline void DibujarTemaNieve()
 
 
 //==================================================
-// DECORACION CUEVA + TALADROS
+// CUEVA + TALADROS
 //==================================================
 
 inline void DibujarTaladrosCueva()
@@ -454,6 +481,9 @@ inline void DibujarTaladrosCueva()
 
     float progreso = estado.progresoTaladros;
 
+    // Durante el aviso el taladro elegido no se queda quieto: asoma y
+    // vibra de forma visible. Durante el ataque el progreso viene de la
+    // logica de ZonaPruebas y recorre ida y vuelta.
     if (estado.taladrosSeleccionados)
     {
         float vibracion =
@@ -461,6 +491,7 @@ inline void DibujarTaladrosCueva()
             std::sin(estado.tiempoGlobal * 13.0f) * 0.045f;
 
         if (vibracion < 0.02f) vibracion = 0.02f;
+
         progreso += vibracion;
         if (progreso > 0.18f) progreso = 0.18f;
     }
@@ -479,30 +510,92 @@ inline void DibujarTaladrosCueva()
         Vector3 finCuerpo{};
         Vector3 punta{};
 
-        if (estado.direccionTaladros == 0 || estado.direccionTaladros == 1)
+        if (
+            estado.direccionTaladros == 0 ||
+            estado.direccionTaladros == 1
+        )
         {
-            float origen = estado.direccionTaladros == 0 ? -5.75f : 5.75f;
-            float signo = estado.direccionTaladros == 0 ? 1.0f : -1.0f;
+            float origen =
+                estado.direccionTaladros == 0
+                    ? -5.75f
+                    : 5.75f;
+
+            float signo =
+                estado.direccionTaladros == 0
+                    ? 1.0f
+                    : -1.0f;
+
             float avance = progreso * 8.8f;
 
-            inicio = { carriles[i], 0.82f, origen + signo * avance };
-            finCuerpo = { carriles[i], 0.82f, inicio.z + signo * 1.65f };
-            punta = { carriles[i], 0.82f, finCuerpo.z + signo * 0.85f };
+            inicio =
+            {
+                carriles[i],
+                0.82f,
+                origen + signo * avance
+            };
+
+            finCuerpo =
+            {
+                carriles[i],
+                0.82f,
+                inicio.z + signo * 1.65f
+            };
+
+            punta =
+            {
+                carriles[i],
+                0.82f,
+                finCuerpo.z + signo * 0.85f
+            };
         }
         else
         {
-            float origen = estado.direccionTaladros == 2 ? -6.55f : 6.55f;
-            float signo = estado.direccionTaladros == 2 ? 1.0f : -1.0f;
+            float origen =
+                estado.direccionTaladros == 2
+                    ? -6.55f
+                    : 6.55f;
+
+            float signo =
+                estado.direccionTaladros == 2
+                    ? 1.0f
+                    : -1.0f;
+
             float avance = progreso * 10.2f;
 
-            inicio = { origen + signo * avance, 0.82f, carriles[i] * 0.86f };
-            finCuerpo = { inicio.x + signo * 1.65f, 0.82f, inicio.z };
-            punta = { finCuerpo.x + signo * 0.85f, 0.82f, inicio.z };
+            inicio =
+            {
+                origen + signo * avance,
+                0.82f,
+                carriles[i] * 0.86f
+            };
+
+            finCuerpo =
+            {
+                inicio.x + signo * 1.65f,
+                0.82f,
+                inicio.z
+            };
+
+            punta =
+            {
+                finCuerpo.x + signo * 0.85f,
+                0.82f,
+                inicio.z
+            };
         }
 
-        Color metal = estado.taladrosSeleccionados
-            ? Color{ 190, 116, 50, 255 }
-            : Color{ 92, 98, 108, 255 };
+        Color metal =
+            estado.taladrosSeleccionados
+                ? Color{ 190, 116, 50, 255 }
+                : Color{ 92, 98, 108, 255 };
+
+        DrawCircle3D(
+            { finCuerpo.x, 0.025f, finCuerpo.z },
+            0.48f,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            Fade(BLACK, 0.28f)
+        );
 
         DrawCylinderEx(
             inicio,
@@ -522,10 +615,10 @@ inline void DibujarTaladrosCueva()
             Color{ 165, 170, 178, 255 }
         );
 
-        // Aros que simulan la mecha helicoidal sin necesidad de un modelo.
         for (int aro = 0; aro < 3; aro++)
         {
             float t = (float)(aro + 1) / 4.0f;
+
             Vector3 centro =
             {
                 finCuerpo.x + (punta.x - finCuerpo.x) * t,
@@ -545,55 +638,67 @@ inline void DibujarTaladrosCueva()
 
 inline void DibujarTemaCueva()
 {
+    // No hay una losa completa sobre el centro porque la camara de este
+    // minijuego esta elevada. En su lugar usamos paredes, pilares y roca
+    // superior solo en los bordes para crear techo sin tapar la accion.
     DrawCube(
-        { 0.0f, 5.8f, -0.5f },
-        15.5f,
-        1.2f,
-        13.5f,
-        Color{ 48, 44, 43, 255 }
-    );
-
-    DrawCube(
-        { -6.8f, 1.7f, 0.0f },
+        { -6.8f, 2.4f, 0.0f },
         2.0f,
-        6.0f,
+        7.4f,
         12.0f,
         Color{ 58, 51, 48, 255 }
     );
 
     DrawCube(
-        { 6.8f, 1.7f, 0.0f },
+        { 6.8f, 2.4f, 0.0f },
         2.0f,
-        6.0f,
+        7.4f,
         12.0f,
         Color{ 58, 51, 48, 255 }
     );
 
     DrawCube(
-        { 0.0f, 1.7f, -6.1f },
+        { 0.0f, 2.7f, -6.2f },
         14.0f,
-        6.0f,
+        7.8f,
         1.6f,
         Color{ 52, 47, 45, 255 }
     );
 
-    const float xEstalactitas[7] =
+    DrawCube(
+        { -5.2f, 8.3f, -2.0f },
+        4.8f,
+        1.4f,
+        8.5f,
+        Color{ 48, 44, 43, 255 }
+    );
+
+    DrawCube(
+        { 5.2f, 8.3f, -2.0f },
+        4.8f,
+        1.4f,
+        8.5f,
+        Color{ 48, 44, 43, 255 }
+    );
+
+    const float xEstalactitas[6] =
     {
-        -5.5f,
-        -3.7f,
-        -1.9f,
-        0.0f,
-        1.9f,
-        3.7f,
-        5.5f
+        -5.3f,
+        -3.9f,
+        -2.7f,
+        2.7f,
+        3.9f,
+        5.3f
     };
 
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < 6; i++)
     {
+        float z = -4.7f + (i % 2) * 1.35f;
+
         DrawCylinderEx(
-            { xEstalactitas[i], 5.25f, -4.8f + (i % 2) * 1.1f },
-            { xEstalactitas[i], 3.55f - (i % 3) * 0.35f, -4.8f + (i % 2) * 1.1f },
-            0.42f,
+            { xEstalactitas[i], 7.8f, z },
+            { xEstalactitas[i], 5.7f - (i % 3) * 0.35f, z },
+            0.44f,
             0.04f,
             8,
             Color{ 74, 66, 61, 255 }
@@ -605,7 +710,7 @@ inline void DibujarTemaCueva()
 
 
 //==================================================
-// DECORACION MAGNETICA
+// ESCENARIO MAGNETICO
 //==================================================
 
 inline void DibujarTemaMagnetico()
@@ -642,7 +747,9 @@ inline void DibujarTemaMagnetico()
 
 inline void DibujarDecoracionTemaVisualMinijuego()
 {
-    switch (ObtenerEstadoEfectosVisualesMinijuegos().tema)
+    switch (
+        ObtenerEstadoEfectosVisualesMinijuegos().tema
+    )
     {
         case TEMA_VISUAL_LAVA:
             DibujarTemaLava();
@@ -670,14 +777,17 @@ inline void DibujarDecoracionTemaVisualMinijuego()
 // BEGINMODE3D CENTRALIZADO
 //==================================================
 //
-// Se define antes del macro para que esta llamada use la funcion real de
-// raylib. Los archivos que incluyan TiposMinijuegos despues pasaran por
-// este wrapper automaticamente.
+// La llamada real a raylib se declara antes del macro. Todos los archivos
+// que incluyen TiposMinijuegos pasan por aqui: eso hace que el temblor del
+// ground pound funcione sin duplicar codigo en cada minijuego.
 //==================================================
 
-inline void BeginMode3DConEfectosMinijuego(Camera3D camara)
+inline void BeginMode3DConEfectosMinijuego(
+    Camera3D camara
+)
 {
-    Camera3D camaraFinal = AplicarTemblorGeneralACamara(camara);
+    Camera3D camaraFinal =
+        AplicarTemblorGeneralACamara(camara);
 
     BeginMode3D(camaraFinal);
     DibujarDecoracionTemaVisualMinijuego();
