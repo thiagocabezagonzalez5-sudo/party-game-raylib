@@ -17,6 +17,7 @@
 #include "UI/SeleccionMinijuegos.h"
 #include "UI/SeleccionPersonajes.h"
 
+#include "Gameplay/PartidaTablero.h"
 #include "Gameplay/ZonaPruebas.h"
 
 
@@ -36,6 +37,7 @@ struct Juego
     SeleccionMinijuegos seleccionMinijuegos;
 
     ZonaPruebas zonaPruebas;
+    PartidaTablero partidaTablero;
 
     AudioJuego audio;
     ConfiguracionJuego config;
@@ -62,6 +64,10 @@ struct Juego
 
     bool menuPreparado = false;
     bool cargaMenuSolicitada = false;
+
+    // Se usa solo cuando el modo Tablero lanza el minijuego
+    // que cierra cada ronda.
+    float tiempoResultadoMinijuegoTablero = 0.0f;
 
     void Inicializar();
     void InicializarResoluciones();
