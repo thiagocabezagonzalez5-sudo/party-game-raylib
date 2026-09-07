@@ -11,6 +11,11 @@ static const float DURACION_PREPARACION_NUCLEOS = 3.0f;
 static const float DURACION_PARTIDA_NUCLEOS = 35.0f;
 static const float RADIO_RECOLECCION_NUCLEO = 0.82f;
 static const float RETRASO_REAPARICION_NUCLEO = 0.38f;
+static const float RADIO_RECOLECCION_CAIDO = 0.76f;
+static const float GRAVEDAD_NUCLEO_CAIDO = 12.5f;
+static const float ALTURA_SUELO_NUCLEO_CAIDO = 0.34f;
+static const float VIDA_NUCLEO_CAIDO = 8.0f;
+static const float BLOQUEO_DUENIO_NUCLEO_CAIDO = 0.85f;
 
 
 static const Vector3 PUNTOS_NUCLEOS[] =
@@ -40,6 +45,12 @@ static const int CANTIDAD_PUNTOS_NUCLEOS =
     sizeof(PUNTOS_NUCLEOS[0]);
 
 
+static int ValorNucleo(bool especial)
+{
+    return especial ? 3 : 1;
+}
+
+
 static bool PuntoOcupadoPorOtroNucleo(
     const MinijuegoNucleosEnergia& minijuego,
     int indiceIgnorado,
@@ -56,13 +67,8 @@ static bool PuntoOcupadoPorOtroNucleo(
             continue;
         }
 
-        float dx =
-            minijuego.nucleos[i].posicion.x -
-            punto.x;
-
-        float dz =
-            minijuego.nucleos[i].posicion.z -
-            punto.z;
+        float dx = minijuego.nucleos[i].posicion.x - punto.x;
+        float dz = minijuego.nucleos[i].posicion.z - punto.z;
 
         if (dx * dx + dz * dz < 1.6f)
         {
@@ -79,19 +85,11 @@ static void ReubicarNucleo(
     int indice
 )
 {
-    int puntoElegido =
-        GetRandomValue(
-            0,
-            CANTIDAD_PUNTOS_NUCLEOS - 1
-        );
+    int puntoElegido = GetRandomValue(0, CANTIDAD_PUNTOS_NUCLEOS - 1);
 
     for (int intento = 0; intento < 24; intento++)
     {
-        int candidato =
-            GetRandomValue(
-                0,
-                CANTIDAD_PUNTOS_NUCLEOS - 1
-            );
+        int candidato = GetRandomValue(0, CANTIDAD_PUNTOS_NUCLEOS - 1);
 
         if (
             !PuntoOcupadoPorOtroNucleo(
@@ -106,11 +104,8 @@ static void ReubicarNucleo(
         }
     }
 
-    NucleoEnergia& nucleo =
-        minijuego.nucleos[indice];
-
-    nucleo.posicion =
-        PUNTOS_NUCLEOS[puntoElegido];
+    NucleoEnergia& nucleo = minijuego.nucleos[indice];
+    nucleo.posicion = PUNTOS_NUCLEOS[puntoElegido];
 
     int probabilidadEspecial =
         minijuego.tiempoRestante <= 10.0f
@@ -118,14 +113,12 @@ static void ReubicarNucleo(
         : 16;
 
     nucleo.especial =
-        GetRandomValue(1, 100) <=
-        probabilidadEspecial;
+        GetRandomValue(1, 100) <= probabilidadEspecial;
 
     nucleo.activo = true;
     nucleo.tiempoReaparicion = 0.0f;
     nucleo.faseFlotacion =
-        (float)GetRandomValue(0, 628) /
-        100.0f;
+        (float)GetRandomValue(0, 628) / 100.0f;
 }
 
 
@@ -139,8 +132,8 @@ static void ConfigurarArenaNucleos(
         minijuego.bloques,
         minijuego.cantidadBloques,
         MAX_BLOQUES_NUCLEOS,
-        Vector3{ 0.0f, -0.45f, 0.0f },
-        Vector3{ 14.0f, 0.90f, 14.0f },
+        { 0.0f, -0.45f, 0.0f },
+        { 14.0f, 0.90f, 14.0f },
         Color{ 44, 62, 83, 255 }
     );
 
@@ -148,8 +141,8 @@ static void ConfigurarArenaNucleos(
         minijuego.bloques,
         minijuego.cantidadBloques,
         MAX_BLOQUES_NUCLEOS,
-        Vector3{ -7.15f, 0.55f, 0.0f },
-        Vector3{ 0.30f, 2.0f, 14.6f },
+        { -7.15f, 0.55f, 0.0f },
+        { 0.30f, 2.0f, 14.6f },
         Color{ 45, 125, 154, 255 }
     );
 
@@ -157,8 +150,8 @@ static void ConfigurarArenaNucleos(
         minijuego.bloques,
         minijuego.cantidadBloques,
         MAX_BLOQUES_NUCLEOS,
-        Vector3{ 7.15f, 0.55f, 0.0f },
-        Vector3{ 0.30f, 2.0f, 14.6f },
+        { 7.15f, 0.55f, 0.0f },
+        { 0.30f, 2.0f, 14.6f },
         Color{ 45, 125, 154, 255 }
     );
 
@@ -166,8 +159,8 @@ static void ConfigurarArenaNucleos(
         minijuego.bloques,
         minijuego.cantidadBloques,
         MAX_BLOQUES_NUCLEOS,
-        Vector3{ 0.0f, 0.55f, -7.15f },
-        Vector3{ 14.0f, 2.0f, 0.30f },
+        { 0.0f, 0.55f, -7.15f },
+        { 14.0f, 2.0f, 0.30f },
         Color{ 45, 125, 154, 255 }
     );
 
@@ -175,10 +168,336 @@ static void ConfigurarArenaNucleos(
         minijuego.bloques,
         minijuego.cantidadBloques,
         MAX_BLOQUES_NUCLEOS,
-        Vector3{ 0.0f, 0.55f, 7.15f },
-        Vector3{ 14.0f, 2.0f, 0.30f },
+        { 0.0f, 0.55f, 7.15f },
+        { 14.0f, 2.0f, 0.30f },
         Color{ 45, 125, 154, 255 }
     );
+}
+
+
+static void AgregarAlHistorialNucleos(
+    MinijuegoNucleosEnergia& minijuego,
+    int jugador,
+    bool especial
+)
+{
+    if (jugador < 0 || jugador >= MAX_PARTICIPANTES)
+    {
+        return;
+    }
+
+    HistorialNucleosJugador& historial =
+        minijuego.historial[jugador];
+
+    if (historial.cantidad >= MAX_HISTORIAL_NUCLEOS)
+    {
+        // Caso extremo: descartamos solamente la entrada mas vieja.
+        // Lo reciente, que es lo que puede perderse al recibir un golpe,
+        // queda siempre preservado.
+        for (int i = 1; i < MAX_HISTORIAL_NUCLEOS; i++)
+        {
+            historial.especiales[i - 1] = historial.especiales[i];
+        }
+
+        historial.cantidad = MAX_HISTORIAL_NUCLEOS - 1;
+    }
+
+    historial.especiales[historial.cantidad] = especial;
+    historial.cantidad++;
+}
+
+
+static int BuscarSlotNucleoCaido(
+    MinijuegoNucleosEnergia& minijuego
+)
+{
+    int mejor = 0;
+    float menorVida = 100000.0f;
+
+    for (int i = 0; i < MAX_NUCLEOS_CAIDOS; i++)
+    {
+        if (!minijuego.nucleosCaidos[i].activo)
+        {
+            return i;
+        }
+
+        if (minijuego.nucleosCaidos[i].tiempoVida < menorVida)
+        {
+            menorVida = minijuego.nucleosCaidos[i].tiempoVida;
+            mejor = i;
+        }
+    }
+
+    return mejor;
+}
+
+
+static void SoltarNucleoPorGolpe(
+    MinijuegoNucleosEnergia& minijuego,
+    int jugador,
+    Vector3 origen,
+    bool especial,
+    int indiceSalida
+)
+{
+    int slot = BuscarSlotNucleoCaido(minijuego);
+    NucleoEnergiaCaido& caido = minijuego.nucleosCaidos[slot];
+
+    float angulo =
+        ((float)GetRandomValue(0, 6283) / 1000.0f) +
+        indiceSalida * 2.05f;
+
+    float fuerza =
+        (float)GetRandomValue(24, 42) / 10.0f;
+
+    caido = {};
+    caido.activo = true;
+    caido.especial = especial;
+    caido.jugadorBloqueado = jugador;
+    caido.tiempoBloqueo = BLOQUEO_DUENIO_NUCLEO_CAIDO;
+    caido.tiempoVida = VIDA_NUCLEO_CAIDO;
+    caido.posicion = origen;
+    caido.posicion.y += 0.45f;
+    caido.velocidad =
+    {
+        std::cos(angulo) * fuerza,
+        (float)GetRandomValue(45, 62) / 10.0f,
+        std::sin(angulo) * fuerza
+    };
+}
+
+
+static void PerderUltimosNucleosPorGolpe(
+    MinijuegoNucleosEnergia& minijuego,
+    int jugador,
+    Vector3 posicionJugador,
+    ParticulaTierra particulas[],
+    int cantidadParticulas
+)
+{
+    if (jugador < 0 || jugador >= MAX_PARTICIPANTES)
+    {
+        return;
+    }
+
+    HistorialNucleosJugador& historial = minijuego.historial[jugador];
+
+    int cantidadPerder = historial.cantidad < 3
+        ? historial.cantidad
+        : 3;
+
+    if (cantidadPerder <= 0)
+    {
+        return;
+    }
+
+    for (int i = 0; i < cantidadPerder; i++)
+    {
+        int indiceHistorial = historial.cantidad - 1;
+        bool especial = historial.especiales[indiceHistorial];
+        historial.cantidad--;
+
+        minijuego.puntuaciones[jugador] -= ValorNucleo(especial);
+        if (minijuego.puntuaciones[jugador] < 0)
+        {
+            minijuego.puntuaciones[jugador] = 0;
+        }
+
+        SoltarNucleoPorGolpe(
+            minijuego,
+            jugador,
+            posicionJugador,
+            especial,
+            i
+        );
+    }
+
+    CrearParticulasImpactoGolpe(
+        particulas,
+        cantidadParticulas,
+        posicionJugador
+    );
+}
+
+
+static bool JugadorPuedeRecogerNucleo(
+    const Participante& participante,
+    const JugadorPrueba& jugador
+)
+{
+    return
+        participante.activo &&
+        participante.conectado &&
+        !participante.esBot &&
+        !jugador.cayendo;
+}
+
+
+static bool JugadorTocaPuntoNucleo(
+    const JugadorPrueba& jugador,
+    Vector3 punto,
+    float radio
+)
+{
+    float dx = jugador.posicion.x - punto.x;
+    float dz = jugador.posicion.z - punto.z;
+    float diferenciaY = std::fabs(jugador.posicion.y - punto.y);
+
+    return
+        dx * dx + dz * dz <= radio * radio &&
+        diferenciaY <= 1.25f;
+}
+
+
+static void RegistrarRecogidaNucleo(
+    MinijuegoNucleosEnergia& minijuego,
+    int jugador,
+    bool especial,
+    Vector3 posicion,
+    ParticulaTierra particulas[],
+    int cantidadParticulas,
+    AudioJuego* audio
+)
+{
+    minijuego.puntuaciones[jugador] += ValorNucleo(especial);
+    AgregarAlHistorialNucleos(minijuego, jugador, especial);
+
+    if (audio != nullptr)
+    {
+        audio->ReproducirSonido(
+            especial
+                ? SONIDO_RECOGER_NUCLEO_ESPECIAL
+                : SONIDO_RECOGER_NUCLEO
+        );
+    }
+
+    CrearParticulasImpactoGolpe(
+        particulas,
+        cantidadParticulas,
+        posicion
+    );
+}
+
+
+static void ActualizarNucleosCaidos(
+    MinijuegoNucleosEnergia& minijuego,
+    float deltaTime,
+    JugadorPrueba jugadores[],
+    int limite,
+    Participante participantes[],
+    ParticulaTierra particulas[],
+    int cantidadParticulas,
+    AudioJuego* audio
+)
+{
+    for (int n = 0; n < MAX_NUCLEOS_CAIDOS; n++)
+    {
+        NucleoEnergiaCaido& caido = minijuego.nucleosCaidos[n];
+
+        if (!caido.activo)
+        {
+            continue;
+        }
+
+        caido.tiempoVida -= deltaTime;
+        caido.tiempoBloqueo -= deltaTime;
+
+        if (caido.tiempoBloqueo < 0.0f)
+        {
+            caido.tiempoBloqueo = 0.0f;
+        }
+
+        if (caido.tiempoVida <= 0.0f)
+        {
+            caido.activo = false;
+            continue;
+        }
+
+        caido.velocidad.y -= GRAVEDAD_NUCLEO_CAIDO * deltaTime;
+        caido.posicion.x += caido.velocidad.x * deltaTime;
+        caido.posicion.y += caido.velocidad.y * deltaTime;
+        caido.posicion.z += caido.velocidad.z * deltaTime;
+
+        if (caido.posicion.y <= ALTURA_SUELO_NUCLEO_CAIDO)
+        {
+            caido.posicion.y = ALTURA_SUELO_NUCLEO_CAIDO;
+
+            if (caido.velocidad.y < -1.4f)
+            {
+                caido.velocidad.y *= -0.28f;
+            }
+            else
+            {
+                caido.velocidad.y = 0.0f;
+            }
+
+            caido.velocidad.x *= 0.93f;
+            caido.velocidad.z *= 0.93f;
+        }
+
+        // Las paredes de la arena tambien contienen a los nucleos.
+        if (caido.posicion.x < -6.55f)
+        {
+            caido.posicion.x = -6.55f;
+            caido.velocidad.x = std::fabs(caido.velocidad.x) * 0.55f;
+        }
+        else if (caido.posicion.x > 6.55f)
+        {
+            caido.posicion.x = 6.55f;
+            caido.velocidad.x = -std::fabs(caido.velocidad.x) * 0.55f;
+        }
+
+        if (caido.posicion.z < -6.55f)
+        {
+            caido.posicion.z = -6.55f;
+            caido.velocidad.z = std::fabs(caido.velocidad.z) * 0.55f;
+        }
+        else if (caido.posicion.z > 6.55f)
+        {
+            caido.posicion.z = 6.55f;
+            caido.velocidad.z = -std::fabs(caido.velocidad.z) * 0.55f;
+        }
+
+        for (int i = 0; i < limite; i++)
+        {
+            if (!JugadorPuedeRecogerNucleo(participantes[i], jugadores[i]))
+            {
+                continue;
+            }
+
+            if (
+                i == caido.jugadorBloqueado &&
+                caido.tiempoBloqueo > 0.0f
+            )
+            {
+                continue;
+            }
+
+            if (
+                !JugadorTocaPuntoNucleo(
+                    jugadores[i],
+                    caido.posicion,
+                    RADIO_RECOLECCION_CAIDO
+                )
+            )
+            {
+                continue;
+            }
+
+            RegistrarRecogidaNucleo(
+                minijuego,
+                i,
+                caido.especial,
+                caido.posicion,
+                particulas,
+                cantidadParticulas,
+                audio
+            );
+
+            caido.activo = false;
+            break;
+        }
+    }
 }
 
 
@@ -199,12 +518,10 @@ static void FinalizarNucleos(
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        if (!minijuego.resultado.participantes[i].participo)
-        {
-            continue;
-        }
-
-        if (minijuego.puntuaciones[i] > mejorPuntaje)
+        if (
+            minijuego.resultado.participantes[i].participo &&
+            minijuego.puntuaciones[i] > mejorPuntaje
+        )
         {
             mejorPuntaje = minijuego.puntuaciones[i];
         }
@@ -223,13 +540,11 @@ static void FinalizarNucleos(
         }
     }
 
-    minijuego.resultado.estado =
-        RESULTADO_MINIJUEGO_FINALIZADO;
-
+    minijuego.resultado.estado = RESULTADO_MINIJUEGO_FINALIZADO;
     minijuego.resultado.desenlace =
         cantidadGanadores == 1
-        ? DESENLACE_CON_GANADOR
-        : DESENLACE_EMPATE;
+            ? DESENLACE_CON_GANADOR
+            : DESENLACE_EMPATE;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -247,8 +562,7 @@ static void FinalizarNucleos(
         {
             if (
                 minijuego.resultado.participantes[j].participo &&
-                minijuego.puntuaciones[j] >
-                    minijuego.puntuaciones[i]
+                minijuego.puntuaciones[j] > minijuego.puntuaciones[i]
             )
             {
                 posicion++;
@@ -257,19 +571,15 @@ static void FinalizarNucleos(
 
         resultadoJugador.posicionFinal = posicion;
         resultadoJugador.numeroEquipo = -1;
-        resultadoJugador.puntuacionMinijuego =
-            minijuego.puntuaciones[i];
+        resultadoJugador.puntuacionMinijuego = minijuego.puntuaciones[i];
         resultadoJugador.puntosObtenidos = 0;
     }
 
-    minijuego.fase =
-        FASE_NUCLEOS_TERMINADO;
+    minijuego.fase = FASE_NUCLEOS_TERMINADO;
 
     if (audio != nullptr)
     {
-        audio->ReproducirSonido(
-            SONIDO_RESULTADO
-        );
+        audio->ReproducirSonido(SONIDO_RESULTADO);
     }
 }
 
@@ -277,8 +587,7 @@ static void FinalizarNucleos(
 void MinijuegoNucleosEnergia::Inicializar()
 {
     resultado = {};
-    resultado.formato =
-        FORMATO_MINIJUEGO_INDIVIDUAL;
+    resultado.formato = FORMATO_MINIJUEGO_INDIVIDUAL;
 
     fase = FASE_NUCLEOS_PREPARACION;
     tiempoPreparacion = DURACION_PREPARACION_NUCLEOS;
@@ -290,6 +599,12 @@ void MinijuegoNucleosEnergia::Inicializar()
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         puntuaciones[i] = 0;
+        historial[i] = {};
+    }
+
+    for (int i = 0; i < MAX_NUCLEOS_CAIDOS; i++)
+    {
+        nucleosCaidos[i] = {};
     }
 
     ConfigurarArenaNucleos(*this);
@@ -300,15 +615,9 @@ void MinijuegoNucleosEnergia::Inicializar()
         ReubicarNucleo(*this, i);
     }
 
-    camara.position =
-        { 0.0f, 12.0f, 13.8f };
-
-    camara.target =
-        { 0.0f, 0.45f, 0.0f };
-
-    camara.up =
-        { 0.0f, 1.0f, 0.0f };
-
+    camara.position = { 0.0f, 12.0f, 13.8f };
+    camara.target = { 0.0f, 0.45f, 0.0f };
+    camara.up = { 0.0f, 1.0f, 0.0f };
     camara.fovy = 48.0f;
     camara.projection = CAMERA_PERSPECTIVE;
 }
@@ -322,22 +631,19 @@ void MinijuegoNucleosEnergia::ConfigurarJugadores(
     Vector3 spawns[MAX_JUGADORES_PRUEBA] =
     {
         { -4.8f, 1.0f, 4.8f },
-        { 4.8f, 1.0f, 4.8f },
+        {  4.8f, 1.0f, 4.8f },
         { -4.8f, 1.0f, -4.8f },
-        { 4.8f, 1.0f, -4.8f }
+        {  4.8f, 1.0f, -4.8f }
     };
 
     int limite =
         cantidadMaxima < MAX_JUGADORES_PRUEBA
-        ? cantidadMaxima
-        : MAX_JUGADORES_PRUEBA;
+            ? cantidadMaxima
+            : MAX_JUGADORES_PRUEBA;
 
     for (int i = 0; i < limite; i++)
     {
-        ConfigurarJugadorMinijuegoEstandar(
-            jugadores[i],
-            spawns[i]
-        );
+        ConfigurarJugadorMinijuegoEstandar(jugadores[i], spawns[i]);
     }
 }
 
@@ -348,11 +654,7 @@ void MinijuegoNucleosEnergia::Reiniciar(
 )
 {
     Inicializar();
-
-    ConfigurarJugadores(
-        jugadores,
-        cantidadMaxima
-    );
+    ConfigurarJugadores(jugadores, cantidadMaxima);
 }
 
 
@@ -384,10 +686,7 @@ void MinijuegoNucleosEnergia::Actualizar(
 
     if (fase == FASE_NUCLEOS_PREPARACION)
     {
-        int numeroCuenta =
-            (int)std::ceil(
-                tiempoPreparacion
-            );
+        int numeroCuenta = (int)std::ceil(tiempoPreparacion);
 
         if (
             numeroCuenta > 0 &&
@@ -398,9 +697,7 @@ void MinijuegoNucleosEnergia::Actualizar(
 
             if (audio != nullptr)
             {
-                audio->ReproducirSonido(
-                    SONIDO_CUENTA_REGRESIVA
-                );
+                audio->ReproducirSonido(SONIDO_CUENTA_REGRESIVA);
             }
         }
 
@@ -419,9 +716,7 @@ void MinijuegoNucleosEnergia::Actualizar(
 
             if (audio != nullptr)
             {
-                audio->ReproducirSonido(
-                    SONIDO_INICIO_MINIJUEGO
-                );
+                audio->ReproducirSonido(SONIDO_INICIO_MINIJUEGO);
             }
         }
 
@@ -429,16 +724,9 @@ void MinijuegoNucleosEnergia::Actualizar(
     }
 
     tiempoRestante -= deltaTime;
+    if (tiempoRestante < 0.0f) tiempoRestante = 0.0f;
 
-    if (tiempoRestante < 0.0f)
-    {
-        tiempoRestante = 0.0f;
-    }
-
-    int segundoAlerta =
-        (int)std::ceil(
-            tiempoRestante
-        );
+    int segundoAlerta = (int)std::ceil(tiempoRestante);
 
     if (
         segundoAlerta > 0 &&
@@ -450,16 +738,14 @@ void MinijuegoNucleosEnergia::Actualizar(
 
         if (audio != nullptr)
         {
-            audio->ReproducirSonido(
-                SONIDO_ALERTA_TIEMPO
-            );
+            audio->ReproducirSonido(SONIDO_ALERTA_TIEMPO);
         }
     }
 
     int limite =
         cantidadMaxima < MAX_JUGADORES_PRUEBA
-        ? cantidadMaxima
-        : MAX_JUGADORES_PRUEBA;
+            ? cantidadMaxima
+            : MAX_JUGADORES_PRUEBA;
 
     for (int i = 0; i < limite; i++)
     {
@@ -468,13 +754,15 @@ void MinijuegoNucleosEnergia::Actualizar(
             continue;
         }
 
-        InputMinijuegoParticipante entrada =
-            LeerInputMinijuegoParticipante(
-                participantes[i]
-            );
+        InputMinijuegoParticipante entrada{};
 
-        entrada.golpear = false;
+        if (participantes[i].conectado)
+        {
+            entrada = LeerInputMinijuegoParticipante(participantes[i]);
+        }
 
+        // Usa el mismo movimiento, salto, golpe horizontal y golpe al
+        // suelo que Color Seguro. Los bots siguen inmoviles aqui.
         ActualizarJugadorPruebaNormal(
             jugadores[i],
             entrada,
@@ -488,28 +776,52 @@ void MinijuegoNucleosEnergia::Actualizar(
         );
     }
 
-    ResolverColisionesJugadoresSinEmpuje(
+    // Guardamos el valor justo antes de resolver los golpes. El golpe
+    // horizontal comun aumenta tiempoRalentizado; asi detectamos a la
+    // victima sin duplicar la deteccion de impacto de MecanicasJugador.
+    float ralentizacionAntes[MAX_PARTICIPANTES]{};
+
+    for (int i = 0; i < limite; i++)
+    {
+        ralentizacionAntes[i] = jugadores[i].tiempoRalentizado;
+    }
+
+    ResolverInteraccionesJugadoresMinijuegoEstandar(
         jugadores,
         participantes,
-        limite
+        limite,
+        particulas,
+        cantidadParticulas
     );
+
+    for (int i = 0; i < limite; i++)
+    {
+        if (
+            jugadores[i].tiempoRalentizado >
+                ralentizacionAntes[i] + 0.20f
+        )
+        {
+            PerderUltimosNucleosPorGolpe(
+                *this,
+                i,
+                jugadores[i].posicion,
+                particulas,
+                cantidadParticulas
+            );
+        }
+    }
 
     for (int n = 0; n < MAX_NUCLEOS_ENERGIA; n++)
     {
-        NucleoEnergia& nucleo =
-            nucleos[n];
+        NucleoEnergia& nucleo = nucleos[n];
 
         if (!nucleo.activo)
         {
-            nucleo.tiempoReaparicion -=
-                deltaTime;
+            nucleo.tiempoReaparicion -= deltaTime;
 
             if (nucleo.tiempoReaparicion <= 0.0f)
             {
-                ReubicarNucleo(
-                    *this,
-                    n
-                );
+                ReubicarNucleo(*this, n);
             }
 
             continue;
@@ -517,79 +829,89 @@ void MinijuegoNucleosEnergia::Actualizar(
 
         for (int i = 0; i < limite; i++)
         {
+            if (!JugadorPuedeRecogerNucleo(participantes[i], jugadores[i]))
+            {
+                continue;
+            }
+
             if (
-                !participantes[i].activo ||
-                participantes[i].esBot ||
-                jugadores[i].cayendo
+                !JugadorTocaPuntoNucleo(
+                    jugadores[i],
+                    nucleo.posicion,
+                    RADIO_RECOLECCION_NUCLEO
+                )
             )
             {
                 continue;
             }
 
-            float dx =
-                jugadores[i].posicion.x -
-                nucleo.posicion.x;
-
-            float dz =
-                jugadores[i].posicion.z -
-                nucleo.posicion.z;
-
-            float distanciaCuadrada =
-                dx * dx + dz * dz;
-
-            float diferenciaY =
-                std::fabs(
-                    jugadores[i].posicion.y -
-                    nucleo.posicion.y
-                );
-
-            if (
-                distanciaCuadrada >
-                    RADIO_RECOLECCION_NUCLEO *
-                    RADIO_RECOLECCION_NUCLEO ||
-                diferenciaY > 1.25f
-            )
-            {
-                continue;
-            }
-
-            int valor =
-                nucleo.especial
-                ? 3
-                : 1;
-
-            puntuaciones[i] += valor;
-
-            if (audio != nullptr)
-            {
-                audio->ReproducirSonido(
-                    nucleo.especial
-                    ? SONIDO_RECOGER_NUCLEO_ESPECIAL
-                    : SONIDO_RECOGER_NUCLEO
-                );
-            }
-
-            CrearParticulasImpactoGolpe(
+            RegistrarRecogidaNucleo(
+                *this,
+                i,
+                nucleo.especial,
+                nucleo.posicion,
                 particulas,
                 cantidadParticulas,
-                nucleo.posicion
+                audio
             );
 
             nucleo.activo = false;
-            nucleo.tiempoReaparicion =
-                RETRASO_REAPARICION_NUCLEO;
-
+            nucleo.tiempoReaparicion = RETRASO_REAPARICION_NUCLEO;
             break;
         }
     }
 
+    ActualizarNucleosCaidos(
+        *this,
+        deltaTime,
+        jugadores,
+        limite,
+        participantes,
+        particulas,
+        cantidadParticulas,
+        audio
+    );
+
     if (tiempoRestante <= 0.0f)
     {
-        FinalizarNucleos(
-            *this,
-            audio
-        );
+        FinalizarNucleos(*this, audio);
     }
+}
+
+
+static void DibujarNucleoVisual(
+    Vector3 posicion,
+    bool especial,
+    float tiempoAnimacion,
+    float fase,
+    float escala = 1.0f
+)
+{
+    float oscilacion =
+        std::sin(tiempoAnimacion * 3.1f + fase) * 0.16f;
+
+    posicion.y += oscilacion;
+
+    float pulso =
+        1.0f +
+        std::sin(tiempoAnimacion * 5.0f + fase) * 0.08f;
+
+    float radio =
+        (especial ? 0.48f : 0.34f) * pulso * escala;
+
+    DrawSphere(
+        posicion,
+        radio,
+        especial ? GOLD : SKYBLUE
+    );
+
+    DrawSphereWires(
+        posicion,
+        radio + 0.08f * escala,
+        8,
+        12,
+        especial ? ORANGE : RAYWHITE
+    );
 }
 
 
@@ -600,16 +922,13 @@ void MinijuegoNucleosEnergia::Dibujar(
     bool mostrarDebug
 ) const
 {
-    ClearBackground(
-        Color{ 18, 29, 48, 255 }
-    );
+    ClearBackground(Color{ 18, 29, 48, 255 });
 
     BeginMode3D(camara);
 
     for (int i = 0; i < cantidadBloques; i++)
     {
-        const BloquePrueba& bloque =
-            bloques[i];
+        const BloquePrueba& bloque = bloques[i];
 
         DrawCube(
             bloque.posicion,
@@ -629,225 +948,143 @@ void MinijuegoNucleosEnergia::Dibujar(
 
         if (mostrarDebug)
         {
-            DrawBoundingBox(
-                CrearHitboxBloquePrueba(bloque),
-                YELLOW
-            );
+            DrawBoundingBox(CrearHitboxBloquePrueba(bloque), YELLOW);
         }
     }
 
     for (int i = 0; i < MAX_NUCLEOS_ENERGIA; i++)
     {
-        const NucleoEnergia& nucleo =
-            nucleos[i];
-
-        if (!nucleo.activo)
+        if (!nucleos[i].activo)
         {
             continue;
         }
 
-        float oscilacion =
-            std::sin(
-                tiempoAnimacion * 3.1f +
-                nucleo.faseFlotacion
-            ) *
-            0.16f;
-
-        Vector3 posicionVisual =
-            nucleo.posicion;
-
-        posicionVisual.y += oscilacion;
-
-        float pulso =
-            1.0f +
-            std::sin(
-                tiempoAnimacion * 5.0f +
-                nucleo.faseFlotacion
-            ) *
-            0.08f;
-
-        float radio =
-            (nucleo.especial ? 0.48f : 0.34f) *
-            pulso;
-
-        Color color =
-            nucleo.especial
-            ? GOLD
-            : SKYBLUE;
-
-        DrawSphere(
-            posicionVisual,
-            radio,
-            color
-        );
-
-        DrawSphereWires(
-            posicionVisual,
-            radio + 0.08f,
-            8,
-            12,
-            nucleo.especial
-            ? ORANGE
-            : RAYWHITE
-        );
-
-        DrawCube(
-            Vector3{
-                posicionVisual.x,
-                0.08f,
-                posicionVisual.z
-            },
-            nucleo.especial ? 0.72f : 0.54f,
-            0.03f,
-            nucleo.especial ? 0.72f : 0.54f,
-            Fade(color, 0.45f)
+        DibujarNucleoVisual(
+            nucleos[i].posicion,
+            nucleos[i].especial,
+            tiempoAnimacion,
+            nucleos[i].faseFlotacion
         );
     }
+
+    for (int i = 0; i < MAX_NUCLEOS_CAIDOS; i++)
+    {
+        if (!nucleosCaidos[i].activo)
+        {
+            continue;
+        }
+
+        DibujarNucleoVisual(
+            nucleosCaidos[i].posicion,
+            nucleosCaidos[i].especial,
+            tiempoAnimacion,
+            (float)i * 0.41f,
+            0.82f
+        );
+
+        DrawCircle3D(
+            { nucleosCaidos[i].posicion.x, 0.03f, nucleosCaidos[i].posicion.z },
+            nucleosCaidos[i].especial ? 0.42f : 0.30f,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            Fade(nucleosCaidos[i].especial ? GOLD : SKYBLUE, 0.50f)
+        );
+    }
+
+    DibujarParticulasTierra(particulas, cantidadParticulas);
 
     int limite =
         cantidadMaxima < MAX_JUGADORES_PRUEBA
-        ? cantidadMaxima
-        : MAX_JUGADORES_PRUEBA;
+            ? cantidadMaxima
+            : MAX_JUGADORES_PRUEBA;
 
     for (int i = 0; i < limite; i++)
     {
-        DibujarJugadorCuboPrueba(
-            jugadores[i],
-            participantes[i]
-        );
-
-        if (
-            mostrarDebug &&
-            participantes[i].activo &&
-            !jugadores[i].cayendo
-        )
+        if (!participantes[i].activo)
         {
-            DrawBoundingBox(
-                CrearHitboxJugadorPrueba(
-                    jugadores[i]
-                ),
-                LIME
-            );
+            continue;
+        }
+
+        DibujarJugadorCuboPrueba(jugadores[i], participantes[i]);
+
+        if (mostrarDebug && !jugadores[i].cayendo)
+        {
+            DrawBoundingBox(CrearHitboxJugadorPrueba(jugadores[i]), LIME);
         }
     }
 
-    DrawGrid(14, 1.0f);
     EndMode3D();
 
+    DrawText("NUCLEOS DE ENERGIA", 24, 22, 30, RAYWHITE);
     DrawText(
-        "NUCLEOS DE ENERGIA",
+        "RECOLECTA ENERGIA. SI TE GOLPEAN, SUELTAS TUS ULTIMAS 3 RECOGIDAS.",
         24,
-        22,
-        31,
-        RAYWHITE
-    );
-
-    DrawText(
-        "AZUL +1   DORADO +3",
-        25,
         60,
-        19,
+        18,
         LIGHTGRAY
     );
 
     DrawText(
-        TextFormat(
-            "TIEMPO: %02d",
-            (int)std::ceil(tiempoRestante)
-        ),
-        GetScreenWidth() - 190,
-        26,
-        25,
-        tiempoRestante <= 5.0f
-        ? ORANGE
-        : RAYWHITE
+        "GOLPE: E / SHIFT / B   |   GOLPE AL SUELO: SALTO EN EL AIRE",
+        24,
+        86,
+        16,
+        Color{ 166, 195, 218, 255 }
     );
+
+    int y = 120;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        int x =
-            25 + i * 155;
-
-        Color colorJugador =
-            participantes[i].color;
-
-        DrawRectangle(
-            x,
-            96,
-            140,
-            48,
-            Fade(BLACK, 0.58f)
-        );
-
-        DrawRectangleLines(
-            x,
-            96,
-            140,
-            48,
-            colorJugador
-        );
+        if (!resultado.participantes[i].participo)
+        {
+            continue;
+        }
 
         DrawText(
             TextFormat(
-                "J%d  %d",
-                i + 1,
+                "J%d%s  %d pts",
+                participantes[i].numeroJugador,
+                participantes[i].esBot ? " BOT" : "",
                 puntuaciones[i]
             ),
-            x + 12,
-            108,
-            22,
-            colorJugador
+            24,
+            y,
+            19,
+            participantes[i].color
+        );
+
+        y += 25;
+    }
+
+    if (fase == FASE_NUCLEOS_JUGANDO)
+    {
+        DrawText(
+            TextFormat("TIEMPO: %.1f", tiempoRestante),
+            GetScreenWidth() - 190,
+            24,
+            24,
+            tiempoRestante <= 5.0f ? RED : GOLD
         );
     }
 
     if (fase == FASE_NUCLEOS_PREPARACION)
     {
-        int numero =
-            (int)std::ceil(
-                tiempoPreparacion
-            );
+        int numero = (int)std::ceil(tiempoPreparacion);
+        if (numero < 1) numero = 1;
 
-        const char* texto =
-            numero > 0
-            ? TextFormat("%d", numero)
-            : "YA";
-
-        int tamano = 72;
+        const char* texto = TextFormat("%d", numero);
 
         DrawText(
             texto,
-            GetScreenWidth() / 2 -
-                MeasureText(texto, tamano) / 2,
+            GetScreenWidth() / 2 - MeasureText(texto, 84) / 2,
             GetScreenHeight() / 2 - 60,
-            tamano,
+            84,
             GOLD
         );
     }
-
-    if (fase == FASE_NUCLEOS_TERMINADO)
+    else if (fase == FASE_NUCLEOS_TERMINADO)
     {
-        DrawRectangle(
-            0,
-            0,
-            GetScreenWidth(),
-            GetScreenHeight(),
-            Fade(BLACK, 0.62f)
-        );
-
-        const char* titulo =
-            resultado.desenlace == DESENLACE_EMPATE
-            ? "EMPATE"
-            : "RESULTADO";
-
-        DrawText(
-            titulo,
-            GetScreenWidth() / 2 -
-                MeasureText(titulo, 48) / 2,
-            190,
-            48,
-            GOLD
-        );
-
         int ganadores[MAX_PARTICIPANTES]{};
         int cantidadGanadores =
             ObtenerIndicesGanadores(
@@ -856,57 +1093,63 @@ void MinijuegoNucleosEnergia::Dibujar(
                 MAX_PARTICIPANTES
             );
 
-        if (cantidadGanadores == 1)
-        {
-            const char* ganador =
-                TextFormat(
-                    "GANA J%d CON %d PUNTOS",
-                    ganadores[0] + 1,
-                    puntuaciones[ganadores[0]]
+        const char* titulo =
+            resultado.desenlace == DESENLACE_EMPATE
+                ? "EMPATE"
+                : TextFormat(
+                    "GANADOR: JUGADOR %d",
+                    cantidadGanadores == 1
+                        ? participantes[ganadores[0]].numeroJugador
+                        : 0
                 );
 
-            DrawText(
-                ganador,
-                GetScreenWidth() / 2 -
-                    MeasureText(ganador, 30) / 2,
-                270,
-                30,
-                participantes[ganadores[0]].color
-            );
-        }
-        else
+        DrawRectangle(
+            GetScreenWidth() / 2 - 315,
+            GetScreenHeight() / 2 - 140,
+            630,
+            280,
+            Fade(BLACK, 0.90f)
+        );
+
+        DrawText(
+            titulo,
+            GetScreenWidth() / 2 - MeasureText(titulo, 34) / 2,
+            GetScreenHeight() / 2 - 108,
+            34,
+            GOLD
+        );
+
+        int fila = GetScreenHeight() / 2 - 50;
+
+        for (int i = 0; i < MAX_PARTICIPANTES; i++)
         {
-            const char* empate =
-                TextFormat(
-                    "%d JUGADORES COMPARTEN EL PRIMER PUESTO",
-                    cantidadGanadores
-                );
+            if (!resultado.participantes[i].participo)
+            {
+                continue;
+            }
 
             DrawText(
-                empate,
-                GetScreenWidth() / 2 -
-                    MeasureText(empate, 26) / 2,
-                270,
-                26,
-                RAYWHITE
+                TextFormat(
+                    "J%d  POS %d  %d pts",
+                    participantes[i].numeroJugador,
+                    resultado.participantes[i].posicionFinal,
+                    puntuaciones[i]
+                ),
+                GetScreenWidth() / 2 - 170,
+                fila,
+                21,
+                participantes[i].color
             );
+
+            fila += 29;
         }
 
         DrawText(
             "R PARA REINICIAR",
-            GetScreenWidth() / 2 -
-                MeasureText("R PARA REINICIAR", 22) / 2,
-            340,
-            22,
-            LIGHTGRAY
+            GetScreenWidth() / 2 - MeasureText("R PARA REINICIAR", 21) / 2,
+            GetScreenHeight() / 2 + 105,
+            21,
+            RAYWHITE
         );
     }
-
-    DrawText(
-        "MOVER + SALTAR | TOCA LOS NUCLEOS ANTES QUE LOS DEMAS",
-        25,
-        GetScreenHeight() - 92,
-        18,
-        LIGHTGRAY
-    );
 }
