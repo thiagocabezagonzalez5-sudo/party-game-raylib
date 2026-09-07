@@ -66,6 +66,11 @@ static const DatosMinijuegoCatalogo DATOS_CATALOGO[
         "MIRADAS CRUZADAS",
         "1 vs 3: evita mirar hacia el mismo lado que el jugador solitario durante cinco rondas.",
         Color{ 171, 124, 221, 255 }
+    },
+    {
+        "MUROS LOCOS",
+        "Busca el hueco de cada muro. Cada oleada acelera y los golpes pueden sacarte de la arena.",
+        Color{ 231, 106, 72, 255 }
     }
 };
 
@@ -88,8 +93,8 @@ static Rectangle ObtenerCeldaCatalogo(
 {
     Rectangle area = ObtenerAreaCatalogo();
 
-    const int columnas = 5;
-    const float separacion = 14.0f;
+    const int columnas = 6;
+    const float separacion = 11.0f;
 
     float anchoCelda =
         (area.width - separacion * (columnas - 1)) /
@@ -156,8 +161,8 @@ static void DibujarMiniatura(
 
         case CATALOGO_FABRICA_67:
         {
-            DrawRectangle((int)cx - 52, (int)cy - 34, 104, 14, DARKGRAY);
-            DrawRectangle((int)cx - 52, (int)cy + 23, 104, 14, DARKGRAY);
+            DrawRectangle((int)cx - 48, (int)cy - 34, 96, 14, DARKGRAY);
+            DrawRectangle((int)cx - 48, (int)cy + 23, 96, 14, DARKGRAY);
             DrawText("6", (int)cx - 31, (int)cy - 16, 27, ORANGE);
             DrawText("7", (int)cx + 12, (int)cy - 16, 27, SKYBLUE);
             break;
@@ -173,8 +178,8 @@ static void DibujarMiniatura(
 
         case CATALOGO_CAPITAN_MANDA:
         {
-            DrawText("<", (int)cx - 50, (int)cy - 31, 57, SKYBLUE);
-            DrawText(">", (int)cx + 13, (int)cy - 31, 57, ORANGE);
+            DrawText("<", (int)cx - 45, (int)cy - 31, 57, SKYBLUE);
+            DrawText(">", (int)cx + 8, (int)cy - 31, 57, ORANGE);
             break;
         }
 
@@ -182,8 +187,8 @@ static void DibujarMiniatura(
         {
             DrawCircle((int)cx, (int)cy, 42.0f, GRAY);
             DrawLineEx(
-                { cx - 46.0f, cy - 25.0f },
-                { cx + 46.0f, cy + 25.0f },
+                { cx - 44.0f, cy - 24.0f },
+                { cx + 44.0f, cy + 24.0f },
                 9.0f,
                 ORANGE
             );
@@ -203,16 +208,16 @@ static void DibujarMiniatura(
         case CATALOGO_REFUGIO_PINCHOS:
         {
             DrawRectangle((int)cx - 16, (int)cy - 16, 32, 32, GRAY);
-            DrawRectangle((int)cx - 53, (int)cy - 7, 25, 14, DARKGRAY);
-            DrawRectangle((int)cx + 28, (int)cy - 7, 25, 14, DARKGRAY);
+            DrawRectangle((int)cx - 50, (int)cy - 7, 23, 14, DARKGRAY);
+            DrawRectangle((int)cx + 27, (int)cy - 7, 23, 14, DARKGRAY);
             DrawTriangle(
-                { cx - 28.0f, cy },
+                { cx - 27.0f, cy },
                 { cx - 14.0f, cy - 11.0f },
                 { cx - 14.0f, cy + 11.0f },
                 RED
             );
             DrawTriangle(
-                { cx + 28.0f, cy },
+                { cx + 27.0f, cy },
                 { cx + 14.0f, cy + 11.0f },
                 { cx + 14.0f, cy - 11.0f },
                 RED
@@ -223,12 +228,25 @@ static void DibujarMiniatura(
         case CATALOGO_MIRADAS_CRUZADAS:
         {
             DrawCircle((int)cx, (int)cy - 24, 23.0f, GOLD);
-            DrawCircle((int)cx - 34, (int)cy + 23, 19.0f, SKYBLUE);
-            DrawCircle((int)cx, (int)cy + 29, 19.0f, GREEN);
-            DrawCircle((int)cx + 34, (int)cy + 23, 19.0f, ORANGE);
+            DrawCircle((int)cx - 31, (int)cy + 23, 18.0f, SKYBLUE);
+            DrawCircle((int)cx, (int)cy + 29, 18.0f, GREEN);
+            DrawCircle((int)cx + 31, (int)cy + 23, 18.0f, ORANGE);
             DrawText("<", (int)cx - 8, (int)cy - 39, 28, BLACK);
             break;
         }
+
+        case CATALOGO_MUROS_LOCOS:
+        {
+            DrawRectangle((int)cx - 52, (int)cy - 30, 37, 64, RED);
+            DrawRectangle((int)cx + 16, (int)cy - 30, 36, 64, ORANGE);
+            DrawRectangleLines((int)cx - 52, (int)cy - 30, 37, 64, BLACK);
+            DrawRectangleLines((int)cx + 16, (int)cy - 30, 36, 64, BLACK);
+            DrawCircle((int)cx, (int)cy + 18, 10.0f, SKYBLUE);
+            break;
+        }
+
+        case CANTIDAD_MINIJUEGOS_CATALOGO:
+            break;
     }
 }
 
@@ -239,7 +257,7 @@ static int MoverIndice(
     int deltaY
 )
 {
-    const int columnas = 5;
+    const int columnas = 6;
     const int filas = 2;
 
     int columna = actual % columnas;
@@ -394,14 +412,14 @@ void SeleccionMinijuegos::Dibujar(
             Fade(BLACK, 0.72f)
         );
 
-        int tamanoNombre = 13;
+        int tamanoNombre = 11;
         int anchoNombre =
             MeasureText(DATOS_CATALOGO[i].nombre, tamanoNombre);
 
         DrawText(
             DATOS_CATALOGO[i].nombre,
             (int)(celda.x + celda.width / 2.0f - anchoNombre / 2.0f),
-            (int)(celda.y + celda.height - 26.0f),
+            (int)(celda.y + celda.height - 25.0f),
             tamanoNombre,
             RAYWHITE
         );
