@@ -20,10 +20,11 @@ static const char* NombreModoPrueba(
         case PRUEBA_ISLA_FUEGO: return "8 - ISLA BAJO FUEGO";
         case PRUEBA_CAPITAN_MANDA: return "9 - CAPITAN MANDA";
         case PRUEBA_BARRA_GIRATORIA: return "0 - BARRA GIRATORIA";
-        case PRUEBA_NUCLEOS_ENERGIA: return "F10 - NUCLEOS DE ENERGIA";
-        case PRUEBA_REFUGIO_PINCHOS: return "F11 - REFUGIO DE PINCHOS";
-        case PRUEBA_MIRADAS_CRUZADAS: return "F12 - MIRADAS CRUZADAS";
+        case PRUEBA_TORMENTA_MAGNETICA: return "F8 - TORMENTA MAGNETICA";
         case PRUEBA_MUROS_LOCOS: return "F9 - MUROS LOCOS";
+        case PRUEBA_NUCLEOS_ENERGIA: return "F10 - NUCLEOS DE ENERGIA";
+        case PRUEBA_REFUGIO_PINCHOS: return "F11 - REFUGIO DE TALADROS";
+        case PRUEBA_MIRADAS_CRUZADAS: return "F12 - MIRADAS CRUZADAS";
     }
 
     return "PRUEBA";
@@ -201,12 +202,93 @@ static void DibujarZonaPrincipal(
         BLACK
     );
     DrawText(
-        "SALTO EN EL AIRE: GOLPE AL SUELO   E/SHIFT/B: GOLPEAR",
+        "SALTO EN EL AIRE: PREPARA 0.5s Y HACE GROUND POUND",
         25,
         100,
         18,
         DARKGRAY
     );
+}
+
+
+static void ReiniciarEstadoExtendidoJugador(
+    JugadorPrueba& jugador
+)
+{
+    jugador.preparandoGolpeSuelo = false;
+    jugador.tiempoPreparacionGolpeSuelo = 0.0f;
+    jugador.golpeSueloRecibido = false;
+    jugador.multiplicadorRalentizacion = 1.0f;
+}
+
+
+static void PrepararTemaVisualZona(
+    const ZonaPruebas& zona
+)
+{
+    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
+
+    if (zona.modoActual == PRUEBA_COLOR_SEGURO)
+    {
+        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_LAVA);
+        return;
+    }
+
+    if (zona.modoActual == PRUEBA_PELOTAS_EMPUJON)
+    {
+        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NIEVE);
+        return;
+    }
+
+    if (zona.modoActual == PRUEBA_TORMENTA_MAGNETICA)
+    {
+        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_MAGNETICO);
+        return;
+    }
+
+    if (zona.modoActual == PRUEBA_REFUGIO_PINCHOS)
+    {
+        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_CUEVA);
+
+        const MinijuegoRefugioPinchos& minijuego =
+            zona.minijuegoRefugioPinchos;
+
+        float progreso = 0.0f;
+        bool seleccionado =
+            minijuego.fase == FASE_PINCHOS_AVISO;
+
+        if (minijuego.fase == FASE_PINCHOS_ATAQUE)
+        {
+            const float DURACION_ATAQUE_VISUAL = 0.52f;
+
+            float avance =
+                1.0f -
+                minijuego.tiempoFase /
+                DURACION_ATAQUE_VISUAL;
+
+            if (avance < 0.0f) avance = 0.0f;
+            if (avance > 1.0f) avance = 1.0f;
+
+            // El taladro entra, alcanza el punto de peligro y vuelve
+            // durante la misma fase de ataque.
+            if (avance < 0.56f)
+            {
+                progreso = avance / 0.56f;
+            }
+            else
+            {
+                progreso =
+                    1.0f -
+                    (avance - 0.56f) / 0.44f;
+            }
+        }
+
+        ConfigurarTaladrosVisualesMinijuego(
+            (int)minijuego.direccionAviso,
+            progreso,
+            seleccionado
+        );
+    }
 }
 
 
@@ -223,6 +305,8 @@ void ZonaPruebas::Inicializar(
     participantes = participantesJuego;
     cantidadParticipantes = cantidadParticipantesJuego;
     audio = audioJuego;
+
+    InicializarTexturasTematicasMinijuegos();
 
     for (int i = 0; i < MAX_PARTICULAS_TIERRA; i++)
     {
@@ -242,6 +326,7 @@ void ZonaPruebas::Inicializar(
     minijuegoRefugioPinchos.Inicializar();
     minijuegoMiradasCruzadas.Inicializar();
     minijuegoMurosLocos.Inicializar();
+    minijuegoTormentaMagnetica.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
@@ -349,6 +434,14 @@ void ZonaPruebas::CambiarModo(
                 MAX_JUGADORES_PRUEBA
             );
             break;
+
+        case PRUEBA_TORMENTA_MAGNETICA:
+            minijuegoTormentaMagnetica.Inicializar();
+            minijuegoTormentaMagnetica.ConfigurarJugadores(
+                jugadores,
+                MAX_JUGADORES_PRUEBA
+            );
+            break;
     }
 
     if (modoActual != PRUEBA_MODELOS)
@@ -398,6 +491,7 @@ void ZonaPruebas::ReiniciarJugador(
     }
 
     ReiniciarJugadorPrueba(jugadores[indice]);
+    ReiniciarEstadoExtendidoJugador(jugadores[indice]);
 }
 
 
@@ -499,6 +593,21 @@ static void ReiniciarModoActual(
                 MAX_JUGADORES_PRUEBA
             );
             break;
+
+        case PRUEBA_TORMENTA_MAGNETICA:
+            zona.minijuegoTormentaMagnetica.Reiniciar(
+                zona.jugadores,
+                MAX_JUGADORES_PRUEBA
+            );
+            break;
+    }
+
+    if (zona.modoActual != PRUEBA_MODELOS)
+    {
+        for (int i = 0; i < MAX_JUGADORES_PRUEBA; i++)
+        {
+            ReiniciarEstadoExtendidoJugador(zona.jugadores[i]);
+        }
     }
 }
 
@@ -507,6 +616,8 @@ void ZonaPruebas::Actualizar(
     float deltaTime
 )
 {
+    ActualizarEfectosVisualesMinijuegos(deltaTime);
+
     if (IsKeyPressed(KEY_ESCAPE))
     {
         volverAlMenu = true;
@@ -530,6 +641,7 @@ void ZonaPruebas::Actualizar(
         if (IsKeyPressed(KEY_EIGHT)) { CambiarModo(PRUEBA_ISLA_FUEGO); return; }
         if (IsKeyPressed(KEY_NINE)) { CambiarModo(PRUEBA_CAPITAN_MANDA); return; }
         if (IsKeyPressed(KEY_ZERO)) { CambiarModo(PRUEBA_BARRA_GIRATORIA); return; }
+        if (IsKeyPressed(KEY_F8)) { CambiarModo(PRUEBA_TORMENTA_MAGNETICA); return; }
         if (IsKeyPressed(KEY_F9)) { CambiarModo(PRUEBA_MUROS_LOCOS); return; }
         if (IsKeyPressed(KEY_F10)) { CambiarModo(PRUEBA_NUCLEOS_ENERGIA); return; }
         if (IsKeyPressed(KEY_F11)) { CambiarModo(PRUEBA_REFUGIO_PINCHOS); return; }
@@ -567,7 +679,7 @@ void ZonaPruebas::Actualizar(
 
             if (participantes[i].conectado)
             {
-                ReiniciarJugadorPrueba(jugadores[i]);
+                ReiniciarJugador(i);
             }
             else
             {
@@ -575,6 +687,7 @@ void ZonaPruebas::Actualizar(
                 jugadores[i].empuje = {};
                 jugadores[i].cayendo = false;
                 jugadores[i].enSuelo = false;
+                ReiniciarEstadoExtendidoJugador(jugadores[i]);
             }
         }
     }
@@ -700,12 +813,25 @@ void ZonaPruebas::Actualizar(
                 MAX_PARTICULAS_TIERRA
             );
             break;
+
+        case PRUEBA_TORMENTA_MAGNETICA:
+            minijuegoTormentaMagnetica.Actualizar(
+                deltaTime,
+                jugadores,
+                MAX_JUGADORES_PRUEBA,
+                participantes,
+                particulas,
+                MAX_PARTICULAS_TIERRA
+            );
+            break;
     }
 }
 
 
 void ZonaPruebas::Dibujar() const
 {
+    PrepararTemaVisualZona(*this);
+
     switch (modoActual)
     {
         case PRUEBA_ZONA_PRINCIPAL:
@@ -813,6 +939,17 @@ void ZonaPruebas::Dibujar() const
                 mostrarDebug
             );
             break;
+
+        case PRUEBA_TORMENTA_MAGNETICA:
+            minijuegoTormentaMagnetica.Dibujar(
+                jugadores,
+                MAX_JUGADORES_PRUEBA,
+                participantes,
+                particulas,
+                MAX_PARTICULAS_TIERRA,
+                mostrarDebug
+            );
+            break;
     }
 
     if (modoCatalogo)
@@ -853,7 +990,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "F9 MUROS   F10 NUCLEOS   F11 PINCHOS   F12 MIRADAS",
+        "F8 MAGNETICA  F9 MUROS  F10 NUCLEOS  F11 TALADROS  F12 MIRADAS",
         30,
         GetScreenHeight() - 116,
         15,
@@ -896,4 +1033,5 @@ void ZonaPruebas::Descargar()
 {
     minijuego67.Descargar();
     pruebaModelos.Descargar();
+    DescargarTexturasTematicasMinijuegos();
 }
