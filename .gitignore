@@ -9,5 +9,5 @@
 .DS_Store
 Thumbs.db
 
-# VS Code con rutas locales de tu PC
-.vscode/
+# CMake
+/build/
