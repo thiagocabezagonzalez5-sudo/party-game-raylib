@@ -15,21 +15,29 @@
 static const float DURACION_PREPARACION_67 = 2.5f;
 static const float DURACION_PARTIDA_67 = 30.0f;
 
-static const float INICIO_ZONA_RECOGIDA_67 = 0.68f;
-static const float FIN_ZONA_RECOGIDA_67 = 0.88f;
+static const float INICIO_ZONA_RECOGIDA_67 = 0.67f;
+static const float FIN_ZONA_RECOGIDA_67 = 0.86f;
+static const float CENTRO_ZONA_RECOGIDA_67 =
+    (INICIO_ZONA_RECOGIDA_67 + FIN_ZONA_RECOGIDA_67) / 2.0f;
 
-static const float X_INICIO_CINTA_67 = -5.6f;
-static const float LARGO_CINTA_67 = 7.4f;
-static const float X_JUGADOR_67 = 2.35f;
-static const float X_MESA_67 = 2.70f;
+static const float X_INICIO_CINTA_67 = -6.3f;
+static const float LARGO_CINTA_67 = 9.0f;
+static const float X_JUGADOR_67 = 1.45f;
+static const float X_MESA_67 = 3.35f;
 
-static const float Z_CARRIL_SUPERIOR_67 = -1.55f;
-static const float Z_CARRIL_INFERIOR_67 = 1.55f;
+// Las dos cintas quedan a los lados y los jugadores trabajan
+// dentro del pasillo central, en vez de estar parados sobre ellas.
+static const float Z_CINTA_6_67 = -2.35f;
+static const float Z_CINTA_7_67 = 2.35f;
+static const float Z_JUGADOR_6_67 = -0.72f;
+static const float Z_JUGADOR_7_67 = 0.72f;
 
-static const float DEMORA_REAPARICION_FALLO_67 = 0.26f;
-static const float DEMORA_REAPARICION_AGARRE_67 = 0.52f;
-static const float DURACION_GIRO_67 = 0.28f;
-static const float DURACION_STUN_67 = 0.46f;
+static const int CANTIDAD_PIEZAS_VISUALES_67 = 7;
+static const float DESFASE_CARRIL_7_67 =
+    0.5f / (float)CANTIDAD_PIEZAS_VISUALES_67;
+
+static const float DURACION_GIRO_67 = 0.24f;
+static const float DURACION_STUN_67 = 0.42f;
 static const float DURACION_MESA_COMPLETA_67 = 0.48f;
 static const float DURACION_FEEDBACK_67 = 0.55f;
 
@@ -126,12 +134,44 @@ static Color ObtenerColorEquipo67(int equipo)
 }
 
 
-static float ObtenerZCarrilEquipo67(
+static float NormalizarProgreso67(float progreso)
+{
+    progreso = std::fmod(progreso, 1.0f);
+
+    if (progreso < 0.0f)
+    {
+        progreso += 1.0f;
+    }
+
+    return progreso;
+}
+
+
+static float ObtenerXObjeto67(float progreso)
+{
+    return
+        X_INICIO_CINTA_67 +
+        progreso * LARGO_CINTA_67;
+}
+
+
+static float ObtenerZCintaPorTipo67(
+    TipoPieza67 tipo
+)
+{
+    return tipo == PIEZA_NUMERO_6
+        ? Z_CINTA_6_67
+        : Z_CINTA_7_67;
+}
+
+
+static float ObtenerZJugadorEquipo67(
     const Minijuego67& minijuego,
     int indiceJugador
 )
 {
-    int equipo = minijuego.equipoPorJugador[indiceJugador];
+    int equipo =
+        minijuego.equipoPorJugador[indiceJugador];
 
     if (equipo < 0 || equipo > 1)
     {
@@ -145,27 +185,75 @@ static float ObtenerZCarrilEquipo67(
 
     return
         minijuego.ordenEnEquipoPorJugador[indiceJugador] == 0
-        ? Z_CARRIL_SUPERIOR_67
-        : Z_CARRIL_INFERIOR_67;
+        ? Z_JUGADOR_6_67
+        : Z_JUGADOR_7_67;
 }
 
 
-static float ObtenerXObjeto67(float progreso)
-{
-    return
-        X_INICIO_CINTA_67 +
-        progreso * LARGO_CINTA_67;
-}
-
-
-static void ReiniciarObjetoCinta67(
-    EstadoJugador67& estado,
-    float demora
+static float ObtenerProgresoPiezaVisual67(
+    const EstadoJugador67& estado,
+    TipoPieza67 tipo,
+    int indicePieza
 )
 {
-    estado.objetoActivo = false;
-    estado.tiempoReaparicion = demora;
-    estado.progresoObjeto = -0.06f;
+    float separacion =
+        1.0f /
+        (float)CANTIDAD_PIEZAS_VISUALES_67;
+
+    float desfaseTipo =
+        tipo == PIEZA_NUMERO_7
+        ? DESFASE_CARRIL_7_67
+        : 0.0f;
+
+    return NormalizarProgreso67(
+        estado.progresoObjeto +
+        separacion * (float)indicePieza +
+        desfaseTipo
+    );
+}
+
+
+static bool HayPiezaAlAlcance67(
+    const EstadoJugador67& estado,
+    TipoPieza67 tipo
+)
+{
+    float mejorDistancia = 1000.0f;
+
+    for (
+        int i = 0;
+        i < CANTIDAD_PIEZAS_VISUALES_67;
+        i++
+    )
+    {
+        float progreso =
+            ObtenerProgresoPiezaVisual67(
+                estado,
+                tipo,
+                i
+            );
+
+        if (
+            progreso < INICIO_ZONA_RECOGIDA_67 ||
+            progreso > FIN_ZONA_RECOGIDA_67
+        )
+        {
+            continue;
+        }
+
+        float distancia =
+            std::fabs(
+                progreso -
+                CENTRO_ZONA_RECOGIDA_67
+            );
+
+        if (distancia < mejorDistancia)
+        {
+            mejorDistancia = distancia;
+        }
+    }
+
+    return mejorDistancia < 1000.0f;
 }
 
 
@@ -178,6 +266,28 @@ static int BuscarJugadorUnicoEquipo67(
     for (int i = 0; i < cantidadMaxima; i++)
     {
         if (minijuego.equipoPorJugador[i] == equipo)
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+
+static int BuscarJugadorRol67(
+    const Minijuego67& minijuego,
+    int equipo,
+    TipoPieza67 tipo,
+    int cantidadMaxima
+)
+{
+    for (int i = 0; i < cantidadMaxima; i++)
+    {
+        if (
+            minijuego.equipoPorJugador[i] == equipo &&
+            minijuego.estadosJugadores[i].tipoPieza == tipo
+        )
         {
             return i;
         }
@@ -442,7 +552,7 @@ static void ColocarPieza67(
 
 
 //==================================================
-// DIBUJO 3D
+// DIBUJO DE NUMEROS
 //==================================================
 
 static void DibujarSegmentoNumero67(
@@ -503,81 +613,58 @@ static void DibujarNumero3D67(
     }
 
     if (segmentos[0])
-    {
         DibujarSegmentoNumero67(
             { centro.x, centro.y + Y_EXTREMO, centro.z },
-            true,
-            escala,
-            color
+            true, escala, color
         );
-    }
 
     if (segmentos[1])
-    {
         DibujarSegmentoNumero67(
             { centro.x + X_LADO, centro.y + Y_MEDIO_LADO, centro.z },
-            false,
-            escala,
-            color
+            false, escala, color
         );
-    }
 
     if (segmentos[2])
-    {
         DibujarSegmentoNumero67(
             { centro.x + X_LADO, centro.y - Y_MEDIO_LADO, centro.z },
-            false,
-            escala,
-            color
+            false, escala, color
         );
-    }
 
     if (segmentos[3])
-    {
         DibujarSegmentoNumero67(
             { centro.x, centro.y - Y_EXTREMO, centro.z },
-            true,
-            escala,
-            color
+            true, escala, color
         );
-    }
 
     if (segmentos[4])
-    {
         DibujarSegmentoNumero67(
             { centro.x - X_LADO, centro.y - Y_MEDIO_LADO, centro.z },
-            false,
-            escala,
-            color
+            false, escala, color
         );
-    }
 
     if (segmentos[5])
-    {
         DibujarSegmentoNumero67(
             { centro.x - X_LADO, centro.y + Y_MEDIO_LADO, centro.z },
-            false,
-            escala,
-            color
+            false, escala, color
         );
-    }
 
     if (segmentos[6])
-    {
         DibujarSegmentoNumero67(
             centro,
-            true,
-            escala,
-            color
+            true, escala, color
         );
-    }
 }
 
+
+//==================================================
+// DIBUJO DE CINTAS Y PIEZAS
+//==================================================
 
 static void DibujarCinta67(
     float z,
     float desplazamiento,
-    Color colorEquipo
+    Color colorEquipo,
+    TipoPieza67 tipo
 )
 {
     float centroX =
@@ -585,45 +672,47 @@ static void DibujarCinta67(
         LARGO_CINTA_67 / 2.0f;
 
     DrawCube(
-        { centroX, 0.22f, z },
-        LARGO_CINTA_67 + 0.40f,
-        0.44f,
-        1.22f,
-        Color{ 49, 54, 62, 255 }
+        { centroX, 0.20f, z },
+        LARGO_CINTA_67 + 0.45f,
+        0.40f,
+        1.25f,
+        Color{ 48, 52, 60, 255 }
     );
 
     DrawCubeWires(
-        { centroX, 0.22f, z },
-        LARGO_CINTA_67 + 0.40f,
-        0.44f,
-        1.22f,
+        { centroX, 0.20f, z },
+        LARGO_CINTA_67 + 0.45f,
+        0.40f,
+        1.25f,
         BLACK
     );
 
     DrawCube(
-        { centroX, 0.48f, z },
+        { centroX, 0.44f, z },
         LARGO_CINTA_67,
         0.08f,
         1.02f,
-        Color{ 83, 91, 101, 255 }
+        tipo == PIEZA_NUMERO_6
+        ? Color{ 111, 88, 68, 255 }
+        : Color{ 71, 91, 114, 255 }
     );
 
-    for (int i = 0; i < 13; i++)
+    for (int i = 0; i < 16; i++)
     {
         float avance =
             std::fmod(
-                i * 0.61f + desplazamiento,
+                i * 0.58f + desplazamiento,
                 LARGO_CINTA_67
             );
 
         float x = X_INICIO_CINTA_67 + avance;
 
         DrawCube(
-            { x, 0.535f, z },
-            0.07f,
+            { x, 0.50f, z },
+            0.065f,
             0.035f,
             0.98f,
-            Color{ 176, 184, 193, 255 }
+            Color{ 194, 196, 201, 255 }
         );
     }
 
@@ -636,57 +725,95 @@ static void DibujarCinta67(
     DrawCube(
         {
             (xZonaInicio + xZonaFin) / 2.0f,
-            0.58f,
+            0.535f,
             z
         },
         xZonaFin - xZonaInicio,
-        0.04f,
+        0.035f,
         1.06f,
-        Fade(YELLOW, 0.42f)
+        Fade(YELLOW, 0.34f)
     );
 
     for (int lado = -1; lado <= 1; lado += 2)
     {
         DrawCube(
-            { centroX, 0.66f, z + lado * 0.61f },
+            { centroX, 0.60f, z + lado * 0.62f },
             LARGO_CINTA_67 + 0.45f,
-            0.18f,
+            0.16f,
             0.10f,
             Color{ 42, 46, 53, 255 }
         );
     }
 
-    for (int pata = 0; pata < 3; pata++)
+    for (int pata = 0; pata < 4; pata++)
     {
         float xPata =
             X_INICIO_CINTA_67 +
-            0.8f +
-            pata * 2.95f;
+            0.7f +
+            pata * 2.55f;
 
         DrawCube(
             { xPata, -0.02f, z },
             0.18f,
-            0.55f,
+            0.52f,
             0.84f,
             Color{ 48, 52, 58, 255 }
         );
     }
 
     DrawCube(
-        { X_INICIO_CINTA_67 - 0.46f, 1.15f, z },
-        0.72f,
-        2.15f,
-        1.58f,
+        { X_INICIO_CINTA_67 - 0.44f, 1.10f, z },
+        0.70f,
+        2.05f,
+        1.54f,
         Color{ 58, 63, 71, 255 }
     );
 
     DrawCube(
-        { X_INICIO_CINTA_67 - 0.08f, 1.22f, z },
+        { X_INICIO_CINTA_67 - 0.05f, 1.16f, z },
         0.08f,
-        1.35f,
-        1.16f,
-        Fade(colorEquipo, 0.78f)
+        1.28f,
+        1.12f,
+        Fade(colorEquipo, 0.72f)
     );
+}
+
+
+static void DibujarFlujoPiezas67(
+    const EstadoJugador67& estado,
+    TipoPieza67 tipo,
+    float z
+)
+{
+    Color color =
+        tipo == PIEZA_NUMERO_6
+        ? ORANGE
+        : SKYBLUE;
+
+    for (
+        int i = 0;
+        i < CANTIDAD_PIEZAS_VISUALES_67;
+        i++
+    )
+    {
+        float progreso =
+            ObtenerProgresoPiezaVisual67(
+                estado,
+                tipo,
+                i
+            );
+
+        DibujarNumero3D67(
+            tipo == PIEZA_NUMERO_6 ? 6 : 7,
+            {
+                ObtenerXObjeto67(progreso),
+                0.91f,
+                z
+            },
+            0.56f,
+            color
+        );
+    }
 }
 
 
@@ -699,65 +826,62 @@ static void DibujarMesa67(
     Color colorBase =
         tiempoCompleta > 0.0f
         ? Color{ 72, 188, 99, 255 }
-        : Color{ 48, 51, 58, 255 };
+        : Color{ 54, 57, 65, 255 };
 
-    // Plataforma central de armado: queda entre los dos
-    // jugadores del equipo, como en el boceto de referencia.
     DrawCylinder(
-        { X_MESA_67, 0.13f, 0.0f },
-        1.18f,
-        1.18f,
-        0.26f,
+        { X_MESA_67, 0.12f, 0.0f },
+        1.12f,
+        1.12f,
+        0.24f,
         32,
-        Color{ 24, 26, 31, 255 }
+        Color{ 27, 29, 34, 255 }
     );
 
     DrawCylinder(
-        { X_MESA_67, 0.30f, 0.0f },
-        1.00f,
-        1.00f,
-        0.12f,
+        { X_MESA_67, 0.28f, 0.0f },
+        0.96f,
+        0.96f,
+        0.11f,
         32,
         colorBase
     );
 
     DrawCylinder(
-        { X_MESA_67, 0.39f, 0.0f },
-        0.84f,
-        0.84f,
-        0.05f,
+        { X_MESA_67, 0.37f, 0.0f },
+        0.80f,
+        0.80f,
+        0.045f,
         32,
         Fade(colorEquipo, 0.58f)
     );
 
-    // Marca tenue 67 incluso cuando la plataforma esta vacia.
     DibujarNumero3D67(
         6,
-        { X_MESA_67 - 0.34f, 0.82f, 0.0f },
-        0.47f,
+        { X_MESA_67 - 0.33f, 0.79f, 0.0f },
+        0.45f,
         estado == MESA_67_VACIA
-        ? Fade(RAYWHITE, 0.28f)
+        ? Fade(RAYWHITE, 0.25f)
         : ORANGE
     );
 
     DibujarNumero3D67(
         7,
-        { X_MESA_67 + 0.34f, 0.82f, 0.0f },
-        0.47f,
+        { X_MESA_67 + 0.33f, 0.79f, 0.0f },
+        0.45f,
         estado == MESA_67_COMPLETA
         ? SKYBLUE
-        : Fade(RAYWHITE, 0.28f)
+        : Fade(RAYWHITE, 0.25f)
     );
 
     if (estado == MESA_67_COMPLETA)
     {
         DrawCylinder(
-            { X_MESA_67, 0.47f, 0.0f },
-            0.92f,
-            0.92f,
-            0.04f,
+            { X_MESA_67, 0.45f, 0.0f },
+            0.88f,
+            0.88f,
+            0.035f,
             32,
-            Fade(LIME, 0.48f)
+            Fade(LIME, 0.45f)
         );
     }
 }
@@ -770,7 +894,14 @@ static void DibujarJugador3D67(
     float z
 )
 {
-    float giro = -90.0f;
+    // Mirando a su cinta cuando espera y a la mesa cuando lleva pieza.
+    float giroCinta =
+        estado.tipoPieza == PIEZA_NUMERO_6
+        ? 180.0f
+        : 0.0f;
+
+    float giroMesa = 90.0f;
+    float giro = giroCinta;
 
     if (estado.llevaPieza)
     {
@@ -778,17 +909,13 @@ static void DibujarJugador3D67(
             1.0f -
             estado.tiempoGiro / DURACION_GIRO_67;
 
-        if (progresoGiro < 0.0f)
-        {
-            progresoGiro = 0.0f;
-        }
+        if (progresoGiro < 0.0f) progresoGiro = 0.0f;
+        if (progresoGiro > 1.0f) progresoGiro = 1.0f;
 
-        if (progresoGiro > 1.0f)
-        {
-            progresoGiro = 1.0f;
-        }
-
-        giro = -90.0f + 180.0f * progresoGiro;
+        giro =
+            giroCinta +
+            (giroMesa - giroCinta) *
+            progresoGiro;
     }
 
     float alturaBase =
@@ -802,12 +929,12 @@ static void DibujarJugador3D67(
         : participante.color;
 
     DrawCylinder(
-        { X_JUGADOR_67, 0.08f, z },
-        0.60f,
-        0.60f,
-        0.16f,
+        { X_JUGADOR_67, 0.06f, z },
+        0.56f,
+        0.56f,
+        0.12f,
         24,
-        Fade(participante.color, 0.70f)
+        Fade(participante.color, 0.56f)
     );
 
     if (minijuego.modeloJugadorCargado)
@@ -851,8 +978,8 @@ static void DibujarJugador3D67(
             estado.tipoPieza == PIEZA_NUMERO_6
             ? 6
             : 7,
-            { X_JUGADOR_67, 2.18f, z },
-            0.62f,
+            { X_JUGADOR_67, 2.16f, z },
+            0.60f,
             colorPieza
         );
     }
@@ -866,83 +993,86 @@ static void DibujarFabricaEquipo67(
     Color colorEquipo = ObtenerColorEquipo67(equipo);
 
     DrawPlane(
-        { 0.0f, -0.31f, 0.0f },
-        { 18.0f, 10.0f },
+        { 0.0f, -0.30f, 0.0f },
+        { 19.0f, 11.0f },
         equipo == 0
-        ? Color{ 79, 45, 48, 255 }
-        : Color{ 38, 61, 77, 255 }
+        ? Color{ 95, 58, 62, 255 }
+        : Color{ 51, 74, 91, 255 }
     );
 
-    // Pared posterior neutra con una franja del color del equipo.
     DrawCube(
-        { 0.0f, 2.45f, -4.45f },
-        16.8f,
+        { 0.0f, 2.45f, -4.85f },
+        18.0f,
         5.5f,
         0.25f,
-        Color{ 66, 72, 80, 255 }
+        Color{ 70, 75, 84, 255 }
     );
 
     DrawCube(
-        { 0.0f, 4.65f, -4.28f },
-        16.2f,
+        { 0.0f, 4.65f, -4.68f },
+        17.4f,
         0.55f,
         0.10f,
-        Fade(colorEquipo, 0.88f)
+        Fade(colorEquipo, 0.86f)
+    );
+
+    // Pasillo central: esta zona deja claro que los jugadores estan
+    // entre las dos cintas y no encima de ellas.
+    DrawCube(
+        { -0.80f, -0.20f, 0.0f },
+        13.4f,
+        0.08f,
+        2.05f,
+        Color{ 129, 132, 139, 255 }
+    );
+
+    DrawCubeWires(
+        { -0.80f, -0.20f, 0.0f },
+        13.4f,
+        0.08f,
+        2.05f,
+        Fade(BLACK, 0.42f)
+    );
+
+    // Carteles de los dos carriles.
+    DrawCube(
+        { -4.95f, 3.55f, -4.55f },
+        2.1f,
+        1.25f,
+        0.08f,
+        Fade(ORANGE, 0.58f)
     );
 
     DrawCube(
-        { -7.35f, 2.45f, 0.0f },
-        0.35f,
-        5.5f,
-        8.8f,
-        Color{ 57, 63, 70, 255 }
+        { -1.95f, 3.55f, -4.55f },
+        2.1f,
+        1.25f,
+        0.08f,
+        Fade(SKYBLUE, 0.58f)
     );
 
-    // Dos paneles grandes ayudan a separar visualmente el
-    // carril del 6 y el carril del 7.
-    DrawCube(
-        { -1.15f, 0.02f, Z_CARRIL_SUPERIOR_67 },
-        11.8f,
-        0.05f,
-        2.10f,
-        Fade(colorEquipo, 0.16f)
+    DibujarNumero3D67(
+        6,
+        { -4.95f, 3.55f, -4.40f },
+        0.75f,
+        ORANGE
     );
 
-    DrawCube(
-        { -1.15f, 0.02f, Z_CARRIL_INFERIOR_67 },
-        11.8f,
-        0.05f,
-        2.10f,
-        Fade(colorEquipo, 0.16f)
+    DibujarNumero3D67(
+        7,
+        { -1.95f, 3.55f, -4.40f },
+        0.75f,
+        SKYBLUE
     );
-
-    for (int i = 0; i < 5; i++)
-    {
-        DrawCube(
-            { -5.8f + i * 2.85f, 3.92f, -4.18f },
-            1.45f,
-            1.10f,
-            0.08f,
-            Fade(colorEquipo, 0.52f)
-        );
-
-        DrawCubeWires(
-            { -5.8f + i * 2.85f, 3.92f, -4.18f },
-            1.45f,
-            1.10f,
-            0.08f,
-            BLACK
-        );
-    }
 
     for (int i = 0; i < 4; i++)
     {
         DrawCube(
-            { -5.8f + i * 3.8f, 2.1f, -4.05f },
-            0.30f,
-            4.1f,
-            0.30f,
-            Color{ 49, 54, 61, 255 }
+            { -6.0f + i * 3.85f, 2.0f, -4.50f },
+            0.26f,
+            4.0f,
+            0.26f,
+            Color{ 51, 56, 64, 255 }
         );
     }
 }
@@ -1045,41 +1175,28 @@ static void DibujarHudEquipo67(
         LIGHTGRAY
     );
 
-    int indiceRol6 = -1;
-    int indiceRol7 = -1;
-    int indiceUnico = -1;
+    int indiceRol6 =
+        BuscarJugadorRol67(
+            minijuego,
+            equipo,
+            PIEZA_NUMERO_6,
+            cantidadMaxima
+        );
 
-    for (int i = 0; i < cantidadMaxima; i++)
-    {
-        if (
-            minijuego.equipoPorJugador[i] != equipo ||
-            !participantes[i].activo ||
-            !participantes[i].conectado
-        )
-        {
-            continue;
-        }
+    int indiceRol7 =
+        BuscarJugadorRol67(
+            minijuego,
+            equipo,
+            PIEZA_NUMERO_7,
+            cantidadMaxima
+        );
 
-        indiceUnico = i;
-
-        if (
-            minijuego.estadosJugadores[i].tipoPieza ==
-            PIEZA_NUMERO_6
-        )
-        {
-            indiceRol6 = i;
-        }
-        else
-        {
-            indiceRol7 = i;
-        }
-    }
-
-    if (minijuego.cantidadJugadoresEquipo[equipo] == 1)
-    {
-        indiceRol6 = indiceUnico;
-        indiceRol7 = -1;
-    }
+    int indiceUnico =
+        BuscarJugadorUnicoEquipo67(
+            minijuego,
+            equipo,
+            cantidadMaxima
+        );
 
     int anchoTarjeta = ancho < 640 ? 185 : 215;
     int xTarjeta = ancho - anchoTarjeta - 18;
@@ -1178,13 +1295,13 @@ static void DibujarHudEquipo67(
         DibujarTarjetaRol(
             indiceRol6,
             6,
-            alto / 2 - 155
+            alto / 2 - 150
         );
 
         DibujarTarjetaRol(
             indiceRol7,
             7,
-            alto / 2 + 93
+            alto / 2 + 88
         );
     }
 
@@ -1231,8 +1348,8 @@ static void DibujarVistaEquipo67(
 
     ClearBackground(
         equipo == 0
-        ? Color{ 95, 28, 34, 255 }
-        : Color{ 21, 72, 103, 255 }
+        ? Color{ 98, 38, 44, 255 }
+        : Color{ 27, 73, 102, 255 }
     );
 
     BeginMode3D(
@@ -1240,6 +1357,87 @@ static void DibujarVistaEquipo67(
     );
 
     DibujarFabricaEquipo67(equipo);
+
+    // Las dos cintas siempre existen y los objetos estan desfasados.
+    DibujarCinta67(
+        Z_CINTA_6_67,
+        minijuego.desplazamientoVisualCintas,
+        colorEquipo,
+        PIEZA_NUMERO_6
+    );
+
+    DibujarCinta67(
+        Z_CINTA_7_67,
+        minijuego.desplazamientoVisualCintas + 0.31f,
+        colorEquipo,
+        PIEZA_NUMERO_7
+    );
+
+    int indice6 =
+        BuscarJugadorRol67(
+            minijuego,
+            equipo,
+            PIEZA_NUMERO_6,
+            cantidadMaxima
+        );
+
+    int indice7 =
+        BuscarJugadorRol67(
+            minijuego,
+            equipo,
+            PIEZA_NUMERO_7,
+            cantidadMaxima
+        );
+
+    int indiceUnico =
+        BuscarJugadorUnicoEquipo67(
+            minijuego,
+            equipo,
+            cantidadMaxima
+        );
+
+    if (minijuego.cantidadJugadoresEquipo[equipo] == 1)
+    {
+        if (indiceUnico >= 0)
+        {
+            const EstadoJugador67& estado =
+                minijuego.estadosJugadores[indiceUnico];
+
+            // En 1v1 se muestran ambos flujos; el rol del jugador cambia
+            // segun lo que necesita la mesa.
+            DibujarFlujoPiezas67(
+                estado,
+                PIEZA_NUMERO_6,
+                Z_CINTA_6_67
+            );
+
+            DibujarFlujoPiezas67(
+                estado,
+                PIEZA_NUMERO_7,
+                Z_CINTA_7_67
+            );
+        }
+    }
+    else
+    {
+        if (indice6 >= 0)
+        {
+            DibujarFlujoPiezas67(
+                minijuego.estadosJugadores[indice6],
+                PIEZA_NUMERO_6,
+                Z_CINTA_6_67
+            );
+        }
+
+        if (indice7 >= 0)
+        {
+            DibujarFlujoPiezas67(
+                minijuego.estadosJugadores[indice7],
+                PIEZA_NUMERO_7,
+                Z_CINTA_7_67
+            );
+        }
+    }
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
@@ -1252,49 +1450,17 @@ static void DibujarVistaEquipo67(
             continue;
         }
 
-        float z =
-            ObtenerZCarrilEquipo67(
+        float zJugador =
+            ObtenerZJugadorEquipo67(
                 minijuego,
                 i
             );
 
-        DibujarCinta67(
-            z,
-            minijuego.desplazamientoVisualCintas,
-            colorEquipo
-        );
-
-        const EstadoJugador67& estado =
-            minijuego.estadosJugadores[i];
-
-        if (estado.objetoActivo)
-        {
-            Color colorPieza =
-                estado.tipoPieza == PIEZA_NUMERO_6
-                ? ORANGE
-                : SKYBLUE;
-
-            DibujarNumero3D67(
-                estado.tipoPieza == PIEZA_NUMERO_6
-                ? 6
-                : 7,
-                {
-                    ObtenerXObjeto67(
-                        estado.progresoObjeto
-                    ),
-                    0.94f,
-                    z
-                },
-                0.62f,
-                colorPieza
-            );
-        }
-
         DibujarJugador3D67(
             minijuego,
             participantes[i],
-            estado,
-            z
+            minijuego.estadosJugadores[i],
+            zJugador
         );
     }
 
@@ -1325,7 +1491,7 @@ void Minijuego67::Inicializar()
 {
     tiempoPreparacion = DURACION_PREPARACION_67;
     tiempoPartida = DURACION_PARTIDA_67;
-    velocidadCintas = 0.24f;
+    velocidadCintas = 0.22f;
     desplazamientoVisualCintas = 0.0f;
     jugadoresEnPartida = 0;
     mascaraJugadoresEnPartida = 0;
@@ -1337,17 +1503,15 @@ void Minijuego67::Inicializar()
     for (int equipo = 0; equipo < 2; equipo++)
     {
         camarasEquipo[equipo].position =
-            { 7.6f, 10.8f, 11.8f };
+            { 8.4f, 10.6f, 12.8f };
 
         camarasEquipo[equipo].target =
-            { -1.15f, 0.55f, 0.0f };
+            { -1.15f, 0.60f, 0.0f };
 
         camarasEquipo[equipo].up =
             { 0.0f, 1.0f, 0.0f };
 
-        // La vista ortografica conserva el esquema del boceto:
-        // dos cintas horizontales y la plataforma 67 al centro.
-        camarasEquipo[equipo].fovy = 11.8f;
+        camarasEquipo[equipo].fovy = 12.4f;
         camarasEquipo[equipo].projection = CAMERA_ORTHOGRAPHIC;
     }
 
@@ -1497,9 +1661,6 @@ void Minijuego67::PrepararEquipos(
         }
     }
 
-    // Sorteo Fisher-Yates: cada vez que comienza la partida
-    // se vuelven a formar los equipos y tambien se sortean
-    // los roles 6 y 7 dentro de cada pareja.
     for (int i = cantidadIndices - 1; i > 0; i--)
     {
         int otroIndice = GetRandomValue(0, i);
@@ -1558,7 +1719,7 @@ void Minijuego67::Reiniciar(
 
     tiempoPreparacion = DURACION_PREPARACION_67;
     tiempoPartida = DURACION_PARTIDA_67;
-    velocidadCintas = 0.24f;
+    velocidadCintas = 0.22f;
     desplazamientoVisualCintas = 0.0f;
     fotogramaAnimacionIdle = 0.0f;
     equipoGanador = -1;
@@ -1573,8 +1734,12 @@ void Minijuego67::Reiniciar(
     {
         estadosJugadores[i] = {};
 
+        // Cada jugador parte en una fase distinta. Ademas el carril 7
+        // suma su propio desfase, por lo que 6 y 7 nunca quedan alineados.
         estadosJugadores[i].progresoObjeto =
-            -0.06f + 0.08f * (float)i;
+            NormalizarProgreso67(
+                0.037f * (float)i
+            );
     }
 
     PrepararEquipos(
@@ -1625,7 +1790,7 @@ void Minijuego67::Actualizar(
     AsegurarVistasEquipo67(*this);
 
     desplazamientoVisualCintas +=
-        velocidadCintas * 8.5f * deltaTime;
+        velocidadCintas * 9.0f * deltaTime;
 
     if (desplazamientoVisualCintas >= LARGO_CINTA_67)
     {
@@ -1717,7 +1882,7 @@ void Minijuego67::Actualizar(
         tiempoPartida / DURACION_PARTIDA_67;
 
     velocidadCintas =
-        0.24f + porcentajeTiempo * 0.22f;
+        0.22f + porcentajeTiempo * 0.22f;
 
     for (int equipo = 0; equipo < 2; equipo++)
     {
@@ -1766,6 +1931,14 @@ void Minijuego67::Actualizar(
         EstadoJugador67& estado =
             estadosJugadores[i];
 
+        // La cinta nunca se detiene cuando alguien toma una pieza.
+        // Hay una secuencia continua de varios 6/7 pasando.
+        estado.progresoObjeto =
+            NormalizarProgreso67(
+                estado.progresoObjeto +
+                velocidadCintas * deltaTime
+            );
+
         if (estado.tiempoStun > 0.0f)
         {
             estado.tiempoStun -= deltaTime;
@@ -1787,31 +1960,6 @@ void Minijuego67::Actualizar(
             {
                 estado.tiempoGiro = 0.0f;
                 estado.mirandoMesa = true;
-            }
-        }
-
-        if (estado.objetoActivo)
-        {
-            estado.progresoObjeto +=
-                velocidadCintas * deltaTime;
-
-            if (estado.progresoObjeto > 1.06f)
-            {
-                ReiniciarObjetoCinta67(
-                    estado,
-                    DEMORA_REAPARICION_FALLO_67
-                );
-            }
-        }
-        else
-        {
-            estado.tiempoReaparicion -= deltaTime;
-
-            if (estado.tiempoReaparicion <= 0.0f)
-            {
-                estado.objetoActivo = true;
-                estado.progresoObjeto = -0.06f;
-                estado.tiempoReaparicion = 0.0f;
             }
         }
 
@@ -1844,31 +1992,33 @@ void Minijuego67::Actualizar(
             continue;
         }
 
-        bool objetoEnFrente =
-            estado.objetoActivo &&
-            estado.progresoObjeto >=
-                INICIO_ZONA_RECOGIDA_67 &&
-            estado.progresoObjeto <=
-                FIN_ZONA_RECOGIDA_67;
+        bool piezaEnLaMano =
+            HayPiezaAlAlcance67(
+                estado,
+                estado.tipoPieza
+            );
 
-        if (objetoEnFrente)
+        if (piezaEnLaMano)
         {
             estado.llevaPieza = true;
             estado.mirandoMesa = false;
             estado.tiempoGiro = DURACION_GIRO_67;
 
-            ReiniciarObjetoCinta67(
-                estado,
-                DEMORA_REAPARICION_AGARRE_67
-            );
+            // Pequenio corrimiento para evitar volver a capturar el mismo
+            // elemento del flujo inmediatamente despues de colocarlo.
+            estado.progresoObjeto =
+                NormalizarProgreso67(
+                    estado.progresoObjeto +
+                    0.035f
+                );
         }
         else
         {
             int equipo = equipoPorJugador[i];
 
-            estado.tiempoStun = 0.28f;
+            estado.tiempoStun = 0.26f;
             equipos[equipo].ultimoAcierto = false;
-            equipos[equipo].tiempoFeedback = 0.38f;
+            equipos[equipo].tiempoFeedback = 0.34f;
         }
     }
 }
