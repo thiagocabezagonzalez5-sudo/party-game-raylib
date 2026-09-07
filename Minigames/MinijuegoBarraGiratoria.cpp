@@ -15,10 +15,7 @@ static const float RADIO_COLISION_BARRA = 0.34f;
 static const float COOLDOWN_IMPACTO_BARRA = 0.62f;
 
 
-static float MagnitudHorizontalBarra(
-    float x,
-    float z
-)
+static float MagnitudHorizontalBarra(float x, float z)
 {
     return std::sqrt(x * x + z * z);
 }
@@ -34,11 +31,9 @@ static bool JugadorSobreArenaBarra(
             jugador.posicion.z
         );
 
-    float margen =
-        jugador.tamano.x * 0.18f;
+    float margen = jugador.tamano.x * 0.18f;
 
-    return distancia <=
-        RADIO_ARENA_BARRA - margen;
+    return distancia <= RADIO_ARENA_BARRA - margen;
 }
 
 
@@ -76,14 +71,10 @@ static float DistanciaJugadorALineaBarra(
         jugador.posicion.z * direccionZ;
 
     if (proyeccion < -LONGITUD_MEDIA_BARRA)
-    {
         proyeccion = -LONGITUD_MEDIA_BARRA;
-    }
 
     if (proyeccion > LONGITUD_MEDIA_BARRA)
-    {
         proyeccion = LONGITUD_MEDIA_BARRA;
-    }
 
     float puntoX = direccionX * proyeccion;
     float puntoZ = direccionZ * proyeccion;
@@ -117,10 +108,9 @@ static bool BarraTocaJugador(
         return false;
     }
 
-    return DistanciaJugadorALineaBarra(
-        jugador,
-        angulo
-    ) <= RADIO_COLISION_BARRA + jugador.tamano.x * 0.34f;
+    return
+        DistanciaJugadorALineaBarra(jugador, angulo) <=
+        RADIO_COLISION_BARRA + jugador.tamano.x * 0.34f;
 }
 
 
@@ -153,7 +143,7 @@ static void AplicarImpactoBarra(
     CrearParticulasImpactoGolpe(
         particulas,
         cantidadParticulas,
-        Vector3{
+        {
             jugador.posicion.x,
             ALTURA_BARRA,
             jugador.posicion.z
@@ -174,16 +164,13 @@ static void FinalizarBarra(
         return;
     }
 
-    int vivos =
-        ContarVivosBarra(minijuego);
+    int vivos = ContarVivosBarra(minijuego);
 
-    minijuego.resultado.estado =
-        RESULTADO_MINIJUEGO_FINALIZADO;
-
+    minijuego.resultado.estado = RESULTADO_MINIJUEGO_FINALIZADO;
     minijuego.resultado.desenlace =
         vivos == 1
-        ? DESENLACE_CON_GANADOR
-        : DESENLACE_EMPATE;
+            ? DESENLACE_CON_GANADOR
+            : DESENLACE_EMPATE;
 
     int tiempoFinalMs =
         (int)std::lround(
@@ -206,45 +193,35 @@ static void FinalizarBarra(
         if (!estadoJugador.eliminado)
         {
             estadoJugador.posicionFinal = 1;
-            estadoJugador.tiempoSobrevividoMs =
-                tiempoFinalMs;
+            estadoJugador.tiempoSobrevividoMs = tiempoFinalMs;
         }
 
-        resultadoJugador.posicionFinal =
-            estadoJugador.posicionFinal;
+        resultadoJugador.posicionFinal = estadoJugador.posicionFinal;
         resultadoJugador.numeroEquipo = -1;
         resultadoJugador.puntuacionMinijuego =
             estadoJugador.tiempoSobrevividoMs;
         resultadoJugador.puntosObtenidos = 0;
     }
 
-    minijuego.fase =
-        FASE_BARRA_TERMINADO;
+    minijuego.fase = FASE_BARRA_TERMINADO;
 }
 
 
 void MinijuegoBarraGiratoria::Inicializar()
 {
     resultado = {};
-    resultado.formato =
-        FORMATO_MINIJUEGO_INDIVIDUAL;
+    resultado.formato = FORMATO_MINIJUEGO_INDIVIDUAL;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         estadosJugadores[i] = {};
     }
 
-    // La superficie visual y la colision terminan en y=0.
-    // Asi los pies quedan por encima de una plataforma plana.
     suelo = {};
-    suelo.posicion =
-        { 0.0f, -0.30f, 0.0f };
-    suelo.posicionInicial =
-        suelo.posicion;
-    suelo.tamano =
-        { 11.6f, 0.60f, 11.6f };
-    suelo.color =
-        Color{ 145, 147, 154, 255 };
+    suelo.posicion = { 0.0f, -0.35f, 0.0f };
+    suelo.posicionInicial = suelo.posicion;
+    suelo.tamano = { 11.6f, 0.70f, 11.6f };
+    suelo.color = Color{ 93, 97, 106, 255 };
     suelo.activaColision = true;
 
     fase = FASE_BARRA_PREPARACION;
@@ -254,15 +231,11 @@ void MinijuegoBarraGiratoria::Inicializar()
     anguloBarra = 0.0f;
     velocidadAngular = 0.9f;
 
-    camara.position =
-        { 0.0f, 10.5f, 13.8f };
-    camara.target =
-        { 0.0f, 0.30f, 0.0f };
-    camara.up =
-        { 0.0f, 1.0f, 0.0f };
+    camara.position = { 0.0f, 10.5f, 13.8f };
+    camara.target = { 0.0f, 0.30f, 0.0f };
+    camara.up = { 0.0f, 1.0f, 0.0f };
     camara.fovy = 50.0f;
-    camara.projection =
-        CAMERA_PERSPECTIVE;
+    camara.projection = CAMERA_PERSPECTIVE;
 }
 
 
@@ -273,23 +246,20 @@ void MinijuegoBarraGiratoria::ConfigurarJugadores(
 {
     Vector3 spawns[MAX_JUGADORES_PRUEBA] =
     {
-        { -2.4f, 1.05f, 2.4f },
-        { 2.4f, 1.05f, 2.4f },
+        { -2.4f, 1.05f,  2.4f },
+        {  2.4f, 1.05f,  2.4f },
         { -2.4f, 1.05f, -2.4f },
-        { 2.4f, 1.05f, -2.4f }
+        {  2.4f, 1.05f, -2.4f }
     };
 
     int limite =
         cantidadMaxima < MAX_JUGADORES_PRUEBA
-        ? cantidadMaxima
-        : MAX_JUGADORES_PRUEBA;
+            ? cantidadMaxima
+            : MAX_JUGADORES_PRUEBA;
 
     for (int i = 0; i < limite; i++)
     {
-        ConfigurarJugadorMinijuegoEstandar(
-            jugadores[i],
-            spawns[i]
-        );
+        ConfigurarJugadorMinijuegoEstandar(jugadores[i], spawns[i]);
     }
 }
 
@@ -303,16 +273,14 @@ void MinijuegoBarraGiratoria::Reiniciar(
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        participaban[i] =
-            resultado.participantes[i].participo;
+        participaban[i] = resultado.participantes[i].participo;
     }
 
     Inicializar();
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        resultado.participantes[i].participo =
-            participaban[i];
+        resultado.participantes[i].participo = participaban[i];
 
         if (participaban[i])
         {
@@ -320,10 +288,7 @@ void MinijuegoBarraGiratoria::Reiniciar(
         }
     }
 
-    ConfigurarJugadores(
-        jugadores,
-        cantidadMaxima
-    );
+    ConfigurarJugadores(jugadores, cantidadMaxima);
 }
 
 
@@ -372,27 +337,20 @@ void MinijuegoBarraGiratoria::Actualizar(
     tiempoRestante -= deltaTime;
     if (tiempoRestante < 0.0f) tiempoRestante = 0.0f;
 
-    tiempoJugado =
-        DURACION_PARTIDA_BARRA -
-        tiempoRestante;
+    tiempoJugado = DURACION_PARTIDA_BARRA - tiempoRestante;
 
-    float progreso =
-        tiempoJugado /
-        DURACION_PARTIDA_BARRA;
+    float progresoPartida =
+        tiempoJugado / DURACION_PARTIDA_BARRA;
 
-    velocidadAngular =
-        0.9f + progreso * 1.9f;
-
-    anguloBarra +=
-        velocidadAngular * deltaTime;
+    velocidadAngular = 0.9f + progresoPartida * 1.9f;
+    anguloBarra += velocidadAngular * deltaTime;
 
     if (anguloBarra > 6.283185f)
     {
         anguloBarra -= 6.283185f;
     }
 
-    int vivosAntes =
-        ContarVivosBarra(*this);
+    int vivosAntes = ContarVivosBarra(*this);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -412,22 +370,22 @@ void MinijuegoBarraGiratoria::Actualizar(
         {
             estadoJugador.cooldownImpacto -= deltaTime;
             if (estadoJugador.cooldownImpacto < 0.0f)
-            {
                 estadoJugador.cooldownImpacto = 0.0f;
-            }
         }
 
-        InputMinijuegoParticipante entrada =
-            LeerInputMinijuegoParticipante(
-                participantes[i]
-            );
+        InputMinijuegoParticipante entrada{};
 
-        entrada.golpear = false;
+        if (participantes[i].conectado)
+        {
+            entrada = LeerInputMinijuegoParticipante(participantes[i]);
+        }
 
         BloquePrueba sueloJugador = suelo;
-        sueloJugador.activaColision =
-            JugadorSobreArenaBarra(jugador);
+        sueloJugador.activaColision = JugadorSobreArenaBarra(jugador);
 
+        // Mismo perfil que Color Seguro: movimiento, salto, golpe
+        // horizontal y golpe al suelo. La barra sigue siendo un peligro
+        // propio adicional del minijuego.
         ActualizarJugadorPruebaNormal(
             jugador,
             entrada,
@@ -443,10 +401,7 @@ void MinijuegoBarraGiratoria::Actualizar(
         if (
             estadoJugador.cooldownImpacto <= 0.0f &&
             !jugador.cayendo &&
-            BarraTocaJugador(
-                jugador,
-                anguloBarra
-            )
+            BarraTocaJugador(jugador, anguloBarra)
         )
         {
             AplicarImpactoBarra(
@@ -455,8 +410,7 @@ void MinijuegoBarraGiratoria::Actualizar(
                 cantidadParticulas
             );
 
-            estadoJugador.cooldownImpacto =
-                COOLDOWN_IMPACTO_BARRA;
+            estadoJugador.cooldownImpacto = COOLDOWN_IMPACTO_BARRA;
         }
 
         if (
@@ -468,10 +422,12 @@ void MinijuegoBarraGiratoria::Actualizar(
         }
     }
 
-    ResolverColisionesJugadoresSinEmpuje(
+    ResolverInteraccionesJugadoresMinijuegoEstandar(
         jugadores,
         participantes,
-        cantidadMaxima
+        cantidadMaxima,
+        particulas,
+        cantidadParticulas
     );
 
     int eliminados = 0;
@@ -488,8 +444,7 @@ void MinijuegoBarraGiratoria::Actualizar(
         }
     }
 
-    int posicion =
-        vivosAntes - eliminados + 1;
+    int posicion = vivosAntes - eliminados + 1;
 
     int tiempoMs =
         (int)std::lround(
@@ -510,8 +465,7 @@ void MinijuegoBarraGiratoria::Actualizar(
         }
     }
 
-    int vivosDespues =
-        vivosAntes - eliminados;
+    int vivosDespues = vivosAntes - eliminados;
 
     if (
         vivosDespues <= 1 ||
@@ -523,9 +477,7 @@ void MinijuegoBarraGiratoria::Actualizar(
 }
 
 
-static void DibujarBarraSegmentada(
-    float angulo
-)
+static void DibujarBarraSegmentada(float angulo)
 {
     float dx = std::cos(angulo);
     float dz = std::sin(angulo);
@@ -540,11 +492,7 @@ static void DibujarBarraSegmentada(
             ((float)i / (float)(segmentos - 1));
 
         DrawCube(
-            Vector3{
-                dx * t,
-                ALTURA_BARRA,
-                dz * t
-            },
+            { dx * t, ALTURA_BARRA, dz * t },
             0.42f,
             0.30f,
             0.42f,
@@ -567,66 +515,49 @@ void MinijuegoBarraGiratoria::Dibujar(
 {
     (void)cantidadMaxima;
 
-    ClearBackground(
-        Color{ 123, 192, 221, 255 }
-    );
+    ClearBackground(Color{ 123, 192, 221, 255 });
 
     BeginMode3D(camara);
 
-    // Plataforma plana sin pasto. El borde queda por debajo de los pies,
-    // por lo que visualmente el jugador ya no atraviesa una capa superior.
+    // Plataforma completamente plana. La falda queda por debajo del
+    // nivel de juego para que ningun personaje atraviese "pasto".
     DrawCylinder(
-        Vector3{ 0.0f, -0.18f, 0.0f },
+        { 0.0f, -0.32f, 0.0f },
         RADIO_ARENA_BARRA,
         RADIO_ARENA_BARRA,
-        0.18f,
-        64,
-        Color{ 152, 154, 162, 255 }
+        0.64f,
+        48,
+        Color{ 72, 75, 83, 255 }
     );
 
     DrawCylinder(
-        Vector3{ 0.0f, -0.30f, 0.0f },
-        RADIO_ARENA_BARRA + 0.12f,
-        RADIO_ARENA_BARRA + 0.12f,
-        0.12f,
-        64,
-        Color{ 65, 69, 78, 255 }
+        { 0.0f, -0.01f, 0.0f },
+        RADIO_ARENA_BARRA,
+        RADIO_ARENA_BARRA,
+        0.06f,
+        48,
+        Color{ 120, 125, 136, 255 }
     );
 
     DrawCircle3D(
-        Vector3{ 0.0f, 0.005f, 0.0f },
+        { 0.0f, 0.03f, 0.0f },
         RADIO_ARENA_BARRA,
-        Vector3{ 1.0f, 0.0f, 0.0f },
+        { 1.0f, 0.0f, 0.0f },
         90.0f,
-        Fade(DARKGRAY, 0.90f)
+        Fade(RAYWHITE, 0.35f)
     );
 
     DrawCylinder(
-        Vector3{ 0.0f, 0.44f, 0.0f },
+        { 0.0f, 0.52f, 0.0f },
         0.40f,
         0.40f,
-        0.88f,
+        1.10f,
         20,
         DARKGRAY
     );
 
-    DrawCylinder(
-        Vector3{ 0.0f, 0.02f, 0.0f },
-        0.72f,
-        0.72f,
-        0.04f,
-        24,
-        Color{ 85, 89, 98, 255 }
-    );
-
-    DibujarBarraSegmentada(
-        anguloBarra
-    );
-
-    DibujarParticulasTierra(
-        particulas,
-        cantidadParticulas
-    );
+    DibujarBarraSegmentada(anguloBarra);
+    DibujarParticulasTierra(particulas, cantidadParticulas);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -638,17 +569,12 @@ void MinijuegoBarraGiratoria::Dibujar(
             continue;
         }
 
-        DibujarJugadorCuboPrueba(
-            jugadores[i],
-            participantes[i]
-        );
+        DibujarJugadorCuboPrueba(jugadores[i], participantes[i]);
 
         if (mostrarDebug)
         {
             DrawBoundingBox(
-                CrearHitboxJugadorPrueba(
-                    jugadores[i]
-                ),
+                CrearHitboxJugadorPrueba(jugadores[i]),
                 LIME
             );
         }
@@ -656,20 +582,21 @@ void MinijuegoBarraGiratoria::Dibujar(
 
     EndMode3D();
 
+    DrawText("BARRA GIRATORIA", 25, 25, 30, BLACK);
     DrawText(
-        "BARRA GIRATORIA",
-        25,
-        25,
-        30,
-        BLACK
-    );
-
-    DrawText(
-        "SALTA LA BARRA Y NO TE CAIGAS DE LA PLATAFORMA",
+        "SALTA LA BARRA, PEGA A TUS RIVALES Y NO TE CAIGAS",
         25,
         66,
         20,
         DARKGRAY
+    );
+
+    DrawText(
+        "GOLPE: E / SHIFT / B   |   GOLPE AL SUELO: SALTO EN EL AIRE",
+        25,
+        94,
+        16,
+        DARKBLUE
     );
 
     if (fase == FASE_BARRA_JUGANDO)
@@ -681,13 +608,13 @@ void MinijuegoBarraGiratoria::Dibujar(
                 velocidadAngular
             ),
             25,
-            96,
+            122,
             20,
             DARKBLUE
         );
     }
 
-    int yEstado = 128;
+    int yEstado = 154;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -718,17 +645,14 @@ void MinijuegoBarraGiratoria::Dibujar(
 
     if (fase == FASE_BARRA_PREPARACION)
     {
-        int numero =
-            (int)std::ceil(tiempoPreparacion);
+        int numero = (int)std::ceil(tiempoPreparacion);
         if (numero < 1) numero = 1;
 
-        const char* texto =
-            TextFormat("%d", numero);
+        const char* texto = TextFormat("%d", numero);
 
         DrawText(
             texto,
-            GetScreenWidth() / 2 -
-                MeasureText(texto, 84) / 2,
+            GetScreenWidth() / 2 - MeasureText(texto, 84) / 2,
             GetScreenHeight() / 2 - 60,
             84,
             ORANGE
@@ -754,18 +678,17 @@ void MinijuegoBarraGiratoria::Dibujar(
 
         const char* titulo =
             resultado.desenlace == DESENLACE_EMPATE
-            ? "EMPATE"
-            : TextFormat(
-                "GANADOR: JUGADOR %d",
-                cantidadGanadores == 1
-                    ? participantes[ganadores[0]].numeroJugador
-                    : 0
-            );
+                ? "EMPATE"
+                : TextFormat(
+                    "GANADOR: JUGADOR %d",
+                    cantidadGanadores == 1
+                        ? participantes[ganadores[0]].numeroJugador
+                        : 0
+                );
 
         DrawText(
             titulo,
-            GetScreenWidth() / 2 -
-                MeasureText(titulo, 34) / 2,
+            GetScreenWidth() / 2 - MeasureText(titulo, 34) / 2,
             GetScreenHeight() / 2 - 128,
             34,
             GOLD
@@ -797,13 +720,9 @@ void MinijuegoBarraGiratoria::Dibujar(
             y += 29;
         }
 
-        const char* reiniciar =
-            "R PARA REINICIAR";
-
         DrawText(
-            reiniciar,
-            GetScreenWidth() / 2 -
-                MeasureText(reiniciar, 22) / 2,
+            "R PARA REINICIAR",
+            GetScreenWidth() / 2 - MeasureText("R PARA REINICIAR", 22) / 2,
             GetScreenHeight() / 2 + 112,
             22,
             RAYWHITE
