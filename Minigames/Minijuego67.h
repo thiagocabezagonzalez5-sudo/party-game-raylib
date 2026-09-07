@@ -31,31 +31,33 @@ enum EstadoPartida67
 
 struct EstadoJugador67
 {
-    TipoPieza67 tipoPieza =
-        PIEZA_NUMERO_6;
-
-    float progresoObjeto = 0.0f;
-    bool objetoActivo = true;
-    float tiempoReaparicion = 0.0f;
+    TipoPieza67 tipoPieza = PIEZA_NUMERO_6;
 
     bool llevaPieza = false;
     bool mirandoMesa = false;
-    float tiempoGiro = 0.0f;
 
+    float tiempoGiro = 0.0f;
     float tiempoStun = 0.0f;
+
+    // Se aplica tanto despues de agarrar una pieza como despues
+    // de colocarla. Evita encadenar dos acciones en el mismo instante.
+    float tiempoCooldownInteraccion = 0.0f;
 };
 
 
 struct EstadoEquipo67
 {
-    EstadoMesa67 mesa =
-        MESA_67_VACIA;
+    EstadoMesa67 mesa = MESA_67_VACIA;
 
     float tiempoMesaCompleta = 0.0f;
     float tiempoFeedback = 0.0f;
 
-    int puntos = 0;
+    // Cada cinta tiene un unico flujo por equipo. Asi no se dibuja
+    // otra secuencia completa por cada jugador.
+    float progresoCinta6 = 0.0f;
+    float progresoCinta7 = 0.125f;
 
+    int puntos = 0;
     bool ultimoAcierto = false;
 };
 
@@ -64,28 +66,15 @@ struct Minijuego67
 {
     ResultadoMinijuego resultado;
 
-    EstadoJugador67 estadosJugadores[
-        MAX_JUGADORES_PRUEBA
-    ];
-
+    EstadoJugador67 estadosJugadores[MAX_JUGADORES_PRUEBA];
     EstadoEquipo67 equipos[2];
 
-    int equipoPorJugador[
-        MAX_JUGADORES_PRUEBA
-    ] = { -1, -1, -1, -1 };
+    int equipoPorJugador[MAX_JUGADORES_PRUEBA] = { -1, -1, -1, -1 };
+    int ordenEnEquipoPorJugador[MAX_JUGADORES_PRUEBA] = { -1, -1, -1, -1 };
 
-    int ordenEnEquipoPorJugador[
-        MAX_JUGADORES_PRUEBA
-    ] = { -1, -1, -1, -1 };
+    int cantidadJugadoresEquipo[2] = { 0, 0 };
 
-    int cantidadJugadoresEquipo[2] =
-    {
-        0,
-        0
-    };
-
-    EstadoPartida67 estadoPartida =
-        FABRICA_67_ESPERANDO_JUGADORES;
+    EstadoPartida67 estadoPartida = FABRICA_67_ESPERANDO_JUGADORES;
 
     float tiempoPreparacion = 2.5f;
     float tiempoPartida = 30.0f;
