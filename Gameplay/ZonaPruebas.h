@@ -8,6 +8,7 @@
 #include "Minigames/Minijuego67.h"
 #include "Minigames/MinijuegoIslaFuego.h"
 #include "Minigames/MinijuegoMiradasCruzadas.h"
+#include "Minigames/MinijuegoMurosLocos.h"
 #include "Minigames/MinijuegoNucleosEnergia.h"
 #include "Minigames/MinijuegoPelotas.h"
 #include "Minigames/MinijuegoRefugioPinchos.h"
@@ -31,7 +32,8 @@ enum ModoZonaPruebas
     PRUEBA_BARRA_GIRATORIA = 10,
     PRUEBA_NUCLEOS_ENERGIA = 11,
     PRUEBA_REFUGIO_PINCHOS = 12,
-    PRUEBA_MIRADAS_CRUZADAS = 13
+    PRUEBA_MIRADAS_CRUZADAS = 13,
+    PRUEBA_MUROS_LOCOS = 14
 };
 
 
@@ -65,6 +67,7 @@ struct ZonaPruebas
     MinijuegoNucleosEnergia minijuegoNucleosEnergia;
     MinijuegoRefugioPinchos minijuegoRefugioPinchos;
     MinijuegoMiradasCruzadas minijuegoMiradasCruzadas;
+    MinijuegoMurosLocos minijuegoMurosLocos;
 
     bool modoCatalogo = false;
     bool mostrarDebug = false;
