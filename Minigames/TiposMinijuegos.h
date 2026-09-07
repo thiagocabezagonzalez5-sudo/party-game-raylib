@@ -1,6 +1,7 @@
 #pragma once
 
 #include "raylib.h"
+#include "Minigames/EfectosVisualesMinijuegos.h"
 
 #define SOMBRAS_RETRO_AUTOMATICAS
 #include "Minigames/SombrasRetro.h"
@@ -86,8 +87,17 @@ struct JugadorPrueba
 
     float cooldownChoque = 0.0f;
 
+    // El segundo toque de salto en el aire ya no inicia el golpe al
+    // suelo de forma instantanea. Primero queda una breve preparacion.
+    bool preparandoGolpeSuelo = false;
+    float tiempoPreparacionGolpeSuelo = 0.0f;
+
     bool golpeSueloActivo = false;
     bool impactoGolpeSuelo = false;
+
+    // Se activa en el objetivo durante el mismo frame en el que recibe
+    // un ground pound. Minijuegos como Nucleos pueden reaccionar distinto.
+    bool golpeSueloRecibido = false;
 
     bool aplastado = false;
     float tiempoAplastado = 0.0f;
@@ -99,8 +109,8 @@ struct JugadorPrueba
     float tiempoGolpe = 0.0f;
     float cooldownGolpe = 0.0f;
 
-    // Efecto temporal al recibir un golpe horizontal.
-    // Solo lo usan los minijuegos con jugadores normales;
-    // Pelotas conserva su fisica de inercia y empujones.
+    // Ralentizacion compartida. Los golpes horizontales usan una version
+    // moderada y el ground pound una version deliberadamente exagerada.
     float tiempoRalentizado = 0.0f;
+    float multiplicadorRalentizacion = 1.0f;
 };
