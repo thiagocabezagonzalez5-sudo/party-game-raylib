@@ -2,6 +2,7 @@
 
 #include "raylib.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/EscenariosRetroMinijuegos.h"
 
 #define SOMBRAS_RETRO_AUTOMATICAS
 #include "Minigames/SombrasRetro.h"
