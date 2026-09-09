@@ -8,10 +8,10 @@
 // CONSTANTES
 //==================================================
 
-const int MAX_JUGADORES_SELECCION =
-    4;
+inline constexpr int MAX_JUGADORES_SELECCION =
+    MAX_PARTICIPANTES;
 
-const int MAX_PERSONAJES_SELECCION =
+inline constexpr int MAX_PERSONAJES_SELECCION =
     4;
 
 
