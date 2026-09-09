@@ -262,8 +262,8 @@ inline void DibujarEstrellasLavaEscenario3D()
 
 inline void DibujarVolcanesLavaEscenario3D()
 {
-    // Pocos volcanes, pero enormes. Los extremos estan muy fuera de camara
-    // y se superponen, por lo que la cadena no deja huecos laterales.
+    // Pocos volcanes, enormes y mas bajos: la base queda muy por debajo
+    // del horizonte, evitando que los picos se peguen al borde superior.
     const float posiciones[7] =
     {
         -76.0f,
@@ -274,6 +274,8 @@ inline void DibujarVolcanesLavaEscenario3D()
         53.0f,
         78.0f
     };
+
+    const float baseY = -7.40f;
 
     for (int i = 0; i < 7; i++)
     {
@@ -286,7 +288,7 @@ inline void DibujarVolcanesLavaEscenario3D()
         DibujarMontanaPrismaEscenario3D(
             {
                 posiciones[i],
-                -2.60f,
+                baseY,
                 -43.0f - (float)(i % 2) * 4.0f
             },
             ancho,
@@ -305,7 +307,7 @@ inline void DibujarVolcanesLavaEscenario3D()
             DrawSphere(
                 {
                     posiciones[i],
-                    -2.60f + altura * 0.94f,
+                    baseY + altura * 0.94f,
                     -36.8f - (float)(i % 2) * 4.0f
                 },
                 0.17f,
@@ -411,8 +413,8 @@ inline void DibujarTemaLavaRetro3D()
 
 inline void DibujarCordilleraNieveEscenario3D()
 {
-    // Una sola cadena principal: menos montanas y mucho mas grandes.
-    // Los extremos quedan deliberadamente fuera del campo de vision.
+    // Menos montanas, muy grandes y ahora mas bajas. La base queda escondida
+    // por el horizonte y la niebla; solo se lee la cordillera al fondo.
     const float posiciones[7] =
     {
         -82.0f,
@@ -423,6 +425,8 @@ inline void DibujarCordilleraNieveEscenario3D()
         57.0f,
         84.0f
     };
+
+    const float baseY = -8.20f;
 
     for (int i = 0; i < 7; i++)
     {
@@ -435,7 +439,7 @@ inline void DibujarCordilleraNieveEscenario3D()
         DibujarMontanaPrismaEscenario3D(
             {
                 posiciones[i],
-                -3.45f,
+                baseY,
                 -43.0f - (float)(i % 2) * 3.0f
             },
             ancho,
@@ -525,9 +529,6 @@ inline void DibujarCumbreAltaEscenario3D()
 
 inline void DibujarNieblaCaidaPelotasEscenario3D()
 {
-    // La primera capa es mas transparente para que no parezca una pared.
-    // Las siguientes se vuelven practicamente opacas: cuando el jugador
-    // cae por debajo de la cumbre desaparece gradualmente dentro de la niebla.
     DrawPlane(
         { 0.0f, -3.15f, 1.0f },
         { 115.0f, 115.0f },
@@ -546,8 +547,6 @@ inline void DibujarNieblaCaidaPelotasEscenario3D()
         Color{ 211, 231, 242, 250 }
     );
 
-    // Volumen inferior muy grande: garantiza que nunca se vea el final de
-    // la montana ni objetos cayendo por debajo de la zona que nos interesa.
     DrawCube(
         { 0.0f, -16.0f, 0.0f },
         130.0f,
