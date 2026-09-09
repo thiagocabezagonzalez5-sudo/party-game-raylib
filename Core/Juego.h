@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Tipos.h"
+#include "Config.h"
 
 #include "raylib.h"
 
@@ -47,8 +48,6 @@ struct Juego
     // En el juego final siempre habra cuatro puestos activos.
     // Antes de confirmar personajes puede ser 0.
     int cantidadParticipantes = 0;
-
-    const char* rutaConfiguracion = "config.ini";
 
     Resolucion resoluciones[MAX_RESOLUCIONES];
     int cantidadResoluciones = 0;
