@@ -1,6 +1,7 @@
 #pragma once
 
 #include "raylib.h"
+#include "Core/Participante.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
 #include "Minigames/EscenariosRetro3D.h"
 
@@ -8,9 +9,10 @@
 #include "Minigames/SombrasRetro.h"
 
 
-const int MAX_JUGADORES_PRUEBA = 4;
-const int MAX_BLOQUES_PRUEBA = 8;
-const int MAX_PARTICULAS_TIERRA = 160;
+// La cantidad de jugadores de los minijuegos deriva del limite general.
+inline constexpr int MAX_JUGADORES_PRUEBA = MAX_PARTICIPANTES;
+inline constexpr int MAX_BLOQUES_PRUEBA = 8;
+inline constexpr int MAX_PARTICULAS_TIERRA = 160;
 
 
 struct BloquePrueba
