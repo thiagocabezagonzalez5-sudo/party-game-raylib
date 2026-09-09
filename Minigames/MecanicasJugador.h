@@ -23,7 +23,10 @@ const float FUERZA_GOLPE_JUGADOR_ESTANDAR = 4.2f;
 const float DURACION_RALENTIZACION_GOLPE = 0.70f;
 const float MULTIPLICADOR_VELOCIDAD_RALENTIZADO = 0.45f;
 
-const float DURACION_PREPARACION_GROUND_POUND = 0.48f;
+// Se redujo la preparacion para que el ground pound responda mas rapido.
+// Desde que se inicia hasta que termina el descenso, el jugador queda
+// completamente bloqueado en el plano horizontal.
+const float DURACION_PREPARACION_GROUND_POUND = 0.32f;
 const float DURACION_APLASTADO_GROUND_POUND = 2.35f;
 const float MULTIPLICADOR_APLASTADO_GROUND_POUND = 0.12f;
 
@@ -196,6 +199,25 @@ inline void AcompanharPlataformaDescendente(
 // MOVIMIENTO NORMAL + RALENTIZACION
 //==================================================
 
+inline void BloquearMovimientoHorizontalGroundPound(
+    JugadorPrueba& jugador,
+    InputMinijuegoParticipante& entrada
+)
+{
+    entrada.izquierda = false;
+    entrada.derecha = false;
+    entrada.adelante = false;
+    entrada.atras = false;
+    entrada.saltar = false;
+    entrada.golpear = false;
+
+    jugador.velocidad.x = 0.0f;
+    jugador.velocidad.z = 0.0f;
+    jugador.empuje.x = 0.0f;
+    jugador.empuje.z = 0.0f;
+}
+
+
 inline void ActualizarJugadorPruebaNormal(
     JugadorPrueba& jugador,
     const InputMinijuegoParticipante& entrada,
@@ -216,8 +238,6 @@ inline void ActualizarJugadorPruebaNormal(
             cantidadBloques
         );
 
-    // Color Seguro usa varias plataformas vecinas que descienden. En sus
-    // uniones evitamos correcciones extra porque sus AABB se superponen.
     if (!hayPlataformasMoviles)
     {
         AcompanharPlataformaDescendente(
@@ -241,9 +261,6 @@ inline void ActualizarJugadorPruebaNormal(
 
     InputMinijuegoParticipante entradaProcesada = entrada;
 
-    // Segundo toque en el aire: primero se prepara el ground pound. Durante
-    // casi medio segundo el personaje queda practicamente suspendido y no
-    // puede encadenar golpe horizontal ni otra accion de salto.
     if (
         permitirSalto &&
         !jugador.enSuelo &&
@@ -266,8 +283,10 @@ inline void ActualizarJugadorPruebaNormal(
 
     if (jugador.preparandoGolpeSuelo)
     {
-        entradaProcesada.saltar = false;
-        entradaProcesada.golpear = false;
+        BloquearMovimientoHorizontalGroundPound(
+            jugador,
+            entradaProcesada
+        );
 
         jugador.velocidad.y = 0.0f;
         jugador.tiempoPreparacionGolpeSuelo -= deltaTime;
@@ -281,12 +300,17 @@ inline void ActualizarJugadorPruebaNormal(
         }
     }
 
+    if (jugador.golpeSueloActivo)
+    {
+        BloquearMovimientoHorizontalGroundPound(
+            jugador,
+            entradaProcesada
+        );
+    }
+
     bool estabaAplastado = jugador.aplastado;
     float tiempoAplastadoRestante = jugador.tiempoAplastado;
 
-    // La implementacion base inmovilizaba completamente a un aplastado.
-    // Aqui anulamos temporalmente ese bloqueo, reducimos muchisimo su
-    // velocidad y restauramos el estado visual despues de actualizar.
     if (estabaAplastado)
     {
         jugador.aplastado = false;
@@ -312,6 +336,9 @@ inline void ActualizarJugadorPruebaNormal(
 
     bool golpeandoAntes = jugador.golpeando;
     bool estabaCayendo = jugador.cayendo;
+    bool estabaHaciendoGroundPound =
+        jugador.preparandoGolpeSuelo ||
+        jugador.golpeSueloActivo;
     Vector3 posicionAntesColision = jugador.posicion;
 
     ActualizarJugadorPrueba(
@@ -326,6 +353,17 @@ inline void ActualizarJugadorPruebaNormal(
         respawnAutomatico,
         deltaTime
     );
+
+    // La fisica base puede conservar inercia horizontal aun con las entradas
+    // anuladas. Mientras dure el ground pound la eliminamos despues de cada
+    // actualizacion para que el personaje permanezca realmente estatico.
+    if (estabaHaciendoGroundPound || jugador.golpeSueloActivo)
+    {
+        jugador.velocidad.x = 0.0f;
+        jugador.velocidad.z = 0.0f;
+        jugador.empuje.x = 0.0f;
+        jugador.empuje.z = 0.0f;
+    }
 
     if (
         !hayPlataformasMoviles &&
