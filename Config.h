@@ -1,24 +1,49 @@
 #pragma once
 
-const int ANCHO_INICIAL = 1280;
-const int ALTO_INICIAL = 720;
+#include "Core/RecursosJuego.h"
 
-const char* TITULO_JUEGO = "Party Game";
 
-const int CANTIDAD_MAXIMA_JUGADORES = 4;
+//==================================================
+// CONFIGURACION GLOBAL
+//==================================================
+//
+// Las constantes compartidas viven en un unico lugar. Se usan inline
+// constexpr para que este header pueda incluirse desde cualquier unidad de
+// compilacion sin crear definiciones globales duplicadas.
+//==================================================
 
-const float GRAVEDAD = 20.0f;
+inline constexpr int ANCHO_INICIAL = 1280;
+inline constexpr int ALTO_INICIAL = 720;
 
-const char* TEXTURA_PISO = "Assets/Texturas/Piso.png";
-const char* TEXTURA_BLOQUE_1 = "Assets/Texturas/Oro.png";
-const char* TEXTURA_BLOQUE_2 = "Assets/Texturas/Acero.png";
-const char* TEXTURA_JUGADOR = "Assets/Texturas/Jugador.png";
+inline constexpr const char* TITULO_JUEGO =
+    "Juego de Party";
 
-const char* RUTA_MODELO_JUGADOR_3D =
-    "Assets/Modelos/Jugador_Raylib_Normalizado.glb";
+inline constexpr int CANTIDAD_MAXIMA_JUGADORES = 4;
 
-const char* TEXTURA_MODELO_JUGADOR_3D =
+inline constexpr float GRAVEDAD = 20.0f;
+inline constexpr float DELTA_TIME_MAXIMO = 0.1f;
+
+
+//==================================================
+// ALIASES DE COMPATIBILIDAD
+//==================================================
+//
+// Conservamos los nombres antiguos de texturas para no romper codigo que
+// todavia los use. La ruta real, sin embargo, existe una sola vez en
+// Core/RecursosJuego.h.
+//==================================================
+
+inline constexpr const char* TEXTURA_PISO =
+    RUTA_TEXTURA_PISO;
+
+inline constexpr const char* TEXTURA_BLOQUE_1 =
+    RUTA_TEXTURA_ORO;
+
+inline constexpr const char* TEXTURA_BLOQUE_2 =
+    RUTA_TEXTURA_ACERO;
+
+inline constexpr const char* TEXTURA_JUGADOR =
+    RUTA_TEXTURA_JUGADOR;
+
+inline constexpr const char* TEXTURA_MODELO_JUGADOR_3D =
     "";
-
-const float ESCALA_MODELO_JUGADOR_3D =
-    0.25f;
