@@ -5,12 +5,16 @@
 #include <cmath>
 
 
-// EfectosVisualesMinijuegos ya centraliza BeginMode3D para aplicar el
-// temblor general. Aqui lo extendemos con fondos 2D de pantalla completa.
-// La razon es simple: los fondos enormes hechos como geometria 3D podian
-// entrar en el frustum, tapar la camara o deformarse segun la perspectiva.
-// Un fondo 2D siempre ocupa exactamente el viewport; la geometria 3D queda
-// reservada para los elementos que realmente necesitan profundidad.
+//==================================================
+// ESCENARIOS RETRO COMPARTIDOS
+//==================================================
+//
+// Los fondos de Color Seguro y Pelotas se dibujan en 2D antes de entrar
+// en BeginMode3D. De esta forma llenan siempre el viewport completo y no
+// pueden meterse delante de la camara como pasaba con geometria gigante.
+// La parte jugable sigue siendo 3D.
+//==================================================
+
 #ifdef BeginMode3D
 #undef BeginMode3D
 #endif
@@ -40,13 +44,14 @@ inline void DibujarCuadrilateroRetro(
     Color color
 )
 {
-    DrawTriangle(a, b, c, color);
-    DrawTriangle(a, c, d, color);
+    DrawTriangle(a, c, b, color);
+    DrawTriangle(a, d, c, color);
 }
 
 
 inline void DibujarTexturaFondoCompletoRetro(
-    const TexturaOpcionalMinijuego& slot
+    const TexturaOpcionalMinijuego& slot,
+    float alpha = 1.0f
 )
 {
     if (!slot.cargada || !IsTextureValid(slot.textura))
@@ -76,13 +81,13 @@ inline void DibujarTexturaFondoCompletoRetro(
         destino,
         { 0.0f, 0.0f },
         0.0f,
-        WHITE
+        Fade(WHITE, alpha)
     );
 }
 
 
 //==================================================
-// COLOR SEGURO - FONDO 2D DE CUEVA VOLCANICA
+// COLOR SEGURO - CUEVA, VOLCANES Y LAVA
 //==================================================
 
 inline void DibujarVolcanPantallaRetro(
@@ -100,44 +105,130 @@ inline void DibujarVolcanPantallaRetro(
         baseY
     };
 
-    Vector2 cima =
-    {
-        centroX,
-        baseY - altura
-    };
-
     Vector2 derecha =
     {
         centroX + ancho * 0.50f,
         baseY
     };
 
+    Vector2 cima =
+    {
+        centroX,
+        baseY - altura
+    };
+
+    // El orden izquierda -> derecha -> cima evita que el triangulo sea
+    // descartado por el winding de DrawTriangle en coordenadas de pantalla.
     DrawTriangle(
         izquierda,
-        cima,
         derecha,
+        cima,
         roca
     );
 
-    float anchoCrater = ancho * 0.13f;
-    float yCrater = cima.y + altura * 0.08f;
+    float anchoCrater = ancho * 0.14f;
+    float yCrater = cima.y + altura * 0.085f;
 
     DrawRectangle(
         (int)(centroX - anchoCrater * 0.50f),
         (int)yCrater,
         (int)anchoCrater,
-        4,
-        Color{ 37, 30, 32, 255 }
+        5,
+        Color{ 32, 27, 29, 255 }
     );
 
     if (activo)
     {
         DrawRectangle(
-            (int)(centroX - anchoCrater * 0.34f),
+            (int)(centroX - anchoCrater * 0.33f),
             (int)yCrater + 1,
-            (int)(anchoCrater * 0.68f),
+            (int)(anchoCrater * 0.66f),
             3,
-            Color{ 255, 105, 23, 255 }
+            Color{ 255, 111, 24, 255 }
+        );
+
+        DrawCircleV(
+            { centroX, yCrater - 5.0f },
+            2.0f,
+            Fade(Color{ 255, 195, 54, 255 }, 0.85f)
+        );
+    }
+}
+
+
+inline void DibujarEstrellasColorSeguroRetro(
+    int ancho,
+    int alto
+)
+{
+    EstadoEfectosVisualesMinijuegos& estado =
+        ObtenerEstadoEfectosVisualesMinijuegos();
+
+    int zonaEstrellas =
+        (int)((float)alto * 0.52f);
+
+    for (int i = 0; i < 46; i++)
+    {
+        int x =
+            (i * 157 + 43) %
+            (ancho > 1 ? ancho : 1);
+
+        int y =
+            18 +
+            ((i * 89 + 31) %
+             (zonaEstrellas > 20 ? zonaEstrellas - 20 : 1));
+
+        float pulso =
+            0.68f +
+            0.32f *
+            std::sin(
+                estado.tiempoGlobal * 1.8f +
+                (float)i * 0.71f
+            );
+
+        float radio =
+            i % 8 == 0 ? 2.0f : 1.0f;
+
+        DrawCircleV(
+            { (float)x, (float)y },
+            radio,
+            Fade(RAYWHITE, 0.52f + pulso * 0.38f)
+        );
+    }
+}
+
+
+inline void DibujarCenizaColorSeguroRetro(
+    int ancho,
+    int alto
+)
+{
+    EstadoEfectosVisualesMinijuegos& estado =
+        ObtenerEstadoEfectosVisualesMinijuegos();
+
+    for (int i = 0; i < 28; i++)
+    {
+        float velocidad =
+            8.0f + (float)(i % 5) * 1.8f;
+
+        float x =
+            RepetirPositivoEscenarioRetro(
+                (float)(i * 97) +
+                estado.tiempoGlobal * velocidad,
+                (float)ancho + 20.0f
+            ) - 10.0f;
+
+        float y =
+            45.0f +
+            RepetirPositivoEscenarioRetro(
+                (float)(i * 61),
+                (float)alto * 0.48f
+            );
+
+        DrawCircleV(
+            { x, y },
+            1.0f + (float)(i % 3) * 0.45f,
+            Fade(Color{ 104, 96, 92, 255 }, 0.58f)
         );
     }
 }
@@ -159,80 +250,52 @@ inline void DibujarFondoColorSeguroRetro()
     TexturasTematicasMinijuegos& texturas =
         ObtenerTexturasTematicasMinijuegos();
 
+    // Las texturas siguen siendo opcionales. Se dibujan suavemente para
+    // no destruir la lectura de los elementos low-poly si son muy cargadas.
     if (texturas.lavaFondo.cargada)
     {
         DibujarTexturaFondoCompletoRetro(
-            texturas.lavaFondo
+            texturas.lavaFondo,
+            0.72f
         );
     }
 
-    EstadoEfectosVisualesMinijuegos& estado =
-        ObtenerEstadoEfectosVisualesMinijuegos();
+    DibujarEstrellasColorSeguroRetro(ancho, alto);
 
-    for (int i = 0; i < 42; i++)
-    {
-        int x =
-            (i * 157 + 43) %
-            (ancho > 1 ? ancho : 1);
-
-        int zonaEstrellas =
-            (int)((float)alto * 0.50f);
-
-        int y =
-            18 +
-            ((i * 89 + 31) %
-             (zonaEstrellas > 20 ? zonaEstrellas - 20 : 1));
-
-        float pulso =
-            0.70f +
-            0.30f *
-            std::sin(
-                estado.tiempoGlobal * 1.8f +
-                (float)i
-            );
-
-        int radio =
-            i % 7 == 0 ? 2 : 1;
-
-        DrawCircle(
-            x,
-            y,
-            (float)radio,
-            Fade(RAYWHITE, 0.55f + pulso * 0.35f)
-        );
-    }
-
+    // Cadena de volcanes. Los dos extremos salen de pantalla a proposito
+    // para que el fondo no tenga cortes laterales.
     const float baseVolcanes =
-        (float)alto * 0.60f;
+        (float)alto * 0.595f;
 
-    const float posiciones[7] =
+    const float posiciones[8] =
     {
-        -0.08f,
-        0.10f,
-        0.28f,
-        0.49f,
-        0.69f,
-        0.88f,
-        1.08f
+        -0.10f,
+        0.06f,
+        0.22f,
+        0.39f,
+        0.57f,
+        0.74f,
+        0.91f,
+        1.09f
     };
 
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < 8; i++)
     {
         float centroX =
             posiciones[i] * (float)ancho;
 
         float anchoVolcan =
             (float)ancho *
-            (0.24f + 0.025f * (float)(i % 3));
+            (0.22f + 0.022f * (float)(i % 3));
 
         float alturaVolcan =
             (float)alto *
-            (0.24f + 0.025f * (float)(i % 4));
+            (0.26f + 0.035f * (float)(i % 4));
 
         Color roca =
             i % 2 == 0
-                ? Color{ 70, 69, 72, 255 }
-                : Color{ 87, 80, 80, 255 };
+                ? Color{ 74, 72, 76, 255 }
+                : Color{ 92, 82, 80, 255 };
 
         DibujarVolcanPantallaRetro(
             centroX,
@@ -240,124 +303,86 @@ inline void DibujarFondoColorSeguroRetro()
             anchoVolcan,
             alturaVolcan,
             roca,
-            i == 1 || i == 3 || i == 5
+            i == 1 || i == 3 || i == 6
         );
     }
 
+    // Lava continua y lisa. Se elimina por completo la vieja orilla hecha
+    // con triangulos, que era la responsable de los picos naranjas raros.
     int inicioLava =
-        (int)((float)alto * 0.54f);
+        (int)((float)alto * 0.565f);
 
     DrawRectangleGradientV(
         0,
         inicioLava,
         ancho,
         alto - inicioLava,
-        Color{ 242, 76, 19, 255 },
-        Color{ 125, 19, 18, 255 }
+        Color{ 248, 91, 18, 255 },
+        Color{ 122, 18, 16, 255 }
     );
 
-    const int segmentosOrilla = 12;
-    float anchoSegmento =
-        (float)ancho / (float)segmentosOrilla;
+    DrawRectangle(
+        0,
+        inicioLava,
+        ancho,
+        7,
+        Color{ 255, 138, 27, 255 }
+    );
 
-    for (int i = 0; i < segmentosOrilla; i++)
+    EstadoEfectosVisualesMinijuegos& estado =
+        ObtenerEstadoEfectosVisualesMinijuegos();
+
+    for (int i = 0; i < 12; i++)
     {
-        float x0 =
-            (float)i * anchoSegmento - 2.0f;
-
-        float x1 =
-            (float)(i + 1) * anchoSegmento + 2.0f;
-
-        float variacion =
-            (float)alto *
-            (0.015f + 0.010f * (float)(i % 3));
-
-        float yCentro =
-            (float)inicioLava +
-            std::sin((float)i * 1.4f) * variacion;
-
-        DrawTriangle(
-            { x0, (float)inicioLava - variacion },
-            { (x0 + x1) * 0.5f, yCentro + variacion },
-            { x1, (float)inicioLava - variacion * 0.4f },
-            Color{ 255, 119, 22, 255 }
-        );
-    }
-
-    for (int i = 0; i < 14; i++)
-    {
-        int x =
-            (i * 137 + 53) %
-            (ancho > 1 ? ancho : 1);
-
-        int altoLava =
-            alto - inicioLava;
-
-        int y =
-            inicioLava + 20 +
-            ((i * 73) %
-             (altoLava > 40 ? altoLava - 40 : 1));
-
-        int largo =
-            18 + (i % 4) * 13;
-
-        DrawRectangle(
-            x,
-            y,
-            largo,
-            2,
-            Fade(Color{ 255, 213, 68, 255 }, 0.55f)
-        );
-    }
-
-    for (int i = 0; i < 28; i++)
-    {
-        float velocidad =
-            9.0f + (float)(i % 5) * 2.0f;
-
         float x =
             RepetirPositivoEscenarioRetro(
-                (float)(i * 97) +
-                estado.tiempoGlobal * velocidad,
-                (float)ancho + 20.0f
-            ) - 10.0f;
+                (float)(i * 149) +
+                estado.tiempoGlobal * (10.0f + (float)(i % 4) * 2.0f),
+                (float)ancho + 90.0f
+            ) - 45.0f;
 
         float y =
-            45.0f +
-            RepetirPositivoEscenarioRetro(
-                (float)(i * 61),
-                (float)alto * 0.50f
-            );
+            (float)inicioLava +
+            36.0f +
+            (float)((i * 71) %
+                ((alto - inicioLava) > 90 ?
+                    (alto - inicioLava - 70) : 20));
 
-        DrawCircleV(
+        float largo =
+            25.0f + (float)(i % 4) * 16.0f;
+
+        DrawLineEx(
             { x, y },
-            1.0f + (float)(i % 3) * 0.55f,
-            Fade(Color{ 93, 86, 83, 255 }, 0.70f)
+            { x + largo, y },
+            2.0f,
+            Fade(Color{ 255, 216, 64, 255 }, 0.52f)
         );
     }
 
+    // Marco de cueva. Es intencionalmente ancho, pero deja el centro libre
+    // para TV, volcanes y plataformas.
     const Color rocaExterior =
         Color{ 22, 22, 24, 255 };
 
     const Color rocaInterior =
-        Color{ 33, 32, 35, 255 };
+        Color{ 34, 33, 36, 255 };
 
     float w = (float)ancho;
     float h = (float)alto;
 
     DibujarCuadrilateroRetro(
         { 0.0f, 0.0f },
-        { w * 0.17f, 0.0f },
-        { w * 0.095f, h * 0.50f },
-        { 0.0f, h * 0.66f },
+        { w * 0.16f, 0.0f },
+        { w * 0.085f, h * 0.47f },
+        { 0.0f, h * 0.62f },
         rocaExterior
     );
 
     DibujarCuadrilateroRetro(
-        { w * 0.83f, 0.0f },
+        { w * 0.84f, 0.0f },
         { w, 0.0f },
-        { w, h * 0.66f },
-        { w * 0.905f, h * 0.50f },
+        { w, h * 0.62f },
+        { w * 0.915f, h * 0.47f },
         rocaExterior
     );
 
@@ -365,42 +390,44 @@ inline void DibujarFondoColorSeguroRetro()
         0,
         0,
         ancho,
-        (int)(h * 0.055f),
+        (int)(h * 0.050f),
         rocaExterior
     );
 
     DrawTriangle(
-        { w * 0.14f, 0.0f },
-        { w * 0.20f, h * 0.18f },
-        { w * 0.25f, 0.0f },
+        { w * 0.13f, 0.0f },
+        { w * 0.24f, 0.0f },
+        { w * 0.19f, h * 0.16f },
         rocaInterior
     );
 
     DrawTriangle(
-        { w * 0.34f, 0.0f },
-        { w * 0.38f, h * 0.12f },
+        { w * 0.33f, 0.0f },
         { w * 0.42f, 0.0f },
+        { w * 0.375f, h * 0.12f },
         rocaInterior
     );
 
     DrawTriangle(
         { w * 0.57f, 0.0f },
-        { w * 0.61f, h * 0.15f },
         { w * 0.66f, 0.0f },
+        { w * 0.615f, h * 0.14f },
         rocaInterior
     );
 
     DrawTriangle(
         { w * 0.75f, 0.0f },
-        { w * 0.81f, h * 0.19f },
         { w * 0.86f, 0.0f },
+        { w * 0.805f, h * 0.17f },
         rocaInterior
     );
+
+    DibujarCenizaColorSeguroRetro(ancho, alto);
 }
 
 
 //==================================================
-// PELOTAS - FONDO 2D DE CORDILLERA + NIEVE
+// PELOTAS - CORDILLERA NEVADA
 //==================================================
 
 inline void DibujarMontanaPantallaRetro(
@@ -418,34 +445,77 @@ inline void DibujarMontanaPantallaRetro(
         baseY
     };
 
-    Vector2 cima =
-    {
-        centroX,
-        baseY - altura
-    };
-
     Vector2 derecha =
     {
         centroX + ancho * 0.50f,
         baseY
     };
 
+    Vector2 cima =
+    {
+        centroX,
+        baseY - altura
+    };
+
     DrawTriangle(
         izquierda,
-        cima,
         derecha,
+        cima,
         roca
     );
 
     float yNieve =
-        cima.y + altura * 0.30f;
+        cima.y + altura * 0.31f;
 
     DrawTriangle(
-        { centroX - ancho * 0.15f, yNieve },
+        { centroX - ancho * 0.16f, yNieve },
+        { centroX + ancho * 0.16f, yNieve },
         cima,
-        { centroX + ancho * 0.15f, yNieve },
         nieve
     );
+}
+
+
+inline void DibujarCoposNieveRetro(
+    int ancho,
+    int alto
+)
+{
+    EstadoEfectosVisualesMinijuegos& estado =
+        ObtenerEstadoEfectosVisualesMinijuegos();
+
+    for (int i = 0; i < 54; i++)
+    {
+        float velocidad =
+            22.0f + (float)(i % 5) * 6.0f;
+
+        float y =
+            RepetirPositivoEscenarioRetro(
+                (float)(i * 47) +
+                estado.tiempoGlobal * velocidad,
+                (float)alto + 24.0f
+            ) - 12.0f;
+
+        float xBase =
+            (float)((i * 131 + 37) %
+                (ancho > 1 ? ancho : 1));
+
+        float deriva =
+            std::sin(
+                estado.tiempoGlobal * 0.72f +
+                (float)i * 0.83f
+            ) *
+            (6.0f + (float)(i % 4) * 2.5f);
+
+        float radio =
+            1.0f + (float)(i % 3) * 0.45f;
+
+        DrawCircleV(
+            { xBase + deriva, y },
+            radio,
+            Fade(RAYWHITE, 0.84f)
+        );
+    }
 }
 
 
@@ -459,8 +529,8 @@ inline void DibujarFondoPelotasRetro()
         0,
         ancho,
         alto,
-        Color{ 50, 169, 230, 255 },
-        Color{ 193, 229, 246, 255 }
+        Color{ 48, 169, 229, 255 },
+        Color{ 189, 225, 243, 255 }
     );
 
     TexturasTematicasMinijuegos& texturas =
@@ -469,146 +539,143 @@ inline void DibujarFondoPelotasRetro()
     if (texturas.nieveFondo.cargada)
     {
         DibujarTexturaFondoCompletoRetro(
-            texturas.nieveFondo
+            texturas.nieveFondo,
+            0.45f
         );
     }
 
-    float baseLejana =
-        (float)alto * 0.72f;
+    // Primera capa: montanas lejanas claras y altas.
+    const float baseLejana =
+        (float)alto * 0.67f;
 
-    const float posicionesLejanas[7] =
+    const float posicionesLejanas[8] =
     {
-        -0.12f,
-        0.08f,
-        0.27f,
-        0.47f,
-        0.68f,
-        0.88f,
-        1.10f
+        -0.11f,
+        0.05f,
+        0.20f,
+        0.36f,
+        0.53f,
+        0.70f,
+        0.87f,
+        1.08f
     };
 
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < 8; i++)
     {
         DibujarMontanaPantallaRetro(
             posicionesLejanas[i] * (float)ancho,
             baseLejana,
             (float)ancho *
-                (0.29f + 0.02f * (float)(i % 3)),
+                (0.23f + 0.018f * (float)(i % 3)),
             (float)alto *
-                (0.43f + 0.025f * (float)(i % 4)),
+                (0.40f + 0.035f * (float)(i % 4)),
             i % 2 == 0
-                ? Color{ 170, 183, 195, 255 }
-                : Color{ 153, 169, 182, 255 },
+                ? Color{ 177, 188, 198, 255 }
+                : Color{ 158, 173, 186, 255 },
             Color{ 246, 250, 252, 255 }
         );
     }
 
-    float baseDelantera =
-        (float)alto * 0.79f;
+    // Segunda capa: montanas mas oscuras y cercanas. Se dejan huecos
+    // suficientes para seguir viendo cielo y copos entre los picos.
+    const float baseCercana =
+        (float)alto * 0.76f;
 
-    const float posicionesDelanteras[5] =
+    const float posicionesCercanas[6] =
     {
-        -0.03f,
-        0.24f,
-        0.50f,
-        0.76f,
-        1.03f
+        -0.07f,
+        0.14f,
+        0.36f,
+        0.59f,
+        0.81f,
+        1.05f
     };
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 6; i++)
     {
         DibujarMontanaPantallaRetro(
-            posicionesDelanteras[i] * (float)ancho,
-            baseDelantera,
-            (float)ancho * 0.36f,
+            posicionesCercanas[i] * (float)ancho,
+            baseCercana,
+            (float)ancho * 0.29f,
             (float)alto *
-                (0.40f + 0.035f * (float)(i % 3)),
+                (0.37f + 0.03f * (float)(i % 3)),
             i % 2 == 0
-                ? Color{ 119, 139, 157, 255 }
-                : Color{ 132, 150, 166, 255 },
+                ? Color{ 121, 141, 159, 255 }
+                : Color{ 135, 153, 169, 255 },
             RAYWHITE
         );
     }
+
+    DibujarCoposNieveRetro(ancho, alto);
 }
 
 
-inline void DibujarCoposNieveFondoRetro()
+//==================================================
+// SUAVIZADO VISUAL DEL MONTICULO DE PELOTAS
+//==================================================
+//
+// MinijuegoPelotas usa colores alternados por segmento para su costado.
+// Eso producia el efecto de "cebra" que se veia en la captura. Como el
+// tema nieve es global solo durante ese minijuego, remapeamos esas cuatro
+// tonalidades a dos colores uniformes y conservamos la forma low-poly.
+//==================================================
+
+inline bool EsColorRetro(
+    Color color,
+    unsigned char r,
+    unsigned char g,
+    unsigned char b
+)
 {
-    EstadoEfectosVisualesMinijuegos& estado =
-        ObtenerEstadoEfectosVisualesMinijuegos();
-
-    const int ancho = GetScreenWidth();
-    const int alto = GetScreenHeight();
-
-    for (int i = 0; i < 48; i++)
-    {
-        float velocidad =
-            25.0f + (float)(i % 5) * 7.0f;
-
-        float y =
-            RepetirPositivoEscenarioRetro(
-                (float)(i * 47) +
-                estado.tiempoGlobal * velocidad,
-                (float)alto + 20.0f
-            ) - 10.0f;
-
-        float xBase =
-            (float)((i * 131 + 37) %
-                (ancho > 1 ? ancho : 1));
-
-        float deriva =
-            std::sin(
-                estado.tiempoGlobal * 0.75f +
-                (float)i * 0.85f
-            ) *
-            (7.0f + (float)(i % 4) * 3.0f);
-
-        float radio =
-            1.1f + (float)(i % 3) * 0.55f;
-
-        DrawCircleV(
-            { xBase + deriva, y },
-            radio,
-            Fade(RAYWHITE, 0.82f)
-        );
-    }
+    return
+        color.r == r &&
+        color.g == g &&
+        color.b == b;
 }
 
 
-inline void DibujarCoposNieveFrenteRetro()
+inline Color AjustarColorTriangulo3DPorTemaRetro(
+    Color color
+)
 {
-    EstadoEfectosVisualesMinijuegos& estado =
-        ObtenerEstadoEfectosVisualesMinijuegos();
-
-    const int ancho = GetScreenWidth();
-    const int alto = GetScreenHeight();
-
-    for (int i = 0; i < 18; i++)
+    if (
+        ObtenerEstadoEfectosVisualesMinijuegos().tema !=
+        TEMA_VISUAL_NIEVE
+    )
     {
-        float velocidad =
-            42.0f + (float)(i % 4) * 8.0f;
-
-        float y =
-            RepetirPositivoEscenarioRetro(
-                (float)(i * 83) +
-                estado.tiempoGlobal * velocidad,
-                (float)alto + 28.0f
-            ) - 14.0f;
-
-        float x =
-            (float)((i * 193 + 71) %
-                (ancho > 1 ? ancho : 1)) +
-            std::sin(
-                estado.tiempoGlobal * 1.1f +
-                (float)i
-            ) * 11.0f;
-
-        DrawCircleV(
-            { x, y },
-            1.8f + (float)(i % 3) * 0.7f,
-            Fade(RAYWHITE, 0.90f)
-        );
+        return color;
     }
+
+    if (EsColorRetro(color, 207, 225, 235))
+    {
+        return Color{ 246, 250, 252, color.a };
+    }
+
+    if (
+        EsColorRetro(color, 153, 190, 208) ||
+        EsColorRetro(color, 93, 132, 153)
+    )
+    {
+        return Color{ 180, 202, 215, color.a };
+    }
+
+    return color;
+}
+
+
+inline void DibujarTriangulo3DConTemaRetro(
+    Vector3 a,
+    Vector3 b,
+    Vector3 c,
+    Color color
+)
+{
+    DrawTriangle3D(
+        a,
+        b,
+        c,
+        AjustarColorTriangulo3DPorTemaRetro(color)
+    );
 }
 
 
@@ -628,7 +695,6 @@ inline void DibujarFondoEscenarioRetro2D()
 
         case TEMA_VISUAL_NIEVE:
             DibujarFondoPelotasRetro();
-            DibujarCoposNieveFondoRetro();
             break;
 
         case TEMA_VISUAL_CUEVA:
@@ -649,22 +715,24 @@ inline void DibujarDecoracionEscenarioRetro3D()
             break;
 
         case TEMA_VISUAL_NIEVE:
+            // Prolongacion de la montana jugable hacia abajo. Un solo tono
+            // por tramo evita texturas/rayas visuales extrañas.
             DrawCylinderEx(
-                { 0.0f, -24.0f, 0.0f },
-                { 0.0f, -1.85f, 0.0f },
-                11.8f,
+                { 0.0f, -27.0f, 0.0f },
+                { 0.0f, -2.00f, 0.0f },
+                12.2f,
                 6.45f,
-                18,
-                Color{ 88, 108, 128, 255 }
+                24,
+                Color{ 96, 116, 135, 255 }
             );
 
             DrawCylinderEx(
-                { 0.0f, -5.0f, 0.0f },
-                { 0.0f, -1.55f, 0.0f },
-                7.7f,
+                { 0.0f, -6.4f, 0.0f },
+                { 0.0f, -1.62f, 0.0f },
+                8.0f,
                 6.38f,
-                18,
-                Color{ 206, 224, 235, 255 }
+                24,
+                Color{ 211, 226, 235, 255 }
             );
             break;
 
@@ -697,3 +765,4 @@ inline void BeginMode3DConEscenarioRetro(
 
 
 #define BeginMode3D(...) BeginMode3DConEscenarioRetro(__VA_ARGS__)
+#define DrawTriangle3D(...) DibujarTriangulo3DConTemaRetro(__VA_ARGS__)
