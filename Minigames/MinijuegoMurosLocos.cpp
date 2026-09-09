@@ -133,6 +133,8 @@ static void AplicarImpactoMuro(
     int cantidadParticulas
 )
 {
+    // El muro avanza de -Z a +Z: el impacto arrastra al jugador en la
+    // misma direccion y lo levanta un poco, reforzando la sensacion de golpe.
     jugador.empuje.z += FUERZA_MURO;
     jugador.velocidad.y = SALTO_IMPACTO_MURO;
     jugador.enSuelo = false;
@@ -226,7 +228,7 @@ void MinijuegoMurosLocos::Inicializar()
         0.70f,
         LARGO_ARENA_MUROS
     };
-    suelo.color = Color{ 76, 86, 103, 255 };
+    suelo.color = Color{ 202, 153, 82, 255 };
     suelo.activaColision = true;
 
     fase = FASE_MUROS_PREPARACION;
@@ -372,7 +374,9 @@ void MinijuegoMurosLocos::Actualizar(
 
             tiempoEntreMuros = 0.52f - progreso * 0.27f;
             if (tiempoEntreMuros < 0.20f)
+            {
                 tiempoEntreMuros = 0.20f;
+            }
 
             PrepararNuevoMuro(*this);
         }
@@ -396,7 +400,9 @@ void MinijuegoMurosLocos::Actualizar(
         {
             estadoJugador.cooldownImpacto -= deltaTime;
             if (estadoJugador.cooldownImpacto < 0.0f)
+            {
                 estadoJugador.cooldownImpacto = 0.0f;
+            }
         }
 
         InputMinijuegoParticipante entrada{};
@@ -432,9 +438,7 @@ void MinijuegoMurosLocos::Actualizar(
         )
         {
             float distanciaZ =
-                std::fabs(
-                    jugador.posicion.z - muro.z
-                );
+                std::fabs(jugador.posicion.z - muro.z);
 
             float radioJugador = jugador.tamano.x * 0.46f;
 
@@ -524,6 +528,122 @@ void MinijuegoMurosLocos::Actualizar(
 }
 
 
+//==================================================
+// ESCENARIO DESERTICO
+//==================================================
+
+static void DibujarEscenarioDesiertoMuros()
+{
+    // Cielo enorme y lejano para que nunca se vea el borde del escenario.
+    DibujarCieloPlanoEscenario3D(
+        Color{ 226, 166, 87, 255 },
+        -70.0f,
+        180.0f,
+        62.0f
+    );
+
+    DrawSphere(
+        { 18.0f, 13.0f, -50.0f },
+        3.0f,
+        Color{ 255, 226, 117, 255 }
+    );
+
+    // Arena exterior. Queda un poco mas abajo que la plataforma jugable
+    // para que no interfiera con su hitbox.
+    DrawPlane(
+        { 0.0f, -0.72f, -4.0f },
+        { 150.0f, 150.0f },
+        Color{ 205, 153, 78, 255 }
+    );
+
+    // Mesetas y dunas low-poly de fondo.
+    const float posiciones[7] =
+    {
+        -54.0f,
+        -36.0f,
+        -18.0f,
+        0.0f,
+        19.0f,
+        38.0f,
+        57.0f
+    };
+
+    for (int i = 0; i < 7; i++)
+    {
+        float altura =
+            5.0f + (float)(i % 3) * 1.2f;
+
+        float ancho =
+            23.0f + (float)(i % 2) * 5.0f;
+
+        DibujarMontanaPrismaEscenario3D(
+            {
+                posiciones[i],
+                -5.0f,
+                -34.0f - (float)(i % 2) * 5.0f
+            },
+            ancho,
+            altura,
+            9.0f,
+            i % 2 == 0
+                ? Color{ 165, 103, 57, 255 }
+                : Color{ 183, 119, 64, 255 },
+            Color{ 130, 78, 48, 255 },
+            Color{ 165, 103, 57, 255 },
+            0.0f
+        );
+    }
+
+    // Polvo ambiental muy barato: pequeñas motas, sin sistemas extra.
+    EstadoEfectosVisualesMinijuegos& efectos =
+        ObtenerEstadoEfectosVisualesMinijuegos();
+
+    for (int i = 0; i < 30; i++)
+    {
+        float x =
+            -18.0f +
+            RepetirEscenario3D(
+                (float)(i * 7) + efectos.tiempoGlobal * 1.2f,
+                36.0f
+            );
+
+        float y =
+            0.15f +
+            RepetirEscenario3D(
+                (float)(i * 5),
+                5.5f
+            );
+
+        float z =
+            -4.0f -
+            RepetirEscenario3D(
+                (float)(i * 9),
+                24.0f
+            );
+
+        DrawSphere(
+            { x, y, z },
+            0.035f + 0.018f * (float)(i % 3),
+            Fade(Color{ 124, 88, 57, 255 }, 0.48f)
+        );
+    }
+}
+
+
+static Color ColorLadrilloMuro(int fila, int columna, int segmento)
+{
+    int variante = (fila + columna + segmento) % 4;
+
+    switch (variante)
+    {
+        case 0: return Color{ 181, 105, 59, 255 };
+        case 1: return Color{ 198, 121, 65, 255 };
+        case 2: return Color{ 166, 91, 53, 255 };
+        default: return Color{ 190, 112, 61, 255 };
+    }
+}
+
+
 static void DibujarSegmentoMuro(
     float xCentro,
     float ancho,
@@ -536,26 +656,80 @@ static void DibujarSegmentoMuro(
         return;
     }
 
-    Color color =
-        indice % 2 == 0
-        ? Color{ 217, 78, 76, 255 }
-        : Color{ 242, 173, 66, 255 };
+    const int filas = 4;
+    const float altoLadrillo = ALTO_MURO / (float)filas;
+    const float anchoLadrillo = 0.95f;
+    const float junta = 0.035f;
 
-    DrawCube(
-        { xCentro, ALTO_MURO / 2.0f, z },
-        ancho,
-        ALTO_MURO,
-        GROSOR_MURO,
-        color
-    );
+    float bordeIzquierdo = xCentro - ancho / 2.0f;
+    float bordeDerecho = xCentro + ancho / 2.0f;
 
-    DrawCubeWires(
-        { xCentro, ALTO_MURO / 2.0f, z },
-        ancho,
-        ALTO_MURO,
-        GROSOR_MURO,
-        BLACK
-    );
+    for (int fila = 0; fila < filas; fila++)
+    {
+        float desplazamiento =
+            fila % 2 == 0
+            ? 0.0f
+            : anchoLadrillo * 0.5f;
+
+        float inicio = bordeIzquierdo - desplazamiento;
+        int columna = 0;
+
+        for (
+            float x = inicio;
+            x < bordeDerecho;
+            x += anchoLadrillo
+        )
+        {
+            float izquierda =
+                x > bordeIzquierdo
+                ? x
+                : bordeIzquierdo;
+
+            float derecha =
+                x + anchoLadrillo < bordeDerecho
+                ? x + anchoLadrillo
+                : bordeDerecho;
+
+            float anchoVisible = derecha - izquierda;
+
+            if (anchoVisible <= junta)
+            {
+                columna++;
+                continue;
+            }
+
+            float anchoDibujo = anchoVisible - junta;
+            float altoDibujo = altoLadrillo - junta;
+
+            Vector3 centro =
+            {
+                (izquierda + derecha) * 0.5f,
+                altoLadrillo * ((float)fila + 0.5f),
+                z
+            };
+
+            Color ladrillo =
+                ColorLadrilloMuro(fila, columna, indice);
+
+            DrawCube(
+                centro,
+                anchoDibujo,
+                altoDibujo,
+                GROSOR_MURO,
+                ladrillo
+            );
+
+            DrawCubeWires(
+                centro,
+                anchoDibujo,
+                altoDibujo,
+                GROSOR_MURO,
+                Color{ 92, 57, 40, 255 }
+            );
+
+            columna++;
+        }
+    }
 }
 
 
@@ -577,6 +751,7 @@ static void DibujarMuroLoco(
         if (inicioHueco > bordeIzquierdo)
         {
             float ancho = inicioHueco - bordeIzquierdo;
+
             DibujarSegmentoMuro(
                 bordeIzquierdo + ancho / 2.0f,
                 ancho,
@@ -591,6 +766,7 @@ static void DibujarMuroLoco(
     if (bordeIzquierdo < LIMITE_X_MUROS)
     {
         float ancho = LIMITE_X_MUROS - bordeIzquierdo;
+
         DibujarSegmentoMuro(
             bordeIzquierdo + ancho / 2.0f,
             ancho,
@@ -610,9 +786,11 @@ void MinijuegoMurosLocos::Dibujar(
     bool mostrarDebug
 ) const
 {
-    ClearBackground(Color{ 112, 177, 215, 255 });
+    ClearBackground(Color{ 226, 166, 87, 255 });
 
     BeginMode3D(camara);
+
+    DibujarEscenarioDesiertoMuros();
 
     DrawCube(
         suelo.posicion,
@@ -627,9 +805,11 @@ void MinijuegoMurosLocos::Dibujar(
         suelo.tamano.x,
         suelo.tamano.y,
         suelo.tamano.z,
-        Color{ 32, 37, 48, 255 }
+        Color{ 112, 72, 45, 255 }
     );
 
+    // El dibujo cambia a adobe, pero el muro conserva exactamente el mismo
+    // volumen fisico: al tocarlo sigue empujando mediante AplicarImpactoMuro.
     if (
         fase == FASE_MUROS_JUGANDO &&
         tiempoEntreMuros <= 0.0f
@@ -677,20 +857,20 @@ void MinijuegoMurosLocos::Dibujar(
 
     EndMode3D();
 
-    DrawText("MUROS LOCOS", 24, 22, 30, RAYWHITE);
+    DrawText("MUROS LOCOS - RUINAS DEL DESIERTO", 24, 22, 30, DARKBROWN);
     DrawText(
-        "CRUZA LOS HUECOS. LOS MUROS SON CADA VEZ MAS RAPIDOS.",
+        "BUSCA EL HUECO ANTES DE QUE EL MURO DE ADOBE TE EMPUJE.",
         24,
         60,
         18,
-        LIGHTGRAY
+        Color{ 91, 58, 39, 255 }
     );
     DrawText(
         "PUEDES SALTAR Y GOLPEAR A LOS RIVALES.",
         24,
         86,
         16,
-        Color{ 225, 231, 239, 255 }
+        Color{ 112, 72, 45, 255 }
     );
 
     if (fase == FASE_MUROS_JUGANDO)
@@ -700,7 +880,7 @@ void MinijuegoMurosLocos::Dibujar(
             GetScreenWidth() - 190,
             24,
             24,
-            tiempoRestante <= 5.0f ? RED : GOLD
+            tiempoRestante <= 5.0f ? RED : MAROON
         );
 
         DrawText(
@@ -708,7 +888,7 @@ void MinijuegoMurosLocos::Dibujar(
             GetScreenWidth() - 190,
             56,
             18,
-            RAYWHITE
+            DARKBROWN
         );
     }
 
@@ -724,7 +904,7 @@ void MinijuegoMurosLocos::Dibujar(
             GetScreenWidth() / 2 - MeasureText(texto, 88) / 2,
             GetScreenHeight() / 2 - 62,
             88,
-            GOLD
+            ORANGE
         );
     }
     else if (fase == FASE_MUROS_TERMINADO)
