@@ -5,6 +5,9 @@
 #include "Minigames/TiposMinijuegos.h"
 
 
+const int MAX_PINCHOS_TORMENTA_MAGNETICA = 12;
+
+
 enum FaseTormentaMagnetica
 {
     FASE_MAGNETICA_PREPARACION = 0,
@@ -21,6 +24,15 @@ struct EstadoJugadorTormentaMagnetica
 };
 
 
+struct PinchoTormentaMagnetica
+{
+    bool activo = false;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float tiempoVida = 0.0f;
+};
+
+
 struct MinijuegoTormentaMagnetica
 {
     ResultadoMinijuego resultado;
@@ -29,19 +41,23 @@ struct MinijuegoTormentaMagnetica
         MAX_JUGADORES_PRUEBA
     ];
 
+    PinchoTormentaMagnetica pinchos[
+        MAX_PINCHOS_TORMENTA_MAGNETICA
+    ];
+
     BloquePrueba suelo;
     Camera3D camara{};
 
     Vector3 posicionNucleo{};
     bool campoAtrae = true;
 
-    FaseTormentaMagnetica fase =
-        FASE_MAGNETICA_PREPARACION;
+    FaseTormentaMagnetica fase = FASE_MAGNETICA_PREPARACION;
 
     float tiempoPreparacion = 3.0f;
-    float tiempoRestante = 35.0f;
+    float tiempoRestante = 0.0f;
     float tiempoJugado = 0.0f;
-    float tiempoHastaCambioCampo = 3.4f;
+    float tiempoHastaCambioCampo = 3.0f;
+    float tiempoHastaPincho = 1.2f;
     float tiempoAnimacion = 0.0f;
 
     int cambiosCampo = 0;
