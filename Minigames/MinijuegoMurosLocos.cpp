@@ -7,7 +7,7 @@
 
 
 static const float DURACION_PREPARACION_MUROS = 3.0f;
-static const float DURACION_PARTIDA_MUROS = 35.0f;
+static const float ESCALA_DIFICULTAD_MUROS = 35.0f;
 static const float ANCHO_ARENA_MUROS = 11.4f;
 static const float LARGO_ARENA_MUROS = 10.2f;
 static const float LIMITE_X_MUROS = ANCHO_ARENA_MUROS / 2.0f;
@@ -17,8 +17,7 @@ static const float Z_FIN_MURO = 6.9f;
 static const float ALTO_MURO = 2.45f;
 static const float GROSOR_MURO = 0.42f;
 static const float FUERZA_MURO = 10.8f;
-static const float SALTO_IMPACTO_MURO = 5.4f;
-static const float COOLDOWN_IMPACTO_MURO = 0.48f;
+static const float COOLDOWN_IMPACTO_MURO = 0.30f;
 
 
 static float Limitar01Muros(float valor)
@@ -29,9 +28,7 @@ static float Limitar01Muros(float valor)
 }
 
 
-static int ContarVivosMuros(
-    const MinijuegoMurosLocos& minijuego
-)
+static int ContarVivosMuros(const MinijuegoMurosLocos& minijuego)
 {
     int vivos = 0;
 
@@ -50,9 +47,7 @@ static int ContarVivosMuros(
 }
 
 
-static bool JugadorSobreArenaMuros(
-    const JugadorPrueba& jugador
-)
+static bool JugadorSobreArenaMuros(const JugadorPrueba& jugador)
 {
     float margen = jugador.tamano.x * 0.16f;
 
@@ -85,15 +80,11 @@ static bool XEstaEnHuecoMuro(
 }
 
 
-static void PrepararNuevoMuro(
-    MinijuegoMurosLocos& minijuego
-)
+static void PrepararNuevoMuro(MinijuegoMurosLocos& minijuego)
 {
-    float progreso =
-        Limitar01Muros(
-            minijuego.tiempoJugado /
-            DURACION_PARTIDA_MUROS
-        );
+    float progreso = Limitar01Muros(
+        minijuego.tiempoJugado / ESCALA_DIFICULTAD_MUROS
+    );
 
     minijuego.numeroMuro++;
     minijuego.muro = {};
@@ -120,76 +111,102 @@ static void PrepararNuevoMuro(
     {
         minijuego.muro.centrosHueco[0] =
             (float)GetRandomValue(-38, -15) / 10.0f;
-
         minijuego.muro.centrosHueco[1] =
             (float)GetRandomValue(15, 38) / 10.0f;
     }
 }
 
 
-static void AplicarImpactoMuro(
+static void CrearImpactoMuro(
     JugadorPrueba& jugador,
     ParticulaTierra particulas[],
     int cantidadParticulas
 )
 {
-    // El muro avanza de -Z a +Z: el impacto arrastra al jugador en la
-    // misma direccion y lo levanta un poco, reforzando la sensacion de golpe.
-    jugador.empuje.z += FUERZA_MURO;
-    jugador.velocidad.y = SALTO_IMPACTO_MURO;
-    jugador.enSuelo = false;
+    // El muro ya corrige la posicion de forma continua. Este impulso es
+    // solamente el golpe extra de contacto, siempre en la direccion del muro.
+    jugador.empuje.z += FUERZA_MURO * 0.42f;
 
     CrearParticulasImpactoGolpe(
         particulas,
         cantidadParticulas,
-        {
-            jugador.posicion.x,
-            jugador.posicion.y + 0.12f,
-            jugador.posicion.z
-        }
+        { jugador.posicion.x, jugador.posicion.y + 0.12f, jugador.posicion.z }
     );
 }
 
 
-static void FinalizarMuros(
-    MinijuegoMurosLocos& minijuego
+static bool ResolverColisionMuroJugador(
+    const MuroLoco& muro,
+    JugadorPrueba& jugador
 )
 {
+    if (jugador.cayendo) return false;
+
+    float radioJugador = jugador.tamano.x * 0.46f;
+
+    bool alturaPeligrosa =
+        jugador.posicion.y - jugador.tamano.y / 2.0f < ALTO_MURO &&
+        jugador.posicion.y + jugador.tamano.y / 2.0f > 0.0f;
+
     if (
-        minijuego.resultado.estado !=
-        RESULTADO_MINIJUEGO_EN_CURSO
+        !alturaPeligrosa ||
+        XEstaEnHuecoMuro(muro, jugador.posicion.x, radioJugador)
     )
     {
-        return;
+        return false;
     }
+
+    float caraDelantera =
+        muro.z + GROSOR_MURO * 0.5f + radioJugador;
+
+    float caraTrasera =
+        muro.z - GROSOR_MURO * 0.5f - radioJugador;
+
+    // Los jugadores empiezan delante del muro. Si el frente movil alcanza su
+    // centro, los dejamos pegados a la cara delantera. De este modo nunca
+    // pueden atravesarlo aunque el muro avance varios centimetros por frame.
+    bool alcanzado =
+        jugador.posicion.z >= caraTrasera &&
+        jugador.posicion.z <= caraDelantera + 0.08f;
+
+    if (!alcanzado) return false;
+
+    jugador.posicion.z = caraDelantera + 0.012f;
+
+    if (jugador.velocidad.z < muro.velocidad)
+    {
+        jugador.velocidad.z = muro.velocidad;
+    }
+
+    if (jugador.empuje.z < muro.velocidad * 0.35f)
+    {
+        jugador.empuje.z = muro.velocidad * 0.35f;
+    }
+
+    return true;
+}
+
+
+static void FinalizarMuros(MinijuegoMurosLocos& minijuego)
+{
+    if (minijuego.resultado.estado != RESULTADO_MINIJUEGO_EN_CURSO) return;
 
     int vivos = ContarVivosMuros(minijuego);
 
-    minijuego.resultado.estado =
-        RESULTADO_MINIJUEGO_FINALIZADO;
-
+    minijuego.resultado.estado = RESULTADO_MINIJUEGO_FINALIZADO;
     minijuego.resultado.desenlace =
-        vivos == 1
-        ? DESENLACE_CON_GANADOR
-        : DESENLACE_EMPATE;
+        vivos == 1 ? DESENLACE_CON_GANADOR : DESENLACE_EMPATE;
 
-    int tiempoFinalMs =
-        (int)std::lround(
-            minijuego.tiempoJugado * 1000.0f
-        );
+    int tiempoFinalMs = (int)std::lround(minijuego.tiempoJugado * 1000.0f);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         ResultadoParticipante& resultadoJugador =
             minijuego.resultado.participantes[i];
 
-        if (!resultadoJugador.participo)
-        {
-            continue;
-        }
+        if (!resultadoJugador.participo) continue;
 
-        EstadoJugadorMurosLocos& estadoJugador =
-            minijuego.estadosJugadores[i];
+        EstadoJugadorMurosLocos& estadoJugador = minijuego.estadosJugadores[i];
 
         if (!estadoJugador.eliminado)
         {
@@ -197,11 +214,9 @@ static void FinalizarMuros(
             estadoJugador.tiempoSobrevividoMs = tiempoFinalMs;
         }
 
-        resultadoJugador.posicionFinal =
-            estadoJugador.posicionFinal;
+        resultadoJugador.posicionFinal = estadoJugador.posicionFinal;
         resultadoJugador.numeroEquipo = -1;
-        resultadoJugador.puntuacionMinijuego =
-            estadoJugador.tiempoSobrevividoMs;
+        resultadoJugador.puntuacionMinijuego = estadoJugador.tiempoSobrevividoMs;
         resultadoJugador.puntosObtenidos = 0;
     }
 
@@ -214,26 +229,18 @@ void MinijuegoMurosLocos::Inicializar()
     resultado = {};
     resultado.formato = FORMATO_MINIJUEGO_INDIVIDUAL;
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
-    {
-        estadosJugadores[i] = {};
-    }
+    for (int i = 0; i < MAX_PARTICIPANTES; i++) estadosJugadores[i] = {};
 
     suelo = {};
     suelo.posicion = { 0.0f, -0.35f, 0.0f };
     suelo.posicionInicial = suelo.posicion;
-    suelo.tamano =
-    {
-        ANCHO_ARENA_MUROS,
-        0.70f,
-        LARGO_ARENA_MUROS
-    };
+    suelo.tamano = { ANCHO_ARENA_MUROS, 0.70f, LARGO_ARENA_MUROS };
     suelo.color = Color{ 202, 153, 82, 255 };
     suelo.activaColision = true;
 
     fase = FASE_MUROS_PREPARACION;
     tiempoPreparacion = DURACION_PREPARACION_MUROS;
-    tiempoRestante = DURACION_PARTIDA_MUROS;
+    tiempoRestante = 0.0f;
     tiempoJugado = 0.0f;
     tiempoEntreMuros = 0.30f;
     numeroMuro = 0;
@@ -262,17 +269,13 @@ void MinijuegoMurosLocos::ConfigurarJugadores(
         {  0.9f, 1.05f, 1.2f }
     };
 
-    int limite =
-        cantidadMaxima < MAX_JUGADORES_PRUEBA
+    int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
         ? cantidadMaxima
         : MAX_JUGADORES_PRUEBA;
 
     for (int i = 0; i < limite; i++)
     {
-        ConfigurarJugadorMinijuegoEstandar(
-            jugadores[i],
-            spawns[i]
-        );
+        ConfigurarJugadorMinijuegoEstandar(jugadores[i], spawns[i]);
     }
 }
 
@@ -286,8 +289,7 @@ void MinijuegoMurosLocos::Reiniciar(
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        participaban[i] =
-            resultado.participantes[i].participo;
+        participaban[i] = resultado.participantes[i].participo;
     }
 
     Inicializar();
@@ -295,11 +297,7 @@ void MinijuegoMurosLocos::Reiniciar(
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         resultado.participantes[i].participo = participaban[i];
-
-        if (participaban[i])
-        {
-            resultado.cantidadParticipantes++;
-        }
+        if (participaban[i]) resultado.cantidadParticipantes++;
     }
 
     ConfigurarJugadores(jugadores, cantidadMaxima);
@@ -324,10 +322,7 @@ void MinijuegoMurosLocos::Actualizar(
         );
     }
 
-    if (fase == FASE_MUROS_TERMINADO)
-    {
-        return;
-    }
+    if (fase == FASE_MUROS_TERMINADO) return;
 
     if (fase == FASE_MUROS_PREPARACION)
     {
@@ -348,12 +343,7 @@ void MinijuegoMurosLocos::Actualizar(
         return;
     }
 
-    tiempoRestante -= deltaTime;
-    if (tiempoRestante < 0.0f) tiempoRestante = 0.0f;
-
-    tiempoJugado =
-        DURACION_PARTIDA_MUROS - tiempoRestante;
-
+    tiempoJugado += deltaTime;
     int vivosAntes = ContarVivosMuros(*this);
 
     if (tiempoEntreMuros > 0.0f)
@@ -366,18 +356,12 @@ void MinijuegoMurosLocos::Actualizar(
 
         if (muro.z > Z_FIN_MURO)
         {
-            float progreso =
-                Limitar01Muros(
-                    tiempoJugado /
-                    DURACION_PARTIDA_MUROS
-                );
+            float progreso = Limitar01Muros(
+                tiempoJugado / ESCALA_DIFICULTAD_MUROS
+            );
 
             tiempoEntreMuros = 0.52f - progreso * 0.27f;
-            if (tiempoEntreMuros < 0.20f)
-            {
-                tiempoEntreMuros = 0.20f;
-            }
-
+            if (tiempoEntreMuros < 0.20f) tiempoEntreMuros = 0.20f;
             PrepararNuevoMuro(*this);
         }
     }
@@ -392,32 +376,22 @@ void MinijuegoMurosLocos::Actualizar(
             continue;
         }
 
-        EstadoJugadorMurosLocos& estadoJugador =
-            estadosJugadores[i];
+        EstadoJugadorMurosLocos& estadoJugador = estadosJugadores[i];
         JugadorPrueba& jugador = jugadores[i];
 
         if (estadoJugador.cooldownImpacto > 0.0f)
         {
             estadoJugador.cooldownImpacto -= deltaTime;
             if (estadoJugador.cooldownImpacto < 0.0f)
-            {
                 estadoJugador.cooldownImpacto = 0.0f;
-            }
         }
 
         InputMinijuegoParticipante entrada{};
-
         if (participantes[i].conectado)
-        {
-            entrada =
-                LeerInputMinijuegoParticipante(
-                    participantes[i]
-                );
-        }
+            entrada = LeerInputMinijuegoParticipante(participantes[i]);
 
         BloquePrueba sueloJugador = suelo;
-        sueloJugador.activaColision =
-            JugadorSobreArenaMuros(jugador);
+        sueloJugador.activaColision = JugadorSobreArenaMuros(jugador);
 
         ActualizarJugadorPruebaNormal(
             jugador,
@@ -431,39 +405,14 @@ void MinijuegoMurosLocos::Actualizar(
             deltaTime
         );
 
-        if (
-            tiempoEntreMuros <= 0.0f &&
-            estadoJugador.cooldownImpacto <= 0.0f &&
-            !jugador.cayendo
-        )
+        if (tiempoEntreMuros <= 0.0f)
         {
-            float distanciaZ =
-                std::fabs(jugador.posicion.z - muro.z);
+            bool contacto = ResolverColisionMuroJugador(muro, jugador);
 
-            float radioJugador = jugador.tamano.x * 0.46f;
-
-            bool alturaPeligrosa =
-                jugador.posicion.y - jugador.tamano.y / 2.0f < ALTO_MURO &&
-                jugador.posicion.y + jugador.tamano.y / 2.0f > 0.0f;
-
-            if (
-                distanciaZ <= GROSOR_MURO * 0.5f + radioJugador &&
-                alturaPeligrosa &&
-                !XEstaEnHuecoMuro(
-                    muro,
-                    jugador.posicion.x,
-                    radioJugador
-                )
-            )
+            if (contacto && estadoJugador.cooldownImpacto <= 0.0f)
             {
-                AplicarImpactoMuro(
-                    jugador,
-                    particulas,
-                    cantidadParticulas
-                );
-
-                estadoJugador.cooldownImpacto =
-                    COOLDOWN_IMPACTO_MURO;
+                CrearImpactoMuro(jugador, particulas, cantidadParticulas);
+                estadoJugador.cooldownImpacto = COOLDOWN_IMPACTO_MURO;
             }
         }
 
@@ -499,8 +448,7 @@ void MinijuegoMurosLocos::Actualizar(
     }
 
     int posicion = vivosAntes - eliminados + 1;
-    int tiempoMs =
-        (int)std::lround(tiempoJugado * 1000.0f);
+    int tiempoMs = (int)std::lround(tiempoJugado * 1000.0f);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -516,12 +464,7 @@ void MinijuegoMurosLocos::Actualizar(
         }
     }
 
-    int vivosDespues = vivosAntes - eliminados;
-
-    if (
-        vivosDespues <= 1 ||
-        tiempoRestante <= 0.0f
-    )
+    if (vivosAntes - eliminados <= 1)
     {
         FinalizarMuros(*this);
     }
@@ -534,7 +477,6 @@ void MinijuegoMurosLocos::Actualizar(
 
 static void DibujarEscenarioDesiertoMuros()
 {
-    // Cielo enorme y lejano para que nunca se vea el borde del escenario.
     DibujarCieloPlanoEscenario3D(
         Color{ 226, 166, 87, 255 },
         -70.0f,
@@ -548,40 +490,24 @@ static void DibujarEscenarioDesiertoMuros()
         Color{ 255, 226, 117, 255 }
     );
 
-    // Arena exterior. Queda un poco mas abajo que la plataforma jugable
-    // para que no interfiera con su hitbox.
     DrawPlane(
         { 0.0f, -0.72f, -4.0f },
         { 150.0f, 150.0f },
         Color{ 205, 153, 78, 255 }
     );
 
-    // Mesetas y dunas low-poly de fondo.
     const float posiciones[7] =
     {
-        -54.0f,
-        -36.0f,
-        -18.0f,
-        0.0f,
-        19.0f,
-        38.0f,
-        57.0f
+        -54.0f, -36.0f, -18.0f, 0.0f, 19.0f, 38.0f, 57.0f
     };
 
     for (int i = 0; i < 7; i++)
     {
-        float altura =
-            5.0f + (float)(i % 3) * 1.2f;
-
-        float ancho =
-            23.0f + (float)(i % 2) * 5.0f;
+        float altura = 5.0f + (float)(i % 3) * 1.2f;
+        float ancho = 23.0f + (float)(i % 2) * 5.0f;
 
         DibujarMontanaPrismaEscenario3D(
-            {
-                posiciones[i],
-                -5.0f,
-                -34.0f - (float)(i % 2) * 5.0f
-            },
+            { posiciones[i], -5.0f, -34.0f - (float)(i % 2) * 5.0f },
             ancho,
             altura,
             9.0f,
@@ -594,32 +520,17 @@ static void DibujarEscenarioDesiertoMuros()
         );
     }
 
-    // Polvo ambiental muy barato: pequeñas motas, sin sistemas extra.
     EstadoEfectosVisualesMinijuegos& efectos =
         ObtenerEstadoEfectosVisualesMinijuegos();
 
     for (int i = 0; i < 30; i++)
     {
-        float x =
-            -18.0f +
-            RepetirEscenario3D(
-                (float)(i * 7) + efectos.tiempoGlobal * 1.2f,
-                36.0f
-            );
-
-        float y =
-            0.15f +
-            RepetirEscenario3D(
-                (float)(i * 5),
-                5.5f
-            );
-
-        float z =
-            -4.0f -
-            RepetirEscenario3D(
-                (float)(i * 9),
-                24.0f
-            );
+        float x = -18.0f + RepetirEscenario3D(
+            (float)(i * 7) + efectos.tiempoGlobal * 1.2f,
+            36.0f
+        );
+        float y = 0.15f + RepetirEscenario3D((float)(i * 5), 5.5f);
+        float z = -4.0f - RepetirEscenario3D((float)(i * 9), 24.0f);
 
         DrawSphere(
             { x, y, z },
@@ -651,45 +562,27 @@ static void DibujarSegmentoMuro(
     int indice
 )
 {
-    if (ancho <= 0.03f)
-    {
-        return;
-    }
+    if (ancho <= 0.03f) return;
 
     const int filas = 4;
     const float altoLadrillo = ALTO_MURO / (float)filas;
     const float anchoLadrillo = 0.95f;
     const float junta = 0.035f;
-
     float bordeIzquierdo = xCentro - ancho / 2.0f;
     float bordeDerecho = xCentro + ancho / 2.0f;
 
     for (int fila = 0; fila < filas; fila++)
     {
-        float desplazamiento =
-            fila % 2 == 0
-            ? 0.0f
-            : anchoLadrillo * 0.5f;
-
+        float desplazamiento = fila % 2 == 0 ? 0.0f : anchoLadrillo * 0.5f;
         float inicio = bordeIzquierdo - desplazamiento;
         int columna = 0;
 
-        for (
-            float x = inicio;
-            x < bordeDerecho;
-            x += anchoLadrillo
-        )
+        for (float x = inicio; x < bordeDerecho; x += anchoLadrillo)
         {
-            float izquierda =
-                x > bordeIzquierdo
-                ? x
-                : bordeIzquierdo;
-
-            float derecha =
-                x + anchoLadrillo < bordeDerecho
+            float izquierda = x > bordeIzquierdo ? x : bordeIzquierdo;
+            float derecha = x + anchoLadrillo < bordeDerecho
                 ? x + anchoLadrillo
                 : bordeDerecho;
-
             float anchoVisible = derecha - izquierda;
 
             if (anchoVisible <= junta)
@@ -698,9 +591,6 @@ static void DibujarSegmentoMuro(
                 continue;
             }
 
-            float anchoDibujo = anchoVisible - junta;
-            float altoDibujo = altoLadrillo - junta;
-
             Vector3 centro =
             {
                 (izquierda + derecha) * 0.5f,
@@ -708,21 +598,20 @@ static void DibujarSegmentoMuro(
                 z
             };
 
-            Color ladrillo =
-                ColorLadrilloMuro(fila, columna, indice);
+            Color ladrillo = ColorLadrilloMuro(fila, columna, indice);
 
             DrawCube(
                 centro,
-                anchoDibujo,
-                altoDibujo,
+                anchoVisible - junta,
+                altoLadrillo - junta,
                 GROSOR_MURO,
                 ladrillo
             );
 
             DrawCubeWires(
                 centro,
-                anchoDibujo,
-                altoDibujo,
+                anchoVisible - junta,
+                altoLadrillo - junta,
                 GROSOR_MURO,
                 Color{ 92, 57, 40, 255 }
             );
@@ -733,25 +622,19 @@ static void DibujarSegmentoMuro(
 }
 
 
-static void DibujarMuroLoco(
-    const MuroLoco& muro
-)
+static void DibujarMuroLoco(const MuroLoco& muro)
 {
     float bordeIzquierdo = -LIMITE_X_MUROS;
     int segmento = 0;
 
     for (int i = 0; i < muro.cantidadHuecos; i++)
     {
-        float inicioHueco =
-            muro.centrosHueco[i] - muro.anchoHueco / 2.0f;
-
-        float finHueco =
-            muro.centrosHueco[i] + muro.anchoHueco / 2.0f;
+        float inicioHueco = muro.centrosHueco[i] - muro.anchoHueco / 2.0f;
+        float finHueco = muro.centrosHueco[i] + muro.anchoHueco / 2.0f;
 
         if (inicioHueco > bordeIzquierdo)
         {
             float ancho = inicioHueco - bordeIzquierdo;
-
             DibujarSegmentoMuro(
                 bordeIzquierdo + ancho / 2.0f,
                 ancho,
@@ -766,7 +649,6 @@ static void DibujarMuroLoco(
     if (bordeIzquierdo < LIMITE_X_MUROS)
     {
         float ancho = LIMITE_X_MUROS - bordeIzquierdo;
-
         DibujarSegmentoMuro(
             bordeIzquierdo + ancho / 2.0f,
             ancho,
@@ -787,7 +669,6 @@ void MinijuegoMurosLocos::Dibujar(
 ) const
 {
     ClearBackground(Color{ 226, 166, 87, 255 });
-
     BeginMode3D(camara);
 
     DibujarEscenarioDesiertoMuros();
@@ -808,23 +689,14 @@ void MinijuegoMurosLocos::Dibujar(
         Color{ 112, 72, 45, 255 }
     );
 
-    // El dibujo cambia a adobe, pero el muro conserva exactamente el mismo
-    // volumen fisico: al tocarlo sigue empujando mediante AplicarImpactoMuro.
-    if (
-        fase == FASE_MUROS_JUGANDO &&
-        tiempoEntreMuros <= 0.0f
-    )
+    if (fase == FASE_MUROS_JUGANDO && tiempoEntreMuros <= 0.0f)
     {
         DibujarMuroLoco(muro);
     }
 
-    DibujarParticulasTierra(
-        particulas,
-        cantidadParticulas
-    );
+    DibujarParticulasTierra(particulas, cantidadParticulas);
 
-    int limite =
-        cantidadMaxima < MAX_JUGADORES_PRUEBA
+    int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
         ? cantidadMaxima
         : MAX_JUGADORES_PRUEBA;
 
@@ -838,20 +710,11 @@ void MinijuegoMurosLocos::Dibujar(
             continue;
         }
 
-        DibujarJugadorCuboPrueba(
-            jugadores[i],
-            participantes[i]
-        );
+        DibujarJugadorCuboPrueba(jugadores[i], participantes[i]);
 
-        if (
-            mostrarDebug &&
-            !jugadores[i].cayendo
-        )
+        if (mostrarDebug && !jugadores[i].cayendo)
         {
-            DrawBoundingBox(
-                CrearHitboxJugadorPrueba(jugadores[i]),
-                LIME
-            );
+            DrawBoundingBox(CrearHitboxJugadorPrueba(jugadores[i]), LIME);
         }
     }
 
@@ -866,7 +729,7 @@ void MinijuegoMurosLocos::Dibujar(
         Color{ 91, 58, 39, 255 }
     );
     DrawText(
-        "PUEDES SALTAR Y GOLPEAR A LOS RIVALES.",
+        "LOS MUROS SE ACELERAN HASTA QUE SOLO QUEDE UN JUGADOR.",
         24,
         86,
         16,
@@ -876,18 +739,10 @@ void MinijuegoMurosLocos::Dibujar(
     if (fase == FASE_MUROS_JUGANDO)
     {
         DrawText(
-            TextFormat("TIEMPO: %.1f", tiempoRestante),
-            GetScreenWidth() - 190,
-            24,
-            24,
-            tiempoRestante <= 5.0f ? RED : MAROON
-        );
-
-        DrawText(
             TextFormat("MURO %d", numeroMuro),
             GetScreenWidth() - 190,
-            56,
-            18,
+            24,
+            20,
             DARKBROWN
         );
     }
@@ -896,7 +751,6 @@ void MinijuegoMurosLocos::Dibujar(
     {
         int numero = (int)std::ceil(tiempoPreparacion);
         if (numero < 1) numero = 1;
-
         const char* texto = TextFormat("%d", numero);
 
         DrawText(
@@ -918,12 +772,11 @@ void MinijuegoMurosLocos::Dibujar(
         );
 
         int ganadores[MAX_PARTICIPANTES]{};
-        int cantidadGanadores =
-            ObtenerIndicesGanadores(
-                resultado,
-                ganadores,
-                MAX_PARTICIPANTES
-            );
+        int cantidadGanadores = ObtenerIndicesGanadores(
+            resultado,
+            ganadores,
+            MAX_PARTICIPANTES
+        );
 
         const char* titulo =
             resultado.desenlace == DESENLACE_EMPATE
@@ -931,8 +784,8 @@ void MinijuegoMurosLocos::Dibujar(
             : TextFormat(
                 "GANADOR: JUGADOR %d",
                 cantidadGanadores == 1
-                ? participantes[ganadores[0]].numeroJugador
-                : 0
+                    ? participantes[ganadores[0]].numeroJugador
+                    : 0
             );
 
         DrawText(
@@ -947,10 +800,7 @@ void MinijuegoMurosLocos::Dibujar(
 
         for (int i = 0; i < MAX_PARTICIPANTES; i++)
         {
-            if (!resultado.participantes[i].participo)
-            {
-                continue;
-            }
+            if (!resultado.participantes[i].participo) continue;
 
             DrawText(
                 TextFormat(
