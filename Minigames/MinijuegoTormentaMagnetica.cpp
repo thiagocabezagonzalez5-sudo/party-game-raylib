@@ -8,31 +8,41 @@
 
 
 static const float DURACION_PREPARACION_MAGNETICA = 3.0f;
-static const float DURACION_PARTIDA_MAGNETICA = 35.0f;
+static const float ESCALA_DIFICULTAD_MAGNETICA = 42.0f;
 static const float MEDIO_LADO_ARENA_MAGNETICA = 5.75f;
 static const float RADIO_NUCLEO_MAGNETICO = 0.72f;
 
 
-static bool JugadorSobreArenaMagnetica(
-    const JugadorPrueba& jugador
-)
+static float Limitar01Magnetica(float valor)
 {
-    float margen = jugador.tamano.x * 0.18f;
-
-    return
-        std::fabs(jugador.posicion.x) <=
-            MEDIO_LADO_ARENA_MAGNETICA - margen &&
-        std::fabs(jugador.posicion.z) <=
-            MEDIO_LADO_ARENA_MAGNETICA - margen;
+    if (valor < 0.0f) return 0.0f;
+    if (valor > 1.0f) return 1.0f;
+    return valor;
 }
 
 
-static int ContarVivosMagnetica(
+static float ProgresoDificultadMagnetica(
     const MinijuegoTormentaMagnetica& minijuego
 )
 {
-    int vivos = 0;
+    return Limitar01Magnetica(
+        minijuego.tiempoJugado / ESCALA_DIFICULTAD_MAGNETICA
+    );
+}
 
+
+static bool JugadorSobreArenaMagnetica(const JugadorPrueba& jugador)
+{
+    float margen = jugador.tamano.x * 0.18f;
+    return
+        std::fabs(jugador.posicion.x) <= MEDIO_LADO_ARENA_MAGNETICA - margen &&
+        std::fabs(jugador.posicion.z) <= MEDIO_LADO_ARENA_MAGNETICA - margen;
+}
+
+
+static int ContarVivosMagnetica(const MinijuegoTormentaMagnetica& minijuego)
+{
+    int vivos = 0;
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         if (
@@ -43,29 +53,21 @@ static int ContarVivosMagnetica(
             vivos++;
         }
     }
-
     return vivos;
 }
 
 
-static Vector3 ElegirNuevaPosicionNucleoMagnetico(
-    Vector3 anterior
-)
+static Vector3 ElegirNuevaPosicionNucleoMagnetico(Vector3 anterior)
 {
     const Vector3 posiciones[] =
     {
-        {  0.0f, 0.85f,  0.0f },
-        { -3.25f, 0.85f, -2.80f },
-        {  3.25f, 0.85f, -2.80f },
-        { -3.25f, 0.85f,  2.80f },
-        {  3.25f, 0.85f,  2.80f },
-        {  0.0f, 0.85f, -3.75f },
-        {  0.0f, 0.85f,  3.75f }
+        { 0.0f, 0.85f, 0.0f },
+        { -3.25f, 0.85f, -2.80f }, { 3.25f, 0.85f, -2.80f },
+        { -3.25f, 0.85f, 2.80f }, { 3.25f, 0.85f, 2.80f },
+        { 0.0f, 0.85f, -3.75f }, { 0.0f, 0.85f, 3.75f }
     };
 
-    const int cantidad =
-        sizeof(posiciones) / sizeof(posiciones[0]);
-
+    const int cantidad = sizeof(posiciones) / sizeof(posiciones[0]);
     int elegido = GetRandomValue(0, cantidad - 1);
 
     for (int intento = 0; intento < 12; intento++)
@@ -85,31 +87,21 @@ static Vector3 ElegirNuevaPosicionNucleoMagnetico(
 }
 
 
-static void CambiarCampoMagnetico(
-    MinijuegoTormentaMagnetica& minijuego
-)
+static void CambiarCampoMagnetico(MinijuegoTormentaMagnetica& minijuego)
 {
     minijuego.cambiosCampo++;
     minijuego.campoAtrae = !minijuego.campoAtrae;
-    minijuego.posicionNucleo =
-        ElegirNuevaPosicionNucleoMagnetico(
-            minijuego.posicionNucleo
-        );
+    minijuego.posicionNucleo = ElegirNuevaPosicionNucleoMagnetico(
+        minijuego.posicionNucleo
+    );
 
-    float progreso =
-        minijuego.tiempoJugado /
-        DURACION_PARTIDA_MAGNETICA;
+    float progreso = ProgresoDificultadMagnetica(minijuego);
 
-    if (progreso < 0.0f) progreso = 0.0f;
-    if (progreso > 1.0f) progreso = 1.0f;
-
-    minijuego.tiempoHastaCambioCampo =
-        4.15f - progreso * 1.35f;
-
-    if (minijuego.tiempoHastaCambioCampo < 2.55f)
-    {
-        minijuego.tiempoHastaCambioCampo = 2.55f;
-    }
+    // Empieza bastante rapido y termina cambiando casi cuatro veces mas
+    // seguido. Ya no hay un techo de tiempo de partida.
+    minijuego.tiempoHastaCambioCampo = 3.05f - progreso * 2.25f;
+    if (minijuego.tiempoHastaCambioCampo < 0.80f)
+        minijuego.tiempoHastaCambioCampo = 0.80f;
 }
 
 
@@ -119,24 +111,13 @@ static void AplicarCampoMagneticoAJugador(
     float deltaTime
 )
 {
-    float dx =
-        minijuego.posicionNucleo.x -
-        jugador.posicion.x;
-
-    float dz =
-        minijuego.posicionNucleo.z -
-        jugador.posicion.z;
-
+    float dx = minijuego.posicionNucleo.x - jugador.posicion.x;
+    float dz = minijuego.posicionNucleo.z - jugador.posicion.z;
     float distancia = std::sqrt(dx * dx + dz * dz);
-
-    if (distancia < 0.18f)
-    {
-        distancia = 0.18f;
-    }
+    if (distancia < 0.18f) distancia = 0.18f;
 
     float nx = dx / distancia;
     float nz = dz / distancia;
-
     if (!minijuego.campoAtrae)
     {
         nx *= -1.0f;
@@ -144,71 +125,196 @@ static void AplicarCampoMagneticoAJugador(
     }
 
     float cercania = 1.0f - distancia / 9.0f;
-    if (cercania < 0.0f) cercania = 0.0f;
-    if (cercania > 1.0f) cercania = 1.0f;
+    cercania = Limitar01Magnetica(cercania);
+    float progreso = ProgresoDificultadMagnetica(minijuego);
 
+    float fuerzaBase = minijuego.campoAtrae ? 22.0f : 27.0f;
     float fuerza =
-        (minijuego.campoAtrae ? 9.0f : 11.5f) *
-        (0.42f + cercania * 0.58f);
+        fuerzaBase *
+        (1.0f + progreso * 1.05f) *
+        (0.52f + cercania * 0.68f);
 
-    // El empuje compartido se amortigua solo en las mecanicas normales.
-    // Acumular con deltaTime mantiene el campo estable a distintos FPS.
     jugador.empuje.x += nx * fuerza * deltaTime;
     jugador.empuje.z += nz * fuerza * deltaTime;
 }
 
 
-static void FinalizarTormentaMagnetica(
-    MinijuegoTormentaMagnetica& minijuego
-)
+static int BuscarSlotPincho(MinijuegoTormentaMagnetica& minijuego)
 {
-    if (
-        minijuego.resultado.estado !=
-        RESULTADO_MINIJUEGO_EN_CURSO
-    )
+    for (int i = 0; i < MAX_PINCHOS_TORMENTA_MAGNETICA; i++)
     {
-        return;
+        if (!minijuego.pinchos[i].activo) return i;
     }
 
+    int masViejo = 0;
+    float menorVida = minijuego.pinchos[0].tiempoVida;
+    for (int i = 1; i < MAX_PINCHOS_TORMENTA_MAGNETICA; i++)
+    {
+        if (minijuego.pinchos[i].tiempoVida < menorVida)
+        {
+            menorVida = minijuego.pinchos[i].tiempoVida;
+            masViejo = i;
+        }
+    }
+    return masViejo;
+}
+
+
+static void CrearPinchoMagnetico(MinijuegoTormentaMagnetica& minijuego)
+{
+    int indice = BuscarSlotPincho(minijuego);
+    PinchoTormentaMagnetica& pincho = minijuego.pinchos[indice];
+    float progreso = ProgresoDificultadMagnetica(minijuego);
+
+    pincho = {};
+    pincho.activo = true;
+    pincho.posicion =
+    {
+        (float)GetRandomValue(-500, 500) / 100.0f,
+        (float)GetRandomValue(780, 980) / 100.0f,
+        (float)GetRandomValue(-500, 500) / 100.0f
+    };
+    pincho.velocidad =
+    {
+        0.0f,
+        -(7.0f + progreso * 6.0f + (float)GetRandomValue(0, 20) / 10.0f),
+        0.0f
+    };
+    pincho.tiempoVida = 3.0f;
+}
+
+
+static bool PinchoTocaJugador(
+    const PinchoTormentaMagnetica& pincho,
+    const JugadorPrueba& jugador
+)
+{
+    BoundingBox caja = CrearHitboxJugadorPrueba(jugador);
+    const float radio = 0.38f;
+
+    return
+        pincho.posicion.x + radio >= caja.min.x &&
+        pincho.posicion.x - radio <= caja.max.x &&
+        pincho.posicion.y + 0.55f >= caja.min.y &&
+        pincho.posicion.y - 0.55f <= caja.max.y &&
+        pincho.posicion.z + radio >= caja.min.z &&
+        pincho.posicion.z - radio <= caja.max.z;
+}
+
+
+static void ActualizarPinchosMagneticos(
+    MinijuegoTormentaMagnetica& minijuego,
+    float deltaTime,
+    JugadorPrueba jugadores[],
+    int limite,
+    const Participante participantes[],
+    ParticulaTierra particulas[],
+    int cantidadParticulas
+)
+{
+    float progreso = ProgresoDificultadMagnetica(minijuego);
+    minijuego.tiempoHastaPincho -= deltaTime;
+
+    if (minijuego.tiempoHastaPincho <= 0.0f)
+    {
+        CrearPinchoMagnetico(minijuego);
+        minijuego.tiempoHastaPincho = 1.25f - progreso * 0.88f;
+        if (minijuego.tiempoHastaPincho < 0.34f)
+            minijuego.tiempoHastaPincho = 0.34f;
+    }
+
+    for (int p = 0; p < MAX_PINCHOS_TORMENTA_MAGNETICA; p++)
+    {
+        PinchoTormentaMagnetica& pincho = minijuego.pinchos[p];
+        if (!pincho.activo) continue;
+
+        pincho.tiempoVida -= deltaTime;
+        pincho.posicion.x += pincho.velocidad.x * deltaTime;
+        pincho.posicion.y += pincho.velocidad.y * deltaTime;
+        pincho.posicion.z += pincho.velocidad.z * deltaTime;
+
+        bool golpeo = false;
+
+        for (int i = 0; i < limite; i++)
+        {
+            if (
+                !minijuego.resultado.participantes[i].participo ||
+                minijuego.estadosJugadores[i].eliminado ||
+                !participantes[i].conectado ||
+                jugadores[i].cayendo
+            )
+            {
+                continue;
+            }
+
+            if (!PinchoTocaJugador(pincho, jugadores[i])) continue;
+
+            float dx = jugadores[i].posicion.x - minijuego.posicionNucleo.x;
+            float dz = jugadores[i].posicion.z - minijuego.posicionNucleo.z;
+            float largo = std::sqrt(dx * dx + dz * dz);
+            if (largo < 0.10f)
+            {
+                dx = 1.0f;
+                dz = 0.0f;
+                largo = 1.0f;
+            }
+
+            dx /= largo;
+            dz /= largo;
+            jugadores[i].empuje.x += dx * (8.5f + progreso * 5.0f);
+            jugadores[i].empuje.z += dz * (8.5f + progreso * 5.0f);
+            jugadores[i].velocidad.y = 6.0f + progreso * 2.0f;
+            jugadores[i].enSuelo = false;
+            jugadores[i].tiempoRalentizado = 0.45f;
+            jugadores[i].multiplicadorRalentizacion = 0.35f;
+
+            CrearParticulasImpactoGolpe(
+                particulas,
+                cantidadParticulas,
+                jugadores[i].posicion
+            );
+            golpeo = true;
+            break;
+        }
+
+        if (
+            golpeo ||
+            pincho.posicion.y <= 0.48f ||
+            pincho.tiempoVida <= 0.0f
+        )
+        {
+            pincho.activo = false;
+        }
+    }
+}
+
+
+static void FinalizarTormentaMagnetica(MinijuegoTormentaMagnetica& minijuego)
+{
+    if (minijuego.resultado.estado != RESULTADO_MINIJUEGO_EN_CURSO) return;
+
     int vivos = ContarVivosMagnetica(minijuego);
-
-    minijuego.resultado.estado =
-        RESULTADO_MINIJUEGO_FINALIZADO;
-
+    minijuego.resultado.estado = RESULTADO_MINIJUEGO_FINALIZADO;
     minijuego.resultado.desenlace =
-        vivos == 1
-            ? DESENLACE_CON_GANADOR
-            : DESENLACE_EMPATE;
+        vivos == 1 ? DESENLACE_CON_GANADOR : DESENLACE_EMPATE;
 
-    int tiempoFinalMs =
-        (int)std::lround(
-            minijuego.tiempoJugado * 1000.0f
-        );
+    int tiempoFinalMs = (int)std::lround(minijuego.tiempoJugado * 1000.0f);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        ResultadoParticipante& resultadoJugador =
-            minijuego.resultado.participantes[i];
+        ResultadoParticipante& resultadoJugador = minijuego.resultado.participantes[i];
+        if (!resultadoJugador.participo) continue;
 
-        if (!resultadoJugador.participo)
+        EstadoJugadorTormentaMagnetica& estado = minijuego.estadosJugadores[i];
+        if (!estado.eliminado)
         {
-            continue;
+            estado.posicionFinal = 1;
+            estado.tiempoSobrevividoMs = tiempoFinalMs;
         }
 
-        EstadoJugadorTormentaMagnetica& estadoJugador =
-            minijuego.estadosJugadores[i];
-
-        if (!estadoJugador.eliminado)
-        {
-            estadoJugador.posicionFinal = 1;
-            estadoJugador.tiempoSobrevividoMs = tiempoFinalMs;
-        }
-
-        resultadoJugador.posicionFinal =
-            estadoJugador.posicionFinal;
+        resultadoJugador.posicionFinal = estado.posicionFinal;
         resultadoJugador.numeroEquipo = -1;
-        resultadoJugador.puntuacionMinijuego =
-            estadoJugador.tiempoSobrevividoMs;
+        resultadoJugador.puntuacionMinijuego = estado.tiempoSobrevividoMs;
         resultadoJugador.puntosObtenidos = 0;
     }
 
@@ -221,10 +327,8 @@ void MinijuegoTormentaMagnetica::Inicializar()
     resultado = {};
     resultado.formato = FORMATO_MINIJUEGO_INDIVIDUAL;
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
-    {
-        estadosJugadores[i] = {};
-    }
+    for (int i = 0; i < MAX_PARTICIPANTES; i++) estadosJugadores[i] = {};
+    for (int i = 0; i < MAX_PINCHOS_TORMENTA_MAGNETICA; i++) pinchos[i] = {};
 
     suelo = {};
     suelo.posicion = { 0.0f, -0.40f, 0.0f };
@@ -235,12 +339,12 @@ void MinijuegoTormentaMagnetica::Inicializar()
 
     posicionNucleo = { 0.0f, 0.85f, 0.0f };
     campoAtrae = true;
-
     fase = FASE_MAGNETICA_PREPARACION;
     tiempoPreparacion = DURACION_PREPARACION_MAGNETICA;
-    tiempoRestante = DURACION_PARTIDA_MAGNETICA;
+    tiempoRestante = 0.0f;
     tiempoJugado = 0.0f;
-    tiempoHastaCambioCampo = 3.4f;
+    tiempoHastaCambioCampo = 2.8f;
+    tiempoHastaPincho = 1.05f;
     tiempoAnimacion = 0.0f;
     cambiosCampo = 0;
 
@@ -259,24 +363,15 @@ void MinijuegoTormentaMagnetica::ConfigurarJugadores(
 {
     const Vector3 spawns[MAX_JUGADORES_PRUEBA] =
     {
-        { -3.7f, 1.05f,  3.7f },
-        {  3.7f, 1.05f,  3.7f },
-        { -3.7f, 1.05f, -3.7f },
-        {  3.7f, 1.05f, -3.7f }
+        { -3.7f, 1.05f, 3.7f }, { 3.7f, 1.05f, 3.7f },
+        { -3.7f, 1.05f, -3.7f }, { 3.7f, 1.05f, -3.7f }
     };
 
-    int limite =
-        cantidadMaxima < MAX_JUGADORES_PRUEBA
-            ? cantidadMaxima
-            : MAX_JUGADORES_PRUEBA;
-
+    int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
+        ? cantidadMaxima
+        : MAX_JUGADORES_PRUEBA;
     for (int i = 0; i < limite; i++)
-    {
-        ConfigurarJugadorMinijuegoEstandar(
-            jugadores[i],
-            spawns[i]
-        );
-    }
+        ConfigurarJugadorMinijuegoEstandar(jugadores[i], spawns[i]);
 }
 
 
@@ -308,11 +403,7 @@ void MinijuegoTormentaMagnetica::Actualizar(
         );
     }
 
-    if (fase == FASE_MAGNETICA_TERMINADO)
-    {
-        return;
-    }
-
+    if (fase == FASE_MAGNETICA_TERMINADO) return;
     tiempoAnimacion += deltaTime;
 
     if (fase == FASE_MAGNETICA_PREPARACION)
@@ -324,35 +415,21 @@ void MinijuegoTormentaMagnetica::Actualizar(
         }
 
         tiempoPreparacion -= deltaTime;
-
         if (tiempoPreparacion <= 0.0f)
         {
             tiempoPreparacion = 0.0f;
             fase = FASE_MAGNETICA_JUGANDO;
         }
-
         return;
     }
 
-    tiempoRestante -= deltaTime;
-    if (tiempoRestante < 0.0f) tiempoRestante = 0.0f;
-
-    tiempoJugado =
-        DURACION_PARTIDA_MAGNETICA -
-        tiempoRestante;
-
+    tiempoJugado += deltaTime;
     tiempoHastaCambioCampo -= deltaTime;
+    if (tiempoHastaCambioCampo <= 0.0f) CambiarCampoMagnetico(*this);
 
-    if (tiempoHastaCambioCampo <= 0.0f)
-    {
-        CambiarCampoMagnetico(*this);
-    }
-
-    int limite =
-        cantidadMaxima < MAX_JUGADORES_PRUEBA
-            ? cantidadMaxima
-            : MAX_JUGADORES_PRUEBA;
-
+    int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
+        ? cantidadMaxima
+        : MAX_JUGADORES_PRUEBA;
     int vivosAntes = ContarVivosMagnetica(*this);
 
     for (int i = 0; i < limite; i++)
@@ -366,26 +443,14 @@ void MinijuegoTormentaMagnetica::Actualizar(
         }
 
         JugadorPrueba& jugador = jugadores[i];
-
-        AplicarCampoMagneticoAJugador(
-            *this,
-            jugador,
-            deltaTime
-        );
+        AplicarCampoMagneticoAJugador(*this, jugador, deltaTime);
 
         InputMinijuegoParticipante entrada{};
-
         if (participantes[i].conectado)
-        {
-            entrada =
-                LeerInputMinijuegoParticipante(
-                    participantes[i]
-                );
-        }
+            entrada = LeerInputMinijuegoParticipante(participantes[i]);
 
         BloquePrueba sueloJugador = suelo;
-        sueloJugador.activaColision =
-            JugadorSobreArenaMagnetica(jugador);
+        sueloJugador.activaColision = JugadorSobreArenaMagnetica(jugador);
 
         ActualizarJugadorPruebaNormal(
             jugador,
@@ -399,14 +464,19 @@ void MinijuegoTormentaMagnetica::Actualizar(
             deltaTime
         );
 
-        if (
-            !JugadorSobreArenaMagnetica(jugador) &&
-            jugador.posicion.y < -1.25f
-        )
-        {
+        if (!JugadorSobreArenaMagnetica(jugador) && jugador.posicion.y < -1.25f)
             jugador.cayendo = true;
-        }
     }
+
+    ActualizarPinchosMagneticos(
+        *this,
+        deltaTime,
+        jugadores,
+        limite,
+        participantes,
+        particulas,
+        cantidadParticulas
+    );
 
     ResolverInteraccionesJugadoresMinijuegoEstandar(
         jugadores,
@@ -417,7 +487,6 @@ void MinijuegoTormentaMagnetica::Actualizar(
     );
 
     int eliminados = 0;
-
     for (int i = 0; i < limite; i++)
     {
         if (
@@ -430,18 +499,9 @@ void MinijuegoTormentaMagnetica::Actualizar(
         }
     }
 
-    int posicionEliminados =
-        vivosAntes - eliminados + 1;
-
-    if (posicionEliminados < 1)
-    {
-        posicionEliminados = 1;
-    }
-
-    int tiempoMs =
-        (int)std::lround(
-            tiempoJugado * 1000.0f
-        );
+    int posicionEliminados = vivosAntes - eliminados + 1;
+    if (posicionEliminados < 1) posicionEliminados = 1;
+    int tiempoMs = (int)std::lround(tiempoJugado * 1000.0f);
 
     for (int i = 0; i < limite; i++)
     {
@@ -457,39 +517,19 @@ void MinijuegoTormentaMagnetica::Actualizar(
         }
     }
 
-    int vivosDespues = vivosAntes - eliminados;
-
-    if (
-        vivosDespues <= 1 ||
-        tiempoRestante <= 0.0f
-    )
-    {
+    if (vivosAntes - eliminados <= 1)
         FinalizarTormentaMagnetica(*this);
-    }
 }
 
 
-static void DibujarNucleoMagnetico(
-    Vector3 posicion,
-    bool atrae,
-    float tiempo
-)
+static void DibujarNucleoMagnetico(Vector3 posicion, bool atrae, float tiempo)
 {
-    float pulso =
-        1.0f +
-        std::sin(tiempo * 5.2f) * 0.10f;
+    float pulso = 1.0f + std::sin(tiempo * 5.2f) * 0.10f;
+    Color color = atrae
+        ? Color{ 69, 206, 239, 255 }
+        : Color{ 239, 82, 147, 255 };
 
-    Color color =
-        atrae
-            ? Color{ 69, 206, 239, 255 }
-            : Color{ 239, 82, 147, 255 };
-
-    DrawSphere(
-        posicion,
-        RADIO_NUCLEO_MAGNETICO * pulso,
-        color
-    );
-
+    DrawSphere(posicion, RADIO_NUCLEO_MAGNETICO * pulso, color);
     DrawSphereWires(
         posicion,
         RADIO_NUCLEO_MAGNETICO * 1.26f * pulso,
@@ -500,10 +540,7 @@ static void DibujarNucleoMagnetico(
 
     for (int i = 0; i < 3; i++)
     {
-        float radio =
-            1.1f + i * 0.55f +
-            std::sin(tiempo * 4.0f + i) * 0.12f;
-
+        float radio = 1.1f + i * 0.55f + std::sin(tiempo * 4.0f + i) * 0.12f;
         DrawCircle3D(
             { posicion.x, 0.025f, posicion.z },
             radio,
@@ -512,6 +549,24 @@ static void DibujarNucleoMagnetico(
             Fade(color, 0.42f - i * 0.08f)
         );
     }
+}
+
+
+static void DibujarPinchoMagnetico(const PinchoTormentaMagnetica& pincho)
+{
+    DrawCylinderEx(
+        { pincho.posicion.x, pincho.posicion.y + 0.55f, pincho.posicion.z },
+        { pincho.posicion.x, pincho.posicion.y - 0.55f, pincho.posicion.z },
+        0.38f,
+        0.025f,
+        8,
+        Color{ 180, 188, 201, 255 }
+    );
+    DrawSphere(
+        { pincho.posicion.x, pincho.posicion.y + 0.56f, pincho.posicion.z },
+        0.15f,
+        Color{ 83, 95, 111, 255 }
+    );
 }
 
 
@@ -525,26 +580,11 @@ void MinijuegoTormentaMagnetica::Dibujar(
 ) const
 {
     ClearBackground(Color{ 19, 24, 36, 255 });
-
     BeginMode3D(camara);
 
-    DrawCube(
-        suelo.posicion,
-        suelo.tamano.x,
-        suelo.tamano.y,
-        suelo.tamano.z,
-        suelo.color
-    );
+    DrawCube(suelo.posicion, suelo.tamano.x, suelo.tamano.y, suelo.tamano.z, suelo.color);
+    DrawCubeWires(suelo.posicion, suelo.tamano.x, suelo.tamano.y, suelo.tamano.z, Color{ 23, 30, 43, 255 });
 
-    DrawCubeWires(
-        suelo.posicion,
-        suelo.tamano.x,
-        suelo.tamano.y,
-        suelo.tamano.z,
-        Color{ 23, 30, 43, 255 }
-    );
-
-    // Franjas conductoras que ayudan a leer la direccion del campo.
     for (int i = -4; i <= 4; i++)
     {
         DrawCube(
@@ -556,86 +596,53 @@ void MinijuegoTormentaMagnetica::Dibujar(
         );
     }
 
-    DibujarNucleoMagnetico(
-        posicionNucleo,
-        campoAtrae,
-        tiempoAnimacion
-    );
+    DibujarNucleoMagnetico(posicionNucleo, campoAtrae, tiempoAnimacion);
 
-    DibujarParticulasTierra(
-        particulas,
-        cantidadParticulas
-    );
+    for (int i = 0; i < MAX_PINCHOS_TORMENTA_MAGNETICA; i++)
+    {
+        if (pinchos[i].activo) DibujarPinchoMagnetico(pinchos[i]);
+    }
 
-    int limite =
-        cantidadMaxima < MAX_JUGADORES_PRUEBA
-            ? cantidadMaxima
-            : MAX_JUGADORES_PRUEBA;
+    DibujarParticulasTierra(particulas, cantidadParticulas);
+
+    int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
+        ? cantidadMaxima
+        : MAX_JUGADORES_PRUEBA;
 
     for (int i = 0; i < limite; i++)
     {
-        if (
-            !resultado.participantes[i].participo ||
-            estadosJugadores[i].eliminado
-        )
-        {
+        if (!resultado.participantes[i].participo || estadosJugadores[i].eliminado)
             continue;
-        }
 
-        DibujarJugadorCuboPrueba(
-            jugadores[i],
-            participantes[i]
-        );
-
+        DibujarJugadorCuboPrueba(jugadores[i], participantes[i]);
         if (mostrarDebug && !jugadores[i].cayendo)
-        {
-            DrawBoundingBox(
-                CrearHitboxJugadorPrueba(jugadores[i]),
-                LIME
-            );
-        }
+            DrawBoundingBox(CrearHitboxJugadorPrueba(jugadores[i]), LIME);
     }
 
-    if (mostrarDebug)
-    {
-        DrawBoundingBox(
-            CrearHitboxBloquePrueba(suelo),
-            YELLOW
-        );
-    }
-
+    if (mostrarDebug) DrawBoundingBox(CrearHitboxBloquePrueba(suelo), YELLOW);
     EndMode3D();
 
-    DrawText(
-        "TORMENTA MAGNETICA",
-        24,
-        22,
-        30,
-        RAYWHITE
-    );
-
+    DrawText("TORMENTA MAGNETICA", 24, 22, 30, RAYWHITE);
     DrawText(
         campoAtrae
-            ? "CAMPO: ATRACCION - NO TE DEJES ARRASTRAR"
+            ? "CAMPO: ATRACCION - MUCHO MAS FUERTE"
             : "CAMPO: REPULSION - ALEJATE DEL BORDE",
         24,
         60,
         19,
-        campoAtrae
-            ? Color{ 89, 220, 246, 255 }
-            : Color{ 250, 105, 162, 255 }
+        campoAtrae ? Color{ 89, 220, 246, 255 } : Color{ 250, 105, 162, 255 }
     );
 
     if (fase == FASE_MAGNETICA_JUGANDO)
     {
+        int dificultad = (int)std::lround(ProgresoDificultadMagnetica(*this) * 100.0f);
         DrawText(
-            TextFormat("TIEMPO: %.1f", tiempoRestante),
-            GetScreenWidth() - 190,
+            TextFormat("DIFICULTAD: %d%%", dificultad),
+            GetScreenWidth() - 235,
             24,
-            24,
-            tiempoRestante <= 5.0f ? RED : GOLD
+            22,
+            GOLD
         );
-
         DrawText(
             TextFormat("CAMBIO EN: %.1f", tiempoHastaCambioCampo),
             GetScreenWidth() - 205,
@@ -649,9 +656,7 @@ void MinijuegoTormentaMagnetica::Dibujar(
     {
         int numero = (int)std::ceil(tiempoPreparacion);
         if (numero < 1) numero = 1;
-
         const char* texto = TextFormat("%d", numero);
-
         DrawText(
             texto,
             GetScreenWidth() / 2 - MeasureText(texto, 84) / 2,
@@ -663,22 +668,17 @@ void MinijuegoTormentaMagnetica::Dibujar(
     else if (fase == FASE_MAGNETICA_TERMINADO)
     {
         int ganadores[MAX_PARTICIPANTES]{};
-        int cantidadGanadores =
-            ObtenerIndicesGanadores(
-                resultado,
-                ganadores,
-                MAX_PARTICIPANTES
+        int cantidadGanadores = ObtenerIndicesGanadores(
+            resultado, ganadores, MAX_PARTICIPANTES
+        );
+        const char* titulo = resultado.desenlace == DESENLACE_EMPATE
+            ? "EMPATE"
+            : TextFormat(
+                "GANADOR: JUGADOR %d",
+                cantidadGanadores == 1
+                    ? participantes[ganadores[0]].numeroJugador
+                    : 0
             );
-
-        const char* titulo =
-            resultado.desenlace == DESENLACE_EMPATE
-                ? "EMPATE"
-                : TextFormat(
-                    "GANADOR: JUGADOR %d",
-                    cantidadGanadores == 1
-                        ? participantes[ganadores[0]].numeroJugador
-                        : 0
-                );
 
         DrawRectangle(
             GetScreenWidth() / 2 - 305,
@@ -687,7 +687,6 @@ void MinijuegoTormentaMagnetica::Dibujar(
             250,
             Fade(BLACK, 0.90f)
         );
-
         DrawText(
             titulo,
             GetScreenWidth() / 2 - MeasureText(titulo, 34) / 2,
@@ -695,7 +694,6 @@ void MinijuegoTormentaMagnetica::Dibujar(
             34,
             GOLD
         );
-
         DrawText(
             "R PARA REINICIAR",
             GetScreenWidth() / 2 - MeasureText("R PARA REINICIAR", 21) / 2,
