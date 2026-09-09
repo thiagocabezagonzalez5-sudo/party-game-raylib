@@ -1,9 +1,13 @@
 #pragma once
 
 #include "raylib.h"
+#include "Config.h"
 
 
-inline constexpr int MAX_PARTICIPANTES = 4;
+// MAX_PARTICIPANTES ya no mantiene otro numero independiente.
+// CANTIDAD_MAXIMA_JUGADORES es la unica fuente de verdad.
+inline constexpr int MAX_PARTICIPANTES =
+    CANTIDAD_MAXIMA_JUGADORES;
 
 
 enum TipoControl
