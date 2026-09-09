@@ -8,7 +8,8 @@
 
 static const float DURACION_PREPARACION_CAPITAN = 3.0f;
 static const float DURACION_RESOLUCION = 0.85f;
-static const int MAX_RONDAS_CAPITAN = 20;
+static const float ESPERA_MINIMA_ENTRE_RONDAS_CAPITAN = 0.45f;
+static const float ESPERA_MAXIMA_ENTRE_RONDAS_CAPITAN = 1.45f;
 
 
 static int ContarVivosCapitan(
@@ -69,6 +70,42 @@ static float ObtenerTiempoRespuestaRonda(
 }
 
 
+static float ObtenerEsperaAleatoriaEntreRondasCapitan()
+{
+    int minimo =
+        (int)(ESPERA_MINIMA_ENTRE_RONDAS_CAPITAN * 100.0f);
+
+    int maximo =
+        (int)(ESPERA_MAXIMA_ENTRE_RONDAS_CAPITAN * 100.0f);
+
+    return
+        (float)GetRandomValue(minimo, maximo) /
+        100.0f;
+}
+
+
+static void ProgramarEsperaEntreRondasCapitan(
+    MinijuegoCapitanManda& minijuego
+)
+{
+    minijuego.fase = FASE_CAPITAN_MOSTRANDO;
+    minijuego.tiempoFase =
+        ObtenerEsperaAleatoriaEntreRondasCapitan();
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (minijuego.jugadores[i].eliminado)
+        {
+            continue;
+        }
+
+        minijuego.jugadores[i].respondio = false;
+        minijuego.jugadores[i].acerto = false;
+        minijuego.jugadores[i].tiempoFeedback = 0.0f;
+    }
+}
+
+
 static void PrepararNuevaRonda(
     MinijuegoCapitanManda& minijuego
 )
@@ -85,8 +122,8 @@ static void PrepararNuevaRonda(
             minijuego.numeroRonda
         );
 
-    // Una vez terminada la cuenta regresiva no hay aviso extra:
-    // la bandera y la ventana de reaccion aparecen en el mismo frame.
+    // La orden aparece y puede responderse en el mismo frame. La espera
+    // aleatoria ocurre antes de esta funcion, entre una ronda y la siguiente.
     minijuego.tiempoFase =
         minijuego.tiempoRespuesta;
 
@@ -222,10 +259,9 @@ static void ResolverRonda(
     int vivosDespues =
         ContarVivosCapitan(minijuego);
 
-    if (
-        vivosDespues <= 1 ||
-        minijuego.numeroRonda >= MAX_RONDAS_CAPITAN
-    )
+    // Ya no existe un maximo de rondas. Solo termina cuando queda uno o
+    // ninguno; si todos fallan la misma ronda se conserva el empate.
+    if (vivosDespues <= 1)
     {
         FinalizarCapitan(minijuego);
         return;
@@ -322,11 +358,17 @@ void MinijuegoCapitanManda::Actualizar(
         return;
     }
 
-    // Compatibilidad con el estado antiguo. No agrega una demora entre
-    // mostrar la bandera y aceptar la respuesta.
     if (fase == FASE_CAPITAN_MOSTRANDO)
     {
-        PrepararNuevaRonda(*this);
+        tiempoFase -= deltaTime;
+
+        if (tiempoFase <= 0.0f)
+        {
+            tiempoFase = 0.0f;
+            PrepararNuevaRonda(*this);
+        }
+
+        return;
     }
 
     if (fase == FASE_CAPITAN_RESPONDIENDO)
@@ -399,7 +441,7 @@ void MinijuegoCapitanManda::Actualizar(
 
         if (tiempoFase <= 0.0f)
         {
-            PrepararNuevaRonda(*this);
+            ProgramarEsperaEntreRondasCapitan(*this);
         }
     }
 }
@@ -573,7 +615,7 @@ void MinijuegoCapitanManda::Dibujar(
 
     DrawText("MINIJUEGO 9 - CAPITAN MANDA", 25, 20, 30, BLACK);
     DrawText(
-        "AL TERMINAR LA CUENTA, LA BANDERA ES LA SENAL: REACCIONA AL INSTANTE.",
+        "LA PAUSA ENTRE RONDAS ES ALEATORIA. CUANDO SUBE LA BANDERA, REACCIONA.",
         25,
         57,
         18,
@@ -598,6 +640,17 @@ void MinijuegoCapitanManda::Dibujar(
             GetScreenHeight() / 2 - 72,
             92,
             GOLD
+        );
+    }
+    else if (fase == FASE_CAPITAN_MOSTRANDO)
+    {
+        const char* espera = "PREPARATE...";
+        DrawText(
+            espera,
+            GetScreenWidth() / 2 - MeasureText(espera, 34) / 2,
+            166,
+            34,
+            DARKBLUE
         );
     }
     else if (fase == FASE_CAPITAN_RESPONDIENDO)
@@ -662,6 +715,14 @@ void MinijuegoCapitanManda::Dibujar(
         DARKBLUE
     );
 
+    DrawText(
+        "SIN MAXIMO DE RONDAS",
+        GetScreenWidth() - 245,
+        55,
+        17,
+        DARKGRAY
+    );
+
     int y = GetScreenHeight() - 305;
     DrawRectangle(18, y - 10, 640, 120, Fade(BLACK, 0.46f));
 
@@ -678,7 +739,8 @@ void MinijuegoCapitanManda::Dibujar(
             jugador.eliminado
             ? "FUERA"
             : (
-                fase == FASE_CAPITAN_PREPARACION
+                fase == FASE_CAPITAN_PREPARACION ||
+                fase == FASE_CAPITAN_MOSTRANDO
                 ? "LISTO"
                 : (
                     jugador.respondio
