@@ -18,7 +18,13 @@ struct EstadoJugadorBarraGiratoria
     bool eliminado = false;
     int posicionFinal = 0;
     int tiempoSobrevividoMs = 0;
+
+    // Evita que una misma barra golpee varias veces en frames consecutivos.
     float cooldownImpacto = 0.0f;
+
+    // Tras recibir una barra el jugador conserva el impulso, pero durante
+    // unas decimas no puede corregirlo con movimiento propio.
+    float tiempoStunBarra = 0.0f;
 };
 
 
@@ -37,11 +43,18 @@ struct MinijuegoBarraGiratoria
         FASE_BARRA_PREPARACION;
 
     float tiempoPreparacion = 3.0f;
-    float tiempoRestante = 45.0f;
     float tiempoJugado = 0.0f;
 
     float anguloBarra = 0.0f;
     float velocidadAngular = 0.9f;
+
+    // A los diez segundos aparece una segunda barra desde arriba. Mientras
+    // cae solo es visual; su colision se activa al asentarse sobre la primera.
+    bool segundaBarraAparecio = false;
+    bool segundaBarraLista = false;
+    float alturaSegundaBarra = 8.0f;
+    float anguloSegundaBarra = 1.5707963f;
+    float velocidadAngularSegunda = 1.35f;
 
     void Inicializar();
 
