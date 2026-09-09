@@ -18,9 +18,9 @@ int main()
         float deltaTime =
             GetFrameTime();
 
-        if (deltaTime > 0.1f)
+        if (deltaTime > DELTA_TIME_MAXIMO)
         {
-            deltaTime = 0.1f;
+            deltaTime = DELTA_TIME_MAXIMO;
         }
 
 
