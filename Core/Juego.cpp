@@ -10,7 +10,7 @@
 
 static void PrepararDirectorioDeRecursos()
 {
-    if (DirectoryExists("Assets"))
+    if (DirectoryExists(DIRECTORIO_RECURSOS))
     {
         return;
     }
@@ -20,7 +20,11 @@ static void PrepararDirectorioDeRecursos()
     if (
         directorioAplicacion != nullptr &&
         DirectoryExists(
-            TextFormat("%s../Assets", directorioAplicacion)
+            TextFormat(
+                "%s../%s",
+                directorioAplicacion,
+                DIRECTORIO_RECURSOS
+            )
         )
     )
     {
@@ -241,7 +245,7 @@ static bool ConfirmarConParticipanteHumano(
 
 static bool CancelarPantallaConMando()
 {
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         if (
             IsGamepadAvailable(i) &&
@@ -323,7 +327,11 @@ static void DibujarTableroVacio()
 
 void Juego::Inicializar()
 {
-    InitWindow(1280, 720, "Juego de Party");
+    InitWindow(
+        ANCHO_INICIAL,
+        ALTO_INICIAL,
+        TITULO_JUEGO
+    );
 
     PrepararDirectorioDeRecursos();
     SetExitKey(KEY_NULL);
@@ -350,7 +358,7 @@ void Juego::Inicializar()
     config = ConfiguracionJuego{};
 
     bool configEncontrada =
-        CargarConfiguracion(rutaConfiguracion, config);
+        CargarConfiguracion(RUTA_CONFIGURACION_JUEGO, config);
 
     if (!configEncontrada)
     {
@@ -433,7 +441,7 @@ void Juego::Inicializar()
         &audio
     );
 
-    pantallaLogo.Inicializar("Assets/UI/LogoCreador.png");
+    pantallaLogo.Inicializar(RUTA_LOGO_CREADOR);
 
     menuPreparado = false;
     cargaMenuSolicitada = false;
@@ -527,10 +535,8 @@ void Juego::Actualizar(
             {
                 menuPrincipal.Inicializar();
 
-                // Se mantiene la ruta del repositorio. Si existe una
-                // correccion local distinta, Git puede fusionarla aparte.
                 audio.CargarMusicaMenu(
-                    "Assets/Audio/MusicaMenu.mp3"
+                    RUTA_MUSICA_MENU
                 );
 
                 audio.AplicarVolumenMusica(config.volumenMusica);
@@ -582,7 +588,7 @@ void Juego::Actualizar(
             if (menuPrincipal.salir)
             {
                 audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
-                GuardarConfiguracion(rutaConfiguracion, config);
+                GuardarConfiguracion(RUTA_CONFIGURACION_JUEGO, config);
                 cerrarJuego = true;
             }
 
@@ -604,14 +610,14 @@ void Juego::Actualizar(
 
             if (menuConfiguracion.configuracionCambiada)
             {
-                GuardarConfiguracion(rutaConfiguracion, config);
+                GuardarConfiguracion(RUTA_CONFIGURACION_JUEGO, config);
                 menuConfiguracion.configuracionCambiada = false;
             }
 
             if (menuConfiguracion.volver)
             {
                 menuConfiguracion.volver = false;
-                GuardarConfiguracion(rutaConfiguracion, config);
+                GuardarConfiguracion(RUTA_CONFIGURACION_JUEGO, config);
                 menuPrincipal.PrepararEntrada(false);
                 estado = ESTADO_MENU;
             }
@@ -1069,7 +1075,7 @@ bool Juego::DebeCerrar()
 
 void Juego::Descargar()
 {
-    GuardarConfiguracion(rutaConfiguracion, config);
+    GuardarConfiguracion(RUTA_CONFIGURACION_JUEGO, config);
 
     zonaPruebas.Descargar();
     seleccionPersonajes.Descargar();
