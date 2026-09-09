@@ -8,13 +8,9 @@
 //==================================================
 // ESCENARIOS RETRO 3D EXTENDIDOS
 //==================================================
-//
-// Los fondos importantes viven ahora en el mismo espacio 3D que el
-// minijuego. Se extienden mucho mas alla del encuadre para que no aparezcan
-// cortes laterales al cambiar resolucion o temblar la camara.
-//
-// En las montanas nevadas, la nieve NO es otro objeto colocado encima:
-// son caras superiores de la misma montana pintadas de blanco.
+// Los fondos viven en 3D y se extienden mucho mas alla del encuadre.
+// Las montanas son pocas pero grandes para formar una silueta continua.
+// En nieve, la punta blanca pertenece a la misma geometria de la montana.
 //==================================================
 
 #ifdef BeginMode3D
@@ -22,10 +18,7 @@
 #endif
 
 
-inline float RepetirEscenario3D(
-    float valor,
-    float longitud
-)
+inline float RepetirEscenario3D(float valor, float longitud)
 {
     float resultado = std::fmod(valor, longitud);
 
@@ -63,8 +56,8 @@ inline void DibujarCuadrilateroEscenario3D(
 }
 
 
-// Montana tipo prisma triangular. Esto da volumen real sin convertir el
-// fondo en conos gigantes. La franja blanca usa las MISMAS caras del prisma.
+// Prisma triangular con volumen real. Si proporcionCima > 0, la parte
+// superior de las MISMAS caras se pinta con colorCima; no agrega otro objeto.
 inline void DibujarMontanaPrismaEscenario3D(
     Vector3 centroBase,
     float ancho,
@@ -76,102 +69,37 @@ inline void DibujarMontanaPrismaEscenario3D(
     float proporcionCima
 )
 {
-    if (proporcionCima < 0.0f)
-    {
-        proporcionCima = 0.0f;
-    }
-
-    if (proporcionCima > 0.55f)
-    {
-        proporcionCima = 0.55f;
-    }
+    if (proporcionCima < 0.0f) proporcionCima = 0.0f;
+    if (proporcionCima > 0.55f) proporcionCima = 0.55f;
 
     const float mitadAncho = ancho * 0.5f;
     const float mitadProfundidad = profundidad * 0.5f;
-
     const float yBase = centroBase.y;
     const float yPico = yBase + altura;
-
     const float zFrente = centroBase.z + mitadProfundidad;
     const float zAtras = centroBase.z - mitadProfundidad;
 
-    Vector3 frenteIzq =
-    {
-        centroBase.x - mitadAncho,
-        yBase,
-        zFrente
-    };
+    Vector3 frenteIzq = { centroBase.x - mitadAncho, yBase, zFrente };
+    Vector3 frenteDer = { centroBase.x + mitadAncho, yBase, zFrente };
+    Vector3 frentePico = { centroBase.x, yPico, zFrente };
 
-    Vector3 frenteDer =
-    {
-        centroBase.x + mitadAncho,
-        yBase,
-        zFrente
-    };
-
-    Vector3 frentePico =
-    {
-        centroBase.x,
-        yPico,
-        zFrente
-    };
-
-    Vector3 atrasIzq =
-    {
-        centroBase.x - mitadAncho,
-        yBase,
-        zAtras
-    };
-
-    Vector3 atrasDer =
-    {
-        centroBase.x + mitadAncho,
-        yBase,
-        zAtras
-    };
-
-    Vector3 atrasPico =
-    {
-        centroBase.x,
-        yPico,
-        zAtras
-    };
+    Vector3 atrasIzq = { centroBase.x - mitadAncho, yBase, zAtras };
+    Vector3 atrasDer = { centroBase.x + mitadAncho, yBase, zAtras };
+    Vector3 atrasPico = { centroBase.x, yPico, zAtras };
 
     if (proporcionCima > 0.001f)
     {
-        const float yCorte =
-            yPico - altura * proporcionCima;
-
-        const float mitadCorte =
-            mitadAncho * proporcionCima;
+        const float yCorte = yPico - altura * proporcionCima;
+        const float mitadCorte = mitadAncho * proporcionCima;
 
         Vector3 frenteCorteIzq =
-        {
-            centroBase.x - mitadCorte,
-            yCorte,
-            zFrente
-        };
-
+            { centroBase.x - mitadCorte, yCorte, zFrente };
         Vector3 frenteCorteDer =
-        {
-            centroBase.x + mitadCorte,
-            yCorte,
-            zFrente
-        };
-
+            { centroBase.x + mitadCorte, yCorte, zFrente };
         Vector3 atrasCorteIzq =
-        {
-            centroBase.x - mitadCorte,
-            yCorte,
-            zAtras
-        };
-
+            { centroBase.x - mitadCorte, yCorte, zAtras };
         Vector3 atrasCorteDer =
-        {
-            centroBase.x + mitadCorte,
-            yCorte,
-            zAtras
-        };
+            { centroBase.x + mitadCorte, yCorte, zAtras };
 
         DibujarCuadrilateroEscenario3D(
             frenteIzq,
@@ -286,43 +214,38 @@ inline void DibujarCieloPlanoEscenario3D(
 )
 {
     DrawCube(
-        { 0.0f, alto * 0.32f, z },
+        { 0.0f, alto * 0.30f, z },
         ancho,
         alto,
-        1.2f,
+        1.5f,
         color
     );
 }
 
+
+//==================================================
+// COLOR SEGURO - LAVA / VOLCANES
+//==================================================
 
 inline void DibujarEstrellasLavaEscenario3D()
 {
     EstadoEfectosVisualesMinijuegos& estado =
         ObtenerEstadoEfectosVisualesMinijuegos();
 
-    const float z = -67.8f;
+    const float z = -73.6f;
 
-    for (int i = 0; i < 84; i++)
+    for (int i = 0; i < 96; i++)
     {
         float x =
-            -78.0f +
-            RepetirEscenario3D(
-                (float)(i * 29),
-                156.0f
-            );
+            -96.0f + RepetirEscenario3D((float)(i * 31), 192.0f);
 
         float y =
-            -1.5f +
-            RepetirEscenario3D(
-                (float)(i * 17),
-                25.0f
-            );
+            -2.0f + RepetirEscenario3D((float)(i * 19), 34.0f);
 
         float pulso =
             0.72f +
             0.28f * std::sin(
-                estado.tiempoGlobal * 1.8f +
-                (float)i * 0.71f
+                estado.tiempoGlobal * 1.8f + (float)i * 0.71f
             );
 
         float radio =
@@ -339,48 +262,53 @@ inline void DibujarEstrellasLavaEscenario3D()
 
 inline void DibujarVolcanesLavaEscenario3D()
 {
-    // Fila lejana.
-    for (int i = 0; i < 13; i++)
+    // Pocos volcanes, pero enormes. Los extremos estan muy fuera de camara
+    // y se superponen, por lo que la cadena no deja huecos laterales.
+    const float posiciones[7] =
     {
-        float x = -72.0f + (float)i * 12.0f;
-        float altura = 8.2f + (float)(i % 4) * 1.35f;
-        float ancho = 13.5f + (float)(i % 3) * 1.6f;
+        -76.0f,
+        -51.0f,
+        -26.0f,
+        0.0f,
+        27.0f,
+        53.0f,
+        78.0f
+    };
+
+    for (int i = 0; i < 7; i++)
+    {
+        float altura =
+            15.5f + (float)(i % 3) * 2.1f;
+
+        float ancho =
+            31.0f + (float)(i % 2) * 4.5f;
 
         DibujarMontanaPrismaEscenario3D(
-            { x, -2.55f, -49.0f - (float)(i % 2) * 1.8f },
+            {
+                posiciones[i],
+                -2.60f,
+                -43.0f - (float)(i % 2) * 4.0f
+            },
             ancho,
             altura,
-            7.5f,
-            Color{ 63, 54, 56, 255 },
+            12.0f,
+            i % 2 == 0
+                ? Color{ 68, 56, 58, 255 }
+                : Color{ 78, 62, 62, 255 },
             Color{ 45, 39, 42, 255 },
-            Color{ 63, 54, 56, 255 },
-            0.0f
-        );
-    }
-
-    // Fila cercana, menos alta para que nunca tape el cielo completo.
-    for (int i = 0; i < 11; i++)
-    {
-        float x = -60.0f + (float)i * 12.0f;
-        float altura = 6.6f + (float)(i % 3) * 1.15f;
-        float ancho = 12.0f + (float)(i % 2) * 1.8f;
-
-        DibujarMontanaPrismaEscenario3D(
-            { x, -2.55f, -34.0f - (float)(i % 2) * 1.6f },
-            ancho,
-            altura,
-            6.0f,
-            Color{ 82, 67, 65, 255 },
-            Color{ 57, 48, 49, 255 },
-            Color{ 82, 67, 65, 255 },
+            Color{ 68, 56, 58, 255 },
             0.0f
         );
 
-        if (i % 3 == 1)
+        if (i == 1 || i == 3 || i == 5)
         {
             DrawSphere(
-                { x, -2.55f + altura * 0.92f, -30.9f - (float)(i % 2) * 1.6f },
-                0.16f,
+                {
+                    posiciones[i],
+                    -2.60f + altura * 0.94f,
+                    -36.8f - (float)(i % 2) * 4.0f
+                },
+                0.17f,
                 Color{ 255, 126, 28, 255 }
             );
         }
@@ -392,13 +320,13 @@ inline void DibujarLavaEscenario3D()
 {
     DrawPlane(
         { 0.0f, -2.62f, -4.0f },
-        { 180.0f, 170.0f },
+        { 220.0f, 190.0f },
         Color{ 225, 61, 17, 255 }
     );
 
     DrawPlane(
         { 0.0f, -2.60f, -4.0f },
-        { 180.0f, 170.0f },
+        { 220.0f, 190.0f },
         Fade(Color{ 255, 116, 21, 255 }, 0.55f)
     );
 
@@ -408,18 +336,14 @@ inline void DibujarLavaEscenario3D()
     for (int i = 0; i < 26; i++)
     {
         float x =
-            -55.0f +
+            -60.0f +
             RepetirEscenario3D(
                 (float)(i * 7) + estado.tiempoGlobal * 2.2f,
-                110.0f
+                120.0f
             );
 
         float z =
-            -22.0f +
-            RepetirEscenario3D(
-                (float)(i * 13),
-                58.0f
-            );
+            -28.0f + RepetirEscenario3D((float)(i * 13), 68.0f);
 
         DrawCube(
             { x, -2.54f, z },
@@ -440,25 +364,21 @@ inline void DibujarCenizaLavaEscenario3D()
     for (int i = 0; i < 38; i++)
     {
         float x =
-            -32.0f +
+            -36.0f +
             RepetirEscenario3D(
                 (float)(i * 11) + estado.tiempoGlobal * 1.8f,
-                64.0f
+                72.0f
             );
 
         float y =
             0.2f +
             RepetirEscenario3D(
                 (float)(i * 7) + estado.tiempoGlobal * 0.45f,
-                13.0f
+                15.0f
             );
 
         float z =
-            -6.0f -
-            RepetirEscenario3D(
-                (float)(i * 5),
-                34.0f
-            );
+            -6.0f - RepetirEscenario3D((float)(i * 5), 42.0f);
 
         DrawSphere(
             { x, y, z },
@@ -473,9 +393,9 @@ inline void DibujarTemaLavaRetro3D()
 {
     DibujarCieloPlanoEscenario3D(
         Color{ 5, 6, 10, 255 },
-        -69.0f,
-        180.0f,
-        58.0f
+        -75.0f,
+        230.0f,
+        76.0f
     );
 
     DibujarEstrellasLavaEscenario3D();
@@ -485,43 +405,48 @@ inline void DibujarTemaLavaRetro3D()
 }
 
 
+//==================================================
+// PELOTAS - CORDILLERA / NIEBLA
+//==================================================
+
 inline void DibujarCordilleraNieveEscenario3D()
 {
-    // Segunda linea, muy lejana. Se extiende mucho fuera del encuadre.
-    for (int i = 0; i < 15; i++)
+    // Una sola cadena principal: menos montanas y mucho mas grandes.
+    // Los extremos quedan deliberadamente fuera del campo de vision.
+    const float posiciones[7] =
     {
-        float x = -84.0f + (float)i * 12.0f;
-        float altura = 9.0f + (float)(i % 5) * 1.15f;
-        float ancho = 14.0f + (float)(i % 3) * 1.4f;
+        -82.0f,
+        -55.0f,
+        -28.0f,
+        0.0f,
+        29.0f,
+        57.0f,
+        84.0f
+    };
+
+    for (int i = 0; i < 7; i++)
+    {
+        float altura =
+            16.0f + (float)(i % 3) * 2.6f;
+
+        float ancho =
+            33.0f + (float)(i % 2) * 4.0f;
 
         DibujarMontanaPrismaEscenario3D(
-            { x, -3.4f, -51.0f - (float)(i % 2) * 1.7f },
+            {
+                posiciones[i],
+                -3.45f,
+                -43.0f - (float)(i % 2) * 3.0f
+            },
             ancho,
             altura,
-            7.0f,
-            Color{ 129, 146, 160, 255 },
-            Color{ 102, 120, 137, 255 },
-            Color{ 239, 246, 250, 255 },
-            0.24f
-        );
-    }
-
-    // Primera linea, a distancia segura de la camara.
-    for (int i = 0; i < 13; i++)
-    {
-        float x = -72.0f + (float)i * 12.0f;
-        float altura = 7.6f + (float)(i % 4) * 1.0f;
-        float ancho = 12.5f + (float)(i % 3) * 1.2f;
-
-        DibujarMontanaPrismaEscenario3D(
-            { x, -3.3f, -35.0f - (float)(i % 2) * 1.5f },
-            ancho,
-            altura,
-            6.0f,
-            Color{ 155, 171, 184, 255 },
-            Color{ 121, 140, 156, 255 },
+            12.0f,
+            i % 2 == 0
+                ? Color{ 148, 165, 179, 255 }
+                : Color{ 136, 154, 169, 255 },
+            Color{ 108, 127, 145, 255 },
             RAYWHITE,
-            0.27f
+            0.24f
         );
     }
 }
@@ -531,9 +456,9 @@ inline void DibujarCieloNieveEscenario3D()
 {
     DibujarCieloPlanoEscenario3D(
         Color{ 54, 169, 226, 255 },
-        -70.0f,
-        190.0f,
-        62.0f
+        -76.0f,
+        240.0f,
+        80.0f
     );
 }
 
@@ -546,31 +471,23 @@ inline void DibujarCoposNieveEscenario3D()
     for (int i = 0; i < 72; i++)
     {
         float x =
-            -40.0f +
-            RepetirEscenario3D(
-                (float)(i * 13),
-                80.0f
-            );
+            -48.0f + RepetirEscenario3D((float)(i * 13), 96.0f);
 
         float y =
             -1.0f +
             RepetirEscenario3D(
                 (float)(i * 19) +
-                estado.tiempoGlobal * (0.8f + (float)(i % 4) * 0.16f),
-                18.0f
+                estado.tiempoGlobal *
+                (0.8f + (float)(i % 4) * 0.16f),
+                20.0f
             );
 
         float z =
-            -6.0f -
-            RepetirEscenario3D(
-                (float)(i * 7),
-                48.0f
-            );
+            -5.0f - RepetirEscenario3D((float)(i * 7), 58.0f);
 
         float deriva =
             std::sin(
-                estado.tiempoGlobal * 0.9f +
-                (float)i * 0.7f
+                estado.tiempoGlobal * 0.9f + (float)i * 0.7f
             ) * 0.25f;
 
         DrawSphere(
@@ -584,24 +501,59 @@ inline void DibujarCoposNieveEscenario3D()
 
 inline void DibujarCumbreAltaEscenario3D()
 {
-    // Cuerpo de la montana del minijuego. Muy profundo para que no se vea
-    // el final cuando un jugador cae.
+    // Solo se modela lo que queda por encima de la niebla. Debajo de la
+    // capa opaca no hace falta desarrollar detalle visual.
     DrawCylinderEx(
-        { 0.0f, -34.0f, 0.0f },
+        { 0.0f, -8.5f, 0.0f },
         { 0.0f, -1.85f, 0.0f },
-        14.5f,
+        9.5f,
         6.45f,
         24,
-        Color{ 97, 119, 139, 255 }
+        Color{ 105, 126, 145, 255 }
     );
 
     DrawCylinderEx(
-        { 0.0f, -7.0f, 0.0f },
+        { 0.0f, -5.8f, 0.0f },
         { 0.0f, -1.70f, 0.0f },
-        8.2f,
+        7.8f,
         6.35f,
         24,
-        Color{ 191, 213, 227, 255 }
+        Color{ 196, 217, 230, 255 }
+    );
+}
+
+
+inline void DibujarNieblaCaidaPelotasEscenario3D()
+{
+    // La primera capa es mas transparente para que no parezca una pared.
+    // Las siguientes se vuelven practicamente opacas: cuando el jugador
+    // cae por debajo de la cumbre desaparece gradualmente dentro de la niebla.
+    DrawPlane(
+        { 0.0f, -3.15f, 1.0f },
+        { 115.0f, 115.0f },
+        Fade(Color{ 225, 239, 247, 255 }, 0.42f)
+    );
+
+    DrawPlane(
+        { 0.0f, -3.75f, 1.0f },
+        { 120.0f, 120.0f },
+        Fade(Color{ 218, 235, 245, 255 }, 0.78f)
+    );
+
+    DrawPlane(
+        { 0.0f, -4.45f, 1.0f },
+        { 125.0f, 125.0f },
+        Color{ 211, 231, 242, 250 }
+    );
+
+    // Volumen inferior muy grande: garantiza que nunca se vea el final de
+    // la montana ni objetos cayendo por debajo de la zona que nos interesa.
+    DrawCube(
+        { 0.0f, -16.0f, 0.0f },
+        130.0f,
+        22.0f,
+        130.0f,
+        Color{ 211, 231, 242, 255 }
     );
 }
 
@@ -612,14 +564,17 @@ inline void DibujarTemaNieveRetro3D()
     DibujarCordilleraNieveEscenario3D();
     DibujarCoposNieveEscenario3D();
     DibujarCumbreAltaEscenario3D();
+    DibujarNieblaCaidaPelotasEscenario3D();
 }
 
 
+//==================================================
+// ENTRADA COMUN A LOS TEMAS
+//==================================================
+
 inline void DibujarDecoracionEscenarioRetro3D()
 {
-    switch (
-        ObtenerEstadoEfectosVisualesMinijuegos().tema
-    )
+    switch (ObtenerEstadoEfectosVisualesMinijuegos().tema)
     {
         case TEMA_VISUAL_LAVA:
             DibujarTemaLavaRetro3D();
@@ -643,9 +598,7 @@ inline void DibujarDecoracionEscenarioRetro3D()
 }
 
 
-inline void BeginMode3DConEscenarioRetro3D(
-    Camera3D camara
-)
+inline void BeginMode3DConEscenarioRetro3D(Camera3D camara)
 {
     Camera3D camaraFinal =
         AplicarTemblorGeneralACamara(camara);
