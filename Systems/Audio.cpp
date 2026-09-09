@@ -1,5 +1,27 @@
 #include "Systems/Audio.h"
 
+#include "Core/RecursosJuego.h"
+
+
+struct RutasSonidoJuego
+{
+    const char* wav = nullptr;
+    const char* mp3 = nullptr;
+};
+
+
+static const RutasSonidoJuego RUTAS_SONIDOS[CANTIDAD_SONIDOS_JUEGO] =
+{
+    { RUTA_SFX_UI_MOVER_WAV, RUTA_SFX_UI_MOVER_MP3 },
+    { RUTA_SFX_UI_CONFIRMAR_WAV, RUTA_SFX_UI_CONFIRMAR_MP3 },
+    { RUTA_SFX_CUENTA_REGRESIVA_WAV, RUTA_SFX_CUENTA_REGRESIVA_MP3 },
+    { RUTA_SFX_INICIO_MINIJUEGO_WAV, RUTA_SFX_INICIO_MINIJUEGO_MP3 },
+    { RUTA_SFX_RECOGER_NUCLEO_WAV, RUTA_SFX_RECOGER_NUCLEO_MP3 },
+    { RUTA_SFX_RECOGER_NUCLEO_ESPECIAL_WAV, RUTA_SFX_RECOGER_NUCLEO_ESPECIAL_MP3 },
+    { RUTA_SFX_ALERTA_TIEMPO_WAV, RUTA_SFX_ALERTA_TIEMPO_MP3 },
+    { RUTA_SFX_RESULTADO_WAV, RUTA_SFX_RESULTADO_MP3 }
+};
+
 
 static float LimitarFloat(
     float valor,
@@ -103,63 +125,14 @@ void AudioJuego::Inicializar()
     )
     {
         sonidosCargados[i] = false;
+
+        CargarSonidoDesdeArchivo(
+            *this,
+            (TipoSonidoJuego)i,
+            RUTAS_SONIDOS[i].wav,
+            RUTAS_SONIDOS[i].mp3
+        );
     }
-
-    CargarSonidoDesdeArchivo(
-        *this,
-        SONIDO_UI_MOVER,
-        "Assets/Audio/SFX/ui_mover.wav",
-        "Assets/Audio/SFX/ui_mover.mp3"
-    );
-
-    CargarSonidoDesdeArchivo(
-        *this,
-        SONIDO_UI_CONFIRMAR,
-        "Assets/Audio/SFX/ui_confirmar.wav",
-        "Assets/Audio/SFX/ui_confirmar.mp3"
-    );
-
-    CargarSonidoDesdeArchivo(
-        *this,
-        SONIDO_CUENTA_REGRESIVA,
-        "Assets/Audio/SFX/cuenta_regresiva.wav",
-        "Assets/Audio/SFX/cuenta_regresiva.mp3"
-    );
-
-    CargarSonidoDesdeArchivo(
-        *this,
-        SONIDO_INICIO_MINIJUEGO,
-        "Assets/Audio/SFX/inicio_minijuego.wav",
-        "Assets/Audio/SFX/inicio_minijuego.mp3"
-    );
-
-    CargarSonidoDesdeArchivo(
-        *this,
-        SONIDO_RECOGER_NUCLEO,
-        "Assets/Audio/SFX/recoger_nucleo.wav",
-        "Assets/Audio/SFX/recoger_nucleo.mp3"
-    );
-
-    CargarSonidoDesdeArchivo(
-        *this,
-        SONIDO_RECOGER_NUCLEO_ESPECIAL,
-        "Assets/Audio/SFX/recoger_nucleo_especial.wav",
-        "Assets/Audio/SFX/recoger_nucleo_especial.mp3"
-    );
-
-    CargarSonidoDesdeArchivo(
-        *this,
-        SONIDO_ALERTA_TIEMPO,
-        "Assets/Audio/SFX/alerta_tiempo.wav",
-        "Assets/Audio/SFX/alerta_tiempo.mp3"
-    );
-
-    CargarSonidoDesdeArchivo(
-        *this,
-        SONIDO_RESULTADO,
-        "Assets/Audio/SFX/resultado.wav",
-        "Assets/Audio/SFX/resultado.mp3"
-    );
 }
 
 
@@ -177,25 +150,35 @@ void AudioJuego::CargarMusicaMenu(
         return;
     }
 
-    if (!FileExists(ruta))
+    // Si un llamador antiguo pasa una ruta obsoleta, usamos la ruta
+    // compartida actual. Esto evita que otra reorganizacion de Assets
+    // vuelva a romper la musica del menu.
+    const char* rutaElegida = ruta;
+
+    if (rutaElegida == nullptr || !FileExists(rutaElegida))
+    {
+        rutaElegida = RUTA_MUSICA_MENU;
+    }
+
+    if (!FileExists(rutaElegida))
     {
         TraceLog(
             LOG_WARNING,
             "No se encontro musica del menu: %s",
-            ruta
+            rutaElegida
         );
 
         return;
     }
 
-    musicaMenu = LoadMusicStream(ruta);
+    musicaMenu = LoadMusicStream(rutaElegida);
 
     if (!IsMusicValid(musicaMenu))
     {
         TraceLog(
             LOG_WARNING,
             "No se pudo cargar musica del menu: %s",
-            ruta
+            rutaElegida
         );
 
         return;
