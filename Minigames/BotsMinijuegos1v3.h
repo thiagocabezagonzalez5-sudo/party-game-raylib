@@ -37,6 +37,13 @@ InputMinijuegoParticipante CrearEntradaBotHaciaObjetivo1v3(
 
 int ElegirDireccionAtaqueBotPinchos();
 
+// Compatibilidad con el estado del bot controlador. La direccion sigue
+// siendo aleatoria, pero esta sobrecarga permite que Refugio de Pinchos
+// mantenga el mismo estado de IA que usa para los bots del equipo.
+int ElegirDireccionAtaqueBotPinchos(
+    EstadoBotRefugioPinchos& bot
+);
+
 
 void ReiniciarBotMiradas(
     EstadoBotMiradas& bot,
