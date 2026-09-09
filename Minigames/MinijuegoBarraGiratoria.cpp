@@ -7,12 +7,25 @@
 
 
 static const float DURACION_PREPARACION_BARRA = 3.0f;
-static const float DURACION_PARTIDA_BARRA = 45.0f;
 static const float RADIO_ARENA_BARRA = 5.4f;
 static const float LONGITUD_MEDIA_BARRA = 5.65f;
 static const float ALTURA_BARRA = 0.82f;
 static const float RADIO_COLISION_BARRA = 0.34f;
-static const float COOLDOWN_IMPACTO_BARRA = 0.62f;
+
+static const float FUERZA_IMPACTO_BARRA = 12.8f;
+static const float FUERZA_IMPACTO_BARRA_SUPERIOR = 14.6f;
+static const float IMPULSO_VERTICAL_BARRA = 7.0f;
+static const float IMPULSO_VERTICAL_BARRA_SUPERIOR = 7.6f;
+static const float COOLDOWN_IMPACTO_BARRA = 0.42f;
+static const float DURACION_STUN_BARRA = 0.36f;
+static const float DURACION_RALENTIZACION_BARRA = 0.78f;
+static const float MULTIPLICADOR_RALENTIZACION_BARRA = 0.68f;
+
+static const float TIEMPO_APARICION_SEGUNDA_BARRA = 10.0f;
+static const float ALTURA_INICIAL_SEGUNDA_BARRA = 8.0f;
+static const float ALTURA_FINAL_SEGUNDA_BARRA = 1.58f;
+static const float VELOCIDAD_CAIDA_SEGUNDA_BARRA = 7.2f;
+static const float MULTIPLICADOR_VELOCIDAD_SEGUNDA_BARRA = 1.5f;
 
 
 static float MagnitudHorizontalBarra(float x, float z)
@@ -88,7 +101,8 @@ static float DistanciaJugadorALineaBarra(
 
 static bool BarraTocaJugador(
     const JugadorPrueba& jugador,
-    float angulo
+    float angulo,
+    float altura
 )
 {
     float pies =
@@ -100,8 +114,8 @@ static bool BarraTocaJugador(
         jugador.tamano.y / 2.0f;
 
     bool solapaVertical =
-        cabeza >= ALTURA_BARRA - RADIO_COLISION_BARRA &&
-        pies <= ALTURA_BARRA + RADIO_COLISION_BARRA;
+        cabeza >= altura - RADIO_COLISION_BARRA &&
+        pies <= altura + RADIO_COLISION_BARRA;
 
     if (!solapaVertical)
     {
@@ -116,6 +130,10 @@ static bool BarraTocaJugador(
 
 static void AplicarImpactoBarra(
     JugadorPrueba& jugador,
+    EstadoJugadorBarraGiratoria& estadoJugador,
+    float alturaImpacto,
+    float fuerza,
+    float impulsoVertical,
     ParticulaTierra particulas[],
     int cantidadParticulas
 )
@@ -135,17 +153,34 @@ static void AplicarImpactoBarra(
         normalZ = jugador.posicion.z / distancia;
     }
 
-    jugador.empuje.x += normalX * 10.5f;
-    jugador.empuje.z += normalZ * 10.5f;
-    jugador.velocidad.y = 7.4f;
+    jugador.empuje.x += normalX * fuerza;
+    jugador.empuje.z += normalZ * fuerza;
+    jugador.velocidad.y = impulsoVertical;
     jugador.enSuelo = false;
+
+    if (jugador.tiempoRalentizado < DURACION_RALENTIZACION_BARRA)
+    {
+        jugador.tiempoRalentizado = DURACION_RALENTIZACION_BARRA;
+    }
+
+    if (
+        jugador.multiplicadorRalentizacion <= 0.0f ||
+        jugador.multiplicadorRalentizacion > MULTIPLICADOR_RALENTIZACION_BARRA
+    )
+    {
+        jugador.multiplicadorRalentizacion =
+            MULTIPLICADOR_RALENTIZACION_BARRA;
+    }
+
+    estadoJugador.tiempoStunBarra = DURACION_STUN_BARRA;
+    estadoJugador.cooldownImpacto = COOLDOWN_IMPACTO_BARRA;
 
     CrearParticulasImpactoGolpe(
         particulas,
         cantidadParticulas,
         {
             jugador.posicion.x,
-            ALTURA_BARRA,
+            alturaImpacto,
             jugador.posicion.z
         }
     );
@@ -226,13 +261,20 @@ void MinijuegoBarraGiratoria::Inicializar()
 
     fase = FASE_BARRA_PREPARACION;
     tiempoPreparacion = DURACION_PREPARACION_BARRA;
-    tiempoRestante = DURACION_PARTIDA_BARRA;
     tiempoJugado = 0.0f;
+
     anguloBarra = 0.0f;
     velocidadAngular = 0.9f;
 
+    segundaBarraAparecio = false;
+    segundaBarraLista = false;
+    alturaSegundaBarra = ALTURA_INICIAL_SEGUNDA_BARRA;
+    anguloSegundaBarra = PI / 2.0f;
+    velocidadAngularSegunda =
+        velocidadAngular * MULTIPLICADOR_VELOCIDAD_SEGUNDA_BARRA;
+
     camara.position = { 0.0f, 10.5f, 13.8f };
-    camara.target = { 0.0f, 0.30f, 0.0f };
+    camara.target = { 0.0f, 0.45f, 0.0f };
     camara.up = { 0.0f, 1.0f, 0.0f };
     camara.fovy = 50.0f;
     camara.projection = CAMERA_PERSPECTIVE;
@@ -334,20 +376,58 @@ void MinijuegoBarraGiratoria::Actualizar(
         return;
     }
 
-    tiempoRestante -= deltaTime;
-    if (tiempoRestante < 0.0f) tiempoRestante = 0.0f;
+    tiempoJugado += deltaTime;
 
-    tiempoJugado = DURACION_PARTIDA_BARRA - tiempoRestante;
+    float aumentoVelocidad = tiempoJugado * 0.055f;
+    if (aumentoVelocidad > 2.15f)
+    {
+        aumentoVelocidad = 2.15f;
+    }
 
-    float progresoPartida =
-        tiempoJugado / DURACION_PARTIDA_BARRA;
-
-    velocidadAngular = 0.9f + progresoPartida * 1.9f;
+    velocidadAngular = 0.9f + aumentoVelocidad;
     anguloBarra += velocidadAngular * deltaTime;
 
-    if (anguloBarra > 6.283185f)
+    while (anguloBarra > 2.0f * PI)
     {
-        anguloBarra -= 6.283185f;
+        anguloBarra -= 2.0f * PI;
+    }
+
+    if (
+        !segundaBarraAparecio &&
+        tiempoJugado >= TIEMPO_APARICION_SEGUNDA_BARRA
+    )
+    {
+        segundaBarraAparecio = true;
+        segundaBarraLista = false;
+        alturaSegundaBarra = ALTURA_INICIAL_SEGUNDA_BARRA;
+        anguloSegundaBarra = anguloBarra + PI / 2.0f;
+    }
+
+    if (segundaBarraAparecio)
+    {
+        velocidadAngularSegunda =
+            velocidadAngular * MULTIPLICADOR_VELOCIDAD_SEGUNDA_BARRA;
+
+        anguloSegundaBarra +=
+            velocidadAngularSegunda * deltaTime;
+
+        while (anguloSegundaBarra > 2.0f * PI)
+        {
+            anguloSegundaBarra -= 2.0f * PI;
+        }
+
+        if (!segundaBarraLista)
+        {
+            alturaSegundaBarra -=
+                VELOCIDAD_CAIDA_SEGUNDA_BARRA * deltaTime;
+
+            if (alturaSegundaBarra <= ALTURA_FINAL_SEGUNDA_BARRA)
+            {
+                alturaSegundaBarra = ALTURA_FINAL_SEGUNDA_BARRA;
+                segundaBarraLista = true;
+                ActivarTemblorCamaraGeneral(0.12f, 0.20f);
+            }
+        }
     }
 
     int vivosAntes = ContarVivosBarra(*this);
@@ -370,12 +450,26 @@ void MinijuegoBarraGiratoria::Actualizar(
         {
             estadoJugador.cooldownImpacto -= deltaTime;
             if (estadoJugador.cooldownImpacto < 0.0f)
+            {
                 estadoJugador.cooldownImpacto = 0.0f;
+            }
+        }
+
+        if (estadoJugador.tiempoStunBarra > 0.0f)
+        {
+            estadoJugador.tiempoStunBarra -= deltaTime;
+            if (estadoJugador.tiempoStunBarra < 0.0f)
+            {
+                estadoJugador.tiempoStunBarra = 0.0f;
+            }
         }
 
         InputMinijuegoParticipante entrada{};
 
-        if (participantes[i].conectado)
+        if (
+            participantes[i].conectado &&
+            estadoJugador.tiempoStunBarra <= 0.0f
+        )
         {
             entrada = LeerInputMinijuegoParticipante(participantes[i]);
         }
@@ -383,9 +477,6 @@ void MinijuegoBarraGiratoria::Actualizar(
         BloquePrueba sueloJugador = suelo;
         sueloJugador.activaColision = JugadorSobreArenaBarra(jugador);
 
-        // Mismo perfil que Color Seguro: movimiento, salto, golpe
-        // horizontal y golpe al suelo. La barra sigue siendo un peligro
-        // propio adicional del minijuego.
         ActualizarJugadorPruebaNormal(
             jugador,
             entrada,
@@ -401,16 +492,39 @@ void MinijuegoBarraGiratoria::Actualizar(
         if (
             estadoJugador.cooldownImpacto <= 0.0f &&
             !jugador.cayendo &&
-            BarraTocaJugador(jugador, anguloBarra)
+            BarraTocaJugador(jugador, anguloBarra, ALTURA_BARRA)
         )
         {
             AplicarImpactoBarra(
                 jugador,
+                estadoJugador,
+                ALTURA_BARRA,
+                FUERZA_IMPACTO_BARRA,
+                IMPULSO_VERTICAL_BARRA,
                 particulas,
                 cantidadParticulas
             );
-
-            estadoJugador.cooldownImpacto = COOLDOWN_IMPACTO_BARRA;
+        }
+        else if (
+            segundaBarraLista &&
+            estadoJugador.cooldownImpacto <= 0.0f &&
+            !jugador.cayendo &&
+            BarraTocaJugador(
+                jugador,
+                anguloSegundaBarra,
+                ALTURA_FINAL_SEGUNDA_BARRA
+            )
+        )
+        {
+            AplicarImpactoBarra(
+                jugador,
+                estadoJugador,
+                ALTURA_FINAL_SEGUNDA_BARRA,
+                FUERZA_IMPACTO_BARRA_SUPERIOR,
+                IMPULSO_VERTICAL_BARRA_SUPERIOR,
+                particulas,
+                cantidadParticulas
+            );
         }
 
         if (
@@ -467,17 +581,19 @@ void MinijuegoBarraGiratoria::Actualizar(
 
     int vivosDespues = vivosAntes - eliminados;
 
-    if (
-        vivosDespues <= 1 ||
-        tiempoRestante <= 0.0f
-    )
+    if (vivosDespues <= 1)
     {
         FinalizarBarra(*this);
     }
 }
 
 
-static void DibujarBarraSegmentada(float angulo)
+static void DibujarBarraSegmentada(
+    float angulo,
+    float altura,
+    Color colorA,
+    Color colorB
+)
 {
     float dx = std::cos(angulo);
     float dz = std::sin(angulo);
@@ -492,13 +608,11 @@ static void DibujarBarraSegmentada(float angulo)
             ((float)i / (float)(segmentos - 1));
 
         DrawCube(
-            { dx * t, ALTURA_BARRA, dz * t },
+            { dx * t, altura, dz * t },
             0.42f,
             0.30f,
             0.42f,
-            i % 2 == 0
-                ? ORANGE
-                : Color{ 245, 205, 70, 255 }
+            i % 2 == 0 ? colorA : colorB
         );
     }
 }
@@ -519,8 +633,6 @@ void MinijuegoBarraGiratoria::Dibujar(
 
     BeginMode3D(camara);
 
-    // Plataforma completamente plana. La falda queda por debajo del
-    // nivel de juego para que ningun personaje atraviese "pasto".
     DrawCylinder(
         { 0.0f, -0.32f, 0.0f },
         RADIO_ARENA_BARRA,
@@ -547,16 +659,45 @@ void MinijuegoBarraGiratoria::Dibujar(
         Fade(RAYWHITE, 0.35f)
     );
 
+    float altoEje = segundaBarraAparecio ? 2.10f : 1.10f;
+
     DrawCylinder(
-        { 0.0f, 0.52f, 0.0f },
+        { 0.0f, altoEje / 2.0f, 0.0f },
         0.40f,
         0.40f,
-        1.10f,
+        altoEje,
         20,
         DARKGRAY
     );
 
-    DibujarBarraSegmentada(anguloBarra);
+    DibujarBarraSegmentada(
+        anguloBarra,
+        ALTURA_BARRA,
+        ORANGE,
+        Color{ 245, 205, 70, 255 }
+    );
+
+    if (segundaBarraAparecio)
+    {
+        if (!segundaBarraLista)
+        {
+            DrawCircle3D(
+                { 0.0f, 0.035f, 0.0f },
+                LONGITUD_MEDIA_BARRA * 0.96f,
+                { 1.0f, 0.0f, 0.0f },
+                90.0f,
+                Fade(RED, 0.24f)
+            );
+        }
+
+        DibujarBarraSegmentada(
+            anguloSegundaBarra,
+            alturaSegundaBarra,
+            Color{ 216, 68, 80, 255 },
+            Color{ 244, 120, 72, 255 }
+        );
+    }
+
     DibujarParticulasTierra(particulas, cantidadParticulas);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
@@ -584,17 +725,25 @@ void MinijuegoBarraGiratoria::Dibujar(
 
     DrawText("BARRA GIRATORIA", 25, 25, 30, BLACK);
     DrawText(
-        "SALTA LA BARRA, PEGA A TUS RIVALES Y NO TE CAIGAS",
+        "ULTIMO EN LA PLATAFORMA GANA. A LOS 10 s CAE UNA SEGUNDA BARRA.",
         25,
         66,
-        20,
+        19,
         DARKGRAY
     );
 
     DrawText(
-        "GOLPE: E / SHIFT / B   |   GOLPE AL SUELO: SALTO EN EL AIRE",
+        "LAS BARRAS EMPUJAN, STUNEAN 0.36 s Y RALENTIZAN BREVEMENTE.",
         25,
-        94,
+        92,
+        16,
+        DARKBLUE
+    );
+
+    DrawText(
+        "GOLPE: E / SHIFT / B   |   GROUND POUND: SALTO EN EL AIRE",
+        25,
+        116,
         16,
         DARKBLUE
     );
@@ -603,18 +752,55 @@ void MinijuegoBarraGiratoria::Dibujar(
     {
         DrawText(
             TextFormat(
-                "TIEMPO: %.1f   VELOCIDAD: %.1f",
-                tiempoRestante,
+                "SUPERVIVENCIA: %.1f s   BARRA BASE: %.2f",
+                tiempoJugado,
                 velocidadAngular
             ),
             25,
-            122,
-            20,
+            145,
+            19,
             DARKBLUE
         );
+
+        if (!segundaBarraAparecio)
+        {
+            float falta = TIEMPO_APARICION_SEGUNDA_BARRA - tiempoJugado;
+            if (falta < 0.0f) falta = 0.0f;
+
+            DrawText(
+                TextFormat("SEGUNDA BARRA EN: %.1f s", falta),
+                GetScreenWidth() - 280,
+                25,
+                20,
+                MAROON
+            );
+        }
+        else if (!segundaBarraLista)
+        {
+            DrawText(
+                "SEGUNDA BARRA: CAYENDO",
+                GetScreenWidth() - 300,
+                25,
+                20,
+                RED
+            );
+        }
+        else
+        {
+            DrawText(
+                TextFormat(
+                    "BARRA SUPERIOR: %.2f  (x1.5)",
+                    velocidadAngularSegunda
+                ),
+                GetScreenWidth() - 335,
+                25,
+                20,
+                RED
+            );
+        }
     }
 
-    int yEstado = 154;
+    int yEstado = 178;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -623,14 +809,21 @@ void MinijuegoBarraGiratoria::Dibujar(
             continue;
         }
 
+        const char* estadoTexto =
+            estadosJugadores[i].eliminado
+                ? "FUERA"
+                : (
+                    estadosJugadores[i].tiempoStunBarra > 0.0f
+                        ? "STUN"
+                        : "EN JUEGO"
+                );
+
         DrawText(
             TextFormat(
                 "J%d %s%s",
                 participantes[i].numeroJugador,
                 participantes[i].esBot ? "BOT - " : "",
-                estadosJugadores[i].eliminado
-                    ? "FUERA"
-                    : "EN JUEGO"
+                estadoTexto
             ),
             25,
             yEstado,
