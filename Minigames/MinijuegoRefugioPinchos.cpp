@@ -10,9 +10,15 @@
 static const float DURACION_PREPARACION_PINCHOS = 2.5f;
 static const float DURACION_PARTIDA_PINCHOS = 20.0f;
 static const float DURACION_AVISO_PINCHOS = 0.72f;
-static const float DURACION_ATAQUE_PINCHOS = 0.52f;
-static const float COOLDOWN_ATAQUE_PINCHOS = 0.48f;
+static const float DURACION_ATAQUE_PINCHOS = 0.72f;
+static const float COOLDOWN_ATAQUE_PINCHOS = 0.52f;
 static const float BLOQUEO_CAMBIO_PINCHOS = 0.18f;
+
+static const float LIMITE_X_SALA_PINCHOS = 4.65f;
+static const float LIMITE_Z_SALA_PINCHOS = 3.85f;
+static const float RADIO_TALADRO_PINCHOS = 0.34f;
+static const float LARGO_RETRAIDO_TALADRO = 1.05f;
+static const float MARGEN_CHOQUE_COBERTURA = 0.10f;
 
 
 static int ContarRivalesVivosPinchos(
@@ -37,9 +43,7 @@ static int ContarRivalesVivosPinchos(
 }
 
 
-static const char* NombreDireccionPinchos(
-    DireccionPinchos direccion
-)
+static const char* NombreDireccionPinchos(DireccionPinchos direccion)
 {
     switch (direccion)
     {
@@ -66,19 +70,16 @@ static bool LeerDireccionHumanaPinchos(
         direccion = PINCHOS_DESDE_ARRIBA;
         return true;
     }
-
     if (entrada.abajo)
     {
         direccion = PINCHOS_DESDE_ABAJO;
         return true;
     }
-
     if (entrada.izquierda)
     {
         direccion = PINCHOS_DESDE_IZQUIERDA;
         return true;
     }
-
     if (entrada.derecha)
     {
         direccion = PINCHOS_DESDE_DERECHA;
@@ -89,79 +90,44 @@ static bool LeerDireccionHumanaPinchos(
 }
 
 
-static bool RefugioProtegeJugador(
-    const BloquePrueba& refugio,
-    const JugadorPrueba& jugador,
-    DireccionPinchos direccion
-)
+static void MezclarEnterosPinchos(int valores[], int cantidad)
 {
-    const float margenLateral =
-        jugador.tamano.x * 0.45f;
-
-    if (
-        direccion == PINCHOS_DESDE_ARRIBA ||
-        direccion == PINCHOS_DESDE_ABAJO
-    )
+    for (int i = cantidad - 1; i > 0; i--)
     {
-        bool alineado =
-            std::fabs(
-                jugador.posicion.x -
-                refugio.posicion.x
-            ) <= refugio.tamano.x / 2.0f + margenLateral;
-
-        if (!alineado)
-        {
-            return false;
-        }
-
-        if (direccion == PINCHOS_DESDE_ARRIBA)
-        {
-            return refugio.posicion.z < jugador.posicion.z;
-        }
-
-        return refugio.posicion.z > jugador.posicion.z;
+        int otro = GetRandomValue(0, i);
+        int temporal = valores[i];
+        valores[i] = valores[otro];
+        valores[otro] = temporal;
     }
-
-    bool alineado =
-        std::fabs(
-            jugador.posicion.z -
-            refugio.posicion.z
-        ) <= refugio.tamano.z / 2.0f + margenLateral;
-
-    if (!alineado)
-    {
-        return false;
-    }
-
-    if (direccion == PINCHOS_DESDE_IZQUIERDA)
-    {
-        return refugio.posicion.x < jugador.posicion.x;
-    }
-
-    return refugio.posicion.x > jugador.posicion.x;
 }
 
 
-static bool JugadorEstaProtegidoPinchos(
-    const MinijuegoRefugioPinchos& minijuego,
-    const JugadorPrueba& jugador
+static void CrearCoberturasAleatoriasPinchos(
+    MinijuegoRefugioPinchos& minijuego
 )
 {
-    for (int i = 1; i < minijuego.cantidadBloques; i++)
-    {
-        if (
-            RefugioProtegeJugador(
-                minijuego.bloques[i],
-                jugador,
-                minijuego.direccionAviso
-            )
-        )
-        {
-            return true;
-        }
-    }
+    const float xs[4] = { -2.70f, -0.90f, 0.90f, 2.70f };
+    const float zs[3] = { -2.00f, 0.0f, 2.00f };
 
-    return false;
+    int candidatos[12]{};
+    for (int i = 0; i < 12; i++) candidatos[i] = i;
+    MezclarEnterosPinchos(candidatos, 12);
+
+    for (int i = 0; i < 4; i++)
+    {
+        int indice = candidatos[i];
+        int ix = indice % 4;
+        int iz = indice / 4;
+
+        AgregarBloquePrueba(
+            minijuego.bloques,
+            minijuego.cantidadBloques,
+            5,
+            { xs[ix], 0.85f, zs[iz] },
+            { 1.50f, 1.70f, 1.70f },
+            Color{ 82, 88, 98, 255 }
+        );
+    }
 }
 
 
@@ -178,27 +144,28 @@ static Vector3 ObtenerPuntoSeguroBotPinchos(
         const BloquePrueba& refugio = minijuego.bloques[i];
         Vector3 candidato = refugio.posicion;
         candidato.y = 0.95f;
-
-        const float separacion = 1.05f;
+        const float separacion = 0.82f;
 
         switch (minijuego.direccionAviso)
         {
             case PINCHOS_DESDE_ARRIBA:
                 candidato.z += refugio.tamano.z / 2.0f + separacion;
                 break;
-
             case PINCHOS_DESDE_ABAJO:
                 candidato.z -= refugio.tamano.z / 2.0f + separacion;
                 break;
-
             case PINCHOS_DESDE_IZQUIERDA:
                 candidato.x += refugio.tamano.x / 2.0f + separacion;
                 break;
-
             case PINCHOS_DESDE_DERECHA:
                 candidato.x -= refugio.tamano.x / 2.0f + separacion;
                 break;
         }
+
+        if (candidato.x < -4.25f) candidato.x = -4.25f;
+        if (candidato.x > 4.25f) candidato.x = 4.25f;
+        if (candidato.z < -3.45f) candidato.z = -3.45f;
+        if (candidato.z > 3.45f) candidato.z = 3.45f;
 
         float dx = candidato.x - posicionJugador.x;
         float dz = candidato.z - posicionJugador.z;
@@ -215,14 +182,231 @@ static Vector3 ObtenerPuntoSeguroBotPinchos(
 }
 
 
-static void LimitarJugadorSalaPinchos(
-    JugadorPrueba& jugador
+static void LimitarJugadorSalaPinchos(JugadorPrueba& jugador)
+{
+    if (jugador.posicion.x < -LIMITE_X_SALA_PINCHOS)
+        jugador.posicion.x = -LIMITE_X_SALA_PINCHOS;
+    if (jugador.posicion.x > LIMITE_X_SALA_PINCHOS)
+        jugador.posicion.x = LIMITE_X_SALA_PINCHOS;
+    if (jugador.posicion.z < -LIMITE_Z_SALA_PINCHOS)
+        jugador.posicion.z = -LIMITE_Z_SALA_PINCHOS;
+    if (jugador.posicion.z > LIMITE_Z_SALA_PINCHOS)
+        jugador.posicion.z = LIMITE_Z_SALA_PINCHOS;
+}
+
+
+static void ObtenerOrigenDireccionTaladro(
+    DireccionPinchos direccion,
+    float carril,
+    Vector3& origen,
+    Vector3& vectorDireccion
 )
 {
-    if (jugador.posicion.x < -4.65f) jugador.posicion.x = -4.65f;
-    if (jugador.posicion.x > 4.65f) jugador.posicion.x = 4.65f;
-    if (jugador.posicion.z < -3.85f) jugador.posicion.z = -3.85f;
-    if (jugador.posicion.z > 3.85f) jugador.posicion.z = 3.85f;
+    switch (direccion)
+    {
+        case PINCHOS_DESDE_ARRIBA:
+            origen = { carril, 0.82f, -4.45f };
+            vectorDireccion = { 0.0f, 0.0f, 1.0f };
+            break;
+        case PINCHOS_DESDE_ABAJO:
+            origen = { carril, 0.82f, 4.45f };
+            vectorDireccion = { 0.0f, 0.0f, -1.0f };
+            break;
+        case PINCHOS_DESDE_IZQUIERDA:
+            origen = { -5.05f, 0.82f, carril };
+            vectorDireccion = { 1.0f, 0.0f, 0.0f };
+            break;
+        case PINCHOS_DESDE_DERECHA:
+            origen = { 5.05f, 0.82f, carril };
+            vectorDireccion = { -1.0f, 0.0f, 0.0f };
+            break;
+    }
+}
+
+
+static float ObtenerAlcanceMaximoTaladro(
+    const MinijuegoRefugioPinchos& minijuego,
+    DireccionPinchos direccion,
+    float carril
+)
+{
+    Vector3 origen{};
+    Vector3 dir{};
+    ObtenerOrigenDireccionTaladro(direccion, carril, origen, dir);
+
+    float maximo =
+        direccion == PINCHOS_DESDE_ARRIBA ||
+        direccion == PINCHOS_DESDE_ABAJO
+        ? 8.90f
+        : 10.10f;
+
+    for (int i = 1; i < minijuego.cantidadBloques; i++)
+    {
+        BoundingBox caja = CrearHitboxBloquePrueba(minijuego.bloques[i]);
+        bool alineado = false;
+        float distancia = maximo;
+
+        if (
+            direccion == PINCHOS_DESDE_ARRIBA ||
+            direccion == PINCHOS_DESDE_ABAJO
+        )
+        {
+            alineado =
+                carril + RADIO_TALADRO_PINCHOS >= caja.min.x &&
+                carril - RADIO_TALADRO_PINCHOS <= caja.max.x;
+
+            if (alineado)
+            {
+                distancia = direccion == PINCHOS_DESDE_ARRIBA
+                    ? caja.min.z - origen.z
+                    : origen.z - caja.max.z;
+            }
+        }
+        else
+        {
+            alineado =
+                carril + RADIO_TALADRO_PINCHOS >= caja.min.z &&
+                carril - RADIO_TALADRO_PINCHOS <= caja.max.z;
+
+            if (alineado)
+            {
+                distancia = direccion == PINCHOS_DESDE_IZQUIERDA
+                    ? caja.min.x - origen.x
+                    : origen.x - caja.max.x;
+            }
+        }
+
+        if (
+            alineado &&
+            distancia > 0.0f &&
+            distancia < maximo
+        )
+        {
+            maximo = distancia;
+        }
+    }
+
+    maximo -= MARGEN_CHOQUE_COBERTURA;
+    if (maximo < LARGO_RETRAIDO_TALADRO)
+        maximo = LARGO_RETRAIDO_TALADRO;
+
+    return maximo;
+}
+
+
+static float ProgresoExtensionTaladros(
+    const MinijuegoRefugioPinchos& minijuego
+)
+{
+    if (minijuego.fase != FASE_PINCHOS_ATAQUE) return 0.0f;
+
+    float avance =
+        1.0f - minijuego.tiempoFase / DURACION_ATAQUE_PINCHOS;
+
+    if (avance < 0.0f) avance = 0.0f;
+    if (avance > 1.0f) avance = 1.0f;
+
+    // Entra rapidamente y despues queda frenado contra la primera pared.
+    float extension = avance / 0.58f;
+    if (extension > 1.0f) extension = 1.0f;
+    return extension;
+}
+
+
+static float ObtenerLargoTaladroActual(
+    const MinijuegoRefugioPinchos& minijuego,
+    DireccionPinchos direccion,
+    float carril,
+    bool direccionActiva
+)
+{
+    if (!direccionActiva) return LARGO_RETRAIDO_TALADRO;
+
+    float maximo = ObtenerAlcanceMaximoTaladro(minijuego, direccion, carril);
+    float progreso = ProgresoExtensionTaladros(minijuego);
+
+    return LARGO_RETRAIDO_TALADRO +
+        (maximo - LARGO_RETRAIDO_TALADRO) * progreso;
+}
+
+
+static bool TaladroTocaJugador(
+    const MinijuegoRefugioPinchos& minijuego,
+    DireccionPinchos direccion,
+    float carril,
+    const JugadorPrueba& jugador
+)
+{
+    Vector3 origen{};
+    Vector3 dir{};
+    ObtenerOrigenDireccionTaladro(direccion, carril, origen, dir);
+
+    float largo = ObtenerLargoTaladroActual(
+        minijuego,
+        direccion,
+        carril,
+        true
+    );
+
+    float dx = jugador.posicion.x - origen.x;
+    float dz = jugador.posicion.z - origen.z;
+    float longitudinal = dx * dir.x + dz * dir.z;
+    float lateral = std::fabs(dx * dir.z - dz * dir.x);
+    float radioJugador = jugador.tamano.x * 0.43f;
+
+    return
+        longitudinal >= 0.18f &&
+        longitudinal <= largo + radioJugador &&
+        lateral <= RADIO_TALADRO_PINCHOS + radioJugador &&
+        jugador.posicion.y - jugador.tamano.y * 0.5f < 1.45f;
+}
+
+
+static void ResolverImpactosTaladros(
+    MinijuegoRefugioPinchos& minijuego,
+    JugadorPrueba jugadores[],
+    int cantidadMaxima
+)
+{
+    const float carrilesVerticales[4] = { -3.45f, -1.15f, 1.15f, 3.45f };
+    const float carrilesHorizontales[4] = { -2.40f, -0.80f, 0.80f, 2.40f };
+
+    const float* carriles =
+        minijuego.direccionAviso == PINCHOS_DESDE_ARRIBA ||
+        minijuego.direccionAviso == PINCHOS_DESDE_ABAJO
+        ? carrilesVerticales
+        : carrilesHorizontales;
+
+    for (int i = 0; i < cantidadMaxima; i++)
+    {
+        if (
+            i == minijuego.indiceSolo ||
+            !minijuego.resultado.participantes[i].participo ||
+            minijuego.estadosJugadores[i].eliminado
+        )
+        {
+            continue;
+        }
+
+        for (int carril = 0; carril < 4; carril++)
+        {
+            if (
+                TaladroTocaJugador(
+                    minijuego,
+                    minijuego.direccionAviso,
+                    carriles[carril],
+                    jugadores[i]
+                )
+            )
+            {
+                minijuego.estadosJugadores[i].eliminado = true;
+                jugadores[i].cayendo = true;
+                jugadores[i].velocidad = {};
+                jugadores[i].empuje = {};
+                break;
+            }
+        }
+    }
 }
 
 
@@ -231,13 +415,7 @@ static void FinalizarRefugioPinchos(
     bool ganaSolo
 )
 {
-    if (
-        minijuego.resultado.estado ==
-        RESULTADO_MINIJUEGO_FINALIZADO
-    )
-    {
-        return;
-    }
+    if (minijuego.resultado.estado == RESULTADO_MINIJUEGO_FINALIZADO) return;
 
     minijuego.resultado.estado = RESULTADO_MINIJUEGO_FINALIZADO;
     minijuego.resultado.desenlace = DESENLACE_CON_GANADOR;
@@ -248,10 +426,7 @@ static void FinalizarRefugioPinchos(
         ResultadoParticipante& resultadoJugador =
             minijuego.resultado.participantes[i];
 
-        if (!resultadoJugador.participo)
-        {
-            continue;
-        }
+        if (!resultadoJugador.participo) continue;
 
         bool esSolo = i == minijuego.indiceSolo;
         bool ganador = esSolo == ganaSolo;
@@ -291,25 +466,7 @@ void MinijuegoRefugioPinchos::Inicializar()
         Color{ 108, 86, 66, 255 }
     );
 
-    const Vector3 posicionesRefugio[4] =
-    {
-        { -2.1f, 0.80f, -1.55f },
-        {  2.1f, 0.80f, -1.55f },
-        { -2.1f, 0.80f,  1.55f },
-        {  2.1f, 0.80f,  1.55f }
-    };
-
-    for (int i = 0; i < 4; i++)
-    {
-        AgregarBloquePrueba(
-            bloques,
-            cantidadBloques,
-            5,
-            posicionesRefugio[i],
-            { 1.35f, 1.60f, 1.35f },
-            Color{ 82, 88, 98, 255 }
-        );
-    }
+    CrearCoberturasAleatoriasPinchos(*this);
 
     indiceSolo = -1;
     direccionAviso = PINCHOS_DESDE_ARRIBA;
@@ -343,12 +500,11 @@ void MinijuegoRefugioPinchos::Reiniciar(
     );
 
     int indices[MAX_PARTICIPANTES]{};
-    int cantidad =
-        ObtenerIndicesParticipantesActivos(
-            participantes,
-            indices,
-            MAX_PARTICIPANTES
-        );
+    int cantidad = ObtenerIndicesParticipantesActivos(
+        participantes,
+        indices,
+        MAX_PARTICIPANTES
+    );
 
     if (cantidad < 2)
     {
@@ -362,8 +518,8 @@ void MinijuegoRefugioPinchos::Reiniciar(
 
     Vector3 spawnsEquipo[4] =
     {
-        { -3.2f, 0.95f,  2.8f },
-        {  3.2f, 0.95f,  2.8f },
+        { -3.2f, 0.95f, 2.8f },
+        {  3.2f, 0.95f, 2.8f },
         { -3.2f, 0.95f, -2.8f },
         {  3.2f, 0.95f, -2.8f }
     };
@@ -372,10 +528,7 @@ void MinijuegoRefugioPinchos::Reiniciar(
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
-        if (!resultado.participantes[i].participo)
-        {
-            continue;
-        }
+        if (!resultado.participantes[i].participo) continue;
 
         bool esSolo = i == indiceSolo;
         resultado.participantes[i].numeroEquipo = esSolo ? 0 : 1;
@@ -444,8 +597,6 @@ void MinijuegoRefugioPinchos::Actualizar(
         if (cooldownAtaque < 0.0f) cooldownAtaque = 0.0f;
     }
 
-    // Los rivales se mueven siempre. Solo la IA de estos dos
-    // minijuegos rompe la regla global de bots inmoviles.
     for (int i = 0; i < cantidadMaxima; i++)
     {
         if (
@@ -466,11 +617,10 @@ void MinijuegoRefugioPinchos::Actualizar(
                 fase == FASE_PINCHOS_ATAQUE
             )
             {
-                estadosBots[i].objetivo =
-                    ObtenerPuntoSeguroBotPinchos(
-                        *this,
-                        jugadores[i].posicion
-                    );
+                estadosBots[i].objetivo = ObtenerPuntoSeguroBotPinchos(
+                    *this,
+                    jugadores[i].posicion
+                );
             }
 
             entrada = CrearEntradaBotHaciaObjetivo1v3(
@@ -478,7 +628,7 @@ void MinijuegoRefugioPinchos::Actualizar(
                 estadosBots[i].objetivo
             );
         }
-        else
+        else if (participantes[i].conectado)
         {
             entrada = LeerInputMinijuegoParticipante(participantes[i]);
         }
@@ -505,17 +655,14 @@ void MinijuegoRefugioPinchos::Actualizar(
     {
         if (cooldownAtaque <= 0.0f)
         {
-            bool iniciar = false;
             DireccionPinchos nuevaDireccion = direccionAviso;
+            bool iniciar = false;
 
             if (participantes[indiceSolo].esBot)
             {
-                if (tiempoFase >= 0.45f)
-                {
-                    nuevaDireccion = (DireccionPinchos)
-                        ElegirDireccionAtaqueBotPinchos();
-                    iniciar = true;
-                }
+                nuevaDireccion = (DireccionPinchos)
+                    ElegirDireccionAtaqueBotPinchos(estadosBots[indiceSolo]);
+                iniciar = true;
             }
             else if (participantes[indiceSolo].conectado)
             {
@@ -540,17 +687,14 @@ void MinijuegoRefugioPinchos::Actualizar(
                         !estadosJugadores[i].eliminado
                     )
                     {
-                        estadosBots[i].objetivo =
-                            ObtenerPuntoSeguroBotPinchos(
-                                *this,
-                                jugadores[i].posicion
-                            );
+                        estadosBots[i].objetivo = ObtenerPuntoSeguroBotPinchos(
+                            *this,
+                            jugadores[i].posicion
+                        );
                     }
                 }
             }
         }
-
-        tiempoFase += deltaTime;
     }
     else if (fase == FASE_PINCHOS_AVISO)
     {
@@ -563,10 +707,7 @@ void MinijuegoRefugioPinchos::Actualizar(
             DireccionPinchos cambio = direccionAviso;
 
             if (
-                LeerDireccionHumanaPinchos(
-                    participantes[indiceSolo],
-                    cambio
-                ) &&
+                LeerDireccionHumanaPinchos(participantes[indiceSolo], cambio) &&
                 cambio != direccionAviso
             )
             {
@@ -585,57 +726,12 @@ void MinijuegoRefugioPinchos::Actualizar(
     }
     else if (fase == FASE_PINCHOS_ATAQUE)
     {
-        float progreso =
-            1.0f - tiempoFase / DURACION_ATAQUE_PINCHOS;
+        ResolverImpactosTaladros(*this, jugadores, cantidadMaxima);
 
-        if (!ataqueResuelto && progreso >= 0.52f)
+        if (ContarRivalesVivosPinchos(*this) <= 0)
         {
-            ataqueResuelto = true;
-
-            int vivosAntes = ContarRivalesVivosPinchos(*this);
-            int eliminados = 0;
-
-            for (int i = 0; i < cantidadMaxima; i++)
-            {
-                if (
-                    i == indiceSolo ||
-                    !resultado.participantes[i].participo ||
-                    estadosJugadores[i].eliminado
-                )
-                {
-                    continue;
-                }
-
-                if (!JugadorEstaProtegidoPinchos(*this, jugadores[i]))
-                {
-                    estadosJugadores[i].eliminado = true;
-                    eliminados++;
-                    jugadores[i].cayendo = true;
-                    jugadores[i].velocidad = {};
-                    jugadores[i].empuje = {};
-                }
-            }
-
-            int posicion = vivosAntes - eliminados + 1;
-            if (posicion < 2) posicion = 2;
-
-            for (int i = 0; i < cantidadMaxima; i++)
-            {
-                if (
-                    i != indiceSolo &&
-                    estadosJugadores[i].eliminado &&
-                    estadosJugadores[i].posicionFinal == 0
-                )
-                {
-                    estadosJugadores[i].posicionFinal = posicion;
-                }
-            }
-
-            if (ContarRivalesVivosPinchos(*this) <= 0)
-            {
-                FinalizarRefugioPinchos(*this, true);
-                return;
-            }
+            FinalizarRefugioPinchos(*this, true);
+            return;
         }
 
         tiempoFase -= deltaTime;
@@ -658,88 +754,131 @@ void MinijuegoRefugioPinchos::Actualizar(
 }
 
 
-static void DibujarPistonesPinchos(
+static void DibujarCuevaLocalPinchos()
+{
+    DrawCube({ -6.0f, 2.35f, 0.0f }, 1.7f, 6.0f, 10.5f, Color{ 58, 51, 48, 255 });
+    DrawCube({  6.0f, 2.35f, 0.0f }, 1.7f, 6.0f, 10.5f, Color{ 58, 51, 48, 255 });
+    DrawCube({ 0.0f, 2.55f, -5.15f }, 13.0f, 6.4f, 1.4f, Color{ 52, 47, 45, 255 });
+    DrawCube({ 0.0f, 6.65f, -2.65f }, 13.0f, 1.1f, 4.4f, Color{ 48, 44, 43, 255 });
+
+    for (int i = 0; i < 8; i++)
+    {
+        float x = -5.0f + (float)i * 1.42f;
+        float z = -4.2f + (float)(i % 2) * 0.7f;
+        DrawCylinderEx(
+            { x, 6.2f, z },
+            { x, 5.15f - (float)(i % 3) * 0.22f, z },
+            0.26f,
+            0.02f,
+            7,
+            Color{ 76, 68, 62, 255 }
+        );
+    }
+}
+
+
+static void DibujarTaladroIndividual(
+    const MinijuegoRefugioPinchos& minijuego,
     DireccionPinchos direccion,
-    float progreso
+    float carril,
+    bool activo
 )
 {
-    if (progreso < 0.0f) progreso = 0.0f;
-    if (progreso > 1.0f) progreso = 1.0f;
+    Vector3 origen{};
+    Vector3 dir{};
+    ObtenerOrigenDireccionTaladro(direccion, carril, origen, dir);
 
-    const float carriles[4] =
+    float largo = ObtenerLargoTaladroActual(
+        minijuego,
+        direccion,
+        carril,
+        activo
+    );
+
+    float largoPunta = 0.78f;
+    if (largoPunta > largo * 0.42f) largoPunta = largo * 0.42f;
+    float largoCuerpo = largo - largoPunta;
+
+    Vector3 finCuerpo =
     {
-        -3.6f,
-        -1.2f,
-        1.2f,
-        3.6f
+        origen.x + dir.x * largoCuerpo,
+        origen.y,
+        origen.z + dir.z * largoCuerpo
     };
 
-    for (int i = 0; i < 4; i++)
+    Vector3 punta =
     {
-        Vector3 posicion{};
-        Vector3 tamano{};
+        origen.x + dir.x * largo,
+        origen.y,
+        origen.z + dir.z * largo
+    };
 
-        if (
-            direccion == PINCHOS_DESDE_ARRIBA ||
-            direccion == PINCHOS_DESDE_ABAJO
-        )
+    Color cuerpo = activo
+        ? Color{ 119, 124, 132, 255 }
+        : Color{ 73, 77, 84, 255 };
+
+    DrawCylinderEx(
+        origen,
+        finCuerpo,
+        RADIO_TALADRO_PINCHOS * 0.78f,
+        RADIO_TALADRO_PINCHOS * 0.78f,
+        10,
+        cuerpo
+    );
+
+    DrawCylinderEx(
+        finCuerpo,
+        punta,
+        RADIO_TALADRO_PINCHOS * 1.28f,
+        0.025f,
+        12,
+        activo
+            ? Color{ 196, 202, 211, 255 }
+            : Color{ 125, 130, 138, 255 }
+    );
+
+    for (int aro = 0; aro < 3; aro++)
+    {
+        float t = (float)(aro + 1) / 4.0f;
+        Vector3 centro =
         {
-            float origen =
-                direccion == PINCHOS_DESDE_ARRIBA
-                ? -5.4f
-                : 5.4f;
+            finCuerpo.x + (punta.x - finCuerpo.x) * t,
+            origen.y,
+            finCuerpo.z + (punta.z - finCuerpo.z) * t
+        };
 
-            float signo =
-                direccion == PINCHOS_DESDE_ARRIBA
-                ? 1.0f
-                : -1.0f;
+        DrawSphere(
+            centro,
+            RADIO_TALADRO_PINCHOS * (0.95f - t * 0.55f),
+            Color{ 102, 107, 116, 255 }
+        );
+    }
+}
 
-            posicion =
-            {
-                carriles[i],
-                0.82f,
-                origen + signo * progreso * 8.8f
-            };
 
-            tamano = { 0.72f, 0.72f, 2.8f };
-        }
-        else
+static void DibujarTodosLosTaladros(
+    const MinijuegoRefugioPinchos& minijuego
+)
+{
+    const float verticales[4] = { -3.45f, -1.15f, 1.15f, 3.45f };
+    const float horizontales[4] = { -2.40f, -0.80f, 0.80f, 2.40f };
+
+    for (int direccion = 0; direccion < 4; direccion++)
+    {
+        DireccionPinchos dir = (DireccionPinchos)direccion;
+        const float* carriles =
+            dir == PINCHOS_DESDE_ARRIBA || dir == PINCHOS_DESDE_ABAJO
+            ? verticales
+            : horizontales;
+
+        bool activo =
+            minijuego.fase == FASE_PINCHOS_ATAQUE &&
+            minijuego.direccionAviso == dir;
+
+        for (int i = 0; i < 4; i++)
         {
-            float origen =
-                direccion == PINCHOS_DESDE_IZQUIERDA
-                ? -6.2f
-                : 6.2f;
-
-            float signo =
-                direccion == PINCHOS_DESDE_IZQUIERDA
-                ? 1.0f
-                : -1.0f;
-
-            posicion =
-            {
-                origen + signo * progreso * 10.2f,
-                0.82f,
-                carriles[i] * 0.86f
-            };
-
-            tamano = { 2.8f, 0.72f, 0.72f };
+            DibujarTaladroIndividual(minijuego, dir, carriles[i], activo);
         }
-
-        DrawCube(
-            posicion,
-            tamano.x,
-            tamano.y,
-            tamano.z,
-            Color{ 75, 78, 84, 255 }
-        );
-
-        DrawCubeWires(
-            posicion,
-            tamano.x,
-            tamano.y,
-            tamano.z,
-            BLACK
-        );
     }
 }
 
@@ -753,9 +892,15 @@ void MinijuegoRefugioPinchos::Dibujar(
 {
     (void)cantidadMaxima;
 
-    ClearBackground(Color{ 42, 33, 30, 255 });
+    // El tema global dibujaba un segundo juego de taladros encima de los del
+    // minijuego. Lo anulamos aqui y dibujamos una unica cueva con 16 taladros
+    // fisicos, usando la misma longitud para dibujo y colision.
+    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
+    ClearBackground(Color{ 38, 31, 29, 255 });
     BeginMode3D(camara);
+
+    DibujarCuevaLocalPinchos();
 
     DrawCube(
         { 0.0f, -0.70f, 0.0f },
@@ -791,7 +936,8 @@ void MinijuegoRefugioPinchos::Dibujar(
         }
     }
 
-    // Consola elevada del jugador solitario.
+    DibujarTodosLosTaladros(*this);
+
     DrawCube(
         { -5.4f, 1.2f, -4.0f },
         1.25f,
@@ -816,28 +962,21 @@ void MinijuegoRefugioPinchos::Dibujar(
 
     if (fase == FASE_PINCHOS_AVISO)
     {
-        Color aviso = Fade(RED, 0.72f);
+        Color aviso = Fade(RED, 0.48f);
 
         if (direccionAviso == PINCHOS_DESDE_ARRIBA)
-            DrawCube({0.0f, 0.03f, -4.25f}, 9.6f, 0.08f, 0.35f, aviso);
+            DrawCube({ 0.0f, 0.03f, -4.25f }, 9.6f, 0.06f, 0.22f, aviso);
         else if (direccionAviso == PINCHOS_DESDE_ABAJO)
-            DrawCube({0.0f, 0.03f, 4.25f}, 9.6f, 0.08f, 0.35f, aviso);
+            DrawCube({ 0.0f, 0.03f, 4.25f }, 9.6f, 0.06f, 0.22f, aviso);
         else if (direccionAviso == PINCHOS_DESDE_IZQUIERDA)
-            DrawCube({-5.05f, 0.03f, 0.0f}, 0.35f, 0.08f, 8.0f, aviso);
+            DrawCube({ -5.05f, 0.03f, 0.0f }, 0.22f, 0.06f, 8.0f, aviso);
         else
-            DrawCube({5.05f, 0.03f, 0.0f}, 0.35f, 0.08f, 8.0f, aviso);
-    }
-    else if (fase == FASE_PINCHOS_ATAQUE)
-    {
-        float progreso =
-            1.0f - tiempoFase / DURACION_ATAQUE_PINCHOS;
-
-        DibujarPistonesPinchos(direccionAviso, progreso);
+            DrawCube({ 5.05f, 0.03f, 0.0f }, 0.22f, 0.06f, 8.0f, aviso);
     }
 
     EndMode3D();
 
-    DrawText("REFUGIO DE PINCHOS - 1 VS 3", 24, 22, 30, RAYWHITE);
+    DrawText("REFUGIO DE TALADROS - 1 VS 3", 24, 22, 30, RAYWHITE);
 
     if (indiceSolo >= 0)
     {
@@ -855,7 +994,7 @@ void MinijuegoRefugioPinchos::Dibujar(
     }
 
     DrawText(
-        "SOLO: elige un lado | EQUIPO: usa los bloques como cobertura",
+        "SOLO: elige un lado | EQUIPO: escondete detras de los bloques",
         24,
         88,
         18,
@@ -880,8 +1019,8 @@ void MinijuegoRefugioPinchos::Dibujar(
     {
         int numero = (int)std::ceil(tiempoPreparacion);
         if (numero < 1) numero = 1;
-
         const char* texto = TextFormat("%d", numero);
+
         DrawText(
             texto,
             GetScreenWidth() / 2 - MeasureText(texto, 84) / 2,
@@ -892,8 +1031,10 @@ void MinijuegoRefugioPinchos::Dibujar(
     }
     else if (fase == FASE_PINCHOS_AVISO)
     {
-        const char* aviso =
-            TextFormat("PELIGRO DESDE %s", NombreDireccionPinchos(direccionAviso));
+        const char* aviso = TextFormat(
+            "PELIGRO DESDE %s",
+            NombreDireccionPinchos(direccionAviso)
+        );
 
         DrawText(
             aviso,
