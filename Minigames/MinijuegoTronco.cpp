@@ -3,27 +3,11 @@
 #include "Minigames/UtilidadesMinijuegos.h"
 
 
-//==================================================
-// CONSTANTES
-//==================================================
-
-static const float DURACION_PREPARACION_TRONCO =
-    2.5f;
-
-static const float DURACION_PARTIDA_TRONCO =
-    60.0f;
-
-static const float VENTANA_COORDINACION_TRONCO =
-    0.34f;
-
-static const float BLOQUEO_FALLO_TRONCO =
-    0.26f;
-
-static const float AVANCE_CORTE_TRONCO =
-    0.065f;
-
-static const float VELOCIDAD_SIERRA_VISUAL_TRONCO =
-    5.4f;
+static const float DURACION_PREPARACION_TRONCO = 2.5f;
+static const float VENTANA_COORDINACION_TRONCO = 0.34f;
+static const float BLOQUEO_FALLO_TRONCO = 0.26f;
+static const float AVANCE_CORTE_TRONCO = 0.065f;
+static const float VELOCIDAD_SIERRA_VISUAL_TRONCO = 5.4f;
 
 static const float CENTRO_EQUIPO_TRONCO[2] =
 {
@@ -32,13 +16,7 @@ static const float CENTRO_EQUIPO_TRONCO[2] =
 };
 
 
-//==================================================
-// UTILIDADES DE ESTADO
-//==================================================
-
-static int LimitarCantidadTronco(
-    int cantidadMaxima
-)
+static int LimitarCantidadTronco(int cantidadMaxima)
 {
     return cantidadMaxima < MAX_JUGADORES_PRUEBA
         ? cantidadMaxima
@@ -140,9 +118,7 @@ static const char* TextoAccionTronco(
 }
 
 
-static const char* NombreAccionTronco(
-    AccionTronco accion
-)
+static const char* NombreAccionTronco(AccionTronco accion)
 {
     return accion == ACCION_TRONCO_TIRAR
         ? "TIRAR"
@@ -154,9 +130,7 @@ static const char* TextoDispositivoTronco(
     const Participante& participante
 )
 {
-    return ObtenerNombreControlParticipante(
-        participante
-    );
+    return ObtenerNombreControlParticipante(participante);
 }
 
 
@@ -165,23 +139,15 @@ static AccionTronco ObtenerAccionEsperadaTronco(
     int indiceJugador
 )
 {
-    int equipo =
-        minijuego.equipoPorJugador[indiceJugador];
+    int equipo = minijuego.equipoPorJugador[indiceJugador];
+    int orden = minijuego.ordenEnEquipoPorJugador[indiceJugador];
 
-    int orden =
-        minijuego.ordenEnEquipoPorJugador[indiceJugador];
-
-    if (
-        equipo < 0 ||
-        equipo >= 2 ||
-        orden < 0
-    )
+    if (equipo < 0 || equipo >= 2 || orden < 0)
     {
         return ACCION_TRONCO_TIRAR;
     }
 
-    int direccion =
-        minijuego.equipos[equipo].direccionSierra;
+    int direccion = minijuego.equipos[equipo].direccionSierra;
 
     if (minijuego.cantidadJugadoresEquipo[equipo] <= 1)
     {
@@ -208,9 +174,7 @@ static void LimpiarIntentoEquipoTronco(
     int equipo
 )
 {
-    int limite = MAX_JUGADORES_PRUEBA;
-
-    for (int i = 0; i < limite; i++)
+    for (int i = 0; i < MAX_JUGADORES_PRUEBA; i++)
     {
         if (minijuego.equipoPorJugador[i] != equipo)
         {
@@ -231,17 +195,13 @@ static void FallarGolpeEquipoTronco(
     int equipo
 )
 {
-    EstadoEquipoTronco& estadoEquipo =
-        minijuego.equipos[equipo];
+    EstadoEquipoTronco& estadoEquipo = minijuego.equipos[equipo];
 
     estadoEquipo.ultimoGolpeCorrecto = false;
     estadoEquipo.tiempoFeedback = 0.38f;
     estadoEquipo.tiempoBloqueo = BLOQUEO_FALLO_TRONCO;
 
-    LimpiarIntentoEquipoTronco(
-        minijuego,
-        equipo
-    );
+    LimpiarIntentoEquipoTronco(minijuego, equipo);
 }
 
 
@@ -250,14 +210,11 @@ static void CompletarGolpeEquipoTronco(
     int equipo
 )
 {
-    EstadoEquipoTronco& estadoEquipo =
-        minijuego.equipos[equipo];
+    EstadoEquipoTronco& estadoEquipo = minijuego.equipos[equipo];
 
-    int direccionAnterior =
-        estadoEquipo.direccionSierra;
+    int direccionAnterior = estadoEquipo.direccionSierra;
 
-    estadoEquipo.progresoCorte +=
-        AVANCE_CORTE_TRONCO;
+    estadoEquipo.progresoCorte += AVANCE_CORTE_TRONCO;
 
     if (estadoEquipo.progresoCorte > 1.0f)
     {
@@ -269,17 +226,12 @@ static void CompletarGolpeEquipoTronco(
         ? 0.72f
         : -0.72f;
 
-    estadoEquipo.direccionSierra =
-        -direccionAnterior;
-
+    estadoEquipo.direccionSierra = -direccionAnterior;
     estadoEquipo.ultimoGolpeCorrecto = true;
     estadoEquipo.tiempoFeedback = 0.28f;
     estadoEquipo.tiempoBloqueo = 0.06f;
 
-    LimpiarIntentoEquipoTronco(
-        minijuego,
-        equipo
-    );
+    LimpiarIntentoEquipoTronco(minijuego, equipo);
 }
 
 
@@ -297,18 +249,11 @@ static void FinalizarResultadoTronco(
         return;
     }
 
-    minijuego.estado =
-        TRONCO_FINALIZADO;
+    minijuego.estado = TRONCO_FINALIZADO;
+    minijuego.equipoGanador = equipoGanador;
+    minijuego.empate = empate;
 
-    minijuego.equipoGanador =
-        equipoGanador;
-
-    minijuego.empate =
-        empate;
-
-    minijuego.resultado.estado =
-        RESULTADO_MINIJUEGO_FINALIZADO;
-
+    minijuego.resultado.estado = RESULTADO_MINIJUEGO_FINALIZADO;
     minijuego.resultado.desenlace =
         empate
         ? DESENLACE_EMPATE
@@ -329,15 +274,13 @@ static void FinalizarResultadoTronco(
             ? minijuego.equipoPorJugador[i]
             : -1;
 
-        participante.numeroEquipo =
-            equipo;
+        participante.numeroEquipo = equipo;
 
         if (equipo >= 0 && equipo < 2)
         {
             participante.puntuacionMinijuego =
                 (int)(
-                    minijuego.equipos[equipo]
-                        .progresoCorte *
+                    minijuego.equipos[equipo].progresoCorte *
                     1000.0f
                 );
 
@@ -357,38 +300,13 @@ static void FinalizarResultadoTronco(
 }
 
 
-//==================================================
-// INICIALIZAR
-//==================================================
-
 void MinijuegoTronco::Inicializar()
 {
-    camara.position =
-    {
-        0.0f,
-        6.8f,
-        13.2f
-    };
-
-    camara.target =
-    {
-        0.0f,
-        1.15f,
-        -0.35f
-    };
-
-    camara.up =
-    {
-        0.0f,
-        1.0f,
-        0.0f
-    };
-
-    camara.fovy =
-        52.0f;
-
-    camara.projection =
-        CAMERA_PERSPECTIVE;
+    camara.position = { 0.0f, 6.8f, 13.2f };
+    camara.target = { 0.0f, 1.15f, -0.35f };
+    camara.up = { 0.0f, 1.0f, 0.0f };
+    camara.fovy = 52.0f;
+    camara.projection = CAMERA_PERSPECTIVE;
 }
 
 
@@ -409,19 +327,9 @@ void MinijuegoTronco::ConfigurarJugadores(
 
     for (int i = 0; i < limite; i++)
     {
-        jugadores[i].posicionSpawn =
-            spawns[i];
-
-        jugadores[i].tamano =
-        {
-            0.78f,
-            1.45f,
-            0.78f
-        };
-
-        ReiniciarJugadorPrueba(
-            jugadores[i]
-        );
+        jugadores[i].posicionSpawn = spawns[i];
+        jugadores[i].tamano = { 0.78f, 1.45f, 0.78f };
+        ReiniciarJugadorPrueba(jugadores[i]);
     }
 }
 
@@ -464,20 +372,15 @@ void MinijuegoTronco::PrepararEquipos(
         }
         else
         {
-            equipo = ordenActivo < 2
-                ? 0
-                : 1;
+            equipo = ordenActivo < 2 ? 0 : 1;
         }
 
-        int ordenEquipo =
-            cantidadJugadoresEquipo[equipo];
+        int ordenEquipo = cantidadJugadoresEquipo[equipo];
 
         equipoPorJugador[i] = equipo;
         ordenEnEquipoPorJugador[i] = ordenEquipo;
         cantidadJugadoresEquipo[equipo]++;
-
-        resultado.participantes[i].numeroEquipo =
-            equipo;
+        resultado.participantes[i].numeroEquipo = equipo;
 
         ordenActivo++;
     }
@@ -497,18 +400,14 @@ void MinijuegoTronco::Reiniciar(
 
     for (int i = 0; i < MAX_JUGADORES_PRUEBA; i++)
     {
-        estadosJugadores[i] =
-            EstadoJugadorTronco{};
-
+        estadosJugadores[i] = EstadoJugadorTronco{};
         equipoPorJugador[i] = -1;
         ordenEnEquipoPorJugador[i] = -1;
     }
 
     for (int equipo = 0; equipo < 2; equipo++)
     {
-        equipos[equipo] =
-            EstadoEquipoTronco{};
-
+        equipos[equipo] = EstadoEquipoTronco{};
         cantidadJugadoresEquipo[equipo] = 0;
     }
 
@@ -524,8 +423,7 @@ void MinijuegoTronco::Reiniciar(
             cantidadMaxima
         );
 
-    jugadoresEnPartida =
-        cantidadConectados;
+    jugadoresEnPartida = cantidadConectados;
 
     partidaValida =
         (
@@ -536,37 +434,24 @@ void MinijuegoTronco::Reiniciar(
 
     equipoGanador = -1;
     empate = false;
+    tiempoPreparacion = DURACION_PREPARACION_TRONCO;
 
-    tiempoPreparacion =
-        DURACION_PREPARACION_TRONCO;
-
-    tiempoPartida =
-        DURACION_PARTIDA_TRONCO;
+    // Ahora representa tiempo transcurrido. Ya no existe una cuenta atras
+    // que pueda terminar el minijuego en empate.
+    tiempoPartida = 0.0f;
 
     if (!partidaValida)
     {
-        estado =
-            TRONCO_ESPERANDO_JUGADORES;
-
+        estado = TRONCO_ESPERANDO_JUGADORES;
         resultado.cantidadEquipos = 0;
         return;
     }
 
     resultado.cantidadEquipos = 2;
-
-    PrepararEquipos(
-        participantes,
-        cantidadMaxima
-    );
-
-    estado =
-        TRONCO_PREPARANDO;
+    PrepararEquipos(participantes, cantidadMaxima);
+    estado = TRONCO_PREPARANDO;
 }
 
-
-//==================================================
-// ACTUALIZAR
-//==================================================
 
 void MinijuegoTronco::Actualizar(
     float deltaTime,
@@ -582,11 +467,7 @@ void MinijuegoTronco::Actualizar(
 
     if (cantidadConectados != jugadoresEnPartida)
     {
-        Reiniciar(
-            participantes,
-            cantidadMaxima
-        );
-
+        Reiniciar(participantes, cantidadMaxima);
         return;
     }
 
@@ -594,8 +475,7 @@ void MinijuegoTronco::Actualizar(
     {
         if (estadosJugadores[i].animacionGolpe > 0.0f)
         {
-            estadosJugadores[i].animacionGolpe -=
-                deltaTime;
+            estadosJugadores[i].animacionGolpe -= deltaTime;
 
             if (estadosJugadores[i].animacionGolpe < 0.0f)
             {
@@ -606,40 +486,28 @@ void MinijuegoTronco::Actualizar(
 
     for (int equipo = 0; equipo < 2; equipo++)
     {
-        EstadoEquipoTronco& estadoEquipo =
-            equipos[equipo];
+        EstadoEquipoTronco& estadoEquipo = equipos[equipo];
 
         float diferencia =
             estadoEquipo.objetivoSierra -
             estadoEquipo.posicionSierra;
 
-        float paso =
-            VELOCIDAD_SIERRA_VISUAL_TRONCO *
-            deltaTime;
-
-        float distancia =
-            diferencia < 0.0f
-            ? -diferencia
-            : diferencia;
+        float paso = VELOCIDAD_SIERRA_VISUAL_TRONCO * deltaTime;
+        float distancia = diferencia < 0.0f ? -diferencia : diferencia;
 
         if (distancia <= paso)
         {
-            estadoEquipo.posicionSierra =
-                estadoEquipo.objetivoSierra;
+            estadoEquipo.posicionSierra = estadoEquipo.objetivoSierra;
         }
         else
         {
             estadoEquipo.posicionSierra +=
-                diferencia < 0.0f
-                ? -paso
-                : paso;
+                diferencia < 0.0f ? -paso : paso;
         }
 
         if (estadoEquipo.tiempoFeedback > 0.0f)
         {
-            estadoEquipo.tiempoFeedback -=
-                deltaTime;
-
+            estadoEquipo.tiempoFeedback -= deltaTime;
             if (estadoEquipo.tiempoFeedback < 0.0f)
             {
                 estadoEquipo.tiempoFeedback = 0.0f;
@@ -648,9 +516,7 @@ void MinijuegoTronco::Actualizar(
 
         if (estadoEquipo.tiempoBloqueo > 0.0f)
         {
-            estadoEquipo.tiempoBloqueo -=
-                deltaTime;
-
+            estadoEquipo.tiempoBloqueo -= deltaTime;
             if (estadoEquipo.tiempoBloqueo < 0.0f)
             {
                 estadoEquipo.tiempoBloqueo = 0.0f;
@@ -658,20 +524,14 @@ void MinijuegoTronco::Actualizar(
         }
     }
 
-    if (!partidaValida)
-    {
-        return;
-    }
-
-    if (estado == TRONCO_FINALIZADO)
+    if (!partidaValida || estado == TRONCO_FINALIZADO)
     {
         return;
     }
 
     if (estado == TRONCO_PREPARANDO)
     {
-        tiempoPreparacion -=
-            deltaTime;
+        tiempoPreparacion -= deltaTime;
 
         if (tiempoPreparacion <= 0.0f)
         {
@@ -687,26 +547,11 @@ void MinijuegoTronco::Actualizar(
         return;
     }
 
-    tiempoPartida -=
-        deltaTime;
-
-    if (tiempoPartida <= 0.0f)
-    {
-        tiempoPartida = 0.0f;
-
-        FinalizarResultadoTronco(
-            *this,
-            -1,
-            true
-        );
-
-        return;
-    }
+    tiempoPartida += deltaTime;
 
     for (int equipo = 0; equipo < 2; equipo++)
     {
-        EstadoEquipoTronco& estadoEquipo =
-            equipos[equipo];
+        EstadoEquipoTronco& estadoEquipo = equipos[equipo];
 
         if (estadoEquipo.tiempoBloqueo > 0.0f)
         {
@@ -724,16 +569,12 @@ void MinijuegoTronco::Actualizar(
                 continue;
             }
 
-            EstadoJugadorTronco& estadoJugador =
-                estadosJugadores[i];
+            EstadoJugadorTronco& estadoJugador = estadosJugadores[i];
 
             if (!estadoJugador.respondio)
             {
                 AccionTronco accionEsperada =
-                    ObtenerAccionEsperadaTronco(
-                        *this,
-                        i
-                    );
+                    ObtenerAccionEsperadaTronco(*this, i);
 
                 bool accionCorrecta =
                     AccionJugadorPresionadaTronco(
@@ -761,18 +602,12 @@ void MinijuegoTronco::Actualizar(
                 }
             }
 
-            if (
-                estadoJugador.respondio &&
-                estadoJugador.acerto
-            )
+            if (estadoJugador.respondio && estadoJugador.acerto)
             {
                 respuestasCorrectas++;
             }
 
-            if (
-                estadoJugador.respondio &&
-                !estadoJugador.acerto
-            )
+            if (estadoJugador.respondio && !estadoJugador.acerto)
             {
                 fallo = true;
             }
@@ -780,35 +615,19 @@ void MinijuegoTronco::Actualizar(
 
         if (fallo)
         {
-            FallarGolpeEquipoTronco(
-                *this,
-                equipo
-            );
-
+            FallarGolpeEquipoTronco(*this, equipo);
             continue;
         }
 
-        int requeridas =
-            cantidadJugadoresEquipo[equipo];
+        int requeridas = cantidadJugadoresEquipo[equipo];
 
-        if (
-            requeridas > 0 &&
-            respuestasCorrectas >= requeridas
-        )
+        if (requeridas > 0 && respuestasCorrectas >= requeridas)
         {
-            CompletarGolpeEquipoTronco(
-                *this,
-                equipo
-            );
+            CompletarGolpeEquipoTronco(*this, equipo);
 
             if (equipos[equipo].progresoCorte >= 1.0f)
             {
-                FinalizarResultadoTronco(
-                    *this,
-                    equipo,
-                    false
-                );
-
+                FinalizarResultadoTronco(*this, equipo, false);
                 return;
             }
 
@@ -824,24 +643,16 @@ void MinijuegoTronco::Actualizar(
                     VENTANA_COORDINACION_TRONCO;
             }
 
-            estadoEquipo.tiempoCoordinacion -=
-                deltaTime;
+            estadoEquipo.tiempoCoordinacion -= deltaTime;
 
             if (estadoEquipo.tiempoCoordinacion <= 0.0f)
             {
-                FallarGolpeEquipoTronco(
-                    *this,
-                    equipo
-                );
+                FallarGolpeEquipoTronco(*this, equipo);
             }
         }
     }
 }
 
-
-//==================================================
-// DIBUJO 3D
-//==================================================
 
 static Color ObtenerColorEquipoTronco(
     const MinijuegoTronco& minijuego,
@@ -857,9 +668,7 @@ static Color ObtenerColorEquipoTronco(
         }
     }
 
-    return equipo == 0
-        ? ORANGE
-        : SKYBLUE;
+    return equipo == 0 ? ORANGE : SKYBLUE;
 }
 
 
@@ -869,23 +678,16 @@ static Vector3 ObtenerPosicionJugadorTronco(
     int cantidadJugadoresEquipo
 )
 {
-    float centroX =
-        CENTRO_EQUIPO_TRONCO[equipo];
+    float centroX = CENTRO_EQUIPO_TRONCO[equipo];
 
     if (cantidadJugadoresEquipo <= 1)
     {
-        return
-        {
-            centroX - 1.85f,
-            0.76f,
-            0.15f
-        };
+        return { centroX - 1.85f, 0.76f, 0.15f };
     }
 
     return
     {
-        centroX +
-            (ordenEnEquipo == 0 ? -1.85f : 1.85f),
+        centroX + (ordenEnEquipo == 0 ? -1.85f : 1.85f),
         0.76f,
         0.15f
     };
@@ -897,8 +699,7 @@ static void DibujarFondoEquipoTronco(
     Color colorEquipo
 )
 {
-    float centroX =
-        CENTRO_EQUIPO_TRONCO[equipo];
+    float centroX = CENTRO_EQUIPO_TRONCO[equipo];
 
     Color colorPasto =
         equipo == 0
@@ -968,11 +769,8 @@ static void DibujarTroncoEquipo(
     int equipo
 )
 {
-    float centroX =
-        CENTRO_EQUIPO_TRONCO[equipo];
-
-    float progreso =
-        minijuego.equipos[equipo].progresoCorte;
+    float centroX = CENTRO_EQUIPO_TRONCO[equipo];
+    float progreso = minijuego.equipos[equipo].progresoCorte;
 
     DrawCube(
         { centroX, 0.42f, -1.12f },
@@ -1008,16 +806,10 @@ static void DibujarTroncoEquipo(
         Color{ 210, 157, 88, 255 }
     );
 
-    float altoCorte =
-        0.05f +
-        progreso * 1.12f;
+    float altoCorte = 0.05f + progreso * 1.12f;
 
     DrawCube(
-        {
-            centroX,
-            1.72f - altoCorte * 0.46f,
-            0.0f
-        },
+        { centroX, 1.72f - altoCorte * 0.46f, 0.0f },
         1.52f,
         altoCorte,
         0.11f,
@@ -1031,16 +823,11 @@ static void DibujarSierraEquipo(
     int equipo
 )
 {
-    float centroX =
-        CENTRO_EQUIPO_TRONCO[equipo];
-
+    float centroX = CENTRO_EQUIPO_TRONCO[equipo];
     float desplazamiento =
-        minijuego.equipos[equipo]
-            .posicionSierra *
-        0.42f;
+        minijuego.equipos[equipo].posicionSierra * 0.42f;
 
-    float centroSierra =
-        centroX + desplazamiento;
+    float centroSierra = centroX + desplazamiento;
 
     DrawCube(
         { centroSierra, 1.32f, 0.0f },
@@ -1053,11 +840,7 @@ static void DibujarSierraEquipo(
     for (int diente = -5; diente <= 5; diente++)
     {
         DrawCube(
-            {
-                centroSierra + diente * 0.26f,
-                1.245f,
-                0.0f
-            },
+            { centroSierra + diente * 0.26f, 1.245f, 0.0f },
             0.11f,
             0.09f,
             0.15f,
@@ -1118,8 +901,7 @@ static void DibujarJugadoresEquipoTronco(
 
         if (minijuego.estadosJugadores[i].animacionGolpe > 0.0f)
         {
-            posicion.x +=
-                direccionCentro * 0.16f;
+            posicion.x += direccionCentro * 0.16f;
         }
 
         DrawCylinder(
@@ -1157,9 +939,7 @@ static void DibujarEscenarioTronco(
     int cantidadMaxima
 )
 {
-    BeginMode3D(
-        minijuego.camara
-    );
+    BeginMode3D(minijuego.camara);
 
     for (int equipo = 0; equipo < 2; equipo++)
     {
@@ -1170,21 +950,9 @@ static void DibujarEscenarioTronco(
                 equipo
             );
 
-        DibujarFondoEquipoTronco(
-            equipo,
-            colorEquipo
-        );
-
-        DibujarTroncoEquipo(
-            minijuego,
-            equipo
-        );
-
-        DibujarSierraEquipo(
-            minijuego,
-            equipo
-        );
-
+        DibujarFondoEquipoTronco(equipo, colorEquipo);
+        DibujarTroncoEquipo(minijuego, equipo);
+        DibujarSierraEquipo(minijuego, equipo);
         DibujarJugadoresEquipoTronco(
             minijuego,
             jugadores,
@@ -1197,10 +965,6 @@ static void DibujarEscenarioTronco(
     EndMode3D();
 }
 
-
-//==================================================
-// DIBUJO 2D
-//==================================================
 
 static void DibujarBarraEquipoTronco(
     const MinijuegoTronco& minijuego,
@@ -1222,23 +986,14 @@ static void DibujarBarraEquipoTronco(
     int ancho = anchoMitad - margen * 2;
 
     DrawText(
-        TextFormat(
-            "EQUIPO %d",
-            equipo + 1
-        ),
+        TextFormat("EQUIPO %d", equipo + 1),
         x,
         96,
         24,
         colorEquipo
     );
 
-    DrawRectangle(
-        x,
-        128,
-        ancho,
-        24,
-        Fade(BLACK, 0.62f)
-    );
+    DrawRectangle(x, 128, ancho, 24, Fade(BLACK, 0.62f));
 
     int anchoProgreso =
         (int)(
@@ -1257,11 +1012,7 @@ static void DibujarBarraEquipoTronco(
     DrawText(
         TextFormat(
             "CORTE %d%%",
-            (int)(
-                minijuego.equipos[equipo]
-                    .progresoCorte *
-                100.0f
-            )
+            (int)(minijuego.equipos[equipo].progresoCorte * 100.0f)
         ),
         x + ancho - 112,
         99,
@@ -1272,8 +1023,7 @@ static void DibujarBarraEquipoTronco(
     if (minijuego.equipos[equipo].tiempoFeedback > 0.0f)
     {
         const char* texto =
-            minijuego.equipos[equipo]
-                .ultimoGolpeCorrecto
+            minijuego.equipos[equipo].ultimoGolpeCorrecto
             ? "CORTE!"
             : "DESCOORDINADOS";
 
@@ -1281,12 +1031,10 @@ static void DibujarBarraEquipoTronco(
 
         DrawText(
             texto,
-            x + ancho / 2 -
-                MeasureText(texto, tamano) / 2,
+            x + ancho / 2 - MeasureText(texto, tamano) / 2,
             164,
             tamano,
-            minijuego.equipos[equipo]
-                .ultimoGolpeCorrecto
+            minijuego.equipos[equipo].ultimoGolpeCorrecto
             ? LIME
             : RED
         );
@@ -1303,8 +1051,7 @@ static void DibujarTarjetasEquipoTronco(
     int anchoMitad
 )
 {
-    int cantidadEquipo =
-        minijuego.cantidadJugadoresEquipo[equipo];
+    int cantidadEquipo = minijuego.cantidadJugadoresEquipo[equipo];
 
     if (cantidadEquipo <= 0)
     {
@@ -1322,7 +1069,6 @@ static void DibujarTarjetasEquipoTronco(
     }
 
     int separacion = 12;
-
     int anchoTotal =
         cantidadEquipo * anchoTarjeta +
         (cantidadEquipo - 1) * separacion;
@@ -1332,9 +1078,7 @@ static void DibujarTarjetasEquipoTronco(
         anchoMitad / 2 -
         anchoTotal / 2;
 
-    int y =
-        GetScreenHeight() - 132;
-
+    int y = GetScreenHeight() - 132;
     int limite = LimitarCantidadTronco(cantidadMaxima);
 
     for (int i = 0; i < limite; i++)
@@ -1345,23 +1089,14 @@ static void DibujarTarjetasEquipoTronco(
         }
 
         AccionTronco accionEsperada =
-            ObtenerAccionEsperadaTronco(
-                minijuego,
-                i
-            );
+            ObtenerAccionEsperadaTronco(minijuego, i);
 
         Color fondo =
             minijuego.estadosJugadores[i].respondio
             ? Fade(LIME, 0.78f)
             : Fade(BLACK, 0.78f);
 
-        DrawRectangle(
-            x,
-            y,
-            anchoTarjeta,
-            104,
-            fondo
-        );
+        DrawRectangle(x, y, anchoTarjeta, 104, fondo);
 
         DrawRectangleLinesEx(
             Rectangle{
@@ -1378,9 +1113,7 @@ static void DibujarTarjetasEquipoTronco(
             TextFormat(
                 "J%d  %s",
                 participantes[i].numeroJugador,
-                TextoDispositivoTronco(
-                    participantes[i]
-                )
+                TextoDispositivoTronco(participantes[i])
             ),
             x + 10,
             y + 8,
@@ -1391,9 +1124,7 @@ static void DibujarTarjetasEquipoTronco(
         const char* nombreAccion =
             minijuego.estadosJugadores[i].respondio
             ? "LISTO"
-            : NombreAccionTronco(
-                accionEsperada
-            );
+            : NombreAccionTronco(accionEsperada);
 
         DrawText(
             nombreAccion,
@@ -1411,19 +1142,11 @@ static void DibujarTarjetasEquipoTronco(
                 accionEsperada
             );
 
-        const char* textoBoton =
-            TextFormat(
-                "[%s]",
-                boton
-            );
+        const char* textoBoton = TextFormat("[%s]", boton);
 
         DrawText(
             textoBoton,
-            x + anchoTarjeta -
-                MeasureText(
-                    textoBoton,
-                    26
-                ) - 12,
+            x + anchoTarjeta - MeasureText(textoBoton, 26) - 12,
             y + 35,
             26,
             RAYWHITE
@@ -1453,9 +1176,7 @@ static void DibujarTarjetasEquipoTronco(
             );
         }
 
-        x +=
-            anchoTarjeta +
-            separacion;
+        x += anchoTarjeta + separacion;
     }
 }
 
@@ -1466,9 +1187,7 @@ void MinijuegoTronco::Dibujar(
     const Participante participantes[]
 ) const
 {
-    ClearBackground(
-        Color{ 135, 196, 225, 255 }
-    );
+    ClearBackground(Color{ 135, 196, 225, 255 });
 
     DibujarEscenarioTronco(
         *this,
@@ -1477,14 +1196,9 @@ void MinijuegoTronco::Dibujar(
         cantidadMaxima
     );
 
-    int anchoPantalla =
-        GetScreenWidth();
-
-    int altoPantalla =
-        GetScreenHeight();
-
-    int mitad =
-        anchoPantalla / 2;
+    int anchoPantalla = GetScreenWidth();
+    int altoPantalla = GetScreenHeight();
+    int mitad = anchoPantalla / 2;
 
     DrawRectangle(
         0,
@@ -1514,16 +1228,13 @@ void MinijuegoTronco::Dibujar(
     );
 
     DrawText(
-        TextFormat(
-            "TIEMPO %.1f",
-            tiempoPartida
-        ),
-        anchoPantalla / 2 - 68,
+        estado == TRONCO_JUGANDO
+        ? TextFormat("TIEMPO JUGADO %.1f s", tiempoPartida)
+        : "SIN TIEMPO MAXIMO",
+        anchoPantalla / 2 - 105,
         27,
-        23,
-        tiempoPartida <= 10.0f
-        ? RED
-        : SKYBLUE
+        21,
+        SKYBLUE
     );
 
     DrawRectangle(
@@ -1557,8 +1268,7 @@ void MinijuegoTronco::Dibujar(
 
         DrawText(
             texto,
-            anchoPantalla / 2 -
-                MeasureText(texto, 24) / 2,
+            anchoPantalla / 2 - MeasureText(texto, 24) / 2,
             altoPantalla / 2 - 12,
             24,
             ORANGE
@@ -1567,14 +1277,7 @@ void MinijuegoTronco::Dibujar(
         return;
     }
 
-    DibujarBarraEquipoTronco(
-        *this,
-        participantes,
-        0,
-        0,
-        mitad
-    );
-
+    DibujarBarraEquipoTronco(*this, participantes, 0, 0, mitad);
     DibujarBarraEquipoTronco(
         *this,
         participantes,
@@ -1603,8 +1306,7 @@ void MinijuegoTronco::Dibujar(
 
     if (estado == TRONCO_PREPARANDO)
     {
-        int numero =
-            (int)tiempoPreparacion + 1;
+        int numero = (int)tiempoPreparacion + 1;
 
         const char* texto =
             numero > 1
@@ -1623,8 +1325,7 @@ void MinijuegoTronco::Dibujar(
 
         DrawText(
             texto,
-            anchoPantalla / 2 -
-                MeasureText(texto, tamano) / 2,
+            anchoPantalla / 2 - MeasureText(texto, tamano) / 2,
             214,
             tamano,
             YELLOW
@@ -1643,32 +1344,27 @@ void MinijuegoTronco::Dibujar(
 
         const char* texto =
             empate
-            ? "EMPATE - SE TERMINO EL TIEMPO"
+            ? "EMPATE"
             : TextFormat(
                 "EQUIPO %d GANA!",
                 equipoGanador + 1
             );
 
-        int tamano =
-            empate
-            ? 30
-            : 40;
+        int tamano = empate ? 34 : 40;
 
         DrawText(
             texto,
-            anchoPantalla / 2 -
-                MeasureText(texto, tamano) / 2,
+            anchoPantalla / 2 - MeasureText(texto, tamano) / 2,
             altoPantalla / 2 - 20,
             tamano,
-            empate
-            ? ORANGE
-            : LIME
+            empate ? ORANGE : LIME
         );
     }
 }
 
 
-const ResultadoMinijuego& MinijuegoTronco::ObtenerResultado() const
+const ResultadoMinijuego&
+MinijuegoTronco::ObtenerResultado() const
 {
     return resultado;
 }
