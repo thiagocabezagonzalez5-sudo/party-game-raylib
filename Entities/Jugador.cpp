@@ -1,5 +1,6 @@
 #include "Entities/Jugador.h"
 #include "Systems/Input.h"
+#include "Core/RecursosJuego.h"
 
 void Jugador::Inicializar(
     int nuevoId
@@ -20,7 +21,7 @@ void Jugador::Inicializar(
 
     puntaje = 0;
 
-    modelo = LoadModel("Assets/Modelos/Jugador_Raylib_Normalizado.glb");
+    modelo = LoadModel(RUTA_MODELO_JUGADOR_3D);
 
     rotacion = 0.0f;
     escala = 1.0f;
