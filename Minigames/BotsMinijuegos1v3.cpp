@@ -50,6 +50,18 @@ int ElegirDireccionAtaqueBotPinchos()
 }
 
 
+int ElegirDireccionAtaqueBotPinchos(
+    EstadoBotRefugioPinchos& bot
+)
+{
+    // El controlador no necesita memoria para elegir el lado de ataque.
+    // Conservamos el estado porque el mismo struct tambien guarda objetivos
+    // cuando ese participante actua como bot del equipo.
+    (void)bot;
+    return ElegirDireccionAtaqueBotPinchos();
+}
+
+
 void ReiniciarBotMiradas(
     EstadoBotMiradas& bot,
     float demoraMinima,
