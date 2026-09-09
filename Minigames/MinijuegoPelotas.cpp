@@ -13,10 +13,11 @@ static const float ACELERACION_MAXIMA_PELOTAS = 6.0f;
 static const float MULTIPLICADOR_EMPUJE_CHOQUE_PELOTAS = 1.40f;
 static const float VELOCIDAD_MAXIMA_LANZAMIENTO_PELOTAS = 13.5f;
 
-// El tema de nieve tiene una cumbre visual de aproximadamente este radio.
-// Antes la colision terminaba en 5.25 y se veia claramente desplazada hacia
-// adentro. Ahora la superficie jugable y el borde visible coinciden.
+// La colision usa exactamente el mismo borde irregular que se dibuja. El
+// margen se aplica al centro de la pelota para que empiece a caer cuando una
+// parte importante del personaje ya sobrepaso la cornisa visual.
 static const float RADIO_ARENA_PELOTAS = 6.35f;
+static const float FACTOR_MARGEN_CENTRO_PELOTAS = 0.43f;
 static const int SEGMENTOS_ARENA_PELOTAS = 48;
 static const float ALTURA_BASE_MONTANA_PELOTAS = -2.10f;
 static const float CRECIMIENTO_RADIO_MONTANA_PELOTAS = 1.15f;
@@ -25,6 +26,34 @@ static const float CRECIMIENTO_RADIO_MONTANA_PELOTAS = 1.15f;
 static float MagnitudHorizontalPelotas(float x, float z)
 {
     return std::sqrt(x * x + z * z);
+}
+
+
+static float FactorIrregularidadBordePelotas(float angulo)
+{
+    return
+        1.0f +
+        0.018f * std::sin(angulo * 5.0f) +
+        0.012f * std::cos(angulo * 9.0f);
+}
+
+
+static float RadioVisualBordePelotas(float x, float z)
+{
+    float angulo = std::atan2(z, x);
+    return RADIO_ARENA_PELOTAS * FactorIrregularidadBordePelotas(angulo);
+}
+
+
+static float RadioSoportePelotas(
+    float x,
+    float z,
+    float tamanoJugador
+)
+{
+    return
+        RadioVisualBordePelotas(x, z) -
+        tamanoJugador * FACTOR_MARGEN_CENTRO_PELOTAS;
 }
 
 
@@ -45,12 +74,16 @@ static void LimitarMovimientoPelota(
         jugador.velocidad.z
     );
 
-    if (actual <= 0.001f) return;
+    if (actual <= 0.001f)
+    {
+        return;
+    }
 
     float limiteAceleracion =
         anterior + ACELERACION_MAXIMA_PELOTAS * deltaTime;
 
-    float limite = limiteAceleracion < VELOCIDAD_MAXIMA_PELOTAS
+    float limite =
+        limiteAceleracion < VELOCIDAD_MAXIMA_PELOTAS
         ? limiteAceleracion
         : VELOCIDAD_MAXIMA_PELOTAS;
 
@@ -94,9 +127,13 @@ static bool JugadorSobreArenaCircularPelotas(
         jugador.posicion.z
     );
 
-    float margenJugador = jugador.tamano.x * 0.18f;
+    float radioSoporte = RadioSoportePelotas(
+        jugador.posicion.x,
+        jugador.posicion.z,
+        jugador.tamano.x
+    );
 
-    return distancia <= RADIO_ARENA_PELOTAS - margenJugador;
+    return distancia <= radioSoporte;
 }
 
 
@@ -123,15 +160,20 @@ static void ResolverColisionMontanaPelotas(
         if (progresoAltura < 0.0f) progresoAltura = 0.0f;
         if (progresoAltura > 1.0f) progresoAltura = 1.0f;
 
+        float radioSuperior = RadioVisualBordePelotas(
+            jugador.posicion.x,
+            jugador.posicion.z
+        );
+
         float radioMontana =
-            RADIO_ARENA_PELOTAS +
+            radioSuperior +
             CRECIMIENTO_RADIO_MONTANA_PELOTAS * progresoAltura;
 
         float distanciaMinima =
             radioMontana + radioPelota * 0.82f;
 
         float zonaCercanaAlBorde =
-            RADIO_ARENA_PELOTAS - radioPelota * 0.45f;
+            radioSuperior - radioPelota * 0.45f;
 
         if (
             distancia > zonaCercanaAlBorde &&
@@ -176,7 +218,8 @@ static void ResolverColisionMontanaPelotas(
     }
 
     float radioBase =
-        RADIO_ARENA_PELOTAS + CRECIMIENTO_RADIO_MONTANA_PELOTAS;
+        RadioVisualBordePelotas(jugador.posicion.x, jugador.posicion.z) +
+        CRECIMIENTO_RADIO_MONTANA_PELOTAS;
 
     float parteSuperiorAnterior = posicionAnterior.y + radioPelota;
     float parteSuperiorActual = jugador.posicion.y + radioPelota;
@@ -225,10 +268,7 @@ static float IrregularidadBordePelotas(int indice)
         (2.0f * PI * (float)indice) /
         (float)SEGMENTOS_ARENA_PELOTAS;
 
-    return
-        1.0f +
-        0.018f * std::sin(angulo * 5.0f) +
-        0.012f * std::cos(angulo * 9.0f);
+    return FactorIrregularidadBordePelotas(angulo);
 }
 
 
@@ -244,10 +284,34 @@ static Vector3 PuntoCircularPelotas(
 
     float irregularidad = IrregularidadBordePelotas(indice);
 
-    return {
+    return
+    {
         std::cos(angulo) * radio * irregularidad,
         altura,
         std::sin(angulo) * radio * irregularidad
+    };
+}
+
+
+static Vector3 PuntoLimiteSoportePelotas(
+    int indice,
+    float tamanoJugador,
+    float altura
+)
+{
+    float angulo =
+        (2.0f * PI * (float)indice) /
+        (float)SEGMENTOS_ARENA_PELOTAS;
+
+    float radio =
+        RADIO_ARENA_PELOTAS * FactorIrregularidadBordePelotas(angulo) -
+        tamanoJugador * FACTOR_MARGEN_CENTRO_PELOTAS;
+
+    return
+    {
+        std::cos(angulo) * radio,
+        altura,
+        std::sin(angulo) * radio
     };
 }
 
@@ -264,48 +328,76 @@ static void DibujarMontanaNievePelotas(bool mostrarDebug)
     {
         int siguiente = (i + 1) % SEGMENTOS_ARENA_PELOTAS;
 
-        Vector3 cimaA = PuntoCircularPelotas(i, RADIO_ARENA_PELOTAS, 0.0f);
-        Vector3 cimaB = PuntoCircularPelotas(siguiente, RADIO_ARENA_PELOTAS, 0.0f);
-        Vector3 nieveA = PuntoCircularPelotas(i, RADIO_ARENA_PELOTAS + 0.50f, -0.55f);
-        Vector3 nieveB = PuntoCircularPelotas(siguiente, RADIO_ARENA_PELOTAS + 0.50f, -0.55f);
-        Vector3 baseA = PuntoCircularPelotas(i, RADIO_ARENA_PELOTAS + 1.15f, ALTURA_BASE_MONTANA_PELOTAS);
-        Vector3 baseB = PuntoCircularPelotas(siguiente, RADIO_ARENA_PELOTAS + 1.15f, ALTURA_BASE_MONTANA_PELOTAS);
+        Vector3 cimaA = PuntoCircularPelotas(
+            i,
+            RADIO_ARENA_PELOTAS,
+            0.0f
+        );
+        Vector3 cimaB = PuntoCircularPelotas(
+            siguiente,
+            RADIO_ARENA_PELOTAS,
+            0.0f
+        );
+        Vector3 nieveA = PuntoCircularPelotas(
+            i,
+            RADIO_ARENA_PELOTAS + 0.50f,
+            -0.55f
+        );
+        Vector3 nieveB = PuntoCircularPelotas(
+            siguiente,
+            RADIO_ARENA_PELOTAS + 0.50f,
+            -0.55f
+        );
+        Vector3 baseA = PuntoCircularPelotas(
+            i,
+            RADIO_ARENA_PELOTAS + 1.15f,
+            ALTURA_BASE_MONTANA_PELOTAS
+        );
+        Vector3 baseB = PuntoCircularPelotas(
+            siguiente,
+            RADIO_ARENA_PELOTAS + 1.15f,
+            ALTURA_BASE_MONTANA_PELOTAS
+        );
 
         DrawTriangle3D(centroSuperior, cimaB, cimaA, nieveSuperior);
-        DrawTriangle3D(cimaA, cimaB, nieveB, i % 2 == 0 ? nieveSuperior : nieveSombra);
-        DrawTriangle3D(cimaA, nieveB, nieveA, i % 2 == 0 ? nieveSuperior : nieveSombra);
-        DrawTriangle3D(nieveA, nieveB, baseB, i % 2 == 0 ? hieloClaro : hieloOscuro);
-        DrawTriangle3D(nieveA, baseB, baseA, i % 2 == 0 ? hieloClaro : hieloOscuro);
-        DrawLine3D(cimaA, cimaB, Fade(SKYBLUE, 0.45f));
-    }
-
-    for (int i = 0; i < 12; i++)
-    {
-        float angulo = (2.0f * PI * (float)i) / 12.0f;
-        float radio = RADIO_ARENA_PELOTAS + 0.15f;
-
-        DrawSphere(
-            {
-                std::cos(angulo) * radio,
-                -0.28f,
-                std::sin(angulo) * radio
-            },
-            0.38f + 0.08f * (float)(i % 3),
-            Fade(RAYWHITE, 0.96f)
+        DrawTriangle3D(
+            cimaA,
+            cimaB,
+            nieveB,
+            i % 2 == 0 ? nieveSuperior : nieveSombra
         );
+        DrawTriangle3D(
+            cimaA,
+            nieveB,
+            nieveA,
+            i % 2 == 0 ? nieveSuperior : nieveSombra
+        );
+        DrawTriangle3D(
+            nieveA,
+            nieveB,
+            baseB,
+            i % 2 == 0 ? hieloClaro : hieloOscuro
+        );
+        DrawTriangle3D(
+            nieveA,
+            baseB,
+            baseA,
+            i % 2 == 0 ? hieloClaro : hieloOscuro
+        );
+        DrawLine3D(cimaA, cimaB, Fade(SKYBLUE, 0.45f));
     }
 
     if (mostrarDebug)
     {
+        const float TAMANO_PELOTA_DEBUG = 1.30f;
+
         for (int i = 0; i < SEGMENTOS_ARENA_PELOTAS; i++)
         {
             int siguiente = (i + 1) % SEGMENTOS_ARENA_PELOTAS;
-            float a = (2.0f * PI * (float)i) / (float)SEGMENTOS_ARENA_PELOTAS;
-            float b = (2.0f * PI * (float)siguiente) / (float)SEGMENTOS_ARENA_PELOTAS;
 
             DrawLine3D(
-                { std::cos(a) * RADIO_ARENA_PELOTAS, 0.07f, std::sin(a) * RADIO_ARENA_PELOTAS },
-                { std::cos(b) * RADIO_ARENA_PELOTAS, 0.07f, std::sin(b) * RADIO_ARENA_PELOTAS },
+                PuntoLimiteSoportePelotas(i, TAMANO_PELOTA_DEBUG, 0.07f),
+                PuntoLimiteSoportePelotas(siguiente, TAMANO_PELOTA_DEBUG, 0.07f),
                 RED
             );
         }
@@ -354,7 +446,10 @@ static void FinalizarResultadoPelotas(
     const Participante participantes[]
 )
 {
-    if (minijuego.resultado.estado != RESULTADO_MINIJUEGO_EN_CURSO) return;
+    if (minijuego.resultado.estado != RESULTADO_MINIJUEGO_EN_CURSO)
+    {
+        return;
+    }
 
     int vivos = ContarJugadoresVivosPelotas(minijuego, participantes);
 
@@ -362,14 +457,18 @@ static void FinalizarResultadoPelotas(
     minijuego.resultado.desenlace =
         vivos == 1 ? DESENLACE_CON_GANADOR : DESENLACE_EMPATE;
 
-    int tiempoFinalMs = (int)std::lround(minijuego.tiempoJugado * 1000.0f);
+    int tiempoFinalMs =
+        (int)std::lround(minijuego.tiempoJugado * 1000.0f);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         ResultadoParticipante& resultadoJugador =
             minijuego.resultado.participantes[i];
 
-        if (!resultadoJugador.participo) continue;
+        if (!resultadoJugador.participo)
+        {
+            continue;
+        }
 
         EstadoJugadorPelotas& estadoJugador = minijuego.estadosJugadores[i];
 
@@ -429,13 +528,14 @@ void MinijuegoPelotas::ConfigurarJugadores(
 {
     Vector3 spawns[MAX_JUGADORES_PRUEBA] =
     {
-        { -2.2f, 0.65f, 2.2f },
-        {  2.2f, 0.65f, 2.2f },
+        { -2.2f, 0.65f,  2.2f },
+        {  2.2f, 0.65f,  2.2f },
         { -2.2f, 0.65f, -2.2f },
         {  2.2f, 0.65f, -2.2f }
     };
 
-    int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
+    int limite =
+        cantidadMaxima < MAX_JUGADORES_PRUEBA
         ? cantidadMaxima
         : MAX_JUGADORES_PRUEBA;
 
@@ -500,7 +600,10 @@ void MinijuegoPelotas::Actualizar(
         InicializarResultadoPelotas(*this, participantes);
     }
 
-    if (fase == FASE_PELOTAS_TERMINADO) return;
+    if (fase == FASE_PELOTAS_TERMINADO)
+    {
+        return;
+    }
 
     if (fase == FASE_PELOTAS_PREPARACION)
     {
@@ -537,7 +640,10 @@ void MinijuegoPelotas::Actualizar(
             continue;
         }
 
-        if (!participantes[i].activo || !participantes[i].conectado) continue;
+        if (!participantes[i].activo || !participantes[i].conectado)
+        {
+            continue;
+        }
 
         InputMinijuegoParticipante entrada =
             LeerInputMinijuegoParticipante(participantes[i]);
@@ -564,8 +670,6 @@ void MinijuegoPelotas::Actualizar(
             deltaTime
         );
 
-        // Si cruzo el borde en este mismo frame, la superficie deja de ser
-        // soporte inmediatamente. Evita un frame extra de suelo invisible.
         if (!JugadorSobreArenaCircularPelotas(jugador))
         {
             jugador.enSuelo = false;
@@ -600,7 +704,8 @@ void MinijuegoPelotas::Actualizar(
     }
 
     int posicionEliminados = vivosAntes - eliminadosEsteFrame + 1;
-    int tiempoSobrevividoMs = (int)std::lround(tiempoJugado * 1000.0f);
+    int tiempoSobrevividoMs =
+        (int)std::lround(tiempoJugado * 1000.0f);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -643,7 +748,10 @@ void MinijuegoPelotas::Dibujar(
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        if (estadosJugadores[i].eliminado) continue;
+        if (estadosJugadores[i].eliminado)
+        {
+            continue;
+        }
 
         DibujarJugadorPelotaPrueba(jugadores[i], participantes[i]);
 
@@ -654,7 +762,10 @@ void MinijuegoPelotas::Dibujar(
             !jugadores[i].cayendo
         )
         {
-            DrawBoundingBox(CrearHitboxJugadorPrueba(jugadores[i]), LIME);
+            DrawBoundingBox(
+                CrearHitboxJugadorPrueba(jugadores[i]),
+                LIME
+            );
         }
     }
 
@@ -766,7 +877,10 @@ void MinijuegoPelotas::Dibujar(
 
         for (int i = 0; i < MAX_PARTICIPANTES; i++)
         {
-            if (!resultado.participantes[i].participo) continue;
+            if (!resultado.participantes[i].participo)
+            {
+                continue;
+            }
 
             DrawText(
                 TextFormat(

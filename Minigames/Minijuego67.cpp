@@ -30,10 +30,10 @@ static const float Z_CINTA_7_67 = 2.35f;
 static const float Z_JUGADOR_6_67 = -0.72f;
 static const float Z_JUGADOR_7_67 = 0.72f;
 
-// Antes se mostraban siete piezas por cinta. Cuatro dejan mas aire
-// visual y obligan a leer mejor el ritmo de la cinta.
+// Cuatro piezas por cinta dejan espacio visual. El 7 queda atrasado respecto
+// del 6, por lo que el 6 cruza primero la zona de recogida en cada ciclo.
 static const int CANTIDAD_PIEZAS_CINTA_67 = 4;
-static const float DESFASE_CINTA_7_67 = 0.125f;
+static const float DESFASE_CINTA_7_67 = -0.150f;
 
 static const float DURACION_GIRO_67 = 0.24f;
 static const float DURACION_STUN_67 = 0.42f;
@@ -646,7 +646,6 @@ static void DibujarMesa67(
     Color colorEquipo
 )
 {
-    // Mesa mas chica: la zona de colocacion deja de dominar el pasillo.
     DrawCylinder(
         { X_MESA_67, 0.12f, 0.0f },
         0.88f,
@@ -803,7 +802,6 @@ static void DibujarFabricaEquipo67(
         Fade(colorEquipo, 0.82f)
     );
 
-    // Pasillo central donde trabajan ambos jugadores.
     DrawCube(
         { -0.5f, -0.03f, 0.0f },
         12.6f,
@@ -974,7 +972,7 @@ void Minijuego67::Inicializar()
 {
     tiempoPreparacion = DURACION_PREPARACION_67;
     tiempoPartida = DURACION_PARTIDA_67;
-    velocidadCintas = 0.23f;
+    velocidadCintas = 0.30f;
     desplazamientoVisualCintas = 0.0f;
     jugadoresEnPartida = 0;
     mascaraJugadoresEnPartida = 0;
@@ -1155,7 +1153,7 @@ void Minijuego67::Reiniciar(
 
     tiempoPreparacion = DURACION_PREPARACION_67;
     tiempoPartida = DURACION_PARTIDA_67;
-    velocidadCintas = 0.23f;
+    velocidadCintas = 0.30f;
     fotogramaAnimacionIdle = 0.0f;
     equipoGanador = -1;
     empate = false;
@@ -1282,7 +1280,8 @@ void Minijuego67::Actualizar(
     float progresoPartida =
         1.0f - tiempoPartida / DURACION_PARTIDA_67;
 
-    velocidadCintas = 0.23f + progresoPartida * 0.16f;
+    // Mas rapido desde el inicio y acelera hasta 0.50 al final de los 30 s.
+    velocidadCintas = 0.30f + progresoPartida * 0.20f;
 
     for (int equipo = 0; equipo < 2; equipo++)
     {

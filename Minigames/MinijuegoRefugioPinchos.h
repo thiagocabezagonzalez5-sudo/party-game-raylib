@@ -39,7 +39,10 @@ struct MinijuegoRefugioPinchos
     EstadoJugadorRefugioPinchos estadosJugadores[MAX_PARTICIPANTES];
     EstadoBotRefugioPinchos estadosBots[MAX_PARTICIPANTES];
 
-    BloquePrueba bloques[5];
+    // Suelo + tres coberturas. Los muros perimetrales son visuales y el
+    // limite de movimiento se resuelve de forma independiente para que los
+    // jugadores nunca puedan subirse a la maquinaria de los taladros.
+    BloquePrueba bloques[4];
     int cantidadBloques = 0;
 
     Camera3D camara{};

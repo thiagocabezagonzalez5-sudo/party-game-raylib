@@ -23,7 +23,9 @@ static const float MULTIPLICADOR_RALENTIZACION_BARRA = 0.68f;
 
 static const float TIEMPO_APARICION_SEGUNDA_BARRA = 10.0f;
 static const float ALTURA_INICIAL_SEGUNDA_BARRA = 8.0f;
-static const float ALTURA_FINAL_SEGUNDA_BARRA = 1.58f;
+// La barra superior queda por encima de la cabeza de un jugador parado. Solo
+// entra en su hitbox cuando el jugador salta o queda elevado por un impacto.
+static const float ALTURA_FINAL_SEGUNDA_BARRA = 2.38f;
 static const float VELOCIDAD_CAIDA_SEGUNDA_BARRA = 7.2f;
 static const float MULTIPLICADOR_VELOCIDAD_SEGUNDA_BARRA = 1.5f;
 
@@ -378,10 +380,13 @@ void MinijuegoBarraGiratoria::Actualizar(
 
     tiempoJugado += deltaTime;
 
-    float aumentoVelocidad = tiempoJugado * 0.055f;
-    if (aumentoVelocidad > 2.15f)
+    // La barra base acelera sin depender de un temporizador de fin. Al cabo
+    // de suficiente tiempo supera claramente la velocidad lineal estandar de
+    // los jugadores incluso cerca del centro de la arena.
+    float aumentoVelocidad = tiempoJugado * 0.12f;
+    if (aumentoVelocidad > 5.20f)
     {
-        aumentoVelocidad = 2.15f;
+        aumentoVelocidad = 5.20f;
     }
 
     velocidadAngular = 0.9f + aumentoVelocidad;
@@ -659,7 +664,7 @@ void MinijuegoBarraGiratoria::Dibujar(
         Fade(RAYWHITE, 0.35f)
     );
 
-    float altoEje = segundaBarraAparecio ? 2.10f : 1.10f;
+    float altoEje = segundaBarraAparecio ? 2.90f : 1.10f;
 
     DrawCylinder(
         { 0.0f, altoEje / 2.0f, 0.0f },
@@ -733,7 +738,7 @@ void MinijuegoBarraGiratoria::Dibujar(
     );
 
     DrawText(
-        "LAS BARRAS EMPUJAN, STUNEAN 0.36 s Y RALENTIZAN BREVEMENTE.",
+        "LA BARRA SUPERIOR SOLO ALCANZA A QUIEN SALTA; LA BASE ACELERA SIN PARAR.",
         25,
         92,
         16,

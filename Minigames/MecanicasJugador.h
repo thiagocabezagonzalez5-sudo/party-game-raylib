@@ -23,10 +23,10 @@ const float FUERZA_GOLPE_JUGADOR_ESTANDAR = 4.2f;
 const float DURACION_RALENTIZACION_GOLPE = 0.70f;
 const float MULTIPLICADOR_VELOCIDAD_RALENTIZADO = 0.45f;
 
-// Se redujo la preparacion para que el ground pound responda mas rapido.
-// Desde que se inicia hasta que termina el descenso, el jugador queda
-// completamente bloqueado en el plano horizontal.
-const float DURACION_PREPARACION_GROUND_POUND = 0.32f;
+// Preparacion mas corta: conserva la lectura del movimiento pero responde
+// bastante antes. Durante toda la preparacion y la caida el jugador sigue
+// completamente bloqueado en horizontal.
+const float DURACION_PREPARACION_GROUND_POUND = 0.20f;
 const float DURACION_APLASTADO_GROUND_POUND = 2.35f;
 const float MULTIPLICADOR_APLASTADO_GROUND_POUND = 0.12f;
 
@@ -296,7 +296,7 @@ inline void ActualizarJugadorPruebaNormal(
             jugador.preparandoGolpeSuelo = false;
             jugador.tiempoPreparacionGolpeSuelo = 0.0f;
             jugador.golpeSueloActivo = true;
-            jugador.velocidad.y = -24.0f;
+            jugador.velocidad.y = -28.0f;
         }
     }
 
