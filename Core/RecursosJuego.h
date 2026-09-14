@@ -22,7 +22,8 @@ inline constexpr const char* RUTA_CONFIGURACION_JUEGO =
 //==================================================
 
 inline constexpr const char* RUTA_MODELO_JUGADOR_3D =
-    "Assets/Modelos/Jugador_Raylib_Normalizado.glb";
+    //"Assets/Modelos/Jugador_Raylib_Normalizado.glb";
+    "Assets/Modelos/tung_tung_tung_sahur.glb";
 
 inline constexpr float ESCALA_MODELO_JUGADOR_3D =
     0.25f;
