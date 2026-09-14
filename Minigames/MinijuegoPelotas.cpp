@@ -290,7 +290,7 @@ static Vector3 PuntoContornoColisionMontanaPelotas(int indice)
 }
 
 
-static void DibujarMontanaNievePelotas(bool mostrarDebug)
+static void DibujarMontanaNievePelotas()
 {
     const Color nieveSuperior = Color{ 246, 250, 252, 255 };
     const Color nieveSombra = Color{ 207, 225, 235, 255 };
@@ -361,18 +361,28 @@ static void DibujarMontanaNievePelotas(bool mostrarDebug)
         DrawLine3D(cimaA, cimaB, Fade(SKYBLUE, 0.45f));
     }
 
-    if (mostrarDebug)
-    {
-        for (int i = 0; i < SEGMENTOS_ARENA_PELOTAS; i++)
-        {
-            int siguiente = (i + 1) % SEGMENTOS_ARENA_PELOTAS;
+}
 
-            DrawLine3D(
-                PuntoContornoColisionMontanaPelotas(i),
-                PuntoContornoColisionMontanaPelotas(siguiente),
-                RED
-            );
-        }
+
+static void DibujarContornoColisionMontanaPelotas(
+    const Camera3D& camara
+)
+{
+    for (int i = 0; i < SEGMENTOS_ARENA_PELOTAS; i++)
+    {
+        int siguiente = (i + 1) % SEGMENTOS_ARENA_PELOTAS;
+
+        Vector2 inicio = GetWorldToScreen(
+            PuntoContornoColisionMontanaPelotas(i),
+            camara
+        );
+
+        Vector2 fin = GetWorldToScreen(
+            PuntoContornoColisionMontanaPelotas(siguiente),
+            camara
+        );
+
+        DrawLineEx(inicio, fin, 3.0f, RED);
     }
 }
 
@@ -716,7 +726,7 @@ void MinijuegoPelotas::Dibujar(
     ClearBackground(Color{ 181, 220, 238, 255 });
     BeginMode3D(camara);
 
-    DibujarMontanaNievePelotas(mostrarDebug);
+    DibujarMontanaNievePelotas();
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -742,6 +752,11 @@ void MinijuegoPelotas::Dibujar(
     }
 
     EndMode3D();
+
+    if (mostrarDebug)
+    {
+        DibujarContornoColisionMontanaPelotas(camara);
+    }
 
     DrawText("MINIJUEGO 2 - PELOTAS / EMPUJONES", 25, 25, 30, BLACK);
     DrawText("EMPUJA A LOS DEMAS FUERA DE LA MONTANA", 25, 70, 22, BLACK);
