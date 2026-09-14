@@ -14,11 +14,13 @@ static const float MULTIPLICADOR_EMPUJE_CHOQUE_PELOTAS = 1.40f;
 static const float VELOCIDAD_MAXIMA_LANZAMIENTO_PELOTAS = 13.5f;
 
 // La colision superior usa exactamente el mismo borde irregular que se
-// dibuja. El centro del jugador empieza a caer al cruzar la cornisa visual.
+// dibuja. La colision lateral conserva ese radio hacia abajo: la montana
+// visual se abre hacia la base, pero su nucleo solido no debe empujar a los
+// jugadores hasta el contorno exterior decorativo.
 static const float RADIO_ARENA_PELOTAS = 6.35f;
 static const int SEGMENTOS_ARENA_PELOTAS = 48;
 static const float ALTURA_BASE_MONTANA_PELOTAS = -2.10f;
-static const float CRECIMIENTO_RADIO_MONTANA_PELOTAS = 1.15f;
+static const float ALTURA_DEBUG_COLISION_MONTANA_PELOTAS = -1.70f;
 
 
 static float MagnitudHorizontalPelotas(float x, float z)
@@ -148,26 +150,16 @@ static void ResolverColisionMontanaPelotas(
 
     if (tocaAlturaMontana)
     {
-        float progresoAltura =
-            -jugador.posicion.y / -ALTURA_BASE_MONTANA_PELOTAS;
-
-        if (progresoAltura < 0.0f) progresoAltura = 0.0f;
-        if (progresoAltura > 1.0f) progresoAltura = 1.0f;
-
-        float radioSuperior = RadioVisualBordePelotas(
+        float radioColision = RadioVisualBordePelotas(
             jugador.posicion.x,
             jugador.posicion.z
         );
 
-        float radioMontana =
-            radioSuperior +
-            CRECIMIENTO_RADIO_MONTANA_PELOTAS * progresoAltura;
-
         float distanciaMinima =
-            radioMontana + radioPelota * 0.82f;
+            radioColision + radioPelota * 0.82f;
 
         float zonaCercanaAlBorde =
-            radioSuperior - radioPelota * 0.45f;
+            radioColision - radioPelota * 0.45f;
 
         if (
             distancia > zonaCercanaAlBorde &&
@@ -211,9 +203,10 @@ static void ResolverColisionMontanaPelotas(
         }
     }
 
-    float radioBase =
-        RadioVisualBordePelotas(jugador.posicion.x, jugador.posicion.z) +
-        CRECIMIENTO_RADIO_MONTANA_PELOTAS;
+    float radioBase = RadioVisualBordePelotas(
+        jugador.posicion.x,
+        jugador.posicion.z
+    );
 
     float parteSuperiorAnterior = posicionAnterior.y + radioPelota;
     float parteSuperiorActual = jugador.posicion.y + radioPelota;
@@ -287,15 +280,12 @@ static Vector3 PuntoCircularPelotas(
 }
 
 
-static Vector3 PuntoLimiteSoportePelotas(
-    int indice,
-    float altura
-)
+static Vector3 PuntoContornoColisionMontanaPelotas(int indice)
 {
     return PuntoCircularPelotas(
         indice,
         RADIO_ARENA_PELOTAS,
-        altura
+        ALTURA_DEBUG_COLISION_MONTANA_PELOTAS
     );
 }
 
@@ -378,8 +368,8 @@ static void DibujarMontanaNievePelotas(bool mostrarDebug)
             int siguiente = (i + 1) % SEGMENTOS_ARENA_PELOTAS;
 
             DrawLine3D(
-                PuntoLimiteSoportePelotas(i, 0.07f),
-                PuntoLimiteSoportePelotas(siguiente, 0.07f),
+                PuntoContornoColisionMontanaPelotas(i),
+                PuntoContornoColisionMontanaPelotas(siguiente),
                 RED
             );
         }
