@@ -1,5 +1,6 @@
 #include "Gameplay/PrototipoTablero.h"
 
+#include "Minigames/ModeloJugadorCompartido.h"
 #include "Systems/Input.h"
 
 #include <cmath>
@@ -974,32 +975,14 @@ static void DibujarFichas(
         Vector3 cuerpo =
             jugador.posicionVisual;
 
-        DrawCube(
-            cuerpo,
-            0.48f,
-            0.62f,
-            0.48f,
-            color
-        );
+        Vector3 posicionPies = cuerpo;
+        posicionPies.y -= 0.31f;
 
-        DrawCubeWires(
-            cuerpo,
-            0.48f,
-            0.62f,
-            0.48f,
-            BLACK
-        );
-
-        Vector3 cabeza =
-            cuerpo;
-
-        cabeza.y +=
-            0.48f;
-
-        DrawSphere(
-            cabeza,
-            0.26f,
-            color
+        DibujarModeloJugadorEnPosicion(
+            posicionPies,
+            0.0f,
+            color,
+            0.18f
         );
 
         if (

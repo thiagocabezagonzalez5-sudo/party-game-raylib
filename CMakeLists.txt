@@ -63,45 +63,8 @@ list(
     ".*\\.conflicto\\..*\\.cpp$"
 )
 
-# La implementacion historica de UtilidadesMinijuegos mantiene las funciones
-# de cubo/esfera como fallback. En el resto del proyecto el header redirige
-# esas llamadas al modelo GLB compartido.
-set_source_files_properties(
-    "${CMAKE_CURRENT_SOURCE_DIR}/Minigames/UtilidadesMinijuegos.cpp"
-    PROPERTIES
-    COMPILE_DEFINITIONS UTILIDADES_MINIJUEGOS_IMPLEMENTACION
-)
-
-# Algunas pantallas antiguas todavia dibujan sus jugadores directamente con
-# primitivas. El adaptador se inyecta solo en esas unidades y reemplaza las
-# dimensiones exactas del placeholder de jugador por el modelo compartido.
-set_source_files_properties(
-    "${CMAKE_CURRENT_SOURCE_DIR}/Minigames/MinijuegoTronco.cpp"
-    PROPERTIES
-    COMPILE_DEFINITIONS MODELO_LEGACY_TRONCO
-    COMPILE_OPTIONS "-include;${CMAKE_CURRENT_SOURCE_DIR}/Minigames/AdaptadorModelosLegacy.h"
-)
-
-set_source_files_properties(
-    "${CMAKE_CURRENT_SOURCE_DIR}/Minigames/MinijuegoCapitanManda.cpp"
-    PROPERTIES
-    COMPILE_DEFINITIONS MODELO_LEGACY_CAPITAN
-    COMPILE_OPTIONS "-include;${CMAKE_CURRENT_SOURCE_DIR}/Minigames/AdaptadorModelosLegacy.h"
-)
-
-set_source_files_properties(
-    "${CMAKE_CURRENT_SOURCE_DIR}/Gameplay/PartidaTablero.cpp"
-    PROPERTIES
-    COMPILE_DEFINITIONS MODELO_LEGACY_TABLERO_FINAL
-    COMPILE_OPTIONS "-include;${CMAKE_CURRENT_SOURCE_DIR}/Minigames/AdaptadorModelosLegacy.h"
-)
-
-set_source_files_properties(
-    "${CMAKE_CURRENT_SOURCE_DIR}/Gameplay/PrototipoTablero.cpp"
-    PROPERTIES
-    COMPILE_DEFINITIONS MODELO_LEGACY_TABLERO_PRUEBA
-    COMPILE_OPTIONS "-include;${CMAKE_CURRENT_SOURCE_DIR}/Minigames/AdaptadorModelosLegacy.h"
-)
+# El render del modelo compartido se llama directamente desde el codigo.
+# Asi CMake y la tarea directa de VS Code compilan exactamente lo mismo.
 
 
 # ================================================

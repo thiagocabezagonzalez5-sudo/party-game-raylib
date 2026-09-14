@@ -165,6 +165,35 @@ inline float ObtenerAnguloModeloJugadorCompartido(
 }
 
 
+inline void DibujarSombraModeloJugadorCompartido(
+    const JugadorPrueba& jugador
+)
+{
+    if (jugador.cayendo || !jugador.enSuelo)
+    {
+        return;
+    }
+
+    Vector3 posicionSombra =
+    {
+        jugador.posicion.x,
+        jugador.posicion.y - jugador.tamano.y * 0.5f + 0.012f,
+        jugador.posicion.z
+    };
+
+    float radio = jugador.tamano.x * 0.48f;
+
+    DrawCylinder(
+        posicionSombra,
+        radio,
+        radio,
+        0.018f,
+        10,
+        Fade(BLACK, 0.28f)
+    );
+}
+
+
 inline void DibujarJugadorModeloCompartido(
     const JugadorPrueba& jugador,
     const Participante& participante
@@ -178,6 +207,8 @@ inline void DibujarJugadorModeloCompartido(
     {
         return;
     }
+
+    DibujarSombraModeloJugadorCompartido(jugador);
 
     InicializarModeloJugadorCompartido();
 
@@ -258,11 +289,21 @@ inline void DibujarModeloJugadorEnPosicion(
 
     if (!recurso.modeloCargado)
     {
+        float factorEscala =
+            escala / ESCALA_MODELO_JUGADOR_3D;
+
+        float anchoFallback = 0.78f * factorEscala;
+        float altoFallback = 1.44f * factorEscala;
+
         DrawCube(
-            { posicionPies.x, posicionPies.y + 0.72f, posicionPies.z },
-            0.78f,
-            1.44f,
-            0.78f,
+            {
+                posicionPies.x,
+                posicionPies.y + altoFallback * 0.5f,
+                posicionPies.z
+            },
+            anchoFallback,
+            altoFallback,
+            anchoFallback,
             color
         );
         return;

@@ -1,5 +1,6 @@
 #include "Gameplay/PartidaTablero.h"
 
+#include "Minigames/ModeloJugadorCompartido.h"
 #include "Systems/Input.h"
 
 #include <cmath>
@@ -1144,12 +1145,15 @@ static void DibujarFichasTableroFinal(
 
         Vector3 cuerpo = jugador.posicionVisual;
 
-        DrawCube(cuerpo, 0.50f, 0.62f, 0.50f, color);
-        DrawCubeWires(cuerpo, 0.50f, 0.62f, 0.50f, BLACK);
+        Vector3 posicionPies = cuerpo;
+        posicionPies.y -= 0.31f;
 
-        Vector3 cabeza = cuerpo;
-        cabeza.y += 0.48f;
-        DrawSphere(cabeza, 0.27f, color);
+        DibujarModeloJugadorEnPosicion(
+            posicionPies,
+            0.0f,
+            color,
+            0.18f
+        );
 
         if (
             indiceParticipante == participanteTurno &&

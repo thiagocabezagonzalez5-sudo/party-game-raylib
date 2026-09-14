@@ -913,20 +913,17 @@ static void DibujarJugadoresEquipoTronco(
             Fade(participantes[i].color, 0.70f)
         );
 
-        DrawCube(
-            posicion,
-            jugadores[i].tamano.x,
-            jugadores[i].tamano.y,
-            jugadores[i].tamano.z,
-            participantes[i].color
-        );
+        Vector3 posicionPies = posicion;
+        posicionPies.y -= jugadores[i].tamano.y * 0.5f;
 
-        DrawCubeWires(
-            posicion,
-            jugadores[i].tamano.x,
-            jugadores[i].tamano.y,
-            jugadores[i].tamano.z,
-            BLACK
+        float anguloY = direccionCentro > 0.0f
+            ? 90.0f
+            : -90.0f;
+
+        DibujarModeloJugadorEnPosicion(
+            posicionPies,
+            anguloY,
+            participantes[i].color
         );
     }
 }

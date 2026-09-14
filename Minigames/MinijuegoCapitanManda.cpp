@@ -1,4 +1,5 @@
 #include "Minigames/MinijuegoCapitanManda.h"
+#include "Minigames/ModeloJugadorCompartido.h"
 
 #define SOMBRAS_RETRO_AUTOMATICAS
 #include "Minigames/SombrasRetro.h"
@@ -557,20 +558,10 @@ static void DibujarJugadoresCapitan3D(
 
         if (!minijuego.jugadores[i].eliminado)
         {
-            DrawCube(
-                Vector3{ base.x, 0.78f, base.z },
-                0.72f,
-                1.22f,
-                0.72f,
+            DibujarModeloJugadorEnPosicion(
+                Vector3{ base.x, 0.17f, base.z },
+                180.0f,
                 color
-            );
-
-            DrawCubeWires(
-                Vector3{ base.x, 0.78f, base.z },
-                0.72f,
-                1.22f,
-                0.72f,
-                BLACK
             );
         }
     }

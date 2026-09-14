@@ -1869,151 +1869,12 @@ void ResolverGolpesJugadores(
 // DIBUJO
 //==================================================
 
-static void DibujarSombraRetroJugador(
-    const JugadorPrueba& jugador,
-    float radio
-)
-{
-    if (
-        jugador.cayendo ||
-        !jugador.enSuelo
-    )
-    {
-        return;
-    }
-
-    Vector3 posicionSombra =
-    {
-        jugador.posicion.x,
-        jugador.posicion.y - jugador.tamano.y / 2.0f + 0.012f,
-        jugador.posicion.z
-    };
-
-    // Sombra intencionalmente simple: un disco de pocos lados, sin
-    // iluminacion dinamica ni suavizado realista. Ayuda a leer la
-    // posicion del personaje sin romper el aspecto low-poly/retro.
-    DrawCylinder(
-        posicionSombra,
-        radio,
-        radio,
-        0.018f,
-        10,
-        Fade(BLACK, 0.28f)
-    );
-}
-
-
 void DibujarJugadorCuboPrueba(
     const JugadorPrueba& jugador,
     const Participante& participante
 )
 {
-    if (
-        !participante.activo ||
-        !participante.conectado ||
-        jugador.cayendo
-    )
-    {
-        return;
-    }
-
-    DibujarSombraRetroJugador(
-        jugador,
-        jugador.tamano.x * 0.48f
-    );
-
-    float alturaVisual =
-        jugador.aplastado
-        ? jugador.tamano.y * 0.24f
-        : jugador.tamano.y;
-
-    Vector3 posicionVisual =
-        jugador.posicion;
-
-    posicionVisual.y -=
-        (
-            jugador.tamano.y -
-            alturaVisual
-        ) /
-        2.0f;
-
-    float alpha =
-        1.0f;
-
-    if (jugador.tiempoInmunidad > 0.0f)
-    {
-        int faseParpadeo =
-            (int)(
-                jugador.tiempoInmunidad *
-                12.0f
-            );
-
-        alpha =
-            faseParpadeo % 2 == 0
-            ? 0.20f
-            : 1.0f;
-    }
-
-    Color colorVisual =
-        Fade(
-            participante.color,
-            alpha
-        );
-
-    DrawCube(
-        posicionVisual,
-        jugador.tamano.x,
-        alturaVisual,
-        jugador.tamano.z,
-        colorVisual
-    );
-
-    DrawCubeWires(
-        posicionVisual,
-        jugador.tamano.x,
-        alturaVisual,
-        jugador.tamano.z,
-        Fade(
-            BLACK,
-            alpha
-        )
-    );
-
-    if (
-        jugador.golpeando &&
-        !jugador.aplastado
-    )
-    {
-        Vector3 posicionGolpe =
-        {
-            jugador.posicion.x +
-                jugador.direccionMirada.x *
-                0.72f,
-
-            jugador.posicion.y +
-                0.12f,
-
-            jugador.posicion.z +
-                jugador.direccionMirada.z *
-                0.72f
-        };
-
-        DrawCube(
-            posicionGolpe,
-            0.34f,
-            0.34f,
-            0.34f,
-            colorVisual
-        );
-
-        DrawCubeWires(
-            posicionGolpe,
-            0.34f,
-            0.34f,
-            0.34f,
-            Fade(BLACK, alpha)
-        );
-    }
+    DibujarJugadorModeloCompartido(jugador, participante);
 }
 
 
@@ -2022,35 +1883,5 @@ void DibujarJugadorPelotaPrueba(
     const Participante& participante
 )
 {
-    if (
-        !participante.activo ||
-        !participante.conectado ||
-        jugador.cayendo
-    )
-    {
-        return;
-    }
-
-    float radio =
-        jugador.tamano.x /
-        2.0f;
-
-    DibujarSombraRetroJugador(
-        jugador,
-        radio * 0.78f
-    );
-
-    DrawSphere(
-        jugador.posicion,
-        radio,
-        participante.color
-    );
-
-    DrawSphereWires(
-        jugador.posicion,
-        radio,
-        12,
-        16,
-        BLACK
-    );
+    DibujarJugadorModeloCompartido(jugador, participante);
 }

@@ -1,12 +1,9 @@
 #pragma once
 
 #include "Core/Participante.h"
+#include "Minigames/ModeloJugadorCompartido.h"
 #include "Minigames/TiposMinijuegos.h"
 #include "Systems/Input.h"
-
-#ifndef UTILIDADES_MINIJUEGOS_IMPLEMENTACION
-#include "Minigames/ModeloJugadorCompartido.h"
-#endif
 
 
 void ReiniciarJugadorPrueba(
@@ -111,13 +108,7 @@ void DibujarJugadorPelotaPrueba(
 // RENDER DE JUGADOR EN MINIJUEGOS
 //==================================================
 //
-// La implementacion historica de cubo/esfera se conserva como fallback en
-// UtilidadesMinijuegos.cpp, pero todos los minijuegos nuevos y actuales usan
-// el GLB compartido. La unidad que implementa este archivo se excluye del
-// macro desde CMake para no renombrar sus propias funciones.
+// Estas dos funciones conservan sus nombres historicos para no modificar la
+// interfaz usada por los minijuegos. Sus implementaciones delegan en el
+// modelo GLB compartido y mantienen un cubo como fallback si falta el asset.
 //==================================================
-
-#ifndef UTILIDADES_MINIJUEGOS_IMPLEMENTACION
-#define DibujarJugadorCuboPrueba DibujarJugadorModeloCompartido
-#define DibujarJugadorPelotaPrueba DibujarJugadorModeloCompartido
-#endif
