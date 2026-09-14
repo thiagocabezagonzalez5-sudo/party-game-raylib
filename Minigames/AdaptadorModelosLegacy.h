@@ -6,14 +6,13 @@
 
 
 //==================================================
-// ADAPTADOR TEMPORAL PARA MINIJUEGOS LEGACY
+// ADAPTADOR TEMPORAL PARA DIBUJOS LEGACY
 //==================================================
 //
-// Tronco y Capitan dibujaban a sus jugadores directamente con DrawCube en
-// medio del codigo de escenario, en vez de pasar por UtilidadesMinijuegos.
-// Este adaptador se inyecta SOLO en esas dos unidades desde CMake y convierte
-// exclusivamente las dimensiones conocidas de jugador en el modelo GLB.
-// El resto de cubos del escenario sigue llegando a raylib mediante DrawCubeV.
+// Algunas pantallas antiguas dibujan al jugador directamente con primitivas.
+// El adaptador se inyecta SOLO en esas unidades desde CMake y reemplaza las
+// dimensiones exactas del placeholder de jugador por el GLB compartido.
+// El resto de la geometria sigue llegando a raylib sin cambios.
 //==================================================
 
 inline bool CasiIgualModeloLegacy(
@@ -42,10 +41,33 @@ inline bool EsCuboJugadorLegacy(
         CasiIgualModeloLegacy(ancho, 0.72f) &&
         CasiIgualModeloLegacy(alto, 1.22f) &&
         CasiIgualModeloLegacy(profundidad, 0.72f);
+#elif defined(MODELO_LEGACY_TABLERO_FINAL)
+    return
+        CasiIgualModeloLegacy(ancho, 0.50f) &&
+        CasiIgualModeloLegacy(alto, 0.62f) &&
+        CasiIgualModeloLegacy(profundidad, 0.50f);
+#elif defined(MODELO_LEGACY_TABLERO_PRUEBA)
+    return
+        CasiIgualModeloLegacy(ancho, 0.48f) &&
+        CasiIgualModeloLegacy(alto, 0.62f) &&
+        CasiIgualModeloLegacy(profundidad, 0.48f);
 #else
     (void)ancho;
     (void)alto;
     (void)profundidad;
+    return false;
+#endif
+}
+
+
+inline bool EsCabezaJugadorLegacy(float radio)
+{
+#if defined(MODELO_LEGACY_TABLERO_FINAL)
+    return CasiIgualModeloLegacy(radio, 0.27f, 0.01f);
+#elif defined(MODELO_LEGACY_TABLERO_PRUEBA)
+    return CasiIgualModeloLegacy(radio, 0.26f, 0.01f);
+#else
+    (void)radio;
     return false;
 #endif
 }
@@ -64,6 +86,16 @@ inline float AnguloJugadorLegacy(Vector3 posicion)
 #else
     (void)posicion;
     return 0.0f;
+#endif
+}
+
+
+inline float EscalaJugadorLegacy()
+{
+#if defined(MODELO_LEGACY_TABLERO_FINAL) || defined(MODELO_LEGACY_TABLERO_PRUEBA)
+    return 0.18f;
+#else
+    return ESCALA_MODELO_JUGADOR_3D;
 #endif
 }
 
@@ -88,7 +120,8 @@ inline void DrawCubeConModeloLegacy(
         DibujarModeloJugadorEnPosicion(
             pies,
             AnguloJugadorLegacy(posicion),
-            color
+            color,
+            EscalaJugadorLegacy()
         );
 
         return;
@@ -123,5 +156,27 @@ inline void DrawCubeWiresConModeloLegacy(
 }
 
 
+inline void DrawSphereConModeloLegacy(
+    Vector3 centro,
+    float radio,
+    Color color
+)
+{
+    if (EsCabezaJugadorLegacy(radio))
+    {
+        return;
+    }
+
+    DrawSphereEx(
+        centro,
+        radio,
+        16,
+        16,
+        color
+    );
+}
+
+
 #define DrawCube DrawCubeConModeloLegacy
 #define DrawCubeWires DrawCubeWiresConModeloLegacy
+#define DrawSphere DrawSphereConModeloLegacy
