@@ -72,6 +72,23 @@ set_source_files_properties(
     COMPILE_DEFINITIONS UTILIDADES_MINIJUEGOS_IMPLEMENTACION
 )
 
+# Tronco y Capitan todavia dibujan sus jugadores dentro del mismo codigo de
+# escenario. El adaptador se inyecta unicamente en esas unidades y reemplaza
+# solo los cubos que tienen las dimensiones exactas de jugador.
+set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/Minigames/MinijuegoTronco.cpp"
+    PROPERTIES
+    COMPILE_DEFINITIONS MODELO_LEGACY_TRONCO
+    COMPILE_OPTIONS "-include;${CMAKE_CURRENT_SOURCE_DIR}/Minigames/AdaptadorModelosLegacy.h"
+)
+
+set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/Minigames/MinijuegoCapitanManda.cpp"
+    PROPERTIES
+    COMPILE_DEFINITIONS MODELO_LEGACY_CAPITAN
+    COMPILE_OPTIONS "-include;${CMAKE_CURRENT_SOURCE_DIR}/Minigames/AdaptadorModelosLegacy.h"
+)
+
 
 # ================================================
 # EJECUTABLE
