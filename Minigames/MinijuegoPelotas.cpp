@@ -116,17 +116,40 @@ static void AplicarEmpujePendientePelotas(
 
 
 static bool JugadorSobreArenaCircularPelotas(
-    const JugadorPrueba& jugador
+    const JugadorPrueba& jugador,
+    const Camera3D& camara
 )
 {
+    // La linea debug esta debajo del suelo. Proyectamos la posicion del
+    // jugador desde la camara hasta ese mismo plano antes de comprobar el
+    // radio; asi el borde visible y el punto donde desaparece el suelo
+    // coinciden exactamente en pantalla.
+    float divisor = -camara.position.y;
+    float factorProyeccion = 1.0f;
+
+    if (std::fabs(divisor) > 0.001f)
+    {
+        factorProyeccion =
+            (ALTURA_DEBUG_COLISION_MONTANA_PELOTAS - camara.position.y) /
+            divisor;
+    }
+
+    float xPlanoColision =
+        camara.position.x +
+        (jugador.posicion.x - camara.position.x) * factorProyeccion;
+
+    float zPlanoColision =
+        camara.position.z +
+        (jugador.posicion.z - camara.position.z) * factorProyeccion;
+
     float distancia = MagnitudHorizontalPelotas(
-        jugador.posicion.x,
-        jugador.posicion.z
+        xPlanoColision,
+        zPlanoColision
     );
 
     float radioSoporte = RadioSoportePelotas(
-        jugador.posicion.x,
-        jugador.posicion.z
+        xPlanoColision,
+        zPlanoColision
     );
 
     return distancia <= radioSoporte;
@@ -490,8 +513,8 @@ void MinijuegoPelotas::Inicializar()
         bloques,
         cantidadBloques,
         1,
-        { 0.0f, -0.5f, 0.0f },
-        { 13.2f, 1.0f, 13.2f },
+        { 0.0f, -0.5f, 2.25f },
+        { 16.0f, 1.0f, 16.0f },
         RAYWHITE
     );
 
@@ -637,7 +660,8 @@ void MinijuegoPelotas::Actualizar(
         jugador.empuje = {};
 
         BloquePrueba sueloJugador = bloques[0];
-        sueloJugador.activaColision = JugadorSobreArenaCircularPelotas(jugador);
+        sueloJugador.activaColision =
+            JugadorSobreArenaCircularPelotas(jugador, camara);
 
         ActualizarJugadorPrueba(
             jugador,
@@ -652,8 +676,17 @@ void MinijuegoPelotas::Actualizar(
             deltaTime
         );
 
-        if (!JugadorSobreArenaCircularPelotas(jugador))
+        bool sobreArenaDespuesDeMover =
+            JugadorSobreArenaCircularPelotas(jugador, camara);
+
+        if (!sobreArenaDespuesDeMover)
         {
+            if (sueloJugador.activaColision && jugador.enSuelo)
+            {
+                jugador.velocidad.y -= jugador.gravedad * deltaTime;
+                jugador.posicion.y += jugador.velocidad.y * deltaTime;
+            }
+
             jugador.enSuelo = false;
         }
 
