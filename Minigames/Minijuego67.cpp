@@ -1,4 +1,5 @@
 #include "Minigames/Minijuego67.h"
+#include "Minigames/TransformacionModeloJugador.h"
 
 #include "Systems/Input.h"
 
@@ -1015,7 +1016,7 @@ void Minijuego67::Inicializar()
         return;
     }
 
-    modeloJugador.transform = MatrixRotateX(90.0f * DEG2RAD);
+    PrepararTransformacionModeloJugador(modeloJugador);
 
     animacionesJugador =
         LoadModelAnimations(

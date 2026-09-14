@@ -3,6 +3,7 @@
 #include "Core/Participante.h"
 #include "Core/RecursosJuego.h"
 #include "Minigames/TiposMinijuegos.h"
+#include "Minigames/TransformacionModeloJugador.h"
 
 #include "raylib.h"
 #include "raymath.h"
@@ -81,8 +82,7 @@ inline void InicializarModeloJugadorCompartido()
         return;
     }
 
-    recurso.modelo.transform =
-        MatrixRotateX(ROTACION_X_MODELO_JUGADOR_3D * DEG2RAD);
+    PrepararTransformacionModeloJugador(recurso.modelo);
 
     recurso.animaciones =
         LoadModelAnimations(

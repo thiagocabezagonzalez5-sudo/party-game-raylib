@@ -1,4 +1,5 @@
 #include "Minigames/PruebaModelos.h"
+#include "Minigames/TransformacionModeloJugador.h"
 
 #include "raymath.h"
 
@@ -86,13 +87,7 @@ void PruebaModelos::Inicializar()
 
     if (modeloCargado)
     {
-        // El GLB de Don Sahur fue exportado con el eje
-        // vertical orientado sobre Z. raylib usa Y como
-        // eje vertical, por eso aparecia acostado.
-        modelo.transform =
-            MatrixRotateX(
-                90.0f * DEG2RAD
-            );
+        PrepararTransformacionModeloJugador(modelo);
 
         animaciones =
             LoadModelAnimations(
