@@ -1,4 +1,5 @@
 #include "Core/Juego.h"
+#include "Minigames/ModeloJugadorCompartido.h"
 #include "raylib.h"
 
 
@@ -52,6 +53,7 @@ int main()
     //------------------------------
 
     juego.Descargar();
+    DescargarModeloJugadorCompartido();
 
 
     CloseWindow();
