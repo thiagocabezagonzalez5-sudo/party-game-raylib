@@ -63,6 +63,15 @@ list(
     ".*\\.conflicto\\..*\\.cpp$"
 )
 
+# La implementacion historica de UtilidadesMinijuegos mantiene las funciones
+# de cubo/esfera como fallback. En el resto del proyecto el header redirige
+# esas llamadas al modelo GLB compartido.
+set_source_files_properties(
+    "${CMAKE_CURRENT_SOURCE_DIR}/Minigames/UtilidadesMinijuegos.cpp"
+    PROPERTIES
+    COMPILE_DEFINITIONS UTILIDADES_MINIJUEGOS_IMPLEMENTACION
+)
+
 
 # ================================================
 # EJECUTABLE
