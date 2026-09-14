@@ -29,7 +29,7 @@ inline constexpr float ESCALA_MODELO_JUGADOR_3D =
     0.25f;
 
 inline constexpr float ROTACION_X_MODELO_JUGADOR_3D =
-    90.0f;
+    -90.0f;
 
 
 //==================================================
