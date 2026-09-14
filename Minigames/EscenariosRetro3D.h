@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 
 #include <cmath>
 
@@ -285,22 +286,35 @@ inline void DibujarVolcanesLavaEscenario3D()
         float ancho =
             31.0f + (float)(i % 2) * 4.5f;
 
-        DibujarMontanaPrismaEscenario3D(
-            {
-                posiciones[i],
-                baseY,
-                -43.0f - (float)(i % 2) * 4.0f
-            },
+        Vector3 centroBase =
+        {
+            posiciones[i],
+            baseY,
+            -43.0f - (float)(i % 2) * 4.0f
+        };
+
+        bool usoModelo = DibujarModeloMontanaLavaEscenarioRetro3D(
+            centroBase,
             ancho,
             altura,
-            12.0f,
-            i % 2 == 0
-                ? Color{ 68, 56, 58, 255 }
-                : Color{ 78, 62, 62, 255 },
-            Color{ 45, 39, 42, 255 },
-            Color{ 68, 56, 58, 255 },
-            0.0f
+            i % 2 == 0 ? 0.0f : 180.0f
         );
+
+        if (!usoModelo)
+        {
+            DibujarMontanaPrismaEscenario3D(
+                centroBase,
+                ancho,
+                altura,
+                12.0f,
+                i % 2 == 0
+                    ? Color{ 68, 56, 58, 255 }
+                    : Color{ 78, 62, 62, 255 },
+                Color{ 45, 39, 42, 255 },
+                Color{ 68, 56, 58, 255 },
+                0.0f
+            );
+        }
 
         if (i == 1 || i == 3 || i == 5)
         {

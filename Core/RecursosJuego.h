@@ -33,6 +33,22 @@ inline constexpr float ROTACION_X_MODELO_JUGADOR_3D =
 
 
 //==================================================
+// MODELOS DE ESCENARIOS DE MINIJUEGOS
+//==================================================
+
+// Este archivo es opcional. Mientras no exista, Color Seguro conserva las
+// montanas low-poly actuales. Al agregar el GLB, todas las instancias del
+// fondo se reemplazan automaticamente por este modelo compartido.
+inline constexpr const char* RUTA_MODELO_MONTANA_LAVA_3D =
+    "Assets/Modelos/Escenarios/ColorSeguro/MontanaLava.glb";
+
+// Permite corregir un modelo exportado con otro eje vertical sin tocar el
+// codigo del escenario. Para un GLB preparado con Y hacia arriba se deja 0.
+inline constexpr float ROTACION_X_MODELO_MONTANA_LAVA_3D =
+    0.0f;
+
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 

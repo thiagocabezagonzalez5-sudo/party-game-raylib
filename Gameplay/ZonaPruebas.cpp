@@ -1,6 +1,7 @@
 #include "Gameplay/ZonaPruebas.h"
 
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 
 
@@ -307,6 +308,7 @@ void ZonaPruebas::Inicializar(
     audio = audioJuego;
 
     InicializarTexturasTematicasMinijuegos();
+    InicializarModelosEscenariosRetro3D();
 
     for (int i = 0; i < MAX_PARTICULAS_TIERRA; i++)
     {
@@ -1033,5 +1035,6 @@ void ZonaPruebas::Descargar()
 {
     minijuego67.Descargar();
     pruebaModelos.Descargar();
+    DescargarModelosEscenariosRetro3D();
     DescargarTexturasTematicasMinijuegos();
 }
