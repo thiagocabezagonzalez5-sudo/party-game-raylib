@@ -21,6 +21,8 @@ static const char* NombreModoPrueba(
         case PRUEBA_ISLA_FUEGO: return "8 - ISLA BAJO FUEGO";
         case PRUEBA_CAPITAN_MANDA: return "9 - CAPITAN MANDA";
         case PRUEBA_BARRA_GIRATORIA: return "0 - BARRA GIRATORIA";
+        case PRUEBA_CONTEO_EXPLOSIVO: return "F6 - CONTEO EXPLOSIVO";
+        case PRUEBA_PASO_SILENCIOSO: return "F7 - PASO SILENCIOSO";
         case PRUEBA_TORMENTA_MAGNETICA: return "F8 - TORMENTA MAGNETICA";
         case PRUEBA_MUROS_LOCOS: return "F9 - MUROS LOCOS";
         case PRUEBA_NUCLEOS_ENERGIA: return "F10 - NUCLEOS DE ENERGIA";
@@ -329,6 +331,8 @@ void ZonaPruebas::Inicializar(
     minijuegoMiradasCruzadas.Inicializar();
     minijuegoMurosLocos.Inicializar();
     minijuegoTormentaMagnetica.Inicializar();
+    minijuegoConteoExplosivo.Inicializar();
+    minijuegoPasoSilencioso.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
@@ -443,6 +447,14 @@ void ZonaPruebas::CambiarModo(
                 jugadores,
                 MAX_JUGADORES_PRUEBA
             );
+            break;
+
+        case PRUEBA_CONTEO_EXPLOSIVO:
+            minijuegoConteoExplosivo.Reiniciar(participantes);
+            break;
+
+        case PRUEBA_PASO_SILENCIOSO:
+            minijuegoPasoSilencioso.Reiniciar(participantes);
             break;
     }
 
@@ -602,6 +614,14 @@ static void ReiniciarModoActual(
                 MAX_JUGADORES_PRUEBA
             );
             break;
+
+        case PRUEBA_CONTEO_EXPLOSIVO:
+            zona.minijuegoConteoExplosivo.Reiniciar(zona.participantes);
+            break;
+
+        case PRUEBA_PASO_SILENCIOSO:
+            zona.minijuegoPasoSilencioso.Reiniciar(zona.participantes);
+            break;
     }
 
     if (zona.modoActual != PRUEBA_MODELOS)
@@ -643,6 +663,8 @@ void ZonaPruebas::Actualizar(
         if (IsKeyPressed(KEY_EIGHT)) { CambiarModo(PRUEBA_ISLA_FUEGO); return; }
         if (IsKeyPressed(KEY_NINE)) { CambiarModo(PRUEBA_CAPITAN_MANDA); return; }
         if (IsKeyPressed(KEY_ZERO)) { CambiarModo(PRUEBA_BARRA_GIRATORIA); return; }
+        if (IsKeyPressed(KEY_F6)) { CambiarModo(PRUEBA_CONTEO_EXPLOSIVO); return; }
+        if (IsKeyPressed(KEY_F7)) { CambiarModo(PRUEBA_PASO_SILENCIOSO); return; }
         if (IsKeyPressed(KEY_F8)) { CambiarModo(PRUEBA_TORMENTA_MAGNETICA); return; }
         if (IsKeyPressed(KEY_F9)) { CambiarModo(PRUEBA_MUROS_LOCOS); return; }
         if (IsKeyPressed(KEY_F10)) { CambiarModo(PRUEBA_NUCLEOS_ENERGIA); return; }
@@ -826,6 +848,20 @@ void ZonaPruebas::Actualizar(
                 MAX_PARTICULAS_TIERRA
             );
             break;
+
+        case PRUEBA_CONTEO_EXPLOSIVO:
+            minijuegoConteoExplosivo.Actualizar(
+                deltaTime,
+                participantes
+            );
+            break;
+
+        case PRUEBA_PASO_SILENCIOSO:
+            minijuegoPasoSilencioso.Actualizar(
+                deltaTime,
+                participantes
+            );
+            break;
     }
 }
 
@@ -952,6 +988,14 @@ void ZonaPruebas::Dibujar() const
                 mostrarDebug
             );
             break;
+
+        case PRUEBA_CONTEO_EXPLOSIVO:
+            minijuegoConteoExplosivo.Dibujar(participantes);
+            break;
+
+        case PRUEBA_PASO_SILENCIOSO:
+            minijuegoPasoSilencioso.Dibujar(participantes);
+            break;
     }
 
     if (modoCatalogo)
@@ -992,7 +1036,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "F8 MAGNETICA  F9 MUROS  F10 NUCLEOS  F11 TALADROS  F12 MIRADAS",
+        "F6 CONTEO  F7 SIGILO  F8 MAGNETICA  F9 MUROS  F10 NUCLEOS  F11 TALADROS  F12 MIRADAS",
         30,
         GetScreenHeight() - 116,
         15,

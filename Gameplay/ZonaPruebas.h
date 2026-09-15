@@ -5,12 +5,14 @@
 #include "Minigames/MinijuegoBarraGiratoria.h"
 #include "Minigames/MinijuegoCapitanManda.h"
 #include "Minigames/MinijuegoColorSeguro.h"
+#include "Minigames/MinijuegoConteoExplosivo.h"
 #include "Minigames/Minijuego67.h"
 #include "Minigames/MinijuegoIslaFuego.h"
 #include "Minigames/MinijuegoMiradasCruzadas.h"
 #include "Minigames/MinijuegoMurosLocos.h"
 #include "Minigames/MinijuegoNucleosEnergia.h"
 #include "Minigames/MinijuegoPelotas.h"
+#include "Minigames/MinijuegoPasoSilencioso.h"
 #include "Minigames/MinijuegoRefugioPinchos.h"
 #include "Minigames/MinijuegoTormentaMagnetica.h"
 #include "Minigames/MinijuegoTronco.h"
@@ -35,7 +37,9 @@ enum ModoZonaPruebas
     PRUEBA_REFUGIO_PINCHOS = 12,
     PRUEBA_MIRADAS_CRUZADAS = 13,
     PRUEBA_MUROS_LOCOS = 14,
-    PRUEBA_TORMENTA_MAGNETICA = 15
+    PRUEBA_TORMENTA_MAGNETICA = 15,
+    PRUEBA_CONTEO_EXPLOSIVO = 16,
+    PRUEBA_PASO_SILENCIOSO = 17
 };
 
 
@@ -71,6 +75,8 @@ struct ZonaPruebas
     MinijuegoMiradasCruzadas minijuegoMiradasCruzadas;
     MinijuegoMurosLocos minijuegoMurosLocos;
     MinijuegoTormentaMagnetica minijuegoTormentaMagnetica;
+    MinijuegoConteoExplosivo minijuegoConteoExplosivo;
+    MinijuegoPasoSilencioso minijuegoPasoSilencioso;
 
     bool modoCatalogo = false;
     bool mostrarDebug = false;

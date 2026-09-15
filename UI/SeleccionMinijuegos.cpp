@@ -76,6 +76,16 @@ static const DatosMinijuegoCatalogo DATOS_CATALOGO[
         "TORMENTA MAGNETICA",
         "Sobrevive a un nucleo que alterna atraccion y repulsion mientras cambia de posicion.",
         Color{ 74, 191, 220, 255 }
+    },
+    {
+        "CONTEO EXPLOSIVO",
+        "Observa los drones en movimiento, recuerdalos y elige la cantidad exacta antes del final.",
+        Color{ 244, 184, 61, 255 }
+    },
+    {
+        "PASO SILENCIOSO",
+        "Avanza mientras el centinela duerme. Si te mueves cuando mira, perderas parte del camino.",
+        Color{ 99, 205, 145, 255 }
     }
 };
 
@@ -98,7 +108,7 @@ static Rectangle ObtenerCeldaCatalogo(
 {
     Rectangle area = ObtenerAreaCatalogo();
 
-    const int columnas = 6;
+    const int columnas = 7;
     const float separacion = 11.0f;
 
     float anchoCelda =
@@ -266,6 +276,44 @@ static void DibujarMiniatura(
             break;
         }
 
+        case CATALOGO_CONTEO_EXPLOSIVO:
+        {
+            DrawCircle((int)cx, (int)cy, 45.0f, Fade(SKYBLUE, 0.25f));
+
+            for (int i = 0; i < 7; i++)
+            {
+                float angulo = i * 51.43f * DEG2RAD;
+                float radio = i % 2 == 0 ? 31.0f : 20.0f;
+                DrawCircle(
+                    (int)(cx + std::cos(angulo) * radio),
+                    (int)(cy + std::sin(angulo) * radio),
+                    6.0f,
+                    i % 2 == 0 ? GOLD : SKYBLUE
+                );
+            }
+
+            DrawText("?", (int)cx - 8, (int)cy - 17, 32, RAYWHITE);
+            break;
+        }
+
+        case CATALOGO_PASO_SILENCIOSO:
+        {
+            DrawRectangle((int)cx - 47, (int)cy + 27, 94, 8, DARKGRAY);
+            DrawCircle((int)cx + 30, (int)cy - 25, 17.0f, DARKGRAY);
+            DrawCircle((int)cx + 35, (int)cy - 27, 5.0f, LIME);
+
+            for (int i = 0; i < 3; i++)
+            {
+                DrawCircle(
+                    (int)cx - 37 + i * 24,
+                    (int)cy + 15 - i * 8,
+                    8.0f,
+                    i == 0 ? SKYBLUE : (i == 1 ? ORANGE : VIOLET)
+                );
+            }
+            break;
+        }
+
         case CANTIDAD_MINIJUEGOS_CATALOGO:
             break;
     }
@@ -278,7 +326,7 @@ static int MoverIndice(
     int deltaY
 )
 {
-    const int columnas = 6;
+    const int columnas = 7;
     const int filas = 2;
 
     int columna = actual % columnas;

@@ -129,6 +129,12 @@ static ModoZonaPruebas ConvertirCatalogoAModo(
 
         case CATALOGO_TORMENTA_MAGNETICA:
             return PRUEBA_TORMENTA_MAGNETICA;
+
+        case CATALOGO_CONTEO_EXPLOSIVO:
+            return PRUEBA_CONTEO_EXPLOSIVO;
+
+        case CATALOGO_PASO_SILENCIOSO:
+            return PRUEBA_PASO_SILENCIOSO;
     }
 
     return PRUEBA_COLOR_SEGURO;
@@ -151,7 +157,9 @@ static ModoZonaPruebas ElegirMinijuegoAleatorioTablero()
         PRUEBA_REFUGIO_PINCHOS,
         PRUEBA_MIRADAS_CRUZADAS,
         PRUEBA_MUROS_LOCOS,
-        PRUEBA_TORMENTA_MAGNETICA
+        PRUEBA_TORMENTA_MAGNETICA,
+        PRUEBA_CONTEO_EXPLOSIVO,
+        PRUEBA_PASO_SILENCIOSO
     };
 
     const int cantidadOpciones =
@@ -204,6 +212,12 @@ static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
 
         case PRUEBA_TORMENTA_MAGNETICA:
             return &zona.minijuegoTormentaMagnetica.ObtenerResultado();
+
+        case PRUEBA_CONTEO_EXPLOSIVO:
+            return &zona.minijuegoConteoExplosivo.ObtenerResultado();
+
+        case PRUEBA_PASO_SILENCIOSO:
+            return &zona.minijuegoPasoSilencioso.ObtenerResultado();
 
         case PRUEBA_ZONA_PRINCIPAL:
         case PRUEBA_MODELOS:
