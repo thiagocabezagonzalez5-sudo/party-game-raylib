@@ -4,6 +4,7 @@
 #include "Gameplay/PrototipoTablero.h"
 #include "Minigames/MinijuegoBarraGiratoria.h"
 #include "Minigames/MinijuegoCapitanManda.h"
+#include "Minigames/MinijuegoCircuitoVoltaje.h"
 #include "Minigames/MinijuegoColorSeguro.h"
 #include "Minigames/MinijuegoConteoExplosivo.h"
 #include "Minigames/Minijuego67.h"
@@ -15,6 +16,7 @@
 #include "Minigames/MinijuegoPasoSilencioso.h"
 #include "Minigames/MinijuegoRefugioPinchos.h"
 #include "Minigames/MinijuegoTormentaMagnetica.h"
+#include "Minigames/MinijuegoTrazoPerfecto.h"
 #include "Minigames/MinijuegoTronco.h"
 #include "Minigames/PruebaModelos.h"
 #include "Minigames/TiposMinijuegos.h"
@@ -39,7 +41,9 @@ enum ModoZonaPruebas
     PRUEBA_MUROS_LOCOS = 14,
     PRUEBA_TORMENTA_MAGNETICA = 15,
     PRUEBA_CONTEO_EXPLOSIVO = 16,
-    PRUEBA_PASO_SILENCIOSO = 17
+    PRUEBA_PASO_SILENCIOSO = 17,
+    PRUEBA_CIRCUITO_VOLTAJE = 18,
+    PRUEBA_TRAZO_PERFECTO = 19
 };
 
 
@@ -77,6 +81,8 @@ struct ZonaPruebas
     MinijuegoTormentaMagnetica minijuegoTormentaMagnetica;
     MinijuegoConteoExplosivo minijuegoConteoExplosivo;
     MinijuegoPasoSilencioso minijuegoPasoSilencioso;
+    MinijuegoCircuitoVoltaje minijuegoCircuitoVoltaje;
+    MinijuegoTrazoPerfecto minijuegoTrazoPerfecto;
 
     bool modoCatalogo = false;
     bool mostrarDebug = false;

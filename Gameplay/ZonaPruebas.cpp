@@ -21,6 +21,8 @@ static const char* NombreModoPrueba(
         case PRUEBA_ISLA_FUEGO: return "8 - ISLA BAJO FUEGO";
         case PRUEBA_CAPITAN_MANDA: return "9 - CAPITAN MANDA";
         case PRUEBA_BARRA_GIRATORIA: return "0 - BARRA GIRATORIA";
+        case PRUEBA_CIRCUITO_VOLTAJE: return "F4 - CIRCUITO VOLTAJE";
+        case PRUEBA_TRAZO_PERFECTO: return "F5 - TRAZO PERFECTO";
         case PRUEBA_CONTEO_EXPLOSIVO: return "F6 - CONTEO EXPLOSIVO";
         case PRUEBA_PASO_SILENCIOSO: return "F7 - PASO SILENCIOSO";
         case PRUEBA_TORMENTA_MAGNETICA: return "F8 - TORMENTA MAGNETICA";
@@ -333,6 +335,8 @@ void ZonaPruebas::Inicializar(
     minijuegoTormentaMagnetica.Inicializar();
     minijuegoConteoExplosivo.Inicializar();
     minijuegoPasoSilencioso.Inicializar();
+    minijuegoCircuitoVoltaje.Inicializar();
+    minijuegoTrazoPerfecto.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
@@ -455,6 +459,14 @@ void ZonaPruebas::CambiarModo(
 
         case PRUEBA_PASO_SILENCIOSO:
             minijuegoPasoSilencioso.Reiniciar(participantes);
+            break;
+
+        case PRUEBA_CIRCUITO_VOLTAJE:
+            minijuegoCircuitoVoltaje.Reiniciar(participantes);
+            break;
+
+        case PRUEBA_TRAZO_PERFECTO:
+            minijuegoTrazoPerfecto.Reiniciar(participantes);
             break;
     }
 
@@ -622,6 +634,14 @@ static void ReiniciarModoActual(
         case PRUEBA_PASO_SILENCIOSO:
             zona.minijuegoPasoSilencioso.Reiniciar(zona.participantes);
             break;
+
+        case PRUEBA_CIRCUITO_VOLTAJE:
+            zona.minijuegoCircuitoVoltaje.Reiniciar(zona.participantes);
+            break;
+
+        case PRUEBA_TRAZO_PERFECTO:
+            zona.minijuegoTrazoPerfecto.Reiniciar(zona.participantes);
+            break;
     }
 
     if (zona.modoActual != PRUEBA_MODELOS)
@@ -663,6 +683,8 @@ void ZonaPruebas::Actualizar(
         if (IsKeyPressed(KEY_EIGHT)) { CambiarModo(PRUEBA_ISLA_FUEGO); return; }
         if (IsKeyPressed(KEY_NINE)) { CambiarModo(PRUEBA_CAPITAN_MANDA); return; }
         if (IsKeyPressed(KEY_ZERO)) { CambiarModo(PRUEBA_BARRA_GIRATORIA); return; }
+        if (IsKeyPressed(KEY_F4)) { CambiarModo(PRUEBA_CIRCUITO_VOLTAJE); return; }
+        if (IsKeyPressed(KEY_F5)) { CambiarModo(PRUEBA_TRAZO_PERFECTO); return; }
         if (IsKeyPressed(KEY_F6)) { CambiarModo(PRUEBA_CONTEO_EXPLOSIVO); return; }
         if (IsKeyPressed(KEY_F7)) { CambiarModo(PRUEBA_PASO_SILENCIOSO); return; }
         if (IsKeyPressed(KEY_F8)) { CambiarModo(PRUEBA_TORMENTA_MAGNETICA); return; }
@@ -862,6 +884,20 @@ void ZonaPruebas::Actualizar(
                 participantes
             );
             break;
+
+        case PRUEBA_CIRCUITO_VOLTAJE:
+            minijuegoCircuitoVoltaje.Actualizar(
+                deltaTime,
+                participantes
+            );
+            break;
+
+        case PRUEBA_TRAZO_PERFECTO:
+            minijuegoTrazoPerfecto.Actualizar(
+                deltaTime,
+                participantes
+            );
+            break;
     }
 }
 
@@ -996,6 +1032,14 @@ void ZonaPruebas::Dibujar() const
         case PRUEBA_PASO_SILENCIOSO:
             minijuegoPasoSilencioso.Dibujar(participantes);
             break;
+
+        case PRUEBA_CIRCUITO_VOLTAJE:
+            minijuegoCircuitoVoltaje.Dibujar(participantes);
+            break;
+
+        case PRUEBA_TRAZO_PERFECTO:
+            minijuegoTrazoPerfecto.Dibujar(participantes);
+            break;
     }
 
     if (modoCatalogo)
@@ -1036,7 +1080,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "F6 CONTEO  F7 SIGILO  F8 MAGNETICA  F9 MUROS  F10 NUCLEOS  F11 TALADROS  F12 MIRADAS",
+        "F4 CIRCUITO  F5 TRAZO  F6 CONTEO  F7 SIGILO  F8 MAGNETICA  F9 MUROS  F10 NUCLEOS  F11 TALADROS  F12 MIRADAS",
         30,
         GetScreenHeight() - 116,
         15,

@@ -135,6 +135,12 @@ static ModoZonaPruebas ConvertirCatalogoAModo(
 
         case CATALOGO_PASO_SILENCIOSO:
             return PRUEBA_PASO_SILENCIOSO;
+
+        case CATALOGO_CIRCUITO_VOLTAJE:
+            return PRUEBA_CIRCUITO_VOLTAJE;
+
+        case CATALOGO_TRAZO_PERFECTO:
+            return PRUEBA_TRAZO_PERFECTO;
     }
 
     return PRUEBA_COLOR_SEGURO;
@@ -159,7 +165,9 @@ static ModoZonaPruebas ElegirMinijuegoAleatorioTablero()
         PRUEBA_MUROS_LOCOS,
         PRUEBA_TORMENTA_MAGNETICA,
         PRUEBA_CONTEO_EXPLOSIVO,
-        PRUEBA_PASO_SILENCIOSO
+        PRUEBA_PASO_SILENCIOSO,
+        PRUEBA_CIRCUITO_VOLTAJE,
+        PRUEBA_TRAZO_PERFECTO
     };
 
     const int cantidadOpciones =
@@ -218,6 +226,12 @@ static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
 
         case PRUEBA_PASO_SILENCIOSO:
             return &zona.minijuegoPasoSilencioso.ObtenerResultado();
+
+        case PRUEBA_CIRCUITO_VOLTAJE:
+            return &zona.minijuegoCircuitoVoltaje.ObtenerResultado();
+
+        case PRUEBA_TRAZO_PERFECTO:
+            return &zona.minijuegoTrazoPerfecto.ObtenerResultado();
 
         case PRUEBA_ZONA_PRINCIPAL:
         case PRUEBA_MODELOS:

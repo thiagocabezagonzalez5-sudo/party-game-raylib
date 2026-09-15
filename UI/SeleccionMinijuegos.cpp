@@ -86,6 +86,16 @@ static const DatosMinijuegoCatalogo DATOS_CATALOGO[
         "PASO SILENCIOSO",
         "Avanza mientras el centinela duerme. Si te mueves cuando mira, perderas parte del camino.",
         Color{ 99, 205, 145, 255 }
+    },
+    {
+        "CIRCUITO VOLTAJE",
+        "Completa cuatro vueltas. Acelera en las rectas y suelta en las curvas para evitar trompos.",
+        Color{ 244, 108, 68, 255 }
+    },
+    {
+        "TRAZO PERFECTO",
+        "Sigue el punto dorado alrededor de la figura. El recorrido mas preciso obtiene la victoria.",
+        Color{ 102, 157, 235, 255 }
     }
 };
 
@@ -108,22 +118,29 @@ static Rectangle ObtenerCeldaCatalogo(
 {
     Rectangle area = ObtenerAreaCatalogo();
 
-    const int columnas = 7;
-    const float separacion = 11.0f;
+    const int columnas = 6;
+    const int filas =
+        (CANTIDAD_MINIJUEGOS_CATALOGO + columnas - 1) /
+        columnas;
+
+    const float separacionX = 11.0f;
+    const float separacionY = 10.0f;
 
     float anchoCelda =
-        (area.width - separacion * (columnas - 1)) /
+        (area.width - separacionX * (columnas - 1)) /
         (float)columnas;
 
-    float altoCelda = 178.0f;
+    float altoCelda =
+        (area.height - separacionY * (filas - 1)) /
+        (float)filas;
 
     int columna = indice % columnas;
     int fila = indice / columnas;
 
     return Rectangle
     {
-        area.x + columna * (anchoCelda + separacion),
-        area.y + fila * (altoCelda + 24.0f),
+        area.x + columna * (anchoCelda + separacionX),
+        area.y + fila * (altoCelda + separacionY),
         anchoCelda,
         altoCelda
     };
@@ -146,7 +163,7 @@ static void DibujarMiniatura(
     );
 
     float cx = rect.x + rect.width / 2.0f;
-    float cy = rect.y + rect.height / 2.0f - 10.0f;
+    float cy = rect.y + (rect.height - 36.0f) / 2.0f;
 
     switch (indice)
     {
@@ -314,6 +331,46 @@ static void DibujarMiniatura(
             break;
         }
 
+        case CATALOGO_CIRCUITO_VOLTAJE:
+        {
+            DrawEllipseLines((int)cx, (int)cy, 49.0f, 31.0f, RAYWHITE);
+            DrawEllipseLines((int)cx, (int)cy, 31.0f, 15.0f, DARKGRAY);
+            DrawRectanglePro(
+                { cx, cy - 23.0f, 25.0f, 13.0f },
+                { 12.5f, 6.5f },
+                0.0f,
+                ORANGE
+            );
+            DrawCircle((int)cx + 10, (int)cy - 23, 3.0f, RAYWHITE);
+            break;
+        }
+
+        case CATALOGO_TRAZO_PERFECTO:
+        {
+            Vector2 puntos[] =
+            {
+                { cx, cy - 42.0f },
+                { cx + 38.0f, cy - 10.0f },
+                { cx + 27.0f, cy + 35.0f },
+                { cx, cy + 47.0f },
+                { cx - 27.0f, cy + 35.0f },
+                { cx - 38.0f, cy - 10.0f }
+            };
+
+            for (int i = 0; i < 6; i++)
+            {
+                DrawLineEx(
+                    puntos[i],
+                    puntos[(i + 1) % 6],
+                    4.0f,
+                    SKYBLUE
+                );
+            }
+
+            DrawCircleV(puntos[1], 7.0f, GOLD);
+            break;
+        }
+
         case CANTIDAD_MINIJUEGOS_CATALOGO:
             break;
     }
@@ -326,8 +383,10 @@ static int MoverIndice(
     int deltaY
 )
 {
-    const int columnas = 7;
-    const int filas = 2;
+    const int columnas = 6;
+    const int filas =
+        (CANTIDAD_MINIJUEGOS_CATALOGO + columnas - 1) /
+        columnas;
 
     int columna = actual % columnas;
     int fila = actual / columnas;
