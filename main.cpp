@@ -4,6 +4,46 @@
 #include "raylib.h"
 
 
+static void AplicarZoomEditorConRueda(
+    EditorMapas& editor
+)
+{
+    float rueda = GetMouseWheelMove();
+
+    if (rueda == 0.0f)
+    {
+        return;
+    }
+
+    Ray rayo =
+        GetScreenToWorldRay(
+            GetMousePosition(),
+            editor.camara
+        );
+
+    float velocidadZoom =
+        IsKeyDown(KEY_LEFT_SHIFT) ||
+        IsKeyDown(KEY_RIGHT_SHIFT)
+        ? 3.0f
+        : 1.45f;
+
+    Vector3 desplazamiento =
+    {
+        rayo.direction.x * rueda * velocidadZoom,
+        rayo.direction.y * rueda * velocidadZoom,
+        rayo.direction.z * rueda * velocidadZoom
+    };
+
+    editor.camara.position.x += desplazamiento.x;
+    editor.camara.position.y += desplazamiento.y;
+    editor.camara.position.z += desplazamiento.z;
+
+    editor.camara.target.x += desplazamiento.x;
+    editor.camara.target.y += desplazamiento.y;
+    editor.camara.target.z += desplazamiento.z;
+}
+
+
 int main()
 {
     Juego juego;
@@ -56,6 +96,8 @@ int main()
         {
             if (editorActivo)
             {
+                AplicarZoomEditorConRueda(editorMapas);
+
                 editorMapas.Actualizar(
                     deltaTime
                 );

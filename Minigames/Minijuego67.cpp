@@ -1,6 +1,7 @@
 #include "Minigames/Minijuego67.h"
 #include "Minigames/TransformacionModeloJugador.h"
 
+#include "Editor/MapaEditor.h"
 #include "Systems/Input.h"
 
 #include "raymath.h"
@@ -21,15 +22,51 @@ static const float DURACION_PARTIDA_67 = 30.0f;
 static const float INICIO_ZONA_RECOGIDA_67 = 0.755f;
 static const float FIN_ZONA_RECOGIDA_67 = 0.815f;
 
-static const float X_INICIO_CINTA_67 = -6.3f;
-static const float LARGO_CINTA_67 = 9.0f;
-static const float X_JUGADOR_67 = 1.35f;
-static const float X_MESA_67 = 3.45f;
+static const char* RUTA_MAPA_FABRICA_67 =
+    "Mapas/Minijuego67.map";
 
-static const float Z_CINTA_6_67 = -2.35f;
-static const float Z_CINTA_7_67 = 2.35f;
-static const float Z_JUGADOR_6_67 = -0.72f;
-static const float Z_JUGADOR_7_67 = 0.72f;
+// El mapa es una plantilla visual compartida por ambos equipos. Cada mitad
+// de la pantalla renderiza la misma distribucion con el color de su equipo.
+static MapaEditor mapaVisual67;
+static double proximaRecargaMapa67 = -1.0;
+
+static Vector3 posicionPiso67 = { 0.0f, -0.36f, 0.0f };
+static Vector3 escalaPiso67 = { 18.0f, 0.10f, 10.0f };
+static Color colorPiso67 = Color{ 78, 82, 88, 255 };
+
+static Vector3 posicionParedFondo67 = { 0.0f, 2.35f, -4.55f };
+static Vector3 escalaParedFondo67 = { 17.0f, 5.30f, 0.25f };
+static Color colorParedFondo67 = Color{ 63, 68, 76, 255 };
+
+static Vector3 posicionParedIzquierda67 = { -8.35f, 2.35f, 0.0f };
+static Vector3 escalaParedIzquierda67 = { 0.30f, 5.30f, 10.0f };
+static Color colorParedIzquierda67 = Color{ 55, 60, 68, 255 };
+
+static Vector3 posicionesCintas67[2] =
+{
+    { -1.80f, 0.20f, -2.35f },
+    { -1.80f, 0.20f, 2.35f }
+};
+
+static Vector3 escalasCintas67[2] =
+{
+    { 9.40f, 0.42f, 1.22f },
+    { 9.40f, 0.42f, 1.22f }
+};
+
+static Color coloresCintas67[2] =
+{
+    Color{ 45, 49, 56, 255 },
+    Color{ 45, 49, 56, 255 }
+};
+
+static Vector3 posicionMesa67 = { 3.45f, 0.12f, 0.0f };
+static Vector3 escalaMesa67 = { 1.76f, 0.22f, 1.76f };
+static Color colorMesa67 = Color{ 71, 47, 32, 255 };
+
+static float X_JUGADOR_67 = 1.35f;
+static float Z_JUGADOR_6_67 = -0.72f;
+static float Z_JUGADOR_7_67 = 0.72f;
 
 // Cuatro piezas por cinta dejan espacio visual. El 7 queda atrasado respecto
 // del 6, por lo que el 6 cruza primero la zona de recogida en cada ciclo.
@@ -126,9 +163,208 @@ static float NormalizarProgreso67(float progreso)
 }
 
 
-static float ObtenerXObjeto67(float progreso)
+static float DimensionMapa67(
+    float valor,
+    float minimo
+)
 {
-    return X_INICIO_CINTA_67 + progreso * LARGO_CINTA_67;
+    float resultado = std::fabs(valor);
+
+    if (resultado < minimo)
+    {
+        resultado = minimo;
+    }
+
+    return resultado;
+}
+
+
+static int IndiceCinta67(
+    TipoPieza67 tipo
+)
+{
+    return tipo == PIEZA_NUMERO_7 ? 1 : 0;
+}
+
+
+static float ObtenerLargoUtilCinta67(
+    TipoPieza67 tipo
+)
+{
+    int indice = IndiceCinta67(tipo);
+
+    float largoTotal =
+        DimensionMapa67(
+            escalasCintas67[indice].x,
+            0.80f
+        );
+
+    float largoUtil = largoTotal - 0.40f;
+
+    if (largoUtil < 0.40f)
+    {
+        largoUtil = 0.40f;
+    }
+
+    return largoUtil;
+}
+
+
+static float ObtenerInicioCinta67(
+    TipoPieza67 tipo
+)
+{
+    int indice = IndiceCinta67(tipo);
+
+    return
+        posicionesCintas67[indice].x -
+        ObtenerLargoUtilCinta67(tipo) / 2.0f;
+}
+
+
+static float ObtenerXObjeto67(
+    float progreso,
+    TipoPieza67 tipo
+)
+{
+    return
+        ObtenerInicioCinta67(tipo) +
+        progreso * ObtenerLargoUtilCinta67(tipo);
+}
+
+
+static const ObjetoMapaEditor* BuscarObjetoMapa67(
+    const char* nombre
+)
+{
+    if (nombre == nullptr)
+    {
+        return nullptr;
+    }
+
+    for (int i = 0; i < mapaVisual67.cantidadObjetos; i++)
+    {
+        const ObjetoMapaEditor& objeto =
+            mapaVisual67.objetos[i];
+
+        if (std::strcmp(objeto.nombre, nombre) == 0)
+        {
+            return &objeto;
+        }
+    }
+
+    return nullptr;
+}
+
+
+static void AplicarObjetoMapa67(
+    const char* nombre,
+    Vector3& posicion,
+    Vector3& escala,
+    Color& color
+)
+{
+    const ObjetoMapaEditor* objeto =
+        BuscarObjetoMapa67(nombre);
+
+    if (objeto == nullptr)
+    {
+        return;
+    }
+
+    posicion = objeto->transform.translation;
+    escala = objeto->transform.scale;
+    color = objeto->color;
+}
+
+
+static void AplicarMapaVisual67()
+{
+    AplicarObjetoMapa67(
+        "Piso",
+        posicionPiso67,
+        escalaPiso67,
+        colorPiso67
+    );
+
+    AplicarObjetoMapa67(
+        "ParedFondo",
+        posicionParedFondo67,
+        escalaParedFondo67,
+        colorParedFondo67
+    );
+
+    AplicarObjetoMapa67(
+        "ParedIzquierda",
+        posicionParedIzquierda67,
+        escalaParedIzquierda67,
+        colorParedIzquierda67
+    );
+
+    AplicarObjetoMapa67(
+        "Cinta6",
+        posicionesCintas67[0],
+        escalasCintas67[0],
+        coloresCintas67[0]
+    );
+
+    AplicarObjetoMapa67(
+        "Cinta7",
+        posicionesCintas67[1],
+        escalasCintas67[1],
+        coloresCintas67[1]
+    );
+
+    AplicarObjetoMapa67(
+        "Mesa",
+        posicionMesa67,
+        escalaMesa67,
+        colorMesa67
+    );
+
+    // El jugador queda apenas despues de la zona util de recogida.
+    float xJugador6 =
+        ObtenerXObjeto67(0.85f, PIEZA_NUMERO_6);
+
+    float xJugador7 =
+        ObtenerXObjeto67(0.85f, PIEZA_NUMERO_7);
+
+    X_JUGADOR_67 =
+        (xJugador6 + xJugador7) * 0.5f;
+
+    float centroZ =
+        (posicionesCintas67[0].z + posicionesCintas67[1].z) * 0.5f;
+
+    const float FACTOR_JUGADOR_HACIA_CINTA = 0.30638298f;
+
+    Z_JUGADOR_6_67 =
+        centroZ +
+        (posicionesCintas67[0].z - centroZ) *
+        FACTOR_JUGADOR_HACIA_CINTA;
+
+    Z_JUGADOR_7_67 =
+        centroZ +
+        (posicionesCintas67[1].z - centroZ) *
+        FACTOR_JUGADOR_HACIA_CINTA;
+}
+
+
+static void RecargarMapaVisual67SiHaceFalta()
+{
+    double ahora = GetTime();
+
+    if (ahora < proximaRecargaMapa67)
+    {
+        return;
+    }
+
+    proximaRecargaMapa67 = ahora + 0.35;
+
+    mapaVisual67.Cargar(
+        RUTA_MAPA_FABRICA_67
+    );
+
+    AplicarMapaVisual67();
 }
 
 
@@ -264,9 +500,12 @@ static float ObtenerZJugador67(
         return 0.0f;
     }
 
+    float centroZ =
+        (posicionesCintas67[0].z + posicionesCintas67[1].z) * 0.5f;
+
     if (minijuego.cantidadJugadoresEquipo[equipo] <= 1)
     {
-        return 0.0f;
+        return centroZ;
     }
 
     return
@@ -538,57 +777,106 @@ static void DibujarNumero3D67(
 
 
 static void DibujarCinta67(
-    float z,
+    TipoPieza67 tipo,
     Color colorEquipo
 )
 {
-    float centroX = X_INICIO_CINTA_67 + LARGO_CINTA_67 / 2.0f;
+    int indice = IndiceCinta67(tipo);
+
+    const Vector3& posicion =
+        posicionesCintas67[indice];
+
+    const Vector3& escala =
+        escalasCintas67[indice];
+
+    float largoUtil =
+        ObtenerLargoUtilCinta67(tipo);
+
+    float largoTotal =
+        DimensionMapa67(
+            escala.x,
+            largoUtil + 0.40f
+        );
+
+    float altoBase =
+        DimensionMapa67(
+            escala.y,
+            0.05f
+        );
+
+    float anchoBase =
+        DimensionMapa67(
+            escala.z,
+            0.20f
+        );
+
+    float inicioX =
+        ObtenerInicioCinta67(tipo);
 
     DrawCube(
-        { centroX, 0.20f, z },
-        LARGO_CINTA_67 + 0.40f,
-        0.42f,
-        1.22f,
-        Color{ 45, 49, 56, 255 }
+        posicion,
+        largoTotal,
+        altoBase,
+        anchoBase,
+        coloresCintas67[indice]
     );
 
     DrawCube(
-        { centroX, 0.46f, z },
-        LARGO_CINTA_67,
+        { posicion.x, posicion.y + altoBase * 0.62f, posicion.z },
+        largoUtil,
         0.08f,
-        1.02f,
+        DimensionMapa67(anchoBase - 0.20f, 0.10f),
         Color{ 88, 95, 105, 255 }
     );
 
-    for (int i = 0; i < 12; i++)
+    const int CANTIDAD_DIVISIONES_CINTA = 12;
+    float separacion =
+        largoUtil / (float)CANTIDAD_DIVISIONES_CINTA;
+
+    for (int i = 0; i < CANTIDAD_DIVISIONES_CINTA; i++)
     {
-        float x = X_INICIO_CINTA_67 + 0.35f + i * 0.72f;
+        float x =
+            inicioX +
+            separacion * ((float)i + 0.5f);
 
         DrawCube(
-            { x, 0.52f, z },
+            { x, posicion.y + altoBase * 0.76f, posicion.z },
             0.06f,
             0.03f,
-            0.98f,
+            DimensionMapa67(anchoBase - 0.24f, 0.08f),
             Color{ 177, 184, 192, 255 }
         );
     }
 
-    float xInicio = ObtenerXObjeto67(INICIO_ZONA_RECOGIDA_67);
-    float xFin = ObtenerXObjeto67(FIN_ZONA_RECOGIDA_67);
+    float xInicio =
+        ObtenerXObjeto67(
+            INICIO_ZONA_RECOGIDA_67,
+            tipo
+        );
+
+    float xFin =
+        ObtenerXObjeto67(
+            FIN_ZONA_RECOGIDA_67,
+            tipo
+        );
 
     DrawCube(
-        { (xInicio + xFin) / 2.0f, 0.575f, z },
+        { (xInicio + xFin) / 2.0f, posicion.y + altoBase * 0.89f, posicion.z },
         xFin - xInicio,
         0.035f,
-        1.07f,
+        DimensionMapa67(anchoBase - 0.15f, 0.08f),
         Fade(YELLOW, 0.58f)
     );
 
     for (int lado = -1; lado <= 1; lado += 2)
     {
         DrawCube(
-            { centroX, 0.65f, z + lado * 0.61f },
-            LARGO_CINTA_67 + 0.45f,
+            {
+                posicion.x,
+                posicion.y + altoBase * 1.07f,
+                posicion.z + lado * anchoBase * 0.50f
+            },
+            largoTotal + 0.05f,
             0.17f,
             0.10f,
             Color{ 39, 43, 49, 255 }
@@ -596,18 +884,18 @@ static void DibujarCinta67(
     }
 
     DrawCube(
-        { X_INICIO_CINTA_67 - 0.42f, 1.1f, z },
+        { inicioX - 0.42f, posicion.y + 0.90f, posicion.z },
         0.65f,
         2.0f,
-        1.5f,
+        anchoBase + 0.28f,
         Color{ 55, 60, 68, 255 }
     );
 
     DrawCube(
-        { X_INICIO_CINTA_67 - 0.06f, 1.18f, z },
+        { inicioX - 0.06f, posicion.y + 0.98f, posicion.z },
         0.07f,
         1.25f,
-        1.08f,
+        DimensionMapa67(anchoBase - 0.14f, 0.08f),
         Fade(colorEquipo, 0.78f)
     );
 }
@@ -617,6 +905,16 @@ static void DibujarFlujoPiezas67(
     const EstadoEquipo67& equipo
 )
 {
+    float yPiezas6 =
+        posicionesCintas67[0].y +
+        DimensionMapa67(escalasCintas67[0].y, 0.05f) * 0.5f +
+        0.55f;
+
+    float yPiezas7 =
+        posicionesCintas67[1].y +
+        DimensionMapa67(escalasCintas67[1].y, 0.05f) * 0.5f +
+        0.55f;
+
     for (int i = 0; i < CANTIDAD_PIEZAS_CINTA_67; i++)
     {
         float progreso6 =
@@ -627,14 +925,22 @@ static void DibujarFlujoPiezas67(
 
         DibujarNumero3D67(
             6,
-            { ObtenerXObjeto67(progreso6), 0.96f, Z_CINTA_6_67 },
+            {
+                ObtenerXObjeto67(progreso6, PIEZA_NUMERO_6),
+                yPiezas6,
+                posicionesCintas67[0].z
+            },
             0.56f,
             ORANGE
         );
 
         DibujarNumero3D67(
             7,
-            { ObtenerXObjeto67(progreso7), 0.96f, Z_CINTA_7_67 },
+            {
+                ObtenerXObjeto67(progreso7, PIEZA_NUMERO_7),
+                yPiezas7,
+                posicionesCintas67[1].z
+            },
             0.56f,
             SKYBLUE
         );
@@ -647,20 +953,48 @@ static void DibujarMesa67(
     Color colorEquipo
 )
 {
+    float anchoMesa =
+        DimensionMapa67(
+            escalaMesa67.x,
+            0.40f
+        );
+
+    float profundidadMesa =
+        DimensionMapa67(
+            escalaMesa67.z,
+            0.40f
+        );
+
+    float alturaMesa =
+        DimensionMapa67(
+            escalaMesa67.y,
+            0.08f
+        );
+
+    float radioBase =
+        (anchoMesa + profundidadMesa) * 0.25f;
+
+    float factorRadio =
+        radioBase / 0.88f;
+
     DrawCylinder(
-        { X_MESA_67, 0.12f, 0.0f },
-        0.88f,
-        0.88f,
-        0.22f,
+        posicionMesa67,
+        radioBase,
+        radioBase,
+        alturaMesa,
         28,
-        Color{ 25, 27, 31, 255 }
+        colorMesa67
     );
 
     DrawCylinder(
-        { X_MESA_67, 0.27f, 0.0f },
-        0.72f,
-        0.72f,
-        0.10f,
+        {
+            posicionMesa67.x,
+            posicionMesa67.y + alturaMesa * 0.68f,
+            posicionMesa67.z
+        },
+        radioBase * 0.82f,
+        radioBase * 0.82f,
+        alturaMesa * 0.45f,
         28,
         equipo.tiempoMesaCompleta > 0.0f
             ? Color{ 72, 188, 99, 255 }
@@ -668,18 +1002,29 @@ static void DibujarMesa67(
     );
 
     DrawCylinder(
-        { X_MESA_67, 0.35f, 0.0f },
-        0.60f,
-        0.60f,
-        0.04f,
+        {
+            posicionMesa67.x,
+            posicionMesa67.y + alturaMesa * 1.05f,
+            posicionMesa67.z
+        },
+        radioBase * 0.68f,
+        radioBase * 0.68f,
+        DimensionMapa67(alturaMesa * 0.18f, 0.03f),
         28,
         Fade(colorEquipo, 0.55f)
     );
 
+    float yNumeros =
+        posicionMesa67.y + alturaMesa * 2.77f;
+
     DibujarNumero3D67(
         6,
-        { X_MESA_67 - 0.26f, 0.73f, 0.0f },
-        0.37f,
+        {
+            posicionMesa67.x - 0.26f * factorRadio,
+            yNumeros,
+            posicionMesa67.z
+        },
+        0.37f * factorRadio,
         equipo.mesa == MESA_67_VACIA
             ? Fade(RAYWHITE, 0.25f)
             : ORANGE
@@ -687,8 +1032,12 @@ static void DibujarMesa67(
 
     DibujarNumero3D67(
         7,
-        { X_MESA_67 + 0.27f, 0.73f, 0.0f },
-        0.37f,
+        {
+            posicionMesa67.x + 0.27f * factorRadio,
+            yNumeros,
+            posicionMesa67.z
+        },
+        0.37f * factorRadio,
         equipo.mesa == MESA_67_COMPLETA
             ? SKYBLUE
             : Fade(RAYWHITE, 0.25f)
@@ -779,35 +1128,63 @@ static void DibujarFabricaEquipo67(
 {
     Color colorEquipo = ObtenerColorEquipo67(equipo);
 
-    DrawPlane(
-        { 0.0f, -0.31f, 0.0f },
-        { 18.0f, 10.0f },
-        equipo == 0
-            ? Color{ 76, 43, 47, 255 }
-            : Color{ 36, 59, 75, 255 }
+    DrawCube(
+        posicionPiso67,
+        DimensionMapa67(escalaPiso67.x, 0.20f),
+        DimensionMapa67(escalaPiso67.y, 0.05f),
+        DimensionMapa67(escalaPiso67.z, 0.20f),
+        colorPiso67
     );
 
     DrawCube(
-        { 0.0f, 2.35f, -4.55f },
-        17.0f,
-        5.3f,
-        0.25f,
-        Color{ 63, 68, 76, 255 }
+        posicionParedFondo67,
+        DimensionMapa67(escalaParedFondo67.x, 0.20f),
+        DimensionMapa67(escalaParedFondo67.y, 0.20f),
+        DimensionMapa67(escalaParedFondo67.z, 0.05f),
+        colorParedFondo67
     );
 
     DrawCube(
-        { 0.0f, 4.55f, -4.38f },
-        16.2f,
+        posicionParedIzquierda67,
+        DimensionMapa67(escalaParedIzquierda67.x, 0.05f),
+        DimensionMapa67(escalaParedIzquierda67.y, 0.20f),
+        DimensionMapa67(escalaParedIzquierda67.z, 0.20f),
+        colorParedIzquierda67
+    );
+
+    float altoPared =
+        DimensionMapa67(
+            escalaParedFondo67.y,
+            0.20f
+        );
+
+    float largoPared =
+        DimensionMapa67(
+            escalaParedFondo67.x,
+            0.20f
+        );
+
+    DrawCube(
+        {
+            posicionParedFondo67.x,
+            posicionParedFondo67.y + altoPared * 0.415f,
+            posicionParedFondo67.z + 0.17f
+        },
+        largoPared * 0.953f,
         0.50f,
         0.10f,
         Fade(colorEquipo, 0.82f)
     );
 
     DrawCube(
-        { -0.5f, -0.03f, 0.0f },
-        12.6f,
+        {
+            posicionPiso67.x - 0.5f,
+            posicionPiso67.y + DimensionMapa67(escalaPiso67.y, 0.05f) * 3.3f,
+            posicionPiso67.z
+        },
+        DimensionMapa67(escalaPiso67.x, 0.20f) * 0.70f,
         0.05f,
-        2.45f,
+        DimensionMapa67(escalaPiso67.z, 0.20f) * 0.245f,
         Fade(RAYWHITE, 0.12f)
     );
 }
@@ -935,8 +1312,8 @@ static void DibujarVistaEquipo67(
     BeginMode3D(minijuego.camarasEquipo[equipo]);
 
     DibujarFabricaEquipo67(equipo);
-    DibujarCinta67(Z_CINTA_6_67, ObtenerColorEquipo67(equipo));
-    DibujarCinta67(Z_CINTA_7_67, ObtenerColorEquipo67(equipo));
+    DibujarCinta67(PIEZA_NUMERO_6, ObtenerColorEquipo67(equipo));
+    DibujarCinta67(PIEZA_NUMERO_7, ObtenerColorEquipo67(equipo));
     DibujarFlujoPiezas67(minijuego.equipos[equipo]);
     DibujarMesa67(minijuego.equipos[equipo], ObtenerColorEquipo67(equipo));
 
@@ -1417,6 +1794,8 @@ void Minijuego67::Dibujar(
     const Participante participantes[]
 ) const
 {
+    RecargarMapaVisual67SiHaceFalta();
+
     ClearBackground(BLACK);
 
     if (!vistasEquipoCargadas)

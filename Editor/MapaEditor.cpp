@@ -267,73 +267,54 @@ void MapaEditor::CrearMapaFabrica67()
 {
     cantidadObjetos = 0;
 
+    // El archivo representa una plantilla de fabrica. Como el minijuego
+    // se dibuja en pantalla dividida, ambos equipos reutilizan esta misma
+    // distribucion y solo cambia el color de cada equipo.
     AgregarCuboMapa(
         *this,
         "Piso",
         { 0.0f, -0.36f, 0.0f },
-        { 17.0f, 0.10f, 11.0f },
-        Color{ 104, 106, 109, 255 }
+        { 18.0f, 0.10f, 10.0f },
+        Color{ 78, 82, 88, 255 }
     );
 
     AgregarCuboMapa(
         *this,
         "ParedFondo",
-        { 0.0f, 2.30f, -5.15f },
-        { 16.0f, 5.20f, 0.25f },
-        Color{ 80, 87, 96, 255 }
+        { 0.0f, 2.35f, -4.55f },
+        { 17.0f, 5.30f, 0.25f },
+        Color{ 63, 68, 76, 255 }
     );
 
     AgregarCuboMapa(
         *this,
         "ParedIzquierda",
-        { -6.90f, 2.30f, 0.0f },
-        { 0.35f, 5.20f, 10.20f },
-        Color{ 67, 73, 82, 255 }
-    );
-
-    const float CENTRO_CINTA_X = -1.80f;
-
-    const float CARRILES[4] =
-    {
-        -3.0f,
-        -1.0f,
-        1.0f,
-        3.0f
-    };
-
-    for (int i = 0; i < 4; i++)
-    {
-        char nombre[32] = {};
-
-        std::snprintf(
-            nombre,
-            sizeof(nombre),
-            "Cinta%d",
-            i + 1
-        );
-
-        AgregarCuboMapa(
-            *this,
-            nombre,
-            { CENTRO_CINTA_X, 0.23f, CARRILES[i] },
-            { 7.55f, 0.46f, 1.22f },
-            Color{ 55, 61, 70, 255 }
-        );
-    }
-
-    AgregarCuboMapa(
-        *this,
-        "Mesa1",
-        { 4.45f, 0.82f, -2.0f },
-        { 1.85f, 0.22f, 2.55f },
-        Color{ 126, 77, 43, 255 }
+        { -8.35f, 2.35f, 0.0f },
+        { 0.30f, 5.30f, 10.0f },
+        Color{ 55, 60, 68, 255 }
     );
 
     AgregarCuboMapa(
         *this,
-        "Mesa2",
-        { 4.45f, 0.82f, 2.0f },
-        { 1.85f, 0.22f, 2.55f },
-        Color{ 126, 77, 43, 255 }
+        "Cinta6",
+        { -1.80f, 0.20f, -2.35f },
+        { 9.40f, 0.42f, 1.22f },
+        Color{ 45, 49, 56, 255 }
+    );
+
+    AgregarCuboMapa(
+        *this,
+        "Cinta7",
+        { -1.80f, 0.20f, 2.35f },
+        { 9.40f, 0.42f, 1.22f },
+        Color{ 45, 49, 56, 255 }
+    );
+
+    AgregarCuboMapa(
+        *this,
+        "Mesa",
+        { 3.45f, 0.12f, 0.0f },
+        { 1.76f, 0.22f, 1.76f },
+        Color{ 71, 47, 32, 255 }
     );
 }
