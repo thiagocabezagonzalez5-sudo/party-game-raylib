@@ -3,12 +3,16 @@ cmake_minimum_required(VERSION 3.20)
 project(
     Party
     VERSION 0.1.0
-    LANGUAGES CXX
+    LANGUAGES C CXX
 )
 
 # ================================================
-# C++
+# C / C++
 # ================================================
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -40,6 +44,7 @@ file(
     CONFIGURE_DEPENDS
 
     "${CMAKE_CURRENT_SOURCE_DIR}/Core/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Editor/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/UI/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Gameplay/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/Minigames/*.cpp"
@@ -77,6 +82,8 @@ add_executable(
     main.cpp
 
     ${PARTY_SOURCES}
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/raygizmo/raygizmo.c"
 )
 
 
@@ -87,6 +94,7 @@ add_executable(
 # Permite includes como:
 #
 # #include "Core/Juego.h"
+# #include "Editor/..."
 # #include "Minigames/..."
 # #include "UI/..."
 
@@ -96,6 +104,7 @@ target_include_directories(
     PRIVATE
 
     "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/External/raygizmo"
 )
 
 

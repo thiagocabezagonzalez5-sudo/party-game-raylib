@@ -1,4 +1,5 @@
 #include "Core/Juego.h"
+#include "Editor/EditorMapas.h"
 #include "Minigames/ModeloJugadorCompartido.h"
 #include "raylib.h"
 
@@ -6,9 +7,13 @@
 int main()
 {
     Juego juego;
+    EditorMapas editorMapas;
+
+    bool editorActivo = false;
 
 
     juego.Inicializar();
+    editorMapas.Inicializar();
 
 
     while (
@@ -26,12 +31,42 @@ int main()
 
 
         //------------------------------
+        // CAMBIO JUEGO / EDITOR
+        //------------------------------
+
+        bool controlPresionado =
+            IsKeyDown(KEY_LEFT_CONTROL) ||
+            IsKeyDown(KEY_RIGHT_CONTROL);
+
+        bool cambiarEditor =
+            controlPresionado &&
+            IsKeyPressed(KEY_E);
+
+        if (cambiarEditor)
+        {
+            editorActivo = !editorActivo;
+        }
+
+
+        //------------------------------
         // UPDATE
         //------------------------------
 
-        juego.Actualizar(
-            deltaTime
-        );
+        if (!cambiarEditor)
+        {
+            if (editorActivo)
+            {
+                editorMapas.Actualizar(
+                    deltaTime
+                );
+            }
+            else
+            {
+                juego.Actualizar(
+                    deltaTime
+                );
+            }
+        }
 
 
         //------------------------------
@@ -41,7 +76,14 @@ int main()
         BeginDrawing();
 
 
-        juego.Dibujar();
+        if (editorActivo)
+        {
+            editorMapas.Dibujar();
+        }
+        else
+        {
+            juego.Dibujar();
+        }
 
 
         EndDrawing();
@@ -52,6 +94,7 @@ int main()
     // CERRAR
     //------------------------------
 
+    editorMapas.Descargar();
     juego.Descargar();
     DescargarModeloJugadorCompartido();
 
