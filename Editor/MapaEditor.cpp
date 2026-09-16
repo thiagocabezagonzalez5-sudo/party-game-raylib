@@ -370,4 +370,69 @@ void MapaEditor::CrearMapaFabrica67()
         { 1.76f, 0.22f, 1.76f },
         Color{ 71, 47, 32, 255 }
     );
+
+    // Marcadores logicos. Se guardan como cubos para que puedan seleccionarse
+    // con el mismo gizmo sin agregar otra dependencia o formato especial.
+    AgregarObjetoMapa(
+        *this,
+        OBJETO_MAPA_EDITOR_CUBO,
+        "SpawnSolo",
+        { 1.35f, 0.16f, 0.0f },
+        { 0.35f, 0.35f, 0.35f },
+        Color{ 72, 214, 112, 180 }
+    );
+
+    AgregarObjetoMapa(
+        *this,
+        OBJETO_MAPA_EDITOR_CUBO,
+        "Spawn6",
+        { 1.35f, 0.16f, -0.72f },
+        { 0.35f, 0.35f, 0.35f },
+        Color{ 255, 153, 51, 180 }
+    );
+
+    AgregarObjetoMapa(
+        *this,
+        OBJETO_MAPA_EDITOR_CUBO,
+        "Spawn7",
+        { 1.35f, 0.16f, 0.72f },
+        { 0.35f, 0.35f, 0.35f },
+        Color{ 80, 180, 255, 180 }
+    );
+
+    AgregarObjetoMapa(
+        *this,
+        OBJETO_MAPA_EDITOR_CUBO,
+        "CamaraPos",
+        { 7.80f, 10.70f, 12.40f },
+        { 0.65f, 0.65f, 0.65f },
+        Color{ 220, 90, 255, 180 }
+    );
+
+    AgregarObjetoMapa(
+        *this,
+        OBJETO_MAPA_EDITOR_CUBO,
+        "CamaraObjetivo",
+        { -1.0f, 0.55f, 0.0f },
+        { 0.45f, 0.45f, 0.45f },
+        Color{ 255, 120, 220, 180 }
+    );
+
+    AgregarObjetoMapa(
+        *this,
+        OBJETO_MAPA_EDITOR_CUBO,
+        "ZonaRecogida6",
+        { 0.765f, 0.96f, -2.35f },
+        { 0.54f, 1.00f, 1.07f },
+        Color{ 255, 220, 70, 80 }
+    );
+
+    AgregarObjetoMapa(
+        *this,
+        OBJETO_MAPA_EDITOR_CUBO,
+        "ZonaRecogida7",
+        { 0.765f, 0.96f, 2.35f },
+        { 0.54f, 1.00f, 1.07f },
+        Color{ 255, 220, 70, 80 }
+    );
 }
