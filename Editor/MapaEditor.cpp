@@ -1,6 +1,5 @@
 #include "Editor/MapaEditor.h"
 
-#include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -38,8 +37,55 @@ static void CopiarTextoSeguro(
 }
 
 
-static bool AgregarCuboMapa(
+static const char* TextoTipoObjetoMapa(
+    TipoObjetoMapaEditor tipo
+)
+{
+    switch (tipo)
+    {
+        case OBJETO_MAPA_EDITOR_CINTA_67:
+            return "CINTA67";
+
+        case OBJETO_MAPA_EDITOR_MESA_67:
+            return "MESA67";
+
+        case OBJETO_MAPA_EDITOR_CUBO:
+        default:
+            return "CUBO";
+    }
+}
+
+
+static bool ConvertirTipoObjetoMapa(
+    const std::string& texto,
+    TipoObjetoMapaEditor& tipo
+)
+{
+    if (texto == "CUBO")
+    {
+        tipo = OBJETO_MAPA_EDITOR_CUBO;
+        return true;
+    }
+
+    if (texto == "CINTA67")
+    {
+        tipo = OBJETO_MAPA_EDITOR_CINTA_67;
+        return true;
+    }
+
+    if (texto == "MESA67")
+    {
+        tipo = OBJETO_MAPA_EDITOR_MESA_67;
+        return true;
+    }
+
+    return false;
+}
+
+
+static bool AgregarObjetoMapa(
     MapaEditor& mapa,
+    TipoObjetoMapaEditor tipo,
     const char* nombre,
     Vector3 posicion,
     Vector3 escala,
@@ -58,8 +104,7 @@ static bool AgregarCuboMapa(
         mapa.objetos[mapa.cantidadObjetos];
 
     objeto = {};
-
-    objeto.tipo = OBJETO_MAPA_EDITOR_CUBO;
+    objeto.tipo = tipo;
 
     CopiarTextoSeguro(
         objeto.nombre,
@@ -78,7 +123,6 @@ static bool AgregarCuboMapa(
     };
 
     objeto.transform.scale = escala;
-
     objeto.color = color;
 
     mapa.cantidadObjetos++;
@@ -168,10 +212,14 @@ bool MapaEditor::Cargar(
             >> azul
             >> alfa;
 
-        if (
-            datos.fail() ||
-            tipoTexto != "CUBO"
-        )
+        if (datos.fail())
+        {
+            continue;
+        }
+
+        TipoObjetoMapaEditor tipo;
+
+        if (!ConvertirTipoObjetoMapa(tipoTexto, tipo))
         {
             continue;
         }
@@ -185,8 +233,7 @@ bool MapaEditor::Cargar(
             objetos[cantidadObjetos];
 
         objeto = {};
-
-        objeto.tipo = OBJETO_MAPA_EDITOR_CUBO;
+        objeto.tipo = tipo;
 
         CopiarTextoSeguro(
             objeto.nombre,
@@ -240,7 +287,7 @@ bool MapaEditor::Guardar() const
             objetos[i];
 
         archivo
-            << "CUBO "
+            << TextoTipoObjetoMapa(objeto.tipo) << ' '
             << objeto.nombre << ' '
             << objeto.transform.translation.x << ' '
             << objeto.transform.translation.y << ' '
@@ -267,51 +314,57 @@ void MapaEditor::CrearMapaFabrica67()
 {
     cantidadObjetos = 0;
 
-    // El archivo representa una plantilla de fabrica. Como el minijuego
-    // se dibuja en pantalla dividida, ambos equipos reutilizan esta misma
-    // distribucion y solo cambia el color de cada equipo.
-    AgregarCuboMapa(
+    // Esta plantilla contiene los objetos espaciales reales de Fabrica 67.
+    // CINTA67 y MESA67 son objetos compuestos: el editor dibuja todos sus
+    // detalles a partir de un unico Transform para poder moverlos completos.
+    AgregarObjetoMapa(
         *this,
+        OBJETO_MAPA_EDITOR_CUBO,
         "Piso",
         { 0.0f, -0.36f, 0.0f },
         { 18.0f, 0.10f, 10.0f },
         Color{ 78, 82, 88, 255 }
     );
 
-    AgregarCuboMapa(
+    AgregarObjetoMapa(
         *this,
+        OBJETO_MAPA_EDITOR_CUBO,
         "ParedFondo",
         { 0.0f, 2.35f, -4.55f },
         { 17.0f, 5.30f, 0.25f },
         Color{ 63, 68, 76, 255 }
     );
 
-    AgregarCuboMapa(
+    AgregarObjetoMapa(
         *this,
+        OBJETO_MAPA_EDITOR_CUBO,
         "ParedIzquierda",
         { -8.35f, 2.35f, 0.0f },
         { 0.30f, 5.30f, 10.0f },
         Color{ 55, 60, 68, 255 }
     );
 
-    AgregarCuboMapa(
+    AgregarObjetoMapa(
         *this,
+        OBJETO_MAPA_EDITOR_CINTA_67,
         "Cinta6",
         { -1.80f, 0.20f, -2.35f },
         { 9.40f, 0.42f, 1.22f },
         Color{ 45, 49, 56, 255 }
     );
 
-    AgregarCuboMapa(
+    AgregarObjetoMapa(
         *this,
+        OBJETO_MAPA_EDITOR_CINTA_67,
         "Cinta7",
         { -1.80f, 0.20f, 2.35f },
         { 9.40f, 0.42f, 1.22f },
         Color{ 45, 49, 56, 255 }
     );
 
-    AgregarCuboMapa(
+    AgregarObjetoMapa(
         *this,
+        OBJETO_MAPA_EDITOR_MESA_67,
         "Mesa",
         { 3.45f, 0.12f, 0.0f },
         { 1.76f, 0.22f, 1.76f },

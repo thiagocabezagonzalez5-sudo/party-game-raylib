@@ -4,10 +4,68 @@
 #include "raymath.h"
 
 #include <cmath>
+#include <cstring>
 
 
 static const char* RUTA_MAPA_FABRICA_67 =
     "Mapas/Minijuego67.map";
+
+
+static float DimensionEditor(
+    float valor,
+    float minimo
+)
+{
+    float resultado = std::fabs(valor);
+
+    if (resultado < minimo)
+    {
+        resultado = minimo;
+    }
+
+    return resultado;
+}
+
+
+static const char* ObtenerNombreTipoObjeto(
+    TipoObjetoMapaEditor tipo
+)
+{
+    switch (tipo)
+    {
+        case OBJETO_MAPA_EDITOR_CINTA_67:
+            return "CINTA 67";
+
+        case OBJETO_MAPA_EDITOR_MESA_67:
+            return "MESA 67";
+
+        case OBJETO_MAPA_EDITOR_CUBO:
+        default:
+            return "CUBO";
+    }
+}
+
+
+static const ObjetoMapaEditor* BuscarObjetoMapa(
+    const MapaEditor& mapa,
+    const char* nombre
+)
+{
+    if (nombre == nullptr)
+    {
+        return nullptr;
+    }
+
+    for (int i = 0; i < mapa.cantidadObjetos; i++)
+    {
+        if (std::strcmp(mapa.objetos[i].nombre, nombre) == 0)
+        {
+            return &mapa.objetos[i];
+        }
+    }
+
+    return nullptr;
+}
 
 
 static BoundingBox CrearCajaSeleccionEditor(
@@ -20,6 +78,17 @@ static BoundingBox CrearCajaSeleccionEditor(
         std::fabs(objeto.transform.scale.y) * 0.5f,
         std::fabs(objeto.transform.scale.z) * 0.5f
     };
+
+    if (objeto.tipo == OBJETO_MAPA_EDITOR_CINTA_67)
+    {
+        mitad.x += 0.45f;
+        if (mitad.y < 1.15f) mitad.y = 1.15f;
+        mitad.z += 0.18f;
+    }
+    else if (objeto.tipo == OBJETO_MAPA_EDITOR_MESA_67)
+    {
+        if (mitad.y < 0.60f) mitad.y = 0.60f;
+    }
 
     if (mitad.x < 0.05f) mitad.x = 0.05f;
     if (mitad.y < 0.05f) mitad.y = 0.05f;
@@ -135,6 +204,29 @@ static void ActualizarCamaraEditor(
                 editor.camara.position
             )
         );
+
+    float rueda = GetMouseWheelMove();
+
+    if (std::fabs(rueda) > 0.001f)
+    {
+        Vector3 zoom =
+            Vector3Scale(
+                direccion,
+                rueda * 1.60f
+            );
+
+        editor.camara.position =
+            Vector3Add(
+                editor.camara.position,
+                zoom
+            );
+
+        editor.camara.target =
+            Vector3Add(
+                editor.camara.target,
+                zoom
+            );
+    }
 
     Vector3 adelante =
     {
@@ -274,6 +366,344 @@ static void SeleccionarObjetoConMouse(
 }
 
 
+static void DibujarSegmentoNumeroEditor(
+    Vector3 posicion,
+    bool horizontal,
+    float escala,
+    Color color
+)
+{
+    DrawCube(
+        posicion,
+        (horizontal ? 0.62f : 0.13f) * escala,
+        (horizontal ? 0.13f : 0.52f) * escala,
+        0.20f * escala,
+        color
+    );
+}
+
+
+static void DibujarNumero3DEditor(
+    int numero,
+    Vector3 centro,
+    float escala,
+    Color color
+)
+{
+    const float xLado = 0.31f * escala;
+    const float yExtremo = 0.55f * escala;
+    const float yMedio = 0.275f * escala;
+
+    bool segmentos[7]{};
+
+    if (numero == 6)
+    {
+        segmentos[0] = true;
+        segmentos[2] = true;
+        segmentos[3] = true;
+        segmentos[4] = true;
+        segmentos[5] = true;
+        segmentos[6] = true;
+    }
+    else
+    {
+        segmentos[0] = true;
+        segmentos[1] = true;
+        segmentos[2] = true;
+    }
+
+    if (segmentos[0]) DibujarSegmentoNumeroEditor({ centro.x, centro.y + yExtremo, centro.z }, true, escala, color);
+    if (segmentos[1]) DibujarSegmentoNumeroEditor({ centro.x + xLado, centro.y + yMedio, centro.z }, false, escala, color);
+    if (segmentos[2]) DibujarSegmentoNumeroEditor({ centro.x + xLado, centro.y - yMedio, centro.z }, false, escala, color);
+    if (segmentos[3]) DibujarSegmentoNumeroEditor({ centro.x, centro.y - yExtremo, centro.z }, true, escala, color);
+    if (segmentos[4]) DibujarSegmentoNumeroEditor({ centro.x - xLado, centro.y - yMedio, centro.z }, false, escala, color);
+    if (segmentos[5]) DibujarSegmentoNumeroEditor({ centro.x - xLado, centro.y + yMedio, centro.z }, false, escala, color);
+    if (segmentos[6]) DibujarSegmentoNumeroEditor(centro, true, escala, color);
+}
+
+
+static void DibujarCinta67Editor(
+    const ObjetoMapaEditor& objeto
+)
+{
+    Vector3 posicion = objeto.transform.translation;
+    Vector3 escala = objeto.transform.scale;
+
+    float largoTotal =
+        DimensionEditor(escala.x, 0.80f);
+
+    float largoUtil = largoTotal - 0.40f;
+
+    if (largoUtil < 0.40f)
+    {
+        largoUtil = 0.40f;
+    }
+
+    float altoBase =
+        DimensionEditor(escala.y, 0.05f);
+
+    float anchoBase =
+        DimensionEditor(escala.z, 0.20f);
+
+    float inicioX =
+        posicion.x - largoUtil / 2.0f;
+
+    DrawCube(
+        posicion,
+        largoTotal,
+        altoBase,
+        anchoBase,
+        objeto.color
+    );
+
+    DrawCube(
+        { posicion.x, posicion.y + altoBase * 0.62f, posicion.z },
+        largoUtil,
+        0.08f,
+        DimensionEditor(anchoBase - 0.20f, 0.10f),
+        Color{ 88, 95, 105, 255 }
+    );
+
+    const int CANTIDAD_DIVISIONES = 12;
+    float separacion =
+        largoUtil / (float)CANTIDAD_DIVISIONES;
+
+    for (int i = 0; i < CANTIDAD_DIVISIONES; i++)
+    {
+        float x =
+            inicioX +
+            separacion * ((float)i + 0.5f);
+
+        DrawCube(
+            { x, posicion.y + altoBase * 0.76f, posicion.z },
+            0.06f,
+            0.03f,
+            DimensionEditor(anchoBase - 0.24f, 0.08f),
+            Color{ 177, 184, 192, 255 }
+        );
+    }
+
+    const float INICIO_ZONA = 0.755f;
+    const float FIN_ZONA = 0.815f;
+
+    float xInicio =
+        inicioX + INICIO_ZONA * largoUtil;
+
+    float xFin =
+        inicioX + FIN_ZONA * largoUtil;
+
+    DrawCube(
+        { (xInicio + xFin) / 2.0f, posicion.y + altoBase * 0.89f, posicion.z },
+        xFin - xInicio,
+        0.035f,
+        DimensionEditor(anchoBase - 0.15f, 0.08f),
+        Fade(YELLOW, 0.58f)
+    );
+
+    for (int lado = -1; lado <= 1; lado += 2)
+    {
+        DrawCube(
+            {
+                posicion.x,
+                posicion.y + altoBase * 1.07f,
+                posicion.z + lado * anchoBase * 0.50f
+            },
+            largoTotal + 0.05f,
+            0.17f,
+            0.10f,
+            Color{ 39, 43, 49, 255 }
+        );
+    }
+
+    DrawCube(
+        { inicioX - 0.42f, posicion.y + 0.90f, posicion.z },
+        0.65f,
+        2.0f,
+        anchoBase + 0.28f,
+        Color{ 55, 60, 68, 255 }
+    );
+
+    DrawCube(
+        { inicioX - 0.06f, posicion.y + 0.98f, posicion.z },
+        0.07f,
+        1.25f,
+        DimensionEditor(anchoBase - 0.14f, 0.08f),
+        Color{ 192, 120, 55, 255 }
+    );
+}
+
+
+static void DibujarMesa67Editor(
+    const ObjetoMapaEditor& objeto
+)
+{
+    Vector3 posicion = objeto.transform.translation;
+    Vector3 escala = objeto.transform.scale;
+
+    float ancho =
+        DimensionEditor(escala.x, 0.40f);
+
+    float profundidad =
+        DimensionEditor(escala.z, 0.40f);
+
+    float altura =
+        DimensionEditor(escala.y, 0.08f);
+
+    float radioBase =
+        (ancho + profundidad) * 0.25f;
+
+    float factorRadio =
+        radioBase / 0.88f;
+
+    DrawCylinder(
+        posicion,
+        radioBase,
+        radioBase,
+        altura,
+        28,
+        objeto.color
+    );
+
+    DrawCylinder(
+        {
+            posicion.x,
+            posicion.y + altura * 0.68f,
+            posicion.z
+        },
+        radioBase * 0.82f,
+        radioBase * 0.82f,
+        altura * 0.45f,
+        28,
+        Color{ 49, 52, 58, 255 }
+    );
+
+    DrawCylinder(
+        {
+            posicion.x,
+            posicion.y + altura * 1.05f,
+            posicion.z
+        },
+        radioBase * 0.68f,
+        radioBase * 0.68f,
+        DimensionEditor(altura * 0.18f, 0.03f),
+        28,
+        Color{ 135, 98, 72, 255 }
+    );
+
+    float yNumeros =
+        posicion.y + altura * 2.77f;
+
+    DibujarNumero3DEditor(
+        6,
+        {
+            posicion.x - 0.26f * factorRadio,
+            yNumeros,
+            posicion.z
+        },
+        0.37f * factorRadio,
+        Fade(RAYWHITE, 0.35f)
+    );
+
+    DibujarNumero3DEditor(
+        7,
+        {
+            posicion.x + 0.27f * factorRadio,
+            yNumeros,
+            posicion.z
+        },
+        0.37f * factorRadio,
+        Fade(RAYWHITE, 0.35f)
+    );
+}
+
+
+static void DibujarDecoracionFabrica67Editor(
+    const MapaEditor& mapa
+)
+{
+    const ObjetoMapaEditor* pared =
+        BuscarObjetoMapa(mapa, "ParedFondo");
+
+    if (pared != nullptr)
+    {
+        Vector3 posicion = pared->transform.translation;
+        Vector3 escala = pared->transform.scale;
+
+        float alto = DimensionEditor(escala.y, 0.20f);
+        float largo = DimensionEditor(escala.x, 0.20f);
+
+        DrawCube(
+            {
+                posicion.x,
+                posicion.y + alto * 0.415f,
+                posicion.z + 0.17f
+            },
+            largo * 0.953f,
+            0.50f,
+            0.10f,
+            Color{ 160, 105, 70, 255 }
+        );
+    }
+
+    const ObjetoMapaEditor* piso =
+        BuscarObjetoMapa(mapa, "Piso");
+
+    if (piso != nullptr)
+    {
+        Vector3 posicion = piso->transform.translation;
+        Vector3 escala = piso->transform.scale;
+
+        DrawCube(
+            {
+                posicion.x - 0.5f,
+                posicion.y + DimensionEditor(escala.y, 0.05f) * 3.3f,
+                posicion.z
+            },
+            DimensionEditor(escala.x, 0.20f) * 0.70f,
+            0.05f,
+            DimensionEditor(escala.z, 0.20f) * 0.245f,
+            Fade(RAYWHITE, 0.12f)
+        );
+    }
+}
+
+
+static void DibujarObjetoMapaEditor(
+    EditorMapas& editor,
+    ObjetoMapaEditor& objeto
+)
+{
+    if (objeto.tipo == OBJETO_MAPA_EDITOR_CINTA_67)
+    {
+        DibujarCinta67Editor(objeto);
+        return;
+    }
+
+    if (objeto.tipo == OBJETO_MAPA_EDITOR_MESA_67)
+    {
+        DibujarMesa67Editor(objeto);
+        return;
+    }
+
+    if (!editor.modeloCuboCargado)
+    {
+        return;
+    }
+
+    editor.modeloCubo.transform =
+        GizmoToMatrix(
+            objeto.transform
+        );
+
+    DrawModel(
+        editor.modeloCubo,
+        { 0.0f, 0.0f, 0.0f },
+        1.0f,
+        objeto.color
+    );
+}
+
+
 void EditorMapas::Inicializar()
 {
     camara.position =
@@ -362,20 +792,17 @@ void EditorMapas::Actualizar(
 
     if (IsKeyPressed(KEY_ONE))
     {
-        modoGizmo =
-            GIZMO_EDITOR_TRASLADAR;
+        modoGizmo = GIZMO_EDITOR_TRASLADAR;
     }
 
     if (IsKeyPressed(KEY_TWO))
     {
-        modoGizmo =
-            GIZMO_EDITOR_ROTAR;
+        modoGizmo = GIZMO_EDITOR_ROTAR;
     }
 
     if (IsKeyPressed(KEY_THREE))
     {
-        modoGizmo =
-            GIZMO_EDITOR_ESCALAR;
+        modoGizmo = GIZMO_EDITOR_ESCALAR;
     }
 
     bool controlPresionado =
@@ -387,9 +814,7 @@ void EditorMapas::Actualizar(
         IsKeyPressed(KEY_S)
     )
     {
-        ultimoGuardadoExitoso =
-            mapa.Guardar();
-
+        ultimoGuardadoExitoso = mapa.Guardar();
         tiempoMensaje = 2.0f;
 
         if (ultimoGuardadoExitoso)
@@ -410,7 +835,6 @@ void EditorMapas::Actualizar(
 
         ultimoGuardadoExitoso = cargado;
         tiempoMensaje = 2.0f;
-
         cambiosSinGuardar = false;
 
         if (mapa.cantidadObjetos > 0)
@@ -450,20 +874,10 @@ void EditorMapas::Dibujar()
         ObjetoMapaEditor& objeto =
             mapa.objetos[i];
 
-        if (modeloCuboCargado)
-        {
-            modeloCubo.transform =
-                GizmoToMatrix(
-                    objeto.transform
-                );
-
-            DrawModel(
-                modeloCubo,
-                { 0.0f, 0.0f, 0.0f },
-                1.0f,
-                objeto.color
-            );
-        }
+        DibujarObjetoMapaEditor(
+            *this,
+            objeto
+        );
 
         if (i == indiceSeleccionado)
         {
@@ -473,6 +887,8 @@ void EditorMapas::Dibujar()
             );
         }
     }
+
+    DibujarDecoracionFabrica67Editor(mapa);
 
     if (
         indiceSeleccionado >= 0 &&
@@ -499,8 +915,8 @@ void EditorMapas::Dibujar()
     DrawRectangle(
         16,
         16,
-        360,
-        252,
+        390,
+        280,
         Fade(BLACK, 0.78f)
     );
 
@@ -533,12 +949,13 @@ void EditorMapas::Dibujar()
 
         DrawText(
             TextFormat(
-                "SELECCION: %s",
-                seleccionado.nombre
+                "SELECCION: %s  [%s]",
+                seleccionado.nombre,
+                ObtenerNombreTipoObjeto(seleccionado.tipo)
             ),
             30,
             94,
-            18,
+            16,
             RAYWHITE
         );
 
@@ -596,7 +1013,7 @@ void EditorMapas::Dibujar()
     );
 
     DrawText(
-        "WASD mover camara | Q/E altura | RMB mirar",
+        "WASD mover | Q/E altura | RMB mirar",
         30,
         218,
         14,
@@ -604,9 +1021,17 @@ void EditorMapas::Dibujar()
     );
 
     DrawText(
-        "CTRL+S guardar | CTRL+R recargar | CTRL+E volver",
+        "RUEDA: zoom hacia donde mira la camara",
         30,
         238,
+        14,
+        LIGHTGRAY
+    );
+
+    DrawText(
+        "CTRL+S guardar | CTRL+R recargar | CTRL+E volver",
+        30,
+        258,
         14,
         LIGHTGRAY
     );
@@ -629,7 +1054,7 @@ void EditorMapas::Dibujar()
                 ? "MAPA GUARDADO / CARGADO"
                 : "NO SE PUDO GUARDAR / CARGAR",
             30,
-            282,
+            308,
             18,
             ultimoGuardadoExitoso
                 ? LIME

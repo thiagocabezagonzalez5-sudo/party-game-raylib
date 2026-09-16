@@ -9,7 +9,9 @@ static const int MAX_RUTA_MAPA_EDITOR = 256;
 
 enum TipoObjetoMapaEditor
 {
-    OBJETO_MAPA_EDITOR_CUBO = 0
+    OBJETO_MAPA_EDITOR_CUBO = 0,
+    OBJETO_MAPA_EDITOR_CINTA_67,
+    OBJETO_MAPA_EDITOR_MESA_67
 };
 
 
