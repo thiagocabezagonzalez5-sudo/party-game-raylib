@@ -21,6 +21,8 @@ static const char* NombreModoPrueba(
         case PRUEBA_ISLA_FUEGO: return "8 - ISLA BAJO FUEGO";
         case PRUEBA_CAPITAN_MANDA: return "9 - CAPITAN MANDA";
         case PRUEBA_BARRA_GIRATORIA: return "0 - BARRA GIRATORIA";
+        case PRUEBA_CARGA_INESTABLE: return "F1 - CARGA INESTABLE";
+        case PRUEBA_SECUENCIA_NEON: return "F2 - SECUENCIA NEON";
         case PRUEBA_CIRCUITO_VOLTAJE: return "F4 - CIRCUITO VOLTAJE";
         case PRUEBA_TRAZO_PERFECTO: return "F5 - TRAZO PERFECTO";
         case PRUEBA_CONTEO_EXPLOSIVO: return "F6 - CONTEO EXPLOSIVO";
@@ -337,6 +339,8 @@ void ZonaPruebas::Inicializar(
     minijuegoPasoSilencioso.Inicializar();
     minijuegoCircuitoVoltaje.Inicializar();
     minijuegoTrazoPerfecto.Inicializar();
+    minijuegoCargaInestable.Inicializar();
+    minijuegoSecuenciaNeon.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
@@ -467,6 +471,14 @@ void ZonaPruebas::CambiarModo(
 
         case PRUEBA_TRAZO_PERFECTO:
             minijuegoTrazoPerfecto.Reiniciar(participantes);
+            break;
+
+        case PRUEBA_CARGA_INESTABLE:
+            minijuegoCargaInestable.Reiniciar(participantes);
+            break;
+
+        case PRUEBA_SECUENCIA_NEON:
+            minijuegoSecuenciaNeon.Reiniciar(participantes);
             break;
     }
 
@@ -642,6 +654,14 @@ static void ReiniciarModoActual(
         case PRUEBA_TRAZO_PERFECTO:
             zona.minijuegoTrazoPerfecto.Reiniciar(zona.participantes);
             break;
+
+        case PRUEBA_CARGA_INESTABLE:
+            zona.minijuegoCargaInestable.Reiniciar(zona.participantes);
+            break;
+
+        case PRUEBA_SECUENCIA_NEON:
+            zona.minijuegoSecuenciaNeon.Reiniciar(zona.participantes);
+            break;
     }
 
     if (zona.modoActual != PRUEBA_MODELOS)
@@ -683,6 +703,8 @@ void ZonaPruebas::Actualizar(
         if (IsKeyPressed(KEY_EIGHT)) { CambiarModo(PRUEBA_ISLA_FUEGO); return; }
         if (IsKeyPressed(KEY_NINE)) { CambiarModo(PRUEBA_CAPITAN_MANDA); return; }
         if (IsKeyPressed(KEY_ZERO)) { CambiarModo(PRUEBA_BARRA_GIRATORIA); return; }
+        if (IsKeyPressed(KEY_F1)) { CambiarModo(PRUEBA_CARGA_INESTABLE); return; }
+        if (IsKeyPressed(KEY_F2)) { CambiarModo(PRUEBA_SECUENCIA_NEON); return; }
         if (IsKeyPressed(KEY_F4)) { CambiarModo(PRUEBA_CIRCUITO_VOLTAJE); return; }
         if (IsKeyPressed(KEY_F5)) { CambiarModo(PRUEBA_TRAZO_PERFECTO); return; }
         if (IsKeyPressed(KEY_F6)) { CambiarModo(PRUEBA_CONTEO_EXPLOSIVO); return; }
@@ -898,6 +920,20 @@ void ZonaPruebas::Actualizar(
                 participantes
             );
             break;
+
+        case PRUEBA_CARGA_INESTABLE:
+            minijuegoCargaInestable.Actualizar(
+                deltaTime,
+                participantes
+            );
+            break;
+
+        case PRUEBA_SECUENCIA_NEON:
+            minijuegoSecuenciaNeon.Actualizar(
+                deltaTime,
+                participantes
+            );
+            break;
     }
 }
 
@@ -1040,6 +1076,14 @@ void ZonaPruebas::Dibujar() const
         case PRUEBA_TRAZO_PERFECTO:
             minijuegoTrazoPerfecto.Dibujar(participantes);
             break;
+
+        case PRUEBA_CARGA_INESTABLE:
+            minijuegoCargaInestable.Dibujar(participantes);
+            break;
+
+        case PRUEBA_SECUENCIA_NEON:
+            minijuegoSecuenciaNeon.Dibujar(participantes);
+            break;
     }
 
     if (modoCatalogo)
@@ -1080,7 +1124,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "F4 CIRCUITO  F5 TRAZO  F6 CONTEO  F7 SIGILO  F8 MAGNETICA  F9 MUROS  F10 NUCLEOS  F11 TALADROS  F12 MIRADAS",
+        "F1 CARGA  F2 SECUENCIA  F4 CIRCUITO  F5 TRAZO  F6 CONTEO  F7 SIGILO  F8 MAGNETICA  F9 MUROS  F10 NUCLEOS  F11 TALADROS  F12 MIRADAS",
         30,
         GetScreenHeight() - 116,
         15,

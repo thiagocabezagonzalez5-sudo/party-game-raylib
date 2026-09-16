@@ -96,6 +96,16 @@ static const DatosMinijuegoCatalogo DATOS_CATALOGO[
         "TRAZO PERFECTO",
         "Sigue el punto dorado alrededor de la figura. El recorrido mas preciso obtiene la victoria.",
         Color{ 102, 157, 235, 255 }
+    },
+    {
+        "CARGA INESTABLE",
+        "Pasa la carga en cualquier sentido antes de que explote. El ultimo jugador en pie gana.",
+        Color{ 239, 85, 112, 255 }
+    },
+    {
+        "SECUENCIA NEON",
+        "Memoriza los pulsos direccionales y repitelos sin equivocarte mientras la secuencia crece.",
+        Color{ 119, 91, 222, 255 }
     }
 };
 
@@ -368,6 +378,45 @@ static void DibujarMiniatura(
             }
 
             DrawCircleV(puntos[1], 7.0f, GOLD);
+            break;
+        }
+
+        case CATALOGO_CARGA_INESTABLE:
+        {
+            DrawCircle((int)cx, (int)cy, 34.0f, RED);
+            DrawCircleLines((int)cx, (int)cy, 42.0f, ORANGE);
+            DrawCircle((int)cx - 9, (int)cy - 9, 8.0f, RAYWHITE);
+
+            for (int i = 0; i < 8; i++)
+            {
+                float angulo = i * 45.0f * DEG2RAD;
+                DrawLineEx(
+                    {
+                        cx + std::cos(angulo) * 45.0f,
+                        cy + std::sin(angulo) * 45.0f
+                    },
+                    {
+                        cx + std::cos(angulo) * 57.0f,
+                        cy + std::sin(angulo) * 57.0f
+                    },
+                    3.0f,
+                    GOLD
+                );
+            }
+            break;
+        }
+
+        case CATALOGO_SECUENCIA_NEON:
+        {
+            DrawCircle((int)cx, (int)cy - 30, 16.0f, SKYBLUE);
+            DrawCircle((int)cx + 34, (int)cy, 16.0f, ORANGE);
+            DrawCircle((int)cx, (int)cy + 30, 16.0f, LIME);
+            DrawCircle((int)cx - 34, (int)cy, 16.0f, VIOLET);
+
+            DrawText("^", (int)cx - 7, (int)cy - 42, 22, BLACK);
+            DrawText(">", (int)cx + 28, (int)cy - 11, 22, BLACK);
+            DrawText("V", (int)cx - 7, (int)cy + 19, 22, BLACK);
+            DrawText("<", (int)cx - 40, (int)cy - 11, 22, BLACK);
             break;
         }
 

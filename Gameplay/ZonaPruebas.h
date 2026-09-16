@@ -3,6 +3,7 @@
 #include "Core/Participante.h"
 #include "Gameplay/PrototipoTablero.h"
 #include "Minigames/MinijuegoBarraGiratoria.h"
+#include "Minigames/MinijuegoCargaInestable.h"
 #include "Minigames/MinijuegoCapitanManda.h"
 #include "Minigames/MinijuegoCircuitoVoltaje.h"
 #include "Minigames/MinijuegoColorSeguro.h"
@@ -15,6 +16,7 @@
 #include "Minigames/MinijuegoPelotas.h"
 #include "Minigames/MinijuegoPasoSilencioso.h"
 #include "Minigames/MinijuegoRefugioPinchos.h"
+#include "Minigames/MinijuegoSecuenciaNeon.h"
 #include "Minigames/MinijuegoTormentaMagnetica.h"
 #include "Minigames/MinijuegoTrazoPerfecto.h"
 #include "Minigames/MinijuegoTronco.h"
@@ -43,7 +45,9 @@ enum ModoZonaPruebas
     PRUEBA_CONTEO_EXPLOSIVO = 16,
     PRUEBA_PASO_SILENCIOSO = 17,
     PRUEBA_CIRCUITO_VOLTAJE = 18,
-    PRUEBA_TRAZO_PERFECTO = 19
+    PRUEBA_TRAZO_PERFECTO = 19,
+    PRUEBA_CARGA_INESTABLE = 20,
+    PRUEBA_SECUENCIA_NEON = 21
 };
 
 
@@ -83,6 +87,8 @@ struct ZonaPruebas
     MinijuegoPasoSilencioso minijuegoPasoSilencioso;
     MinijuegoCircuitoVoltaje minijuegoCircuitoVoltaje;
     MinijuegoTrazoPerfecto minijuegoTrazoPerfecto;
+    MinijuegoCargaInestable minijuegoCargaInestable;
+    MinijuegoSecuenciaNeon minijuegoSecuenciaNeon;
 
     bool modoCatalogo = false;
     bool mostrarDebug = false;
