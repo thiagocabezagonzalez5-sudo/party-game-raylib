@@ -153,6 +153,12 @@ static ModoZonaPruebas ConvertirCatalogoAModo(
 
         case CATALOGO_TANQUES_PLASMA:
             return PRUEBA_TANQUES_PLASMA;
+
+        case CATALOGO_PASARELAS_VACIO:
+            return PRUEBA_PASARELAS_VACIO;
+
+        case CATALOGO_CANTERA_FUGA:
+            return PRUEBA_CANTERA_FUGA;
     }
 
     return PRUEBA_COLOR_SEGURO;
@@ -183,7 +189,9 @@ static ModoZonaPruebas ElegirMinijuegoAleatorioTablero()
         PRUEBA_CARGA_INESTABLE,
         PRUEBA_SECUENCIA_NEON,
         PRUEBA_INTERRUPTORES_CAOS,
-        PRUEBA_TANQUES_PLASMA
+        PRUEBA_TANQUES_PLASMA,
+        PRUEBA_PASARELAS_VACIO,
+        PRUEBA_CANTERA_FUGA
     };
 
     const int cantidadOpciones =
@@ -260,6 +268,12 @@ static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
 
         case PRUEBA_TANQUES_PLASMA:
             return &zona.minijuegoTanquesPlasma.ObtenerResultado();
+
+        case PRUEBA_PASARELAS_VACIO:
+            return &zona.minijuegoPasarelasVacio.ObtenerResultado();
+
+        case PRUEBA_CANTERA_FUGA:
+            return &zona.minijuegoCanteraFuga.ObtenerResultado();
 
         case PRUEBA_ZONA_PRINCIPAL:
         case PRUEBA_MODELOS:

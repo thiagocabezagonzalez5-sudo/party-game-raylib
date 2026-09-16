@@ -25,6 +25,8 @@ static const char* NombreModoPrueba(
         case PRUEBA_SECUENCIA_NEON: return "F2 - SECUENCIA NEON";
         case PRUEBA_INTERRUPTORES_CAOS: return "PAG ARRIBA - INTERRUPTORES DEL CAOS";
         case PRUEBA_TANQUES_PLASMA: return "PAG ABAJO - TANQUES DE PLASMA";
+        case PRUEBA_PASARELAS_VACIO: return "INICIO - PASARELAS DEL VACIO";
+        case PRUEBA_CANTERA_FUGA: return "FIN - CANTERA EN FUGA";
         case PRUEBA_CIRCUITO_VOLTAJE: return "F4 - CIRCUITO VOLTAJE";
         case PRUEBA_TRAZO_PERFECTO: return "F5 - TRAZO PERFECTO";
         case PRUEBA_CONTEO_EXPLOSIVO: return "F6 - CONTEO EXPLOSIVO";
@@ -345,6 +347,8 @@ void ZonaPruebas::Inicializar(
     minijuegoSecuenciaNeon.Inicializar();
     minijuegoInterruptoresCaos.Inicializar();
     minijuegoTanquesPlasma.Inicializar();
+    minijuegoPasarelasVacio.Inicializar();
+    minijuegoCanteraFuga.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
@@ -492,6 +496,10 @@ void ZonaPruebas::CambiarModo(
         case PRUEBA_TANQUES_PLASMA:
             minijuegoTanquesPlasma.Reiniciar(participantes);
             break;
+
+        case PRUEBA_PASARELAS_VACIO:
+        case PRUEBA_CANTERA_FUGA:
+            break;
     }
 
     if (modoActual != PRUEBA_MODELOS)
@@ -524,6 +532,22 @@ void ZonaPruebas::CambiarModo(
     else if (modoActual == PRUEBA_MIRADAS_CRUZADAS)
     {
         minijuegoMiradasCruzadas.Reiniciar(participantes);
+    }
+    else if (modoActual == PRUEBA_PASARELAS_VACIO)
+    {
+        minijuegoPasarelasVacio.Reiniciar(
+            jugadores,
+            participantes,
+            MAX_JUGADORES_PRUEBA
+        );
+    }
+    else if (modoActual == PRUEBA_CANTERA_FUGA)
+    {
+        minijuegoCanteraFuga.Reiniciar(
+            jugadores,
+            participantes,
+            MAX_JUGADORES_PRUEBA
+        );
     }
 }
 
@@ -682,6 +706,22 @@ static void ReiniciarModoActual(
         case PRUEBA_TANQUES_PLASMA:
             zona.minijuegoTanquesPlasma.Reiniciar(zona.participantes);
             break;
+
+        case PRUEBA_PASARELAS_VACIO:
+            zona.minijuegoPasarelasVacio.Reiniciar(
+                zona.jugadores,
+                zona.participantes,
+                MAX_JUGADORES_PRUEBA
+            );
+            break;
+
+        case PRUEBA_CANTERA_FUGA:
+            zona.minijuegoCanteraFuga.Reiniciar(
+                zona.jugadores,
+                zona.participantes,
+                MAX_JUGADORES_PRUEBA
+            );
+            break;
     }
 
     if (zona.modoActual != PRUEBA_MODELOS)
@@ -736,6 +776,8 @@ void ZonaPruebas::Actualizar(
         if (IsKeyPressed(KEY_F12)) { CambiarModo(PRUEBA_MIRADAS_CRUZADAS); return; }
         if (IsKeyPressed(KEY_PAGE_UP)) { CambiarModo(PRUEBA_INTERRUPTORES_CAOS); return; }
         if (IsKeyPressed(KEY_PAGE_DOWN)) { CambiarModo(PRUEBA_TANQUES_PLASMA); return; }
+        if (IsKeyPressed(KEY_HOME)) { CambiarModo(PRUEBA_PASARELAS_VACIO); return; }
+        if (IsKeyPressed(KEY_END)) { CambiarModo(PRUEBA_CANTERA_FUGA); return; }
     }
 
     if (IsKeyPressed(KEY_R))
@@ -762,6 +804,16 @@ void ZonaPruebas::Actualizar(
                 !participantes[i].activo ||
                 participantes[i].esBot ||
                 participantes[i].conectado == estabaConectado
+            )
+            {
+                continue;
+            }
+
+            // Estos modos reemplazan temporalmente el mando por IA.
+            // Reconectar devuelve el control sin teletransportar al inicio.
+            if (
+                modoActual == PRUEBA_PASARELAS_VACIO ||
+                modoActual == PRUEBA_CANTERA_FUGA
             )
             {
                 continue;
@@ -970,6 +1022,26 @@ void ZonaPruebas::Actualizar(
                 participantes
             );
             break;
+
+        case PRUEBA_PASARELAS_VACIO:
+            minijuegoPasarelasVacio.Actualizar(
+                deltaTime,
+                jugadores,
+                MAX_JUGADORES_PRUEBA,
+                participantes,
+                particulas,
+                MAX_PARTICULAS_TIERRA
+            );
+            break;
+
+        case PRUEBA_CANTERA_FUGA:
+            minijuegoCanteraFuga.Actualizar(
+                deltaTime,
+                jugadores,
+                MAX_JUGADORES_PRUEBA,
+                participantes
+            );
+            break;
     }
 }
 
@@ -1128,6 +1200,26 @@ void ZonaPruebas::Dibujar() const
         case PRUEBA_TANQUES_PLASMA:
             minijuegoTanquesPlasma.Dibujar(participantes);
             break;
+
+        case PRUEBA_PASARELAS_VACIO:
+            minijuegoPasarelasVacio.Dibujar(
+                jugadores,
+                MAX_JUGADORES_PRUEBA,
+                participantes,
+                particulas,
+                MAX_PARTICULAS_TIERRA,
+                mostrarDebug
+            );
+            break;
+
+        case PRUEBA_CANTERA_FUGA:
+            minijuegoCanteraFuga.Dibujar(
+                jugadores,
+                MAX_JUGADORES_PRUEBA,
+                participantes,
+                mostrarDebug
+            );
+            break;
     }
 
     if (modoCatalogo)
@@ -1153,16 +1245,16 @@ void ZonaPruebas::Dibujar() const
 
     DrawRectangle(
         18,
-        GetScreenHeight() - 184,
+        GetScreenHeight() - 211,
         GetScreenWidth() - 36,
-        162,
+        189,
         Fade(RAYWHITE, 0.86f)
     );
 
     DrawText(
         "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO  8 ISLA  9 CAPITAN  0 BARRA",
         30,
-        GetScreenHeight() - 169,
+        GetScreenHeight() - 196,
         14,
         BLACK
     );
@@ -1170,13 +1262,21 @@ void ZonaPruebas::Dibujar() const
     DrawText(
         "F1 CARGA  F2 SECUENCIA  F4 CIRCUITO  F5 TRAZO  F6 CONTEO  F7 SIGILO",
         30,
-        GetScreenHeight() - 142,
+        GetScreenHeight() - 169,
         15,
         DARKBLUE
     );
 
     DrawText(
         "F8 MAGNETICA  F9 MUROS  F10 NUCLEOS  F11 TALADROS  F12 MIRADAS  PGUP INTERRUPTORES  PGDN TANQUES",
+        30,
+        GetScreenHeight() - 142,
+        15,
+        DARKBLUE
+    );
+
+    DrawText(
+        "INICIO PASARELAS  FIN CANTERA",
         30,
         GetScreenHeight() - 115,
         15,

@@ -116,6 +116,16 @@ static const DatosMinijuegoCatalogo DATOS_CATALOGO[
         "TANQUES PLASMA",
         "Combate cenital de tanques. Dos impactos te eliminan; esquiva, apunta y dispara hasta quedar solo.",
         Color{ 65, 190, 226, 255 }
+    },
+    {
+        "PASARELAS VACIO",
+        "Cruza plataformas suspendidas que se derrumban bajo tus pies y llega primero a la meta.",
+        Color{ 102, 160, 232, 255 }
+    },
+    {
+        "CANTERA EN FUGA",
+        "1 vs 3: lanza rocas desde la cima o esquivalas mientras escalas una pendiente en 3D.",
+        Color{ 196, 123, 68, 255 }
     }
 };
 
@@ -138,7 +148,7 @@ static Rectangle ObtenerCeldaCatalogo(
 {
     Rectangle area = ObtenerAreaCatalogo();
 
-    const int columnas = 7;
+    const int columnas = 8;
     const int filas =
         (CANTIDAD_MINIJUEGOS_CATALOGO + columnas - 1) /
         columnas;
@@ -184,6 +194,17 @@ static void DibujarMiniatura(
 
     float cx = rect.x + rect.width / 2.0f;
     float cy = rect.y + (rect.height - 36.0f) / 2.0f;
+
+    // Las miniaturas conservan sus proporciones al agregar columnas.
+    float escala = std::fmin(
+        1.0f,
+        std::fmin((rect.width - 8.0f) / 140.0f, (rect.height - 44.0f) / 118.0f)
+    );
+    Camera2D camaraMiniatura{};
+    camaraMiniatura.target = { cx, cy };
+    camaraMiniatura.offset = { cx, cy };
+    camaraMiniatura.zoom = std::fmax(escala, 0.1f);
+    BeginMode2D(camaraMiniatura);
 
     switch (indice)
     {
@@ -465,9 +486,38 @@ static void DibujarMiniatura(
             break;
         }
 
+        case CATALOGO_PASARELAS_VACIO:
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                float x = cx - 43.0f + i * 29.0f;
+                float y = cy + 25.0f - i * 17.0f;
+                DrawRectangle((int)x - 13, (int)y - 5, 26, 11, SKYBLUE);
+                DrawRectangleLines((int)x - 13, (int)y - 5, 26, 11, RAYWHITE);
+            }
+
+            DrawCircle((int)cx - 43, (int)cy + 9, 7.0f, GOLD);
+            break;
+        }
+
+        case CATALOGO_CANTERA_FUGA:
+        {
+            DrawTriangle(
+                { cx - 50.0f, cy + 34.0f },
+                { cx + 50.0f, cy + 34.0f },
+                { cx + 35.0f, cy - 35.0f },
+                BROWN
+            );
+            DrawCircle((int)cx + 18, (int)cy - 13, 13.0f, DARKGRAY);
+            DrawCircle((int)cx - 15, (int)cy + 12, 9.0f, GRAY);
+            break;
+        }
+
         case CANTIDAD_MINIJUEGOS_CATALOGO:
             break;
     }
+
+    EndMode2D();
 }
 
 
@@ -477,7 +527,7 @@ static int MoverIndice(
     int deltaY
 )
 {
-    const int columnas = 7;
+    const int columnas = 8;
     const int filas =
         (CANTIDAD_MINIJUEGOS_CATALOGO + columnas - 1) /
         columnas;
@@ -635,6 +685,15 @@ void SeleccionMinijuegos::Dibujar(
         );
 
         int tamanoNombre = 11;
+        while (
+            tamanoNombre > 8 &&
+            MeasureText(DATOS_CATALOGO[i].nombre, tamanoNombre) >
+                celda.width - 6.0f
+        )
+        {
+            tamanoNombre--;
+        }
+
         int anchoNombre =
             MeasureText(DATOS_CATALOGO[i].nombre, tamanoNombre);
 

@@ -3,6 +3,7 @@
 #include "Core/Participante.h"
 #include "Gameplay/PrototipoTablero.h"
 #include "Minigames/MinijuegoBarraGiratoria.h"
+#include "Minigames/MinijuegoCanteraFuga.h"
 #include "Minigames/MinijuegoCargaInestable.h"
 #include "Minigames/MinijuegoCapitanManda.h"
 #include "Minigames/MinijuegoCircuitoVoltaje.h"
@@ -14,6 +15,7 @@
 #include "Minigames/MinijuegoMiradasCruzadas.h"
 #include "Minigames/MinijuegoMurosLocos.h"
 #include "Minigames/MinijuegoNucleosEnergia.h"
+#include "Minigames/MinijuegoPasarelasVacio.h"
 #include "Minigames/MinijuegoPelotas.h"
 #include "Minigames/MinijuegoPasoSilencioso.h"
 #include "Minigames/MinijuegoRefugioPinchos.h"
@@ -51,7 +53,9 @@ enum ModoZonaPruebas
     PRUEBA_CARGA_INESTABLE = 20,
     PRUEBA_SECUENCIA_NEON = 21,
     PRUEBA_INTERRUPTORES_CAOS = 22,
-    PRUEBA_TANQUES_PLASMA = 23
+    PRUEBA_TANQUES_PLASMA = 23,
+    PRUEBA_PASARELAS_VACIO = 24,
+    PRUEBA_CANTERA_FUGA = 25
 };
 
 
@@ -95,6 +99,8 @@ struct ZonaPruebas
     MinijuegoSecuenciaNeon minijuegoSecuenciaNeon;
     MinijuegoInterruptoresCaos minijuegoInterruptoresCaos;
     MinijuegoTanquesPlasma minijuegoTanquesPlasma;
+    MinijuegoPasarelasVacio minijuegoPasarelasVacio;
+    MinijuegoCanteraFuga minijuegoCanteraFuga;
 
     bool modoCatalogo = false;
     bool mostrarDebug = false;
