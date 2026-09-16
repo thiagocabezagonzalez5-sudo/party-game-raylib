@@ -17,16 +17,12 @@
 static const float DURACION_PREPARACION_67 = 2.5f;
 static const float DURACION_PARTIDA_67 = 30.0f;
 
-// La ventana anterior era demasiado ancha. Ahora hay que esperar
-// a que la pieza quede realmente a mano del jugador.
-static const float INICIO_ZONA_RECOGIDA_67 = 0.755f;
-static const float FIN_ZONA_RECOGIDA_67 = 0.815f;
-
 static const char* RUTA_MAPA_FABRICA_67 =
     "Mapas/Minijuego67.map";
 
-// El mapa es una plantilla visual compartida por ambos equipos. Cada mitad
-// de la pantalla renderiza la misma distribucion con el color de su equipo.
+// El mapa es una plantilla visual y logica compartida por ambos equipos.
+// Cada mitad de la pantalla reutiliza la misma distribucion y solo cambia
+// el color de cada equipo.
 static MapaEditor mapaVisual67;
 static double proximaRecargaMapa67 = -1.0;
 
@@ -64,9 +60,25 @@ static Vector3 posicionMesa67 = { 3.45f, 0.12f, 0.0f };
 static Vector3 escalaMesa67 = { 1.76f, 0.22f, 1.76f };
 static Color colorMesa67 = Color{ 71, 47, 32, 255 };
 
-static float X_JUGADOR_67 = 1.35f;
-static float Z_JUGADOR_6_67 = -0.72f;
-static float Z_JUGADOR_7_67 = 0.72f;
+// Puntos logicos editables desde Mapas/Minijuego67.map.
+static Vector3 posicionSpawnSolo67 = { 1.35f, 0.16f, 0.0f };
+static Vector3 posicionSpawn667 = { 1.35f, 0.16f, -0.72f };
+static Vector3 posicionSpawn767 = { 1.35f, 0.16f, 0.72f };
+
+static Vector3 posicionCamara67 = { 7.8f, 10.7f, 12.4f };
+static Vector3 objetivoCamara67 = { -1.0f, 0.55f, 0.0f };
+
+static Vector3 posicionesZonaRecogida67[2] =
+{
+    { 0.765f, 0.96f, -2.35f },
+    { 0.765f, 0.96f, 2.35f }
+};
+
+static Vector3 escalasZonaRecogida67[2] =
+{
+    { 0.54f, 1.00f, 1.07f },
+    { 0.54f, 1.00f, 1.07f }
+};
 
 // Cuatro piezas por cinta dejan espacio visual. El 7 queda atrasado respecto
 // del 6, por lo que el 6 cruza primero la zona de recogida en cada ciclo.
@@ -278,6 +290,40 @@ static void AplicarObjetoMapa67(
 }
 
 
+static void AplicarPuntoMapa67(
+    const char* nombre,
+    Vector3& posicion
+)
+{
+    const ObjetoMapaEditor* objeto =
+        BuscarObjetoMapa67(nombre);
+
+    if (objeto != nullptr)
+    {
+        posicion = objeto->transform.translation;
+    }
+}
+
+
+static void AplicarZonaMapa67(
+    const char* nombre,
+    Vector3& posicion,
+    Vector3& escala
+)
+{
+    const ObjetoMapaEditor* objeto =
+        BuscarObjetoMapa67(nombre);
+
+    if (objeto == nullptr)
+    {
+        return;
+    }
+
+    posicion = objeto->transform.translation;
+    escala = objeto->transform.scale;
+}
+
+
 static void AplicarMapaVisual67()
 {
     AplicarObjetoMapa67(
@@ -322,30 +368,23 @@ static void AplicarMapaVisual67()
         colorMesa67
     );
 
-    // El jugador queda apenas despues de la zona util de recogida.
-    float xJugador6 =
-        ObtenerXObjeto67(0.85f, PIEZA_NUMERO_6);
+    AplicarPuntoMapa67("SpawnSolo", posicionSpawnSolo67);
+    AplicarPuntoMapa67("Spawn6", posicionSpawn667);
+    AplicarPuntoMapa67("Spawn7", posicionSpawn767);
+    AplicarPuntoMapa67("CamaraPos", posicionCamara67);
+    AplicarPuntoMapa67("CamaraObjetivo", objetivoCamara67);
 
-    float xJugador7 =
-        ObtenerXObjeto67(0.85f, PIEZA_NUMERO_7);
+    AplicarZonaMapa67(
+        "ZonaRecogida6",
+        posicionesZonaRecogida67[0],
+        escalasZonaRecogida67[0]
+    );
 
-    X_JUGADOR_67 =
-        (xJugador6 + xJugador7) * 0.5f;
-
-    float centroZ =
-        (posicionesCintas67[0].z + posicionesCintas67[1].z) * 0.5f;
-
-    const float FACTOR_JUGADOR_HACIA_CINTA = 0.30638298f;
-
-    Z_JUGADOR_6_67 =
-        centroZ +
-        (posicionesCintas67[0].z - centroZ) *
-        FACTOR_JUGADOR_HACIA_CINTA;
-
-    Z_JUGADOR_7_67 =
-        centroZ +
-        (posicionesCintas67[1].z - centroZ) *
-        FACTOR_JUGADOR_HACIA_CINTA;
+    AplicarZonaMapa67(
+        "ZonaRecogida7",
+        posicionesZonaRecogida67[1],
+        escalasZonaRecogida67[1]
+    );
 }
 
 
@@ -383,6 +422,47 @@ static float ObtenerProgresoPieza67(
 }
 
 
+static Vector3 ObtenerPosicionPieza67(
+    float progreso,
+    TipoPieza67 tipo
+)
+{
+    int indice = IndiceCinta67(tipo);
+
+    float y =
+        posicionesCintas67[indice].y +
+        DimensionMapa67(escalasCintas67[indice].y, 0.05f) * 0.5f +
+        0.55f;
+
+    return
+    {
+        ObtenerXObjeto67(progreso, tipo),
+        y,
+        posicionesCintas67[indice].z
+    };
+}
+
+
+static bool PuntoDentroZona67(
+    Vector3 punto,
+    Vector3 centro,
+    Vector3 escala
+)
+{
+    Vector3 mitad =
+    {
+        DimensionMapa67(escala.x, 0.05f) * 0.5f,
+        DimensionMapa67(escala.y, 0.05f) * 0.5f,
+        DimensionMapa67(escala.z, 0.05f) * 0.5f
+    };
+
+    return
+        std::fabs(punto.x - centro.x) <= mitad.x &&
+        std::fabs(punto.y - centro.y) <= mitad.y &&
+        std::fabs(punto.z - centro.z) <= mitad.z;
+}
+
+
 static bool HayPiezaAlAlcance67(
     const EstadoEquipo67& equipo,
     TipoPieza67 tipo
@@ -393,6 +473,8 @@ static bool HayPiezaAlAlcance67(
         ? equipo.progresoCinta6
         : equipo.progresoCinta7;
 
+    int indice = IndiceCinta67(tipo);
+
     for (int i = 0; i < CANTIDAD_PIEZAS_CINTA_67; i++)
     {
         float progreso =
@@ -401,9 +483,18 @@ static bool HayPiezaAlAlcance67(
                 i
             );
 
+        Vector3 posicionPieza =
+            ObtenerPosicionPieza67(
+                progreso,
+                tipo
+            );
+
         if (
-            progreso >= INICIO_ZONA_RECOGIDA_67 &&
-            progreso <= FIN_ZONA_RECOGIDA_67
+            PuntoDentroZona67(
+                posicionPieza,
+                posicionesZonaRecogida67[indice],
+                escalasZonaRecogida67[indice]
+            )
         )
         {
             return true;
@@ -488,7 +579,7 @@ static void ActualizarRolJugadorUnico67(
 }
 
 
-static float ObtenerZJugador67(
+static Vector3 ObtenerPosicionJugador67(
     const Minijuego67& minijuego,
     int indiceJugador
 )
@@ -497,21 +588,18 @@ static float ObtenerZJugador67(
 
     if (equipo < 0 || equipo > 1)
     {
-        return 0.0f;
+        return posicionSpawnSolo67;
     }
-
-    float centroZ =
-        (posicionesCintas67[0].z + posicionesCintas67[1].z) * 0.5f;
 
     if (minijuego.cantidadJugadoresEquipo[equipo] <= 1)
     {
-        return centroZ;
+        return posicionSpawnSolo67;
     }
 
     return
         minijuego.ordenEnEquipoPorJugador[indiceJugador] == 0
-        ? Z_JUGADOR_6_67
-        : Z_JUGADOR_7_67;
+        ? posicionSpawn667
+        : posicionSpawn767;
 }
 
 
@@ -848,23 +936,21 @@ static void DibujarCinta67(
         );
     }
 
-    float xInicio =
-        ObtenerXObjeto67(
-            INICIO_ZONA_RECOGIDA_67,
-            tipo
-        );
+    const Vector3& posicionZona =
+        posicionesZonaRecogida67[indice];
 
-    float xFin =
-        ObtenerXObjeto67(
-            FIN_ZONA_RECOGIDA_67,
-            tipo
-        );
+    const Vector3& escalaZona =
+        escalasZonaRecogida67[indice];
 
     DrawCube(
-        { (xInicio + xFin) / 2.0f, posicion.y + altoBase * 0.89f, posicion.z },
-        xFin - xInicio,
+        {
+            posicionZona.x,
+            posicion.y + altoBase * 0.89f,
+            posicionZona.z
+        },
+        DimensionMapa67(escalaZona.x, 0.05f),
         0.035f,
-        DimensionMapa67(anchoBase - 0.15f, 0.08f),
+        DimensionMapa67(escalaZona.z, 0.08f),
         Fade(YELLOW, 0.58f)
     );
 
@@ -905,16 +991,6 @@ static void DibujarFlujoPiezas67(
     const EstadoEquipo67& equipo
 )
 {
-    float yPiezas6 =
-        posicionesCintas67[0].y +
-        DimensionMapa67(escalasCintas67[0].y, 0.05f) * 0.5f +
-        0.55f;
-
-    float yPiezas7 =
-        posicionesCintas67[1].y +
-        DimensionMapa67(escalasCintas67[1].y, 0.05f) * 0.5f +
-        0.55f;
-
     for (int i = 0; i < CANTIDAD_PIEZAS_CINTA_67; i++)
     {
         float progreso6 =
@@ -925,22 +1001,20 @@ static void DibujarFlujoPiezas67(
 
         DibujarNumero3D67(
             6,
-            {
-                ObtenerXObjeto67(progreso6, PIEZA_NUMERO_6),
-                yPiezas6,
-                posicionesCintas67[0].z
-            },
+            ObtenerPosicionPieza67(
+                progreso6,
+                PIEZA_NUMERO_6
+            ),
             0.56f,
             ORANGE
         );
 
         DibujarNumero3D67(
             7,
-            {
-                ObtenerXObjeto67(progreso7, PIEZA_NUMERO_7),
-                yPiezas7,
-                posicionesCintas67[1].z
-            },
+            ObtenerPosicionPieza67(
+                progreso7,
+                PIEZA_NUMERO_7
+            ),
             0.56f,
             SKYBLUE
         );
@@ -1052,7 +1126,7 @@ static void DibujarJugador67(
 )
 {
     const EstadoJugador67& estado = minijuego.estadosJugadores[indice];
-    float z = ObtenerZJugador67(minijuego, indice);
+    Vector3 posicion = ObtenerPosicionJugador67(minijuego, indice);
 
     Color color =
         estado.tiempoStun > 0.0f
@@ -1078,7 +1152,7 @@ static void DibujarJugador67(
     }
 
     DrawCylinder(
-        { X_JUGADOR_67, 0.07f, z },
+        { posicion.x, posicion.y - 0.09f, posicion.z },
         0.56f,
         0.56f,
         0.14f,
@@ -1090,7 +1164,7 @@ static void DibujarJugador67(
     {
         DrawModelEx(
             minijuego.modeloJugador,
-            { X_JUGADOR_67, 0.16f, z },
+            posicion,
             { 0.0f, 1.0f, 0.0f },
             giro,
             { 0.25f, 0.25f, 0.25f },
@@ -1100,7 +1174,7 @@ static void DibujarJugador67(
     else
     {
         DrawCube(
-            { X_JUGADOR_67, 0.90f, z },
+            { posicion.x, posicion.y + 0.74f, posicion.z },
             0.72f,
             1.55f,
             0.72f,
@@ -1114,7 +1188,7 @@ static void DibujarJugador67(
 
         DibujarNumero3D67(
             es6 ? 6 : 7,
-            { X_JUGADOR_67, 2.10f, z },
+            { posicion.x, posicion.y + 1.94f, posicion.z },
             0.52f,
             es6 ? ORANGE : SKYBLUE
         );
@@ -1309,7 +1383,11 @@ static void DibujarVistaEquipo67(
             : Color{ 20, 70, 100, 255 }
     );
 
-    BeginMode3D(minijuego.camarasEquipo[equipo]);
+    Camera3D camara = minijuego.camarasEquipo[equipo];
+    camara.position = posicionCamara67;
+    camara.target = objetivoCamara67;
+
+    BeginMode3D(camara);
 
     DibujarFabricaEquipo67(equipo);
     DibujarCinta67(PIEZA_NUMERO_6, ObtenerColorEquipo67(equipo));
@@ -1359,10 +1437,16 @@ void Minijuego67::Inicializar()
     empate = false;
     estadoPartida = FABRICA_67_ESPERANDO_JUGADORES;
 
+    mapaVisual67.Cargar(
+        RUTA_MAPA_FABRICA_67
+    );
+    AplicarMapaVisual67();
+    proximaRecargaMapa67 = GetTime() + 0.35;
+
     for (int equipo = 0; equipo < 2; equipo++)
     {
-        camarasEquipo[equipo].position = { 7.8f, 10.7f, 12.4f };
-        camarasEquipo[equipo].target = { -1.0f, 0.55f, 0.0f };
+        camarasEquipo[equipo].position = posicionCamara67;
+        camarasEquipo[equipo].target = objetivoCamara67;
         camarasEquipo[equipo].up = { 0.0f, 1.0f, 0.0f };
         camarasEquipo[equipo].fovy = 12.2f;
         camarasEquipo[equipo].projection = CAMERA_ORTHOGRAPHIC;
@@ -1595,6 +1679,7 @@ void Minijuego67::Actualizar(
 )
 {
     AsegurarVistasEquipo67(*this);
+    RecargarMapaVisual67SiHaceFalta();
 
     if (animacionIdleActiva)
     {
