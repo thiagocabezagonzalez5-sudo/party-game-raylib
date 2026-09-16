@@ -147,6 +147,12 @@ static ModoZonaPruebas ConvertirCatalogoAModo(
 
         case CATALOGO_SECUENCIA_NEON:
             return PRUEBA_SECUENCIA_NEON;
+
+        case CATALOGO_INTERRUPTORES_CAOS:
+            return PRUEBA_INTERRUPTORES_CAOS;
+
+        case CATALOGO_TANQUES_PLASMA:
+            return PRUEBA_TANQUES_PLASMA;
     }
 
     return PRUEBA_COLOR_SEGURO;
@@ -175,7 +181,9 @@ static ModoZonaPruebas ElegirMinijuegoAleatorioTablero()
         PRUEBA_CIRCUITO_VOLTAJE,
         PRUEBA_TRAZO_PERFECTO,
         PRUEBA_CARGA_INESTABLE,
-        PRUEBA_SECUENCIA_NEON
+        PRUEBA_SECUENCIA_NEON,
+        PRUEBA_INTERRUPTORES_CAOS,
+        PRUEBA_TANQUES_PLASMA
     };
 
     const int cantidadOpciones =
@@ -246,6 +254,12 @@ static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
 
         case PRUEBA_SECUENCIA_NEON:
             return &zona.minijuegoSecuenciaNeon.ObtenerResultado();
+
+        case PRUEBA_INTERRUPTORES_CAOS:
+            return &zona.minijuegoInterruptoresCaos.ObtenerResultado();
+
+        case PRUEBA_TANQUES_PLASMA:
+            return &zona.minijuegoTanquesPlasma.ObtenerResultado();
 
         case PRUEBA_ZONA_PRINCIPAL:
         case PRUEBA_MODELOS:

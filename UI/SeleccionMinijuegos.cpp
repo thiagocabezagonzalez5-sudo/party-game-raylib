@@ -106,6 +106,16 @@ static const DatosMinijuegoCatalogo DATOS_CATALOGO[
         "SECUENCIA NEON",
         "Memoriza los pulsos direccionales y repitelos sin equivocarte mientras la secuencia crece.",
         Color{ 119, 91, 222, 255 }
+    },
+    {
+        "INTERRUPTORES",
+        "Elige un interruptor por turno. Si activas la sobrecarga quedas fuera; el ultimo en pie gana.",
+        Color{ 226, 75, 107, 255 }
+    },
+    {
+        "TANQUES PLASMA",
+        "Combate cenital de tanques. Dos impactos te eliminan; esquiva, apunta y dispara hasta quedar solo.",
+        Color{ 65, 190, 226, 255 }
     }
 };
 
@@ -128,7 +138,7 @@ static Rectangle ObtenerCeldaCatalogo(
 {
     Rectangle area = ObtenerAreaCatalogo();
 
-    const int columnas = 6;
+    const int columnas = 7;
     const int filas =
         (CANTIDAD_MINIJUEGOS_CATALOGO + columnas - 1) /
         columnas;
@@ -420,6 +430,41 @@ static void DibujarMiniatura(
             break;
         }
 
+        case CATALOGO_INTERRUPTORES_CAOS:
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                const Color colores[5] =
+                {
+                    RED, SKYBLUE, GOLD, LIME, VIOLET
+                };
+                float x = cx - 42.0f + i * 21.0f;
+                DrawRectangle((int)x - 7, (int)cy + 2, 14, 30, DARKGRAY);
+                DrawCircle((int)x, (int)cy - 2, 10.0f, colores[i]);
+                DrawCircleLines((int)x, (int)cy - 2, 10.0f, RAYWHITE);
+            }
+            break;
+        }
+
+        case CATALOGO_TANQUES_PLASMA:
+        {
+            DrawRectanglePro(
+                { cx - 27.0f, cy + 13.0f, 42.0f, 26.0f },
+                { 21.0f, 13.0f },
+                -20.0f,
+                SKYBLUE
+            );
+            DrawRectanglePro(
+                { cx + 27.0f, cy - 13.0f, 42.0f, 26.0f },
+                { 21.0f, 13.0f },
+                160.0f,
+                ORANGE
+            );
+            DrawCircle((int)cx, (int)cy, 6.0f, GOLD);
+            DrawCircleLines((int)cx, (int)cy, 13.0f, RAYWHITE);
+            break;
+        }
+
         case CANTIDAD_MINIJUEGOS_CATALOGO:
             break;
     }
@@ -432,7 +477,7 @@ static int MoverIndice(
     int deltaY
 )
 {
-    const int columnas = 6;
+    const int columnas = 7;
     const int filas =
         (CANTIDAD_MINIJUEGOS_CATALOGO + columnas - 1) /
         columnas;

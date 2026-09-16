@@ -10,6 +10,7 @@
 #include "Minigames/MinijuegoConteoExplosivo.h"
 #include "Minigames/Minijuego67.h"
 #include "Minigames/MinijuegoIslaFuego.h"
+#include "Minigames/MinijuegoInterruptoresCaos.h"
 #include "Minigames/MinijuegoMiradasCruzadas.h"
 #include "Minigames/MinijuegoMurosLocos.h"
 #include "Minigames/MinijuegoNucleosEnergia.h"
@@ -17,6 +18,7 @@
 #include "Minigames/MinijuegoPasoSilencioso.h"
 #include "Minigames/MinijuegoRefugioPinchos.h"
 #include "Minigames/MinijuegoSecuenciaNeon.h"
+#include "Minigames/MinijuegoTanquesPlasma.h"
 #include "Minigames/MinijuegoTormentaMagnetica.h"
 #include "Minigames/MinijuegoTrazoPerfecto.h"
 #include "Minigames/MinijuegoTronco.h"
@@ -47,7 +49,9 @@ enum ModoZonaPruebas
     PRUEBA_CIRCUITO_VOLTAJE = 18,
     PRUEBA_TRAZO_PERFECTO = 19,
     PRUEBA_CARGA_INESTABLE = 20,
-    PRUEBA_SECUENCIA_NEON = 21
+    PRUEBA_SECUENCIA_NEON = 21,
+    PRUEBA_INTERRUPTORES_CAOS = 22,
+    PRUEBA_TANQUES_PLASMA = 23
 };
 
 
@@ -89,6 +93,8 @@ struct ZonaPruebas
     MinijuegoTrazoPerfecto minijuegoTrazoPerfecto;
     MinijuegoCargaInestable minijuegoCargaInestable;
     MinijuegoSecuenciaNeon minijuegoSecuenciaNeon;
+    MinijuegoInterruptoresCaos minijuegoInterruptoresCaos;
+    MinijuegoTanquesPlasma minijuegoTanquesPlasma;
 
     bool modoCatalogo = false;
     bool mostrarDebug = false;

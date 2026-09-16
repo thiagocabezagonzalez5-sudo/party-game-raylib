@@ -23,6 +23,8 @@ static const char* NombreModoPrueba(
         case PRUEBA_BARRA_GIRATORIA: return "0 - BARRA GIRATORIA";
         case PRUEBA_CARGA_INESTABLE: return "F1 - CARGA INESTABLE";
         case PRUEBA_SECUENCIA_NEON: return "F2 - SECUENCIA NEON";
+        case PRUEBA_INTERRUPTORES_CAOS: return "PAG ARRIBA - INTERRUPTORES DEL CAOS";
+        case PRUEBA_TANQUES_PLASMA: return "PAG ABAJO - TANQUES DE PLASMA";
         case PRUEBA_CIRCUITO_VOLTAJE: return "F4 - CIRCUITO VOLTAJE";
         case PRUEBA_TRAZO_PERFECTO: return "F5 - TRAZO PERFECTO";
         case PRUEBA_CONTEO_EXPLOSIVO: return "F6 - CONTEO EXPLOSIVO";
@@ -341,6 +343,8 @@ void ZonaPruebas::Inicializar(
     minijuegoTrazoPerfecto.Inicializar();
     minijuegoCargaInestable.Inicializar();
     minijuegoSecuenciaNeon.Inicializar();
+    minijuegoInterruptoresCaos.Inicializar();
+    minijuegoTanquesPlasma.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
@@ -479,6 +483,14 @@ void ZonaPruebas::CambiarModo(
 
         case PRUEBA_SECUENCIA_NEON:
             minijuegoSecuenciaNeon.Reiniciar(participantes);
+            break;
+
+        case PRUEBA_INTERRUPTORES_CAOS:
+            minijuegoInterruptoresCaos.Reiniciar(participantes);
+            break;
+
+        case PRUEBA_TANQUES_PLASMA:
+            minijuegoTanquesPlasma.Reiniciar(participantes);
             break;
     }
 
@@ -662,6 +674,14 @@ static void ReiniciarModoActual(
         case PRUEBA_SECUENCIA_NEON:
             zona.minijuegoSecuenciaNeon.Reiniciar(zona.participantes);
             break;
+
+        case PRUEBA_INTERRUPTORES_CAOS:
+            zona.minijuegoInterruptoresCaos.Reiniciar(zona.participantes);
+            break;
+
+        case PRUEBA_TANQUES_PLASMA:
+            zona.minijuegoTanquesPlasma.Reiniciar(zona.participantes);
+            break;
     }
 
     if (zona.modoActual != PRUEBA_MODELOS)
@@ -714,6 +734,8 @@ void ZonaPruebas::Actualizar(
         if (IsKeyPressed(KEY_F10)) { CambiarModo(PRUEBA_NUCLEOS_ENERGIA); return; }
         if (IsKeyPressed(KEY_F11)) { CambiarModo(PRUEBA_REFUGIO_PINCHOS); return; }
         if (IsKeyPressed(KEY_F12)) { CambiarModo(PRUEBA_MIRADAS_CRUZADAS); return; }
+        if (IsKeyPressed(KEY_PAGE_UP)) { CambiarModo(PRUEBA_INTERRUPTORES_CAOS); return; }
+        if (IsKeyPressed(KEY_PAGE_DOWN)) { CambiarModo(PRUEBA_TANQUES_PLASMA); return; }
     }
 
     if (IsKeyPressed(KEY_R))
@@ -934,6 +956,20 @@ void ZonaPruebas::Actualizar(
                 participantes
             );
             break;
+
+        case PRUEBA_INTERRUPTORES_CAOS:
+            minijuegoInterruptoresCaos.Actualizar(
+                deltaTime,
+                participantes
+            );
+            break;
+
+        case PRUEBA_TANQUES_PLASMA:
+            minijuegoTanquesPlasma.Actualizar(
+                deltaTime,
+                participantes
+            );
+            break;
     }
 }
 
@@ -1084,6 +1120,14 @@ void ZonaPruebas::Dibujar() const
         case PRUEBA_SECUENCIA_NEON:
             minijuegoSecuenciaNeon.Dibujar(participantes);
             break;
+
+        case PRUEBA_INTERRUPTORES_CAOS:
+            minijuegoInterruptoresCaos.Dibujar(participantes);
+            break;
+
+        case PRUEBA_TANQUES_PLASMA:
+            minijuegoTanquesPlasma.Dibujar(participantes);
+            break;
     }
 
     if (modoCatalogo)
@@ -1109,24 +1153,32 @@ void ZonaPruebas::Dibujar() const
 
     DrawRectangle(
         18,
-        GetScreenHeight() - 158,
+        GetScreenHeight() - 184,
         GetScreenWidth() - 36,
-        136,
+        162,
         Fade(RAYWHITE, 0.86f)
     );
 
     DrawText(
         "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO  8 ISLA  9 CAPITAN  0 BARRA",
         30,
-        GetScreenHeight() - 143,
+        GetScreenHeight() - 169,
         14,
         BLACK
     );
 
     DrawText(
-        "F1 CARGA  F2 SECUENCIA  F4 CIRCUITO  F5 TRAZO  F6 CONTEO  F7 SIGILO  F8 MAGNETICA  F9 MUROS  F10 NUCLEOS  F11 TALADROS  F12 MIRADAS",
+        "F1 CARGA  F2 SECUENCIA  F4 CIRCUITO  F5 TRAZO  F6 CONTEO  F7 SIGILO",
         30,
-        GetScreenHeight() - 116,
+        GetScreenHeight() - 142,
+        15,
+        DARKBLUE
+    );
+
+    DrawText(
+        "F8 MAGNETICA  F9 MUROS  F10 NUCLEOS  F11 TALADROS  F12 MIRADAS  PGUP INTERRUPTORES  PGDN TANQUES",
+        30,
+        GetScreenHeight() - 115,
         15,
         DARKBLUE
     );
