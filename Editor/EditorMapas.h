@@ -2,6 +2,7 @@
 
 #include "Editor/MapaEditor.h"
 
+static const int MAX_HISTORIAL_DESHACER_EDITOR = 64;
 
 enum ModoGizmoEditor
 {
@@ -10,6 +11,11 @@ enum ModoGizmoEditor
     GIZMO_EDITOR_ESCALAR
 };
 
+struct PasoDeshacerEditor
+{
+    int indiceObjeto = -1;
+    Transform transformAnterior{};
+};
 
 struct EditorMapas
 {
@@ -32,6 +38,13 @@ struct EditorMapas
 
     float tiempoMensaje = 0.0f;
     bool ultimoGuardadoExitoso = false;
+
+    PasoDeshacerEditor historialDeshacer[MAX_HISTORIAL_DESHACER_EDITOR]{};
+    int cantidadHistorialDeshacer = 0;
+
+    bool gizmoEstabaActivo = false;
+    int indiceGizmoActivo = -1;
+    Transform transformInicioGizmo{};
 
     void Inicializar();
     void Actualizar(float deltaTime);
