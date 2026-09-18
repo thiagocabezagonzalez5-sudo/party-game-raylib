@@ -67,6 +67,7 @@ static Vector3 posicionSpawn767 = { 1.35f, 0.16f, 0.72f };
 
 static Vector3 posicionCamara67 = { 7.8f, 10.7f, 12.4f };
 static Vector3 objetivoCamara67 = { -1.0f, 0.55f, 0.0f };
+static float zoomOrtograficoCamara67 = 12.2f;
 
 static Vector3 posicionesZonaRecogida67[2] =
 {
@@ -373,6 +374,23 @@ static void AplicarMapaVisual67()
     AplicarPuntoMapa67("Spawn7", posicionSpawn767);
     AplicarPuntoMapa67("CamaraPos", posicionCamara67);
     AplicarPuntoMapa67("CamaraObjetivo", objetivoCamara67);
+
+    const ObjetoMapaEditor* marcadorCamara =
+        BuscarObjetoMapa67("CamaraPos");
+
+    if (marcadorCamara != nullptr)
+    {
+        zoomOrtograficoCamara67 =
+            DimensionMapa67(
+                marcadorCamara->transform.scale.x,
+                1.0f
+            );
+
+        if (zoomOrtograficoCamara67 > 80.0f)
+        {
+            zoomOrtograficoCamara67 = 80.0f;
+        }
+    }
 
     AplicarZonaMapa67(
         "ZonaRecogida6",
@@ -1386,6 +1404,7 @@ static void DibujarVistaEquipo67(
     Camera3D camara = minijuego.camarasEquipo[equipo];
     camara.position = posicionCamara67;
     camara.target = objetivoCamara67;
+    camara.fovy = zoomOrtograficoCamara67;
 
     BeginMode3D(camara);
 
@@ -1448,7 +1467,7 @@ void Minijuego67::Inicializar()
         camarasEquipo[equipo].position = posicionCamara67;
         camarasEquipo[equipo].target = objetivoCamara67;
         camarasEquipo[equipo].up = { 0.0f, 1.0f, 0.0f };
-        camarasEquipo[equipo].fovy = 12.2f;
+        camarasEquipo[equipo].fovy = zoomOrtograficoCamara67;
         camarasEquipo[equipo].projection = CAMERA_ORTHOGRAPHIC;
     }
 
