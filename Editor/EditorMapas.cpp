@@ -11,6 +11,110 @@ static const char* RUTA_MAPA_FABRICA_67 =
     "Mapas/Minijuego67.map";
 
 
+static bool EsMarcadorCamaraPos(
+    const ObjetoMapaEditor& objeto
+)
+{
+    return std::strcmp(objeto.nombre, "CamaraPos") == 0;
+}
+
+
+static bool TransformIgualEditor(
+    const Transform& a,
+    const Transform& b
+)
+{
+    const float epsilon = 0.0001f;
+
+    return
+        std::fabs(a.translation.x - b.translation.x) < epsilon &&
+        std::fabs(a.translation.y - b.translation.y) < epsilon &&
+        std::fabs(a.translation.z - b.translation.z) < epsilon &&
+        std::fabs(a.rotation.x - b.rotation.x) < epsilon &&
+        std::fabs(a.rotation.y - b.rotation.y) < epsilon &&
+        std::fabs(a.rotation.z - b.rotation.z) < epsilon &&
+        std::fabs(a.rotation.w - b.rotation.w) < epsilon &&
+        std::fabs(a.scale.x - b.scale.x) < epsilon &&
+        std::fabs(a.scale.y - b.scale.y) < epsilon &&
+        std::fabs(a.scale.z - b.scale.z) < epsilon;
+}
+
+
+static void RegistrarPasoDeshacer(
+    EditorMapas& editor,
+    int indiceObjeto,
+    const Transform& transformAnterior
+)
+{
+    if (
+        indiceObjeto < 0 ||
+        indiceObjeto >= editor.mapa.cantidadObjetos
+    )
+    {
+        return;
+    }
+
+    if (
+        editor.cantidadHistorialDeshacer >=
+        MAX_HISTORIAL_DESHACER_EDITOR
+    )
+    {
+        for (int i = 1; i < MAX_HISTORIAL_DESHACER_EDITOR; i++)
+        {
+            editor.historialDeshacer[i - 1] =
+                editor.historialDeshacer[i];
+        }
+
+        editor.cantidadHistorialDeshacer =
+            MAX_HISTORIAL_DESHACER_EDITOR - 1;
+    }
+
+    PasoDeshacerEditor& paso =
+        editor.historialDeshacer[
+            editor.cantidadHistorialDeshacer
+        ];
+
+    paso.indiceObjeto = indiceObjeto;
+    paso.transformAnterior = transformAnterior;
+
+    editor.cantidadHistorialDeshacer++;
+}
+
+
+static bool DeshacerUltimaAccion(
+    EditorMapas& editor
+)
+{
+    if (editor.cantidadHistorialDeshacer <= 0)
+    {
+        return false;
+    }
+
+    editor.cantidadHistorialDeshacer--;
+
+    const PasoDeshacerEditor& paso =
+        editor.historialDeshacer[
+            editor.cantidadHistorialDeshacer
+        ];
+
+    if (
+        paso.indiceObjeto < 0 ||
+        paso.indiceObjeto >= editor.mapa.cantidadObjetos
+    )
+    {
+        return false;
+    }
+
+    editor.mapa.objetos[paso.indiceObjeto].transform =
+        paso.transformAnterior;
+
+    editor.indiceSeleccionado = paso.indiceObjeto;
+    editor.cambiosSinGuardar = true;
+
+    return true;
+}
+
+
 static float DimensionEditor(
     float valor,
     float minimo
@@ -79,7 +183,11 @@ static BoundingBox CrearCajaSeleccionEditor(
         std::fabs(objeto.transform.scale.z) * 0.5f
     };
 
-    if (objeto.tipo == OBJETO_MAPA_EDITOR_CINTA_67)
+    if (EsMarcadorCamaraPos(objeto))
+    {
+        mitad = { 0.40f, 0.40f, 0.40f };
+    }
+    else if (objeto.tipo == OBJETO_MAPA_EDITOR_CINTA_67)
     {
         mitad.x += 0.45f;
         if (mitad.y < 1.15f) mitad.y = 1.15f;
@@ -673,6 +781,29 @@ static void DibujarObjetoMapaEditor(
     ObjetoMapaEditor& objeto
 )
 {
+    if (EsMarcadorCamaraPos(objeto))
+    {
+        const Vector3 posicion = objeto.transform.translation;
+
+        DrawCube(
+            posicion,
+            0.65f,
+            0.65f,
+            0.65f,
+            objeto.color
+        );
+
+        DrawCubeWires(
+            posicion,
+            0.72f,
+            0.72f,
+            0.72f,
+            RAYWHITE
+        );
+
+        return;
+    }
+
     if (objeto.tipo == OBJETO_MAPA_EDITOR_CINTA_67)
     {
         DibujarCinta67Editor(objeto);
@@ -773,6 +904,10 @@ void EditorMapas::Inicializar()
 
     cambiosSinGuardar = false;
     tiempoMensaje = 0.0f;
+
+    cantidadHistorialDeshacer = 0;
+    gizmoEstabaActivo = false;
+    indiceGizmoActivo = -1;
 }
 
 
@@ -811,6 +946,15 @@ void EditorMapas::Actualizar(
 
     if (
         controlPresionado &&
+        IsKeyPressed(KEY_Z) &&
+        !gizmoEstabaActivo
+    )
+    {
+        DeshacerUltimaAccion(*this);
+    }
+
+    if (
+        controlPresionado &&
         IsKeyPressed(KEY_S)
     )
     {
@@ -836,6 +980,10 @@ void EditorMapas::Actualizar(
         ultimoGuardadoExitoso = cargado;
         tiempoMensaje = 2.0f;
         cambiosSinGuardar = false;
+
+        cantidadHistorialDeshacer = 0;
+        gizmoEstabaActivo = false;
+        indiceGizmoActivo = -1;
 
         if (mapa.cantidadObjetos > 0)
         {
@@ -898,15 +1046,62 @@ void EditorMapas::Dibujar()
         ObjetoMapaEditor& seleccionado =
             mapa.objetos[indiceSeleccionado];
 
+        Transform transformAntesFrame =
+            seleccionado.transform;
+
         bool transformando =
             DrawGizmo3D(
                 ObtenerFlagsGizmo(modoGizmo),
                 &seleccionado.transform
             );
 
+        if (
+            transformando &&
+            !gizmoEstabaActivo
+        )
+        {
+            gizmoEstabaActivo = true;
+            indiceGizmoActivo = indiceSeleccionado;
+            transformInicioGizmo = transformAntesFrame;
+        }
+
         if (transformando)
         {
             cambiosSinGuardar = true;
+        }
+
+        if (
+            !transformando &&
+            gizmoEstabaActivo
+        )
+        {
+            if (
+                indiceGizmoActivo >= 0 &&
+                indiceGizmoActivo < mapa.cantidadObjetos
+            )
+            {
+                const Transform& transformFinal =
+                    mapa.objetos[
+                        indiceGizmoActivo
+                    ].transform;
+
+                if (
+                    !TransformIgualEditor(
+                        transformInicioGizmo,
+                        transformFinal
+                    )
+                )
+                {
+                    RegistrarPasoDeshacer(
+                        *this,
+                        indiceGizmoActivo,
+                        transformInicioGizmo
+                    );
+                }
+            }
+
+            gizmoEstabaActivo = false;
+            indiceGizmoActivo = -1;
         }
     }
 
@@ -915,8 +1110,8 @@ void EditorMapas::Dibujar()
     DrawRectangle(
         16,
         16,
-        390,
-        280,
+        420,
+        300,
         Fade(BLACK, 0.78f)
     );
 
@@ -972,18 +1167,34 @@ void EditorMapas::Dibujar()
             LIGHTGRAY
         );
 
-        DrawText(
-            TextFormat(
-                "ESC  %.2f  %.2f  %.2f",
-                seleccionado.transform.scale.x,
-                seleccionado.transform.scale.y,
-                seleccionado.transform.scale.z
-            ),
-            30,
-            144,
-            16,
-            LIGHTGRAY
-        );
+        if (EsMarcadorCamaraPos(seleccionado))
+        {
+            DrawText(
+                TextFormat(
+                    "ZOOM ORTO  %.2f",
+                    std::fabs(seleccionado.transform.scale.x)
+                ),
+                30,
+                144,
+                16,
+                LIGHTGRAY
+            );
+        }
+        else
+        {
+            DrawText(
+                TextFormat(
+                    "ESC  %.2f  %.2f  %.2f",
+                    seleccionado.transform.scale.x,
+                    seleccionado.transform.scale.y,
+                    seleccionado.transform.scale.z
+                ),
+                30,
+                144,
+                16,
+                LIGHTGRAY
+            );
+        }
     }
     else
     {
@@ -1029,9 +1240,17 @@ void EditorMapas::Dibujar()
     );
 
     DrawText(
-        "CTRL+S guardar | CTRL+R recargar | CTRL+E volver",
+        "CTRL+Z deshacer | CTRL+S guardar | CTRL+R recargar",
         30,
         258,
+        14,
+        LIGHTGRAY
+    );
+
+    DrawText(
+        "CTRL+E volver | historial: 64 acciones",
+        30,
+        278,
         14,
         LIGHTGRAY
     );
@@ -1054,7 +1273,7 @@ void EditorMapas::Dibujar()
                 ? "MAPA GUARDADO / CARGADO"
                 : "NO SE PUDO GUARDAR / CARGAR",
             30,
-            308,
+            328,
             18,
             ultimoGuardadoExitoso
                 ? LIME
