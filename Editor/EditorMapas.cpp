@@ -1111,7 +1111,7 @@ void EditorMapas::Dibujar()
         16,
         16,
         420,
-        300,
+        335,
         Fade(BLACK, 0.78f)
     );
 
