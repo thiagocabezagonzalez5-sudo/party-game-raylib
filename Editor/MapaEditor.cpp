@@ -405,7 +405,7 @@ void MapaEditor::CrearMapaFabrica67()
         OBJETO_MAPA_EDITOR_CUBO,
         "CamaraPos",
         { 7.80f, 10.70f, 12.40f },
-        { 0.65f, 0.65f, 0.65f },
+        { 12.20f, 0.65f, 0.65f },
         Color{ 220, 90, 255, 180 }
     );
 
