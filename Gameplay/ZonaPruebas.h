@@ -5,26 +5,6 @@
 #include "Gameplay/ContextoMinijuego.h"
 #include "Gameplay/GestorMinijuegos.h"
 #include "Gameplay/PrototipoTablero.h"
-#include "Minigames/MinijuegoBarraGiratoria.h"
-#include "Minigames/MinijuegoCanteraFuga.h"
-#include "Minigames/MinijuegoCargaInestable.h"
-#include "Minigames/MinijuegoCircuitoVoltaje.h"
-#include "Minigames/MinijuegoConteoExplosivo.h"
-#include "Minigames/Minijuego67.h"
-#include "Minigames/MinijuegoIslaFuego.h"
-#include "Minigames/MinijuegoInterruptoresCaos.h"
-#include "Minigames/MinijuegoMiradasCruzadas.h"
-#include "Minigames/MinijuegoMurosLocos.h"
-#include "Minigames/MinijuegoNucleosEnergia.h"
-#include "Minigames/MinijuegoPasarelasVacio.h"
-#include "Minigames/MinijuegoPelotas.h"
-#include "Minigames/MinijuegoPasoSilencioso.h"
-#include "Minigames/MinijuegoRefugioPinchos.h"
-#include "Minigames/MinijuegoSecuenciaNeon.h"
-#include "Minigames/MinijuegoTanquesPlasma.h"
-#include "Minigames/MinijuegoTormentaMagnetica.h"
-#include "Minigames/MinijuegoTrazoPerfecto.h"
-#include "Minigames/MinijuegoTronco.h"
 #include "Minigames/PruebaModelos.h"
 #include "Minigames/TiposMinijuegos.h"
 #include "Systems/Audio.h"
@@ -42,7 +22,6 @@ enum ModoZonaPruebas
 struct ZonaPruebas
 {
     ModoZonaPruebas modoActual = PRUEBA_ZONA_PRINCIPAL;
-    IdMinijuego minijuegoActual = MINIJUEGO_COLOR_SEGURO;
 
     JugadorPrueba jugadores[MAX_JUGADORES_PRUEBA];
 
@@ -60,28 +39,9 @@ struct ZonaPruebas
 
     ContextoMinijuego contextoMinijuego;
     GestorMinijuegos gestorMinijuegos;
-    MinijuegoPelotas minijuegoPelotas;
+
     PruebaModelos pruebaModelos;
-    MinijuegoTronco minijuegoTronco;
-    Minijuego67 minijuego67;
     PrototipoTablero prototipoTablero;
-    MinijuegoIslaFuego minijuegoIslaFuego;
-    MinijuegoBarraGiratoria minijuegoBarraGiratoria;
-    MinijuegoNucleosEnergia minijuegoNucleosEnergia;
-    MinijuegoRefugioPinchos minijuegoRefugioPinchos;
-    MinijuegoMiradasCruzadas minijuegoMiradasCruzadas;
-    MinijuegoMurosLocos minijuegoMurosLocos;
-    MinijuegoTormentaMagnetica minijuegoTormentaMagnetica;
-    MinijuegoConteoExplosivo minijuegoConteoExplosivo;
-    MinijuegoPasoSilencioso minijuegoPasoSilencioso;
-    MinijuegoCircuitoVoltaje minijuegoCircuitoVoltaje;
-    MinijuegoTrazoPerfecto minijuegoTrazoPerfecto;
-    MinijuegoCargaInestable minijuegoCargaInestable;
-    MinijuegoSecuenciaNeon minijuegoSecuenciaNeon;
-    MinijuegoInterruptoresCaos minijuegoInterruptoresCaos;
-    MinijuegoTanquesPlasma minijuegoTanquesPlasma;
-    MinijuegoPasarelasVacio minijuegoPasarelasVacio;
-    MinijuegoCanteraFuga minijuegoCanteraFuga;
 
     bool modoCatalogo = false;
     bool mostrarDebug = false;
@@ -106,12 +66,6 @@ struct ZonaPruebas
     );
 
     void Dibujar() const;
-
-    void ReiniciarJugador(
-        int indice
-    );
-
-    void ReiniciarJugadores();
 
     const ResultadoMinijuego* ObtenerResultadoMinijuego() const;
 

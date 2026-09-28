@@ -105,88 +105,6 @@ static IdMinijuego ElegirMinijuegoAleatorioTablero()
 }
 
 
-static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
-    const ZonaPruebas& zona
-)
-{
-    if (zona.modoActual != PRUEBA_MINIJUEGO)
-    {
-        return nullptr;
-    }
-
-    switch (zona.minijuegoActual)
-    {
-        case MINIJUEGO_COLOR_SEGURO:
-            return zona.ObtenerResultadoMinijuego();
-
-        case MINIJUEGO_PELOTAS:
-            return &zona.minijuegoPelotas.ObtenerResultado();
-
-        case MINIJUEGO_TRONCO:
-            return &zona.minijuegoTronco.ObtenerResultado();
-
-        case MINIJUEGO_FABRICA_67:
-            return &zona.minijuego67.ObtenerResultado();
-
-        case MINIJUEGO_ISLA_FUEGO:
-            return &zona.minijuegoIslaFuego.ObtenerResultado();
-
-        case MINIJUEGO_CAPITAN_MANDA:
-            return zona.ObtenerResultadoMinijuego();
-
-        case MINIJUEGO_BARRA_GIRATORIA:
-            return &zona.minijuegoBarraGiratoria.ObtenerResultado();
-
-        case MINIJUEGO_NUCLEOS_ENERGIA:
-            return &zona.minijuegoNucleosEnergia.resultado;
-
-        case MINIJUEGO_REFUGIO_PINCHOS:
-            return &zona.minijuegoRefugioPinchos.ObtenerResultado();
-
-        case MINIJUEGO_MIRADAS_CRUZADAS:
-            return &zona.minijuegoMiradasCruzadas.ObtenerResultado();
-
-        case MINIJUEGO_MUROS_LOCOS:
-            return &zona.minijuegoMurosLocos.ObtenerResultado();
-
-        case MINIJUEGO_TORMENTA_MAGNETICA:
-            return &zona.minijuegoTormentaMagnetica.ObtenerResultado();
-
-        case MINIJUEGO_CONTEO_EXPLOSIVO:
-            return &zona.minijuegoConteoExplosivo.ObtenerResultado();
-
-        case MINIJUEGO_PASO_SILENCIOSO:
-            return &zona.minijuegoPasoSilencioso.ObtenerResultado();
-
-        case MINIJUEGO_CIRCUITO_VOLTAJE:
-            return &zona.minijuegoCircuitoVoltaje.ObtenerResultado();
-
-        case MINIJUEGO_TRAZO_PERFECTO:
-            return &zona.minijuegoTrazoPerfecto.ObtenerResultado();
-
-        case MINIJUEGO_CARGA_INESTABLE:
-            return &zona.minijuegoCargaInestable.ObtenerResultado();
-
-        case MINIJUEGO_SECUENCIA_NEON:
-            return &zona.minijuegoSecuenciaNeon.ObtenerResultado();
-
-        case MINIJUEGO_INTERRUPTORES_CAOS:
-            return &zona.minijuegoInterruptoresCaos.ObtenerResultado();
-
-        case MINIJUEGO_TANQUES_PLASMA:
-            return &zona.minijuegoTanquesPlasma.ObtenerResultado();
-
-        case MINIJUEGO_PASARELAS_VACIO:
-            return &zona.minijuegoPasarelasVacio.ObtenerResultado();
-
-        case MINIJUEGO_CANTERA_FUGA:
-            return &zona.minijuegoCanteraFuga.ObtenerResultado();
-    }
-
-    return nullptr;
-}
-
-
 static bool ConfirmarConParticipanteHumano(
     const Participante participantes[]
 )
@@ -849,7 +767,7 @@ void Juego::Actualizar(
             }
 
             const ResultadoMinijuego* resultado =
-                ObtenerResultadoZonaPruebas(zonaPruebas);
+                zonaPruebas.ObtenerResultadoMinijuego();
 
             if (
                 resultado == nullptr ||
@@ -986,7 +904,7 @@ void Juego::Dibujar()
             zonaPruebas.Dibujar();
 
             const ResultadoMinijuego* resultado =
-                ObtenerResultadoZonaPruebas(zonaPruebas);
+                zonaPruebas.ObtenerResultadoMinijuego();
 
             bool terminado =
                 resultado != nullptr &&

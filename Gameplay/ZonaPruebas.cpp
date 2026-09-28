@@ -5,19 +5,6 @@
 #include "Minigames/UtilidadesMinijuegos.h"
 
 
-static int ObtenerIdModoActual(
-    const ZonaPruebas& zona
-)
-{
-    if (zona.modoActual == PRUEBA_MINIJUEGO)
-    {
-        return static_cast<int>(zona.minijuegoActual);
-    }
-
-    return static_cast<int>(zona.modoActual);
-}
-
-
 static const char* NombreModoPrueba(
     const ZonaPruebas& zona
 )
@@ -25,11 +12,11 @@ static const char* NombreModoPrueba(
     if (zona.modoActual == PRUEBA_MINIJUEGO)
     {
         return ObtenerDatosMinijuego(
-            zona.minijuegoActual
+            zona.gestorMinijuegos.ObtenerIdActivo()
         ).etiquetaZonaPruebas;
     }
 
-    switch (ObtenerIdModoActual(zona))
+    switch (zona.modoActual)
     {
         case PRUEBA_ZONA_PRINCIPAL: return "1 - ZONA PRINCIPAL";
         case PRUEBA_MODELOS: return "4 - PRUEBA DE MODELOS";
@@ -238,66 +225,9 @@ static void PrepararTemaVisualZona(
 {
     SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
-    if (zona.modoActual == PRUEBA_MINIJUEGO && zona.minijuegoActual == MINIJUEGO_COLOR_SEGURO)
+    if (zona.modoActual == PRUEBA_MINIJUEGO)
     {
-        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_LAVA);
-        return;
-    }
-
-    if (zona.modoActual == PRUEBA_MINIJUEGO && zona.minijuegoActual == MINIJUEGO_PELOTAS)
-    {
-        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NIEVE);
-        return;
-    }
-
-    if (zona.modoActual == PRUEBA_MINIJUEGO && zona.minijuegoActual == MINIJUEGO_TORMENTA_MAGNETICA)
-    {
-        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_MAGNETICO);
-        return;
-    }
-
-    if (zona.modoActual == PRUEBA_MINIJUEGO && zona.minijuegoActual == MINIJUEGO_REFUGIO_PINCHOS)
-    {
-        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_CUEVA);
-
-        const MinijuegoRefugioPinchos& minijuego =
-            zona.minijuegoRefugioPinchos;
-
-        float progreso = 0.0f;
-        bool seleccionado =
-            minijuego.fase == FASE_PINCHOS_AVISO;
-
-        if (minijuego.fase == FASE_PINCHOS_ATAQUE)
-        {
-            const float DURACION_ATAQUE_VISUAL = 0.52f;
-
-            float avance =
-                1.0f -
-                minijuego.tiempoFase /
-                DURACION_ATAQUE_VISUAL;
-
-            if (avance < 0.0f) avance = 0.0f;
-            if (avance > 1.0f) avance = 1.0f;
-
-            // El taladro entra, alcanza el punto de peligro y vuelve
-            // durante la misma fase de ataque.
-            if (avance < 0.56f)
-            {
-                progreso = avance / 0.56f;
-            }
-            else
-            {
-                progreso =
-                    1.0f -
-                    (avance - 0.56f) / 0.44f;
-            }
-        }
-
-        ConfigurarTaladrosVisualesMinijuego(
-            (int)minijuego.direccionAviso,
-            progreso,
-            seleccionado
-        );
+        zona.gestorMinijuegos.PrepararTemaVisualActivo();
     }
 }
 
@@ -333,28 +263,7 @@ void ZonaPruebas::Inicializar(
 
     ConfigurarZonaPrincipal(*this);
 
-    gestorMinijuegos.InicializarMinijuego(MINIJUEGO_COLOR_SEGURO);
-    minijuegoPelotas.Inicializar();
-    minijuegoTronco.Inicializar();
-    minijuego67.Inicializar();
-    minijuegoIslaFuego.Inicializar();
-    gestorMinijuegos.InicializarMinijuego(MINIJUEGO_CAPITAN_MANDA);
-    minijuegoBarraGiratoria.Inicializar();
-    minijuegoNucleosEnergia.Inicializar();
-    minijuegoRefugioPinchos.Inicializar();
-    minijuegoMiradasCruzadas.Inicializar();
-    minijuegoMurosLocos.Inicializar();
-    minijuegoTormentaMagnetica.Inicializar();
-    minijuegoConteoExplosivo.Inicializar();
-    minijuegoPasoSilencioso.Inicializar();
-    minijuegoCircuitoVoltaje.Inicializar();
-    minijuegoTrazoPerfecto.Inicializar();
-    minijuegoCargaInestable.Inicializar();
-    minijuegoSecuenciaNeon.Inicializar();
-    minijuegoInterruptoresCaos.Inicializar();
-    minijuegoTanquesPlasma.Inicializar();
-    minijuegoPasarelasVacio.Inicializar();
-    minijuegoCanteraFuga.Inicializar();
+    gestorMinijuegos.Inicializar();
 
     prototipoTablero.Inicializar(
         participantes,
@@ -376,25 +285,13 @@ void ZonaPruebas::CambiarModo(
         particulas[i].activa = false;
     }
 
-    switch (ObtenerIdModoActual(*this))
+    switch (modoActual)
     {
         case PRUEBA_ZONA_PRINCIPAL:
             ConfigurarZonaPrincipal(*this);
             ConfigurarJugadoresPrincipal(*this);
-            break;
-
-        case MINIJUEGO_COLOR_SEGURO:
-            gestorMinijuegos.ActivarMinijuego(
-                minijuegoActual,
+            gestorMinijuegos.ReiniciarJugadoresCompartidos(
                 contextoMinijuego
-            );
-            break;
-
-        case MINIJUEGO_PELOTAS:
-            minijuegoPelotas.Inicializar();
-            minijuegoPelotas.ConfigurarJugadores(
-                jugadores,
-                MAX_JUGADORES_PRUEBA
             );
             break;
 
@@ -402,160 +299,15 @@ void ZonaPruebas::CambiarModo(
             pruebaModelos.Inicializar();
             break;
 
-        case MINIJUEGO_TRONCO:
-            minijuegoTronco.Inicializar();
-            minijuegoTronco.ConfigurarJugadores(
-                jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_FABRICA_67:
-            minijuego67.Inicializar();
-            break;
-
         case PRUEBA_TABLERO:
             prototipoTablero.Reiniciar();
-            break;
-
-        case MINIJUEGO_ISLA_FUEGO:
-            minijuegoIslaFuego.Inicializar();
-            minijuegoIslaFuego.ConfigurarJugadores(
-                jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_CAPITAN_MANDA:
-            gestorMinijuegos.ActivarMinijuego(
-                minijuegoActual,
+            gestorMinijuegos.ReiniciarJugadoresCompartidos(
                 contextoMinijuego
             );
             break;
 
-        case MINIJUEGO_BARRA_GIRATORIA:
-            minijuegoBarraGiratoria.Inicializar();
-            minijuegoBarraGiratoria.ConfigurarJugadores(
-                jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
+        case PRUEBA_MINIJUEGO:
             break;
-
-        case MINIJUEGO_NUCLEOS_ENERGIA:
-            minijuegoNucleosEnergia.Inicializar();
-            minijuegoNucleosEnergia.ConfigurarJugadores(
-                jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_REFUGIO_PINCHOS:
-            minijuegoRefugioPinchos.Inicializar();
-            break;
-
-        case MINIJUEGO_MIRADAS_CRUZADAS:
-            minijuegoMiradasCruzadas.Inicializar();
-            break;
-
-        case MINIJUEGO_MUROS_LOCOS:
-            minijuegoMurosLocos.Inicializar();
-            minijuegoMurosLocos.ConfigurarJugadores(
-                jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_TORMENTA_MAGNETICA:
-            minijuegoTormentaMagnetica.Inicializar();
-            minijuegoTormentaMagnetica.ConfigurarJugadores(
-                jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_CONTEO_EXPLOSIVO:
-            minijuegoConteoExplosivo.Reiniciar(participantes);
-            break;
-
-        case MINIJUEGO_PASO_SILENCIOSO:
-            minijuegoPasoSilencioso.Reiniciar(participantes);
-            break;
-
-        case MINIJUEGO_CIRCUITO_VOLTAJE:
-            minijuegoCircuitoVoltaje.Reiniciar(participantes);
-            break;
-
-        case MINIJUEGO_TRAZO_PERFECTO:
-            minijuegoTrazoPerfecto.Reiniciar(participantes);
-            break;
-
-        case MINIJUEGO_CARGA_INESTABLE:
-            minijuegoCargaInestable.Reiniciar(participantes);
-            break;
-
-        case MINIJUEGO_SECUENCIA_NEON:
-            minijuegoSecuenciaNeon.Reiniciar(participantes);
-            break;
-
-        case MINIJUEGO_INTERRUPTORES_CAOS:
-            minijuegoInterruptoresCaos.Reiniciar(participantes);
-            break;
-
-        case MINIJUEGO_TANQUES_PLASMA:
-            minijuegoTanquesPlasma.Reiniciar(participantes);
-            break;
-
-        case MINIJUEGO_PASARELAS_VACIO:
-        case MINIJUEGO_CANTERA_FUGA:
-            break;
-    }
-
-    if (modoActual != PRUEBA_MODELOS)
-    {
-        ReiniciarJugadores();
-    }
-
-    if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_TRONCO)
-    {
-        minijuegoTronco.Reiniciar(
-            participantes,
-            MAX_JUGADORES_PRUEBA
-        );
-    }
-    else if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_FABRICA_67)
-    {
-        minijuego67.Reiniciar(
-            participantes,
-            MAX_JUGADORES_PRUEBA
-        );
-    }
-    else if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_REFUGIO_PINCHOS)
-    {
-        minijuegoRefugioPinchos.Reiniciar(
-            jugadores,
-            participantes,
-            MAX_JUGADORES_PRUEBA
-        );
-    }
-    else if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_MIRADAS_CRUZADAS)
-    {
-        minijuegoMiradasCruzadas.Reiniciar(participantes);
-    }
-    else if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_PASARELAS_VACIO)
-    {
-        minijuegoPasarelasVacio.Reiniciar(
-            jugadores,
-            participantes,
-            MAX_JUGADORES_PRUEBA
-        );
-    }
-    else if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_CANTERA_FUGA)
-    {
-        minijuegoCanteraFuga.Reiniciar(
-            jugadores,
-            participantes,
-            MAX_JUGADORES_PRUEBA
-        );
     }
 }
 
@@ -569,34 +321,17 @@ void ZonaPruebas::CambiarMinijuego(
         return;
     }
 
-    minijuegoActual = nuevoMinijuego;
-    CambiarModo(PRUEBA_MINIJUEGO);
-}
+    modoActual = PRUEBA_MINIJUEGO;
 
-
-void ZonaPruebas::ReiniciarJugador(
-    int indice
-)
-{
-    if (
-        indice < 0 ||
-        indice >= MAX_JUGADORES_PRUEBA
-    )
+    for (int i = 0; i < MAX_PARTICULAS_TIERRA; i++)
     {
-        return;
+        particulas[i].activa = false;
     }
 
-    ReiniciarJugadorPrueba(jugadores[indice]);
-    ReiniciarEstadoExtendidoJugador(jugadores[indice]);
-}
-
-
-void ZonaPruebas::ReiniciarJugadores()
-{
-    for (int i = 0; i < MAX_JUGADORES_PRUEBA; i++)
-    {
-        ReiniciarJugador(i);
-    }
+    gestorMinijuegos.ActivarMinijuego(
+        nuevoMinijuego,
+        contextoMinijuego
+    );
 }
 
 
@@ -604,146 +339,29 @@ static void ReiniciarModoActual(
     ZonaPruebas& zona
 )
 {
-    switch (ObtenerIdModoActual(zona))
+    if (zona.modoActual == PRUEBA_MINIJUEGO)
+    {
+        zona.gestorMinijuegos.ReiniciarActivo(
+            zona.contextoMinijuego
+        );
+        return;
+    }
+
+    switch (zona.modoActual)
     {
         case PRUEBA_ZONA_PRINCIPAL:
             ConfigurarJugadoresPrincipal(zona);
-            break;
-
-        case MINIJUEGO_COLOR_SEGURO:
-            zona.gestorMinijuegos.ReiniciarActivo(
-                zona.contextoMinijuego
-            );
-            break;
-
-        case MINIJUEGO_PELOTAS:
-            zona.minijuegoPelotas.Reiniciar(
-                zona.jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
             break;
 
         case PRUEBA_MODELOS:
             zona.pruebaModelos.Reiniciar();
             break;
 
-        case MINIJUEGO_TRONCO:
-            zona.minijuegoTronco.Reiniciar(
-                zona.participantes,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_FABRICA_67:
-            zona.minijuego67.Reiniciar(
-                zona.participantes,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
         case PRUEBA_TABLERO:
             zona.prototipoTablero.Reiniciar();
             break;
 
-        case MINIJUEGO_ISLA_FUEGO:
-            zona.minijuegoIslaFuego.Reiniciar(
-                zona.jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_CAPITAN_MANDA:
-            zona.gestorMinijuegos.ReiniciarActivo(
-                zona.contextoMinijuego
-            );
-            break;
-
-        case MINIJUEGO_BARRA_GIRATORIA:
-            zona.minijuegoBarraGiratoria.Reiniciar(
-                zona.jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_NUCLEOS_ENERGIA:
-            zona.minijuegoNucleosEnergia.Reiniciar(
-                zona.jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_REFUGIO_PINCHOS:
-            zona.minijuegoRefugioPinchos.Reiniciar(
-                zona.jugadores,
-                zona.participantes,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_MIRADAS_CRUZADAS:
-            zona.minijuegoMiradasCruzadas.Reiniciar(zona.participantes);
-            break;
-
-        case MINIJUEGO_MUROS_LOCOS:
-            zona.minijuegoMurosLocos.Reiniciar(
-                zona.jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_TORMENTA_MAGNETICA:
-            zona.minijuegoTormentaMagnetica.Reiniciar(
-                zona.jugadores,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_CONTEO_EXPLOSIVO:
-            zona.minijuegoConteoExplosivo.Reiniciar(zona.participantes);
-            break;
-
-        case MINIJUEGO_PASO_SILENCIOSO:
-            zona.minijuegoPasoSilencioso.Reiniciar(zona.participantes);
-            break;
-
-        case MINIJUEGO_CIRCUITO_VOLTAJE:
-            zona.minijuegoCircuitoVoltaje.Reiniciar(zona.participantes);
-            break;
-
-        case MINIJUEGO_TRAZO_PERFECTO:
-            zona.minijuegoTrazoPerfecto.Reiniciar(zona.participantes);
-            break;
-
-        case MINIJUEGO_CARGA_INESTABLE:
-            zona.minijuegoCargaInestable.Reiniciar(zona.participantes);
-            break;
-
-        case MINIJUEGO_SECUENCIA_NEON:
-            zona.minijuegoSecuenciaNeon.Reiniciar(zona.participantes);
-            break;
-
-        case MINIJUEGO_INTERRUPTORES_CAOS:
-            zona.minijuegoInterruptoresCaos.Reiniciar(zona.participantes);
-            break;
-
-        case MINIJUEGO_TANQUES_PLASMA:
-            zona.minijuegoTanquesPlasma.Reiniciar(zona.participantes);
-            break;
-
-        case MINIJUEGO_PASARELAS_VACIO:
-            zona.minijuegoPasarelasVacio.Reiniciar(
-                zona.jugadores,
-                zona.participantes,
-                MAX_JUGADORES_PRUEBA
-            );
-            break;
-
-        case MINIJUEGO_CANTERA_FUGA:
-            zona.minijuegoCanteraFuga.Reiniciar(
-                zona.jugadores,
-                zona.participantes,
-                MAX_JUGADORES_PRUEBA
-            );
+        case PRUEBA_MINIJUEGO:
             break;
     }
 
@@ -836,10 +454,7 @@ void ZonaPruebas::Actualizar(
             // Reconectar devuelve el control sin teletransportar al inicio.
             if (
                 modoActual == PRUEBA_MINIJUEGO &&
-                (
-                    minijuegoActual == MINIJUEGO_PASARELAS_VACIO ||
-                    minijuegoActual == MINIJUEGO_CANTERA_FUGA
-                )
+                gestorMinijuegos.MantieneControlIAEnReconexion()
             )
             {
                 continue;
@@ -847,7 +462,10 @@ void ZonaPruebas::Actualizar(
 
             if (participantes[i].conectado)
             {
-                ReiniciarJugador(i);
+                gestorMinijuegos.ReiniciarJugadorCompartido(
+                    contextoMinijuego,
+                    i
+                );
             }
             else
             {
@@ -860,208 +478,24 @@ void ZonaPruebas::Actualizar(
         }
     }
 
-    switch (ObtenerIdModoActual(*this))
+    switch (modoActual)
     {
         case PRUEBA_ZONA_PRINCIPAL:
             ActualizarZonaPrincipal(*this, deltaTime);
-            break;
-
-        case MINIJUEGO_COLOR_SEGURO:
-            gestorMinijuegos.ActualizarActivo(
-                deltaTime,
-                contextoMinijuego
-            );
-            break;
-
-        case MINIJUEGO_PELOTAS:
-            minijuegoPelotas.Actualizar(
-                deltaTime,
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA
-            );
             break;
 
         case PRUEBA_MODELOS:
             pruebaModelos.Actualizar(deltaTime);
             break;
 
-        case MINIJUEGO_TRONCO:
-            minijuegoTronco.Actualizar(
-                deltaTime,
-                MAX_JUGADORES_PRUEBA,
-                participantes
-            );
-            break;
-
-        case MINIJUEGO_FABRICA_67:
-            minijuego67.Actualizar(
-                deltaTime,
-                MAX_JUGADORES_PRUEBA,
-                participantes
-            );
-            break;
-
         case PRUEBA_TABLERO:
             prototipoTablero.Actualizar(deltaTime);
             break;
 
-        case MINIJUEGO_ISLA_FUEGO:
-            minijuegoIslaFuego.Actualizar(
-                deltaTime,
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA
-            );
-            break;
-
-        case MINIJUEGO_CAPITAN_MANDA:
+        case PRUEBA_MINIJUEGO:
             gestorMinijuegos.ActualizarActivo(
                 deltaTime,
                 contextoMinijuego
-            );
-            break;
-
-        case MINIJUEGO_BARRA_GIRATORIA:
-            minijuegoBarraGiratoria.Actualizar(
-                deltaTime,
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA
-            );
-            break;
-
-        case MINIJUEGO_NUCLEOS_ENERGIA:
-            minijuegoNucleosEnergia.Actualizar(
-                deltaTime,
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA,
-                audio
-            );
-            break;
-
-        case MINIJUEGO_REFUGIO_PINCHOS:
-            minijuegoRefugioPinchos.Actualizar(
-                deltaTime,
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA
-            );
-            break;
-
-        case MINIJUEGO_MIRADAS_CRUZADAS:
-            minijuegoMiradasCruzadas.Actualizar(
-                deltaTime,
-                participantes
-            );
-            break;
-
-        case MINIJUEGO_MUROS_LOCOS:
-            minijuegoMurosLocos.Actualizar(
-                deltaTime,
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA
-            );
-            break;
-
-        case MINIJUEGO_TORMENTA_MAGNETICA:
-            minijuegoTormentaMagnetica.Actualizar(
-                deltaTime,
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA
-            );
-            break;
-
-        case MINIJUEGO_CONTEO_EXPLOSIVO:
-            minijuegoConteoExplosivo.Actualizar(
-                deltaTime,
-                participantes
-            );
-            break;
-
-        case MINIJUEGO_PASO_SILENCIOSO:
-            minijuegoPasoSilencioso.Actualizar(
-                deltaTime,
-                participantes
-            );
-            break;
-
-        case MINIJUEGO_CIRCUITO_VOLTAJE:
-            minijuegoCircuitoVoltaje.Actualizar(
-                deltaTime,
-                participantes
-            );
-            break;
-
-        case MINIJUEGO_TRAZO_PERFECTO:
-            minijuegoTrazoPerfecto.Actualizar(
-                deltaTime,
-                participantes
-            );
-            break;
-
-        case MINIJUEGO_CARGA_INESTABLE:
-            minijuegoCargaInestable.Actualizar(
-                deltaTime,
-                participantes
-            );
-            break;
-
-        case MINIJUEGO_SECUENCIA_NEON:
-            minijuegoSecuenciaNeon.Actualizar(
-                deltaTime,
-                participantes
-            );
-            break;
-
-        case MINIJUEGO_INTERRUPTORES_CAOS:
-            minijuegoInterruptoresCaos.Actualizar(
-                deltaTime,
-                participantes
-            );
-            break;
-
-        case MINIJUEGO_TANQUES_PLASMA:
-            minijuegoTanquesPlasma.Actualizar(
-                deltaTime,
-                participantes
-            );
-            break;
-
-        case MINIJUEGO_PASARELAS_VACIO:
-            minijuegoPasarelasVacio.Actualizar(
-                deltaTime,
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA
-            );
-            break;
-
-        case MINIJUEGO_CANTERA_FUGA:
-            minijuegoCanteraFuga.Actualizar(
-                deltaTime,
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes
             );
             break;
     }
@@ -1072,172 +506,23 @@ void ZonaPruebas::Dibujar() const
 {
     PrepararTemaVisualZona(*this);
 
-    switch (ObtenerIdModoActual(*this))
+    switch (modoActual)
     {
         case PRUEBA_ZONA_PRINCIPAL:
             DibujarZonaPrincipal(*this);
-            break;
-
-        case MINIJUEGO_COLOR_SEGURO:
-            gestorMinijuegos.DibujarActivo(
-                contextoMinijuego,
-                mostrarDebug
-            );
-            break;
-
-        case MINIJUEGO_PELOTAS:
-            minijuegoPelotas.Dibujar(
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                mostrarDebug
-            );
             break;
 
         case PRUEBA_MODELOS:
             pruebaModelos.Dibujar();
             break;
 
-        case MINIJUEGO_TRONCO:
-            minijuegoTronco.Dibujar(
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes
-            );
-            break;
-
-        case MINIJUEGO_FABRICA_67:
-            minijuego67.Dibujar(
-                MAX_JUGADORES_PRUEBA,
-                participantes
-            );
-            break;
-
         case PRUEBA_TABLERO:
             prototipoTablero.Dibujar(mostrarDebug);
             break;
 
-        case MINIJUEGO_ISLA_FUEGO:
-            minijuegoIslaFuego.Dibujar(
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA,
-                mostrarDebug
-            );
-            break;
-
-        case MINIJUEGO_CAPITAN_MANDA:
+        case PRUEBA_MINIJUEGO:
             gestorMinijuegos.DibujarActivo(
                 contextoMinijuego,
-                mostrarDebug
-            );
-            break;
-
-        case MINIJUEGO_BARRA_GIRATORIA:
-            minijuegoBarraGiratoria.Dibujar(
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA,
-                mostrarDebug
-            );
-            break;
-
-        case MINIJUEGO_NUCLEOS_ENERGIA:
-            minijuegoNucleosEnergia.Dibujar(
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                mostrarDebug
-            );
-            break;
-
-        case MINIJUEGO_REFUGIO_PINCHOS:
-            minijuegoRefugioPinchos.Dibujar(
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                mostrarDebug
-            );
-            break;
-
-        case MINIJUEGO_MIRADAS_CRUZADAS:
-            minijuegoMiradasCruzadas.Dibujar(participantes);
-            break;
-
-        case MINIJUEGO_MUROS_LOCOS:
-            minijuegoMurosLocos.Dibujar(
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA,
-                mostrarDebug
-            );
-            break;
-
-        case MINIJUEGO_TORMENTA_MAGNETICA:
-            minijuegoTormentaMagnetica.Dibujar(
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA,
-                mostrarDebug
-            );
-            break;
-
-        case MINIJUEGO_CONTEO_EXPLOSIVO:
-            minijuegoConteoExplosivo.Dibujar(participantes);
-            break;
-
-        case MINIJUEGO_PASO_SILENCIOSO:
-            minijuegoPasoSilencioso.Dibujar(participantes);
-            break;
-
-        case MINIJUEGO_CIRCUITO_VOLTAJE:
-            minijuegoCircuitoVoltaje.Dibujar(participantes);
-            break;
-
-        case MINIJUEGO_TRAZO_PERFECTO:
-            minijuegoTrazoPerfecto.Dibujar(participantes);
-            break;
-
-        case MINIJUEGO_CARGA_INESTABLE:
-            minijuegoCargaInestable.Dibujar(participantes);
-            break;
-
-        case MINIJUEGO_SECUENCIA_NEON:
-            minijuegoSecuenciaNeon.Dibujar(participantes);
-            break;
-
-        case MINIJUEGO_INTERRUPTORES_CAOS:
-            minijuegoInterruptoresCaos.Dibujar(participantes);
-            break;
-
-        case MINIJUEGO_TANQUES_PLASMA:
-            minijuegoTanquesPlasma.Dibujar(participantes);
-            break;
-
-        case MINIJUEGO_PASARELAS_VACIO:
-            minijuegoPasarelasVacio.Dibujar(
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA,
-                mostrarDebug
-            );
-            break;
-
-        case MINIJUEGO_CANTERA_FUGA:
-            minijuegoCanteraFuga.Dibujar(
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
                 mostrarDebug
             );
             break;
@@ -1339,13 +624,18 @@ void ZonaPruebas::Dibujar() const
 const ResultadoMinijuego*
 ZonaPruebas::ObtenerResultadoMinijuego() const
 {
+    if (modoActual != PRUEBA_MINIJUEGO)
+    {
+        return nullptr;
+    }
+
     return gestorMinijuegos.ObtenerResultadoActivo();
 }
 
 
 void ZonaPruebas::Descargar()
 {
-    minijuego67.Descargar();
+    gestorMinijuegos.Descargar();
     pruebaModelos.Descargar();
     DescargarModelosEscenariosRetro3D();
     DescargarTexturasTematicasMinijuegos();
