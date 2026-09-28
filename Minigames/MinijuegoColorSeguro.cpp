@@ -555,15 +555,10 @@ void MinijuegoColorSeguro::ConfigurarJugadores(
 
     for (int i = 0; i < limite; i++)
     {
-        jugadores[i].posicionSpawn = spawns[i];
-        jugadores[i].tamano = { 0.8f, 1.4f, 0.8f };
-        jugadores[i].velocidadMovimiento = 5.0f;
-        jugadores[i].fuerzaSalto = 7.2f;
-        jugadores[i].gravedad = 18.0f;
-        jugadores[i].duracionRespawn = 1.2f;
-
-        ReiniciarJugadorPrueba(jugadores[i]);
-        jugadores[i].tiempoRalentizado = 0.0f;
+        ConfigurarJugadorMinijuegoEstandar(
+            jugadores[i],
+            spawns[i]
+        );
     }
 }
 
@@ -603,7 +598,6 @@ void MinijuegoColorSeguro::Reiniciar(
     for (int i = 0; i < cantidadMaxima; i++)
     {
         ReiniciarJugadorPrueba(jugadores[i]);
-        jugadores[i].tiempoRalentizado = 0.0f;
     }
 }
 

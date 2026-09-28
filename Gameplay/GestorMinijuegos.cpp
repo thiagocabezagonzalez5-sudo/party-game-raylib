@@ -4,17 +4,6 @@
 #include "Minigames/UtilidadesMinijuegos.h"
 
 
-static void ReiniciarEstadoExtendidoJugadorGestor(
-    JugadorPrueba& jugador
-)
-{
-    jugador.preparandoGolpeSuelo = false;
-    jugador.tiempoPreparacionGolpeSuelo = 0.0f;
-    jugador.golpeSueloRecibido = false;
-    jugador.multiplicadorRalentizacion = 1.0f;
-}
-
-
 void GestorMinijuegos::Inicializar()
 {
     minijuegoColor.Inicializar();
@@ -397,13 +386,6 @@ void GestorMinijuegos::ReiniciarActivo(
                 contexto.cantidadJugadores
             );
             break;
-    }
-
-    for (int i = 0; i < contexto.cantidadJugadores; i++)
-    {
-        ReiniciarEstadoExtendidoJugadorGestor(
-            contexto.jugadores[i]
-        );
     }
 }
 
@@ -947,10 +929,6 @@ void GestorMinijuegos::ReiniciarJugadorCompartido(
     }
 
     ReiniciarJugadorPrueba(
-        contexto.jugadores[indice]
-    );
-
-    ReiniciarEstadoExtendidoJugadorGestor(
         contexto.jugadores[indice]
     );
 }

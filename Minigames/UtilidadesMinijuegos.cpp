@@ -1088,10 +1088,19 @@ void ReiniciarJugadorPrueba(
         -1.0f
     };
 
+    jugador.preparandoGolpeSuelo =
+        false;
+
+    jugador.tiempoPreparacionGolpeSuelo =
+        0.0f;
+
     jugador.golpeSueloActivo =
         false;
 
     jugador.impactoGolpeSuelo =
+        false;
+
+    jugador.golpeSueloRecibido =
         false;
 
     jugador.aplastado =
@@ -1114,6 +1123,12 @@ void ReiniciarJugadorPrueba(
 
     jugador.cooldownGolpe =
         0.0f;
+
+    jugador.tiempoRalentizado =
+        0.0f;
+
+    jugador.multiplicadorRalentizacion =
+        1.0f;
 }
 
 

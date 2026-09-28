@@ -365,13 +365,6 @@ static void ReiniciarModoActual(
             break;
     }
 
-    if (zona.modoActual != PRUEBA_MODELOS)
-    {
-        for (int i = 0; i < MAX_JUGADORES_PRUEBA; i++)
-        {
-            ReiniciarEstadoExtendidoJugador(zona.jugadores[i]);
-        }
-    }
 }
 
 

@@ -42,12 +42,6 @@ inline void ConfigurarJugadorMinijuegoEstandar(
     jugador.fuerzaSalto = FUERZA_SALTO_JUGADOR_ESTANDAR;
     jugador.gravedad = GRAVEDAD_JUGADOR_ESTANDAR;
     jugador.duracionRespawn = DURACION_RESPAWN_JUGADOR_ESTANDAR;
-    jugador.tiempoRalentizado = 0.0f;
-    jugador.multiplicadorRalentizacion = 1.0f;
-
-    jugador.preparandoGolpeSuelo = false;
-    jugador.tiempoPreparacionGolpeSuelo = 0.0f;
-    jugador.golpeSueloRecibido = false;
 
     ReiniciarJugadorPrueba(jugador);
 }
