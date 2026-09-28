@@ -316,6 +316,13 @@ void ZonaPruebas::Inicializar(
     cantidadParticipantes = cantidadParticipantesJuego;
     audio = audioJuego;
 
+    contextoMinijuego.jugadores = jugadores;
+    contextoMinijuego.cantidadJugadores = MAX_JUGADORES_PRUEBA;
+    contextoMinijuego.participantes = participantes;
+    contextoMinijuego.particulas = particulas;
+    contextoMinijuego.cantidadParticulas = MAX_PARTICULAS_TIERRA;
+    contextoMinijuego.audio = audio;
+
     InicializarTexturasTematicasMinijuegos();
     InicializarModelosEscenariosRetro3D();
 
@@ -326,12 +333,12 @@ void ZonaPruebas::Inicializar(
 
     ConfigurarZonaPrincipal(*this);
 
-    minijuegoColor.Inicializar();
+    gestorMinijuegos.InicializarMinijuego(MINIJUEGO_COLOR_SEGURO);
     minijuegoPelotas.Inicializar();
     minijuegoTronco.Inicializar();
     minijuego67.Inicializar();
     minijuegoIslaFuego.Inicializar();
-    minijuegoCapitanManda.Inicializar();
+    gestorMinijuegos.InicializarMinijuego(MINIJUEGO_CAPITAN_MANDA);
     minijuegoBarraGiratoria.Inicializar();
     minijuegoNucleosEnergia.Inicializar();
     minijuegoRefugioPinchos.Inicializar();
@@ -377,10 +384,9 @@ void ZonaPruebas::CambiarModo(
             break;
 
         case MINIJUEGO_COLOR_SEGURO:
-            minijuegoColor.Inicializar();
-            minijuegoColor.ConfigurarJugadores(
-                jugadores,
-                MAX_JUGADORES_PRUEBA
+            gestorMinijuegos.ActivarMinijuego(
+                minijuegoActual,
+                contextoMinijuego
             );
             break;
 
@@ -421,7 +427,10 @@ void ZonaPruebas::CambiarModo(
             break;
 
         case MINIJUEGO_CAPITAN_MANDA:
-            minijuegoCapitanManda.Reiniciar(participantes);
+            gestorMinijuegos.ActivarMinijuego(
+                minijuegoActual,
+                contextoMinijuego
+            );
             break;
 
         case MINIJUEGO_BARRA_GIRATORIA:
@@ -602,9 +611,8 @@ static void ReiniciarModoActual(
             break;
 
         case MINIJUEGO_COLOR_SEGURO:
-            zona.minijuegoColor.Reiniciar(
-                zona.jugadores,
-                MAX_JUGADORES_PRUEBA
+            zona.gestorMinijuegos.ReiniciarActivo(
+                zona.contextoMinijuego
             );
             break;
 
@@ -645,7 +653,9 @@ static void ReiniciarModoActual(
             break;
 
         case MINIJUEGO_CAPITAN_MANDA:
-            zona.minijuegoCapitanManda.Reiniciar(zona.participantes);
+            zona.gestorMinijuegos.ReiniciarActivo(
+                zona.contextoMinijuego
+            );
             break;
 
         case MINIJUEGO_BARRA_GIRATORIA:
@@ -857,13 +867,9 @@ void ZonaPruebas::Actualizar(
             break;
 
         case MINIJUEGO_COLOR_SEGURO:
-            minijuegoColor.Actualizar(
+            gestorMinijuegos.ActualizarActivo(
                 deltaTime,
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA
+                contextoMinijuego
             );
             break;
 
@@ -914,9 +920,9 @@ void ZonaPruebas::Actualizar(
             break;
 
         case MINIJUEGO_CAPITAN_MANDA:
-            minijuegoCapitanManda.Actualizar(
+            gestorMinijuegos.ActualizarActivo(
                 deltaTime,
-                participantes
+                contextoMinijuego
             );
             break;
 
@@ -1073,12 +1079,8 @@ void ZonaPruebas::Dibujar() const
             break;
 
         case MINIJUEGO_COLOR_SEGURO:
-            minijuegoColor.Dibujar(
-                jugadores,
-                MAX_JUGADORES_PRUEBA,
-                participantes,
-                particulas,
-                MAX_PARTICULAS_TIERRA,
+            gestorMinijuegos.DibujarActivo(
+                contextoMinijuego,
                 mostrarDebug
             );
             break;
@@ -1127,7 +1129,10 @@ void ZonaPruebas::Dibujar() const
             break;
 
         case MINIJUEGO_CAPITAN_MANDA:
-            minijuegoCapitanManda.Dibujar(participantes);
+            gestorMinijuegos.DibujarActivo(
+                contextoMinijuego,
+                mostrarDebug
+            );
             break;
 
         case MINIJUEGO_BARRA_GIRATORIA:
@@ -1328,6 +1333,13 @@ void ZonaPruebas::Dibujar() const
             DARKGREEN
         );
     }
+}
+
+
+const ResultadoMinijuego*
+ZonaPruebas::ObtenerResultadoMinijuego() const
+{
+    return gestorMinijuegos.ObtenerResultadoActivo();
 }
 
 

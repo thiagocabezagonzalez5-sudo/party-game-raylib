@@ -117,7 +117,7 @@ static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
     switch (zona.minijuegoActual)
     {
         case MINIJUEGO_COLOR_SEGURO:
-            return &zona.minijuegoColor.ObtenerResultado();
+            return zona.ObtenerResultadoMinijuego();
 
         case MINIJUEGO_PELOTAS:
             return &zona.minijuegoPelotas.ObtenerResultado();
@@ -132,7 +132,7 @@ static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
             return &zona.minijuegoIslaFuego.ObtenerResultado();
 
         case MINIJUEGO_CAPITAN_MANDA:
-            return &zona.minijuegoCapitanManda.ObtenerResultado();
+            return zona.ObtenerResultadoMinijuego();
 
         case MINIJUEGO_BARRA_GIRATORIA:
             return &zona.minijuegoBarraGiratoria.ObtenerResultado();

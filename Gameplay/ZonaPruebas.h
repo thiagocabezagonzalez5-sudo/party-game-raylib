@@ -2,13 +2,13 @@
 
 #include "Core/CatalogoMinijuegos.h"
 #include "Core/Participante.h"
+#include "Gameplay/ContextoMinijuego.h"
+#include "Gameplay/GestorMinijuegos.h"
 #include "Gameplay/PrototipoTablero.h"
 #include "Minigames/MinijuegoBarraGiratoria.h"
 #include "Minigames/MinijuegoCanteraFuga.h"
 #include "Minigames/MinijuegoCargaInestable.h"
-#include "Minigames/MinijuegoCapitanManda.h"
 #include "Minigames/MinijuegoCircuitoVoltaje.h"
-#include "Minigames/MinijuegoColorSeguro.h"
 #include "Minigames/MinijuegoConteoExplosivo.h"
 #include "Minigames/Minijuego67.h"
 #include "Minigames/MinijuegoIslaFuego.h"
@@ -58,14 +58,14 @@ struct ZonaPruebas
 
     Camera3D camaraPrincipal{};
 
-    MinijuegoColorSeguro minijuegoColor;
+    ContextoMinijuego contextoMinijuego;
+    GestorMinijuegos gestorMinijuegos;
     MinijuegoPelotas minijuegoPelotas;
     PruebaModelos pruebaModelos;
     MinijuegoTronco minijuegoTronco;
     Minijuego67 minijuego67;
     PrototipoTablero prototipoTablero;
     MinijuegoIslaFuego minijuegoIslaFuego;
-    MinijuegoCapitanManda minijuegoCapitanManda;
     MinijuegoBarraGiratoria minijuegoBarraGiratoria;
     MinijuegoNucleosEnergia minijuegoNucleosEnergia;
     MinijuegoRefugioPinchos minijuegoRefugioPinchos;
@@ -112,6 +112,8 @@ struct ZonaPruebas
     );
 
     void ReiniciarJugadores();
+
+    const ResultadoMinijuego* ObtenerResultadoMinijuego() const;
 
     void Descargar();
 };
