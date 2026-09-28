@@ -68,7 +68,8 @@ void ResolverColisionesPelotas(
 bool ResolverGolpesSuelo(
     JugadorPrueba jugadores[],
     const Participante participantes[],
-    int cantidadMaxima
+    int cantidadMaxima,
+    float duracionAplastado
 );
 
 

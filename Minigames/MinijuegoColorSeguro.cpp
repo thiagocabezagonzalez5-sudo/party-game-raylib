@@ -8,6 +8,10 @@ static const float DURACION_PREPARACION_COLOR = 3.0f;
 static const float DURACION_TEXTO_YA_COLOR = 0.75f;
 static const float RADIO_HEXAGONO_COLOR = 2.35f;
 
+// Color Seguro ya utilizaba un aplastamiento mas corto que el perfil
+// estandar. Se conserva de forma explicita al centralizar el impacto.
+static const float DURACION_APLASTADO_GROUND_POUND_COLOR = 1.15f;
+
 
 static Color ObtenerColorPlataforma(int indice)
 {
@@ -700,7 +704,8 @@ void MinijuegoColorSeguro::Actualizar(
     bool impactoSuelo = ResolverGolpesSuelo(
         jugadores,
         participantes,
-        cantidadMaxima
+        cantidadMaxima,
+        DURACION_APLASTADO_GROUND_POUND_COLOR
     );
 
     if (impactoSuelo)

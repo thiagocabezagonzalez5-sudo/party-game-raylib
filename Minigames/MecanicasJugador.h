@@ -748,39 +748,16 @@ inline bool ResolverInteraccionesJugadoresMinijuegoEstandar(
     int cantidadParticulas
 )
 {
-    bool aplastadosAntes[MAX_JUGADORES_PRUEBA]{};
-
-    int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
-        ? cantidadMaxima
-        : MAX_JUGADORES_PRUEBA;
-
-    for (int i = 0; i < limite; i++)
-    {
-        aplastadosAntes[i] = jugadores[i].aplastado;
-    }
-
     bool huboGolpeSuelo = ResolverGolpesSuelo(
         jugadores,
         participantes,
-        cantidadMaxima
+        cantidadMaxima,
+        DURACION_APLASTADO_GROUND_POUND
     );
 
     if (huboGolpeSuelo)
     {
         ActivarTemblorCamaraGeneral(0.18f, 0.28f);
-    }
-
-    for (int i = 0; i < limite; i++)
-    {
-        if (!aplastadosAntes[i] && jugadores[i].aplastado)
-        {
-            jugadores[i].tiempoAplastado =
-                DURACION_APLASTADO_GROUND_POUND;
-            jugadores[i].golpeSueloRecibido = true;
-            jugadores[i].preparandoGolpeSuelo = false;
-            jugadores[i].tiempoPreparacionGolpeSuelo = 0.0f;
-            jugadores[i].golpeSueloActivo = false;
-        }
     }
 
     ResolverGolpesJugadoresConEfectos(

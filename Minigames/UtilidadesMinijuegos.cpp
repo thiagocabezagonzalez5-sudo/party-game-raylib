@@ -912,23 +912,6 @@ static void ActualizarVertical(
         jugador.enSuelo =
             false;
     }
-    else if (
-        permitirSalto &&
-        !jugador.enSuelo &&
-        entrada.saltar &&
-        !jugador.golpeSueloActivo
-    )
-    {
-        jugador.golpeSueloActivo =
-            true;
-
-        jugador.golpeando =
-            false;
-
-        jugador.velocidad.y =
-            -VELOCIDAD_GOLPE_SUELO;
-    }
-
     jugador.velocidad.y -=
         jugador.gravedad *
         deltaTime;
@@ -1182,61 +1165,6 @@ void ActualizarJugadorPrueba(
             jugador.golpeando =
                 false;
         }
-    }
-
-    if (jugador.aplastado)
-    {
-        jugador.tiempoAplastado -=
-            deltaTime;
-
-        jugador.velocidad.x =
-            0.0f;
-
-        jugador.velocidad.z =
-            0.0f;
-
-        jugador.empuje = {};
-
-        if (jugador.tiempoAplastado <= 0.0f)
-        {
-            jugador.tiempoAplastado =
-                0.0f;
-
-            jugador.aplastado =
-                false;
-
-            jugador.tiempoInmunidad =
-                1.6f;
-        }
-
-        InputMinijuegoParticipante entradaVacia{};
-
-        ActualizarVertical(
-            jugador,
-            entradaVacia,
-            bloques,
-            cantidadBloques,
-            particulas,
-            cantidadParticulas,
-            false,
-            deltaTime
-        );
-
-        if (jugador.posicion.y < -8.0f)
-        {
-            jugador.cayendo =
-                true;
-
-            jugador.tiempoRespawn =
-                0.0f;
-
-            jugador.aplastado =
-                false;
-
-            jugador.empuje = {};
-        }
-
-        return;
     }
 
     if (
@@ -1640,7 +1568,8 @@ void ResolverColisionesPelotas(
 bool ResolverGolpesSuelo(
     JugadorPrueba jugadores[],
     const Participante participantes[],
-    int cantidadMaxima
+    int cantidadMaxima,
+    float duracionAplastado
 )
 {
     bool huboImpacto =
@@ -1735,13 +1664,22 @@ bool ResolverGolpesSuelo(
                 true;
 
             objetivo.tiempoAplastado =
-                1.15f;
+                duracionAplastado;
 
             objetivo.golpeando =
                 false;
 
+            objetivo.preparandoGolpeSuelo =
+                false;
+
+            objetivo.tiempoPreparacionGolpeSuelo =
+                0.0f;
+
             objetivo.golpeSueloActivo =
                 false;
+
+            objetivo.golpeSueloRecibido =
+                true;
 
             objetivo.velocidad.x =
                 0.0f;
