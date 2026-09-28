@@ -51,13 +51,6 @@ void ActualizarJugadorPrueba(
 );
 
 
-void ResolverColisionesJugadoresNormales(
-    JugadorPrueba jugadores[],
-    const Participante participantes[],
-    int cantidadMaxima
-);
-
-
 void ResolverColisionesPelotas(
     JugadorPrueba jugadores[],
     const Participante participantes[],
@@ -70,13 +63,6 @@ bool ResolverGolpesSuelo(
     const Participante participantes[],
     int cantidadMaxima,
     float duracionAplastado
-);
-
-
-void ResolverGolpesJugadores(
-    JugadorPrueba jugadores[],
-    const Participante participantes[],
-    int cantidadMaxima
 );
 
 
