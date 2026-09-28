@@ -68,6 +68,16 @@ inline int ObtenerIndicesParticipantesActivos(
 }
 
 
+inline bool EsCantidadParticipantesValida(
+    int cantidad
+)
+{
+    return
+        cantidad >= 2 &&
+        cantidad <= MAX_PARTICIPANTES;
+}
+
+
 inline int ContarParticipantesHumanos(
     const Participante participantes[]
 )

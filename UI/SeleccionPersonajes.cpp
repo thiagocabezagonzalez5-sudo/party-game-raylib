@@ -459,7 +459,7 @@ static void ActualizarTodosListos(
     );
 
     bool cantidadValida =
-        activos == 2 || activos == 4;
+        EsCantidadParticipantesValida(activos);
 
     bool activosPreparados =
         cantidadValida;

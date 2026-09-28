@@ -596,8 +596,7 @@ void Juego::Actualizar(
                 MODO_JUEGO_MINIJUEGOS;
 
             bool cantidadValida =
-                cantidadHumana >= 1 &&
-                cantidadHumana <= MAX_PARTICIPANTES &&
+                EsCantidadParticipantesValida(cantidadHumana) &&
                 (!modoMinijuegos || participantes[0].activo);
 
             seleccionPersonajes.todosListos =
