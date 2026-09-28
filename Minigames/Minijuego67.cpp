@@ -1,12 +1,11 @@
 #include "Minigames/Minijuego67.h"
-#include "Minigames/TransformacionModeloJugador.h"
+#include "Minigames/ModeloJugadorCompartido.h"
 
 #include "Systems/Input.h"
 
 #include "raymath.h"
 
 #include <cmath>
-#include <cstring>
 
 
 //==================================================
@@ -183,20 +182,6 @@ static Color ObtenerColorEquipo67(int equipo)
     return equipo == 0
         ? Color{ 238, 55, 66, 255 }
         : Color{ 40, 159, 224, 255 };
-}
-
-
-static bool NombreEsIdle67(const char* nombre)
-{
-    if (nombre == nullptr)
-    {
-        return false;
-    }
-
-    return
-        std::strstr(nombre, "Idle") != nullptr ||
-        std::strstr(nombre, "idle") != nullptr ||
-        std::strstr(nombre, "IDLE") != nullptr;
 }
 
 
@@ -737,10 +722,13 @@ static void DibujarJugador67(
         Fade(participante.color, 0.62f)
     );
 
-    if (minijuego.modeloJugadorCargado)
+    const Model* modeloJugador =
+        ObtenerModeloJugadorCompartidoRender();
+
+    if (modeloJugador != nullptr)
     {
         DrawModelEx(
-            minijuego.modeloJugador,
+            *modeloJugador,
             { X_JUGADOR_67, 0.16f, z },
             { 0.0f, 1.0f, 0.0f },
             giro,
@@ -993,69 +981,7 @@ void Minijuego67::Inicializar()
 
     AsegurarVistasEquipo67(*this);
 
-    if (modeloJugadorCargado)
-    {
-        return;
-    }
-
-    if (!FileExists(rutaModeloJugador))
-    {
-        TraceLog(
-            LOG_WARNING,
-            "No se encontro el modelo para Fabrica 67: %s",
-            rutaModeloJugador
-        );
-        return;
-    }
-
-    modeloJugador = LoadModel(rutaModeloJugador);
-    modeloJugadorCargado = modeloJugador.meshCount > 0;
-
-    if (!modeloJugadorCargado)
-    {
-        return;
-    }
-
-    PrepararTransformacionModeloJugador(modeloJugador);
-
-    animacionesJugador =
-        LoadModelAnimations(
-            rutaModeloJugador,
-            &cantidadAnimacionesJugador
-        );
-
-    indiceAnimacionIdle = -1;
-
-    for (
-        int i = 0;
-        animacionesJugador != nullptr && i < cantidadAnimacionesJugador;
-        i++
-    )
-    {
-        if (NombreEsIdle67(animacionesJugador[i].name))
-        {
-            indiceAnimacionIdle = i;
-            break;
-        }
-    }
-
-    if (
-        indiceAnimacionIdle < 0 &&
-        animacionesJugador != nullptr &&
-        cantidadAnimacionesJugador == 1
-    )
-    {
-        indiceAnimacionIdle = 0;
-    }
-
-    animacionIdleActiva =
-        animacionesJugador != nullptr &&
-        indiceAnimacionIdle >= 0 &&
-        IsModelAnimationValid(
-            modeloJugador,
-            animacionesJugador[indiceAnimacionIdle]
-        ) &&
-        animacionesJugador[indiceAnimacionIdle].keyframeCount > 0;
+    InicializarModeloJugadorCompartido();
 }
 
 
@@ -1219,19 +1145,19 @@ void Minijuego67::Actualizar(
 {
     AsegurarVistasEquipo67(*this);
 
-    if (animacionIdleActiva)
+    if (AnimacionIdleModeloJugadorCompartidoActiva())
     {
-        fotogramaAnimacionIdle += 30.0f * deltaTime;
+        fotogramaAnimacionIdle +=
+            30.0f * deltaTime;
 
         int cantidadFotogramas =
-            animacionesJugador[indiceAnimacionIdle].keyframeCount;
+            ObtenerCantidadFotogramasIdleModeloJugadorCompartido();
 
         if (cantidadFotogramas > 0)
         {
-            UpdateModelAnimation(
-                modeloJugador,
-                animacionesJugador[indiceAnimacionIdle],
-                (int)fotogramaAnimacionIdle % cantidadFotogramas
+            AplicarFotogramaIdleModeloJugadorCompartido(
+                (int)fotogramaAnimacionIdle %
+                cantidadFotogramas
             );
         }
     }
@@ -1581,24 +1507,4 @@ const ResultadoMinijuego& Minijuego67::ObtenerResultado() const
 void Minijuego67::Descargar()
 {
     DescargarVistasEquipo67(*this);
-
-    if (animacionesJugador != nullptr)
-    {
-        UnloadModelAnimations(
-            animacionesJugador,
-            cantidadAnimacionesJugador
-        );
-
-        animacionesJugador = nullptr;
-        cantidadAnimacionesJugador = 0;
-        indiceAnimacionIdle = -1;
-        animacionIdleActiva = false;
-    }
-
-    if (modeloJugadorCargado)
-    {
-        UnloadModel(modeloJugador);
-        modeloJugador = {};
-        modeloJugadorCargado = false;
-    }
 }

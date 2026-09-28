@@ -1,29 +1,8 @@
 #include "Minigames/PruebaModelos.h"
-#include "Minigames/TransformacionModeloJugador.h"
+#include "Minigames/ModeloJugadorCompartido.h"
 
 #include "raymath.h"
 
-#include <cstring>
-
-
-//==================================================
-// BUSCAR ANIMACION IDLE
-//==================================================
-
-static bool NombreEsIdle(
-    const char* nombre
-)
-{
-    if (nombre == nullptr)
-    {
-        return false;
-    }
-
-    return
-        std::strstr(nombre, "Idle") != nullptr ||
-        std::strstr(nombre, "idle") != nullptr ||
-        std::strstr(nombre, "IDLE") != nullptr;
-}
 
 
 //==================================================
@@ -61,88 +40,11 @@ void PruebaModelos::Inicializar()
 
     Reiniciar();
 
-    if (modeloCargado)
+    InicializarModeloJugadorCompartido();
+
+    if (AnimacionIdleModeloJugadorCompartidoActiva())
     {
-        return;
-    }
-
-    if (!FileExists(rutaModelo))
-    {
-        TraceLog(
-            LOG_WARNING,
-            "No se encontro el modelo de prueba: %s",
-            rutaModelo
-        );
-
-        return;
-    }
-
-    modelo =
-        LoadModel(
-            rutaModelo
-        );
-
-    modeloCargado =
-        modelo.meshCount > 0;
-
-    if (modeloCargado)
-    {
-        PrepararTransformacionModeloJugador(modelo);
-
-        animaciones =
-            LoadModelAnimations(
-                rutaModelo,
-                &cantidadAnimaciones
-            );
-
-        indiceAnimacionIdle =
-            -1;
-
-        for (
-            int i = 0;
-            animaciones != nullptr &&
-            i < cantidadAnimaciones;
-            i++
-        )
-        {
-            if (NombreEsIdle(animaciones[i].name))
-            {
-                indiceAnimacionIdle =
-                    i;
-
-                break;
-            }
-        }
-
-        // Si el archivo contiene una sola animacion,
-        // se usa como Idle aunque el clip no tenga nombre.
-        if (
-            indiceAnimacionIdle < 0 &&
-            animaciones != nullptr &&
-            cantidadAnimaciones == 1
-        )
-        {
-            indiceAnimacionIdle =
-                0;
-        }
-
-        animacionIdleActiva =
-            animaciones != nullptr &&
-            indiceAnimacionIdle >= 0 &&
-            IsModelAnimationValid(
-                modelo,
-                animaciones[indiceAnimacionIdle]
-            ) &&
-            animaciones[indiceAnimacionIdle]
-                .keyframeCount > 0;
-    }
-
-    if (!modeloCargado)
-    {
-        TraceLog(
-            LOG_WARNING,
-            "No se pudo cargar el modelo de prueba"
-        );
+        AplicarFotogramaIdleModeloJugadorCompartido(0);
     }
 }
 
@@ -219,7 +121,7 @@ void PruebaModelos::Actualizar(
             28.0f * deltaTime;
     }
 
-    if (animacionIdleActiva)
+    if (AnimacionIdleModeloJugadorCompartidoActiva())
     {
         const float FOTOGRAMAS_POR_SEGUNDO =
             30.0f;
@@ -229,18 +131,18 @@ void PruebaModelos::Actualizar(
             deltaTime;
 
         int cantidadFotogramas =
-            animaciones[indiceAnimacionIdle]
-                .keyframeCount;
+            ObtenerCantidadFotogramasIdleModeloJugadorCompartido();
 
-        int fotogramaActual =
-            (int)fotogramaAnimacionIdle %
-            cantidadFotogramas;
+        if (cantidadFotogramas > 0)
+        {
+            int fotogramaActual =
+                (int)fotogramaAnimacionIdle %
+                cantidadFotogramas;
 
-        UpdateModelAnimation(
-            modelo,
-            animaciones[indiceAnimacionIdle],
-            fotogramaActual
-        );
+            AplicarFotogramaIdleModeloJugadorCompartido(
+                fotogramaActual
+            );
+        }
     }
 }
 
@@ -251,6 +153,18 @@ void PruebaModelos::Actualizar(
 
 void PruebaModelos::Dibujar() const
 {
+    const Model* modelo =
+        ObtenerModeloJugadorCompartidoRender();
+
+    bool modeloCargado =
+        modelo != nullptr;
+
+    bool animacionIdleActiva =
+        AnimacionIdleModeloJugadorCompartidoActiva();
+
+    int cantidadAnimaciones =
+        ObtenerCantidadAnimacionesModeloJugadorCompartido();
+
     ClearBackground(
         Color{
             115,
@@ -320,7 +234,7 @@ void PruebaModelos::Dibujar() const
         if (modeloCargado)
         {
             DrawModelEx(
-                modelo,
+                *modelo,
                 posiciones[i],
                 Vector3{
                     0.0f,
@@ -377,7 +291,7 @@ void PruebaModelos::Dibujar() const
     DrawText(
         TextFormat(
             "Ruta: %s",
-            rutaModelo
+            RUTA_MODELO_JUGADOR_3D
         ),
         25,
         105,
@@ -390,8 +304,8 @@ void PruebaModelos::Dibujar() const
         DrawText(
             TextFormat(
                 "Meshes: %d   Materiales: %d",
-                modelo.meshCount,
-                modelo.materialCount
+                modelo->meshCount,
+                modelo->materialCount
             ),
             25,
             135,
@@ -418,7 +332,7 @@ void PruebaModelos::Dibujar() const
             animacionIdleActiva
             ? TextFormat(
                 "Idle activo: %s   Clips: %d",
-                animaciones[indiceAnimacionIdle].name,
+                ObtenerNombreIdleModeloJugadorCompartido(),
                 cantidadAnimaciones
             )
             : TextFormat(
@@ -458,35 +372,6 @@ void PruebaModelos::Dibujar() const
 
 void PruebaModelos::Descargar()
 {
-    if (animaciones != nullptr)
-    {
-        UnloadModelAnimations(
-            animaciones,
-            cantidadAnimaciones
-        );
-
-        animaciones =
-            nullptr;
-
-        cantidadAnimaciones =
-            0;
-
-        indiceAnimacionIdle =
-            -1;
-
-        animacionIdleActiva =
-            false;
-    }
-
-    if (modeloCargado)
-    {
-        UnloadModel(
-            modelo
-        );
-
-        modeloCargado =
-            false;
-
-        modelo = {};
-    }
+    // El modelo y sus animaciones pertenecen a ModeloJugadorCompartido.
+    // PruebaModelos conserva solo estado local de inspeccion.
 }

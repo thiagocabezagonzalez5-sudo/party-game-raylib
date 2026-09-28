@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Core/Participante.h"
-#include "Core/RecursosJuego.h"
 #include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
 
@@ -96,19 +95,7 @@ struct Minijuego67
     int anchoVistaEquipos = 0;
     int altoVistaEquipos = 0;
 
-    Model modeloJugador{};
-    bool modeloJugadorCargado = false;
-
-    ModelAnimation* animacionesJugador = nullptr;
-    int cantidadAnimacionesJugador = 0;
-    int indiceAnimacionIdle = -1;
-
     float fotogramaAnimacionIdle = 0.0f;
-    bool animacionIdleActiva = false;
-
-    // Alias local por legibilidad. La ruta real vive solo en RecursosJuego.h.
-    const char* rutaModeloJugador =
-        RUTA_MODELO_JUGADOR_3D;
 
     void Inicializar();
 
