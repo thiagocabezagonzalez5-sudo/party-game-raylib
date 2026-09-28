@@ -1,4 +1,5 @@
 #include "Core/Juego.h"
+#include "Core/CatalogoMinijuegos.h"
 
 #include "raylib.h"
 #include "Systems/Input.h"
@@ -88,118 +89,19 @@ static void PrepararSeleccionDePersonajes(
 }
 
 
-static ModoZonaPruebas ConvertirCatalogoAModo(
-    int idCatalogo
-)
+static IdMinijuego ElegirMinijuegoAleatorioTablero()
 {
-    switch (idCatalogo)
+    const int cantidadOpciones =
+        ObtenerCantidadMinijuegosDisponiblesTablero();
+
+    if (cantidadOpciones <= 0)
     {
-        case CATALOGO_COLOR_SEGURO:
-            return PRUEBA_COLOR_SEGURO;
-
-        case CATALOGO_PELOTAS:
-            return PRUEBA_PELOTAS_EMPUJON;
-
-        case CATALOGO_TRONCO:
-            return PRUEBA_TRONCO_COORDINADO;
-
-        case CATALOGO_FABRICA_67:
-            return PRUEBA_FABRICA_67;
-
-        case CATALOGO_ISLA_FUEGO:
-            return PRUEBA_ISLA_FUEGO;
-
-        case CATALOGO_CAPITAN_MANDA:
-            return PRUEBA_CAPITAN_MANDA;
-
-        case CATALOGO_BARRA_GIRATORIA:
-            return PRUEBA_BARRA_GIRATORIA;
-
-        case CATALOGO_NUCLEOS_ENERGIA:
-            return PRUEBA_NUCLEOS_ENERGIA;
-
-        case CATALOGO_REFUGIO_PINCHOS:
-            return PRUEBA_REFUGIO_PINCHOS;
-
-        case CATALOGO_MIRADAS_CRUZADAS:
-            return PRUEBA_MIRADAS_CRUZADAS;
-
-        case CATALOGO_MUROS_LOCOS:
-            return PRUEBA_MUROS_LOCOS;
-
-        case CATALOGO_TORMENTA_MAGNETICA:
-            return PRUEBA_TORMENTA_MAGNETICA;
-
-        case CATALOGO_CONTEO_EXPLOSIVO:
-            return PRUEBA_CONTEO_EXPLOSIVO;
-
-        case CATALOGO_PASO_SILENCIOSO:
-            return PRUEBA_PASO_SILENCIOSO;
-
-        case CATALOGO_CIRCUITO_VOLTAJE:
-            return PRUEBA_CIRCUITO_VOLTAJE;
-
-        case CATALOGO_TRAZO_PERFECTO:
-            return PRUEBA_TRAZO_PERFECTO;
-
-        case CATALOGO_CARGA_INESTABLE:
-            return PRUEBA_CARGA_INESTABLE;
-
-        case CATALOGO_SECUENCIA_NEON:
-            return PRUEBA_SECUENCIA_NEON;
-
-        case CATALOGO_INTERRUPTORES_CAOS:
-            return PRUEBA_INTERRUPTORES_CAOS;
-
-        case CATALOGO_TANQUES_PLASMA:
-            return PRUEBA_TANQUES_PLASMA;
-
-        case CATALOGO_PASARELAS_VACIO:
-            return PRUEBA_PASARELAS_VACIO;
-
-        case CATALOGO_CANTERA_FUGA:
-            return PRUEBA_CANTERA_FUGA;
+        return MINIJUEGO_COLOR_SEGURO;
     }
 
-    return PRUEBA_COLOR_SEGURO;
-}
-
-
-static ModoZonaPruebas ElegirMinijuegoAleatorioTablero()
-{
-    // Tronco y Fabrica siguen fuera del sorteo automatico porque sus
-    // bots aun no juegan. Los 1v3 tienen IA especializada y el resto
-    // funciona aunque los bots comunes permanezcan quietos.
-    const ModoZonaPruebas opciones[] =
-    {
-        PRUEBA_COLOR_SEGURO,
-        PRUEBA_PELOTAS_EMPUJON,
-        PRUEBA_ISLA_FUEGO,
-        PRUEBA_CAPITAN_MANDA,
-        PRUEBA_BARRA_GIRATORIA,
-        PRUEBA_NUCLEOS_ENERGIA,
-        PRUEBA_REFUGIO_PINCHOS,
-        PRUEBA_MIRADAS_CRUZADAS,
-        PRUEBA_MUROS_LOCOS,
-        PRUEBA_TORMENTA_MAGNETICA,
-        PRUEBA_CONTEO_EXPLOSIVO,
-        PRUEBA_PASO_SILENCIOSO,
-        PRUEBA_CIRCUITO_VOLTAJE,
-        PRUEBA_TRAZO_PERFECTO,
-        PRUEBA_CARGA_INESTABLE,
-        PRUEBA_SECUENCIA_NEON,
-        PRUEBA_INTERRUPTORES_CAOS,
-        PRUEBA_TANQUES_PLASMA,
-        PRUEBA_PASARELAS_VACIO,
-        PRUEBA_CANTERA_FUGA
-    };
-
-    const int cantidadOpciones =
-        sizeof(opciones) / sizeof(opciones[0]);
-
-    return opciones[
+    return ObtenerMinijuegoDisponibleTablero(
         GetRandomValue(0, cantidadOpciones - 1)
-    ];
+    );
 }
 
 
@@ -207,78 +109,78 @@ static const ResultadoMinijuego* ObtenerResultadoZonaPruebas(
     const ZonaPruebas& zona
 )
 {
-    switch (zona.modoActual)
+    if (zona.modoActual != PRUEBA_MINIJUEGO)
     {
-        case PRUEBA_COLOR_SEGURO:
+        return nullptr;
+    }
+
+    switch (zona.minijuegoActual)
+    {
+        case MINIJUEGO_COLOR_SEGURO:
             return &zona.minijuegoColor.ObtenerResultado();
 
-        case PRUEBA_PELOTAS_EMPUJON:
+        case MINIJUEGO_PELOTAS:
             return &zona.minijuegoPelotas.ObtenerResultado();
 
-        case PRUEBA_TRONCO_COORDINADO:
+        case MINIJUEGO_TRONCO:
             return &zona.minijuegoTronco.ObtenerResultado();
 
-        case PRUEBA_FABRICA_67:
+        case MINIJUEGO_FABRICA_67:
             return &zona.minijuego67.ObtenerResultado();
 
-        case PRUEBA_ISLA_FUEGO:
+        case MINIJUEGO_ISLA_FUEGO:
             return &zona.minijuegoIslaFuego.ObtenerResultado();
 
-        case PRUEBA_CAPITAN_MANDA:
+        case MINIJUEGO_CAPITAN_MANDA:
             return &zona.minijuegoCapitanManda.ObtenerResultado();
 
-        case PRUEBA_BARRA_GIRATORIA:
+        case MINIJUEGO_BARRA_GIRATORIA:
             return &zona.minijuegoBarraGiratoria.ObtenerResultado();
 
-        case PRUEBA_NUCLEOS_ENERGIA:
+        case MINIJUEGO_NUCLEOS_ENERGIA:
             return &zona.minijuegoNucleosEnergia.resultado;
 
-        case PRUEBA_REFUGIO_PINCHOS:
+        case MINIJUEGO_REFUGIO_PINCHOS:
             return &zona.minijuegoRefugioPinchos.ObtenerResultado();
 
-        case PRUEBA_MIRADAS_CRUZADAS:
+        case MINIJUEGO_MIRADAS_CRUZADAS:
             return &zona.minijuegoMiradasCruzadas.ObtenerResultado();
 
-        case PRUEBA_MUROS_LOCOS:
+        case MINIJUEGO_MUROS_LOCOS:
             return &zona.minijuegoMurosLocos.ObtenerResultado();
 
-        case PRUEBA_TORMENTA_MAGNETICA:
+        case MINIJUEGO_TORMENTA_MAGNETICA:
             return &zona.minijuegoTormentaMagnetica.ObtenerResultado();
 
-        case PRUEBA_CONTEO_EXPLOSIVO:
+        case MINIJUEGO_CONTEO_EXPLOSIVO:
             return &zona.minijuegoConteoExplosivo.ObtenerResultado();
 
-        case PRUEBA_PASO_SILENCIOSO:
+        case MINIJUEGO_PASO_SILENCIOSO:
             return &zona.minijuegoPasoSilencioso.ObtenerResultado();
 
-        case PRUEBA_CIRCUITO_VOLTAJE:
+        case MINIJUEGO_CIRCUITO_VOLTAJE:
             return &zona.minijuegoCircuitoVoltaje.ObtenerResultado();
 
-        case PRUEBA_TRAZO_PERFECTO:
+        case MINIJUEGO_TRAZO_PERFECTO:
             return &zona.minijuegoTrazoPerfecto.ObtenerResultado();
 
-        case PRUEBA_CARGA_INESTABLE:
+        case MINIJUEGO_CARGA_INESTABLE:
             return &zona.minijuegoCargaInestable.ObtenerResultado();
 
-        case PRUEBA_SECUENCIA_NEON:
+        case MINIJUEGO_SECUENCIA_NEON:
             return &zona.minijuegoSecuenciaNeon.ObtenerResultado();
 
-        case PRUEBA_INTERRUPTORES_CAOS:
+        case MINIJUEGO_INTERRUPTORES_CAOS:
             return &zona.minijuegoInterruptoresCaos.ObtenerResultado();
 
-        case PRUEBA_TANQUES_PLASMA:
+        case MINIJUEGO_TANQUES_PLASMA:
             return &zona.minijuegoTanquesPlasma.ObtenerResultado();
 
-        case PRUEBA_PASARELAS_VACIO:
+        case MINIJUEGO_PASARELAS_VACIO:
             return &zona.minijuegoPasarelasVacio.ObtenerResultado();
 
-        case PRUEBA_CANTERA_FUGA:
+        case MINIJUEGO_CANTERA_FUGA:
             return &zona.minijuegoCanteraFuga.ObtenerResultado();
-
-        case PRUEBA_ZONA_PRINCIPAL:
-        case PRUEBA_MODELOS:
-        case PRUEBA_TABLERO:
-            break;
     }
 
     return nullptr;
@@ -854,8 +756,8 @@ void Juego::Actualizar(
             {
                 audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
 
-                ModoZonaPruebas modoElegido =
-                    ConvertirCatalogoAModo(
+                IdMinijuego minijuegoElegido =
+                    ObtenerIdMinijuegoPorIndice(
                         seleccionMinijuegos.indiceSeleccionado
                     );
 
@@ -866,7 +768,7 @@ void Juego::Actualizar(
                 );
 
                 zonaPruebas.modoCatalogo = true;
-                zonaPruebas.CambiarModo(modoElegido);
+                zonaPruebas.CambiarMinijuego(minijuegoElegido);
                 estado = ESTADO_ZONA_PRUEBAS;
             }
 
@@ -914,7 +816,7 @@ void Juego::Actualizar(
 
             if (partidaTablero.SolicitaMinijuego())
             {
-                ModoZonaPruebas modoElegido =
+                IdMinijuego minijuegoElegido =
                     ElegirMinijuegoAleatorioTablero();
 
                 zonaPruebas.Inicializar(
@@ -924,7 +826,7 @@ void Juego::Actualizar(
                 );
 
                 zonaPruebas.modoCatalogo = true;
-                zonaPruebas.CambiarModo(modoElegido);
+                zonaPruebas.CambiarMinijuego(minijuegoElegido);
 
                 tiempoResultadoMinijuegoTablero = 0.0f;
                 estado = ESTADO_MINIJUEGO;

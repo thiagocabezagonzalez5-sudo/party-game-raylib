@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/CatalogoMinijuegos.h"
 #include "Core/Participante.h"
 #include "Gameplay/PrototipoTablero.h"
 #include "Minigames/MinijuegoBarraGiratoria.h"
@@ -31,37 +32,17 @@
 
 enum ModoZonaPruebas
 {
-    PRUEBA_ZONA_PRINCIPAL = 1,
-    PRUEBA_COLOR_SEGURO = 2,
-    PRUEBA_PELOTAS_EMPUJON = 3,
-    PRUEBA_MODELOS = 4,
-    PRUEBA_TRONCO_COORDINADO = 5,
-    PRUEBA_FABRICA_67 = 6,
-    PRUEBA_TABLERO = 7,
-    PRUEBA_ISLA_FUEGO = 8,
-    PRUEBA_CAPITAN_MANDA = 9,
-    PRUEBA_BARRA_GIRATORIA = 10,
-    PRUEBA_NUCLEOS_ENERGIA = 11,
-    PRUEBA_REFUGIO_PINCHOS = 12,
-    PRUEBA_MIRADAS_CRUZADAS = 13,
-    PRUEBA_MUROS_LOCOS = 14,
-    PRUEBA_TORMENTA_MAGNETICA = 15,
-    PRUEBA_CONTEO_EXPLOSIVO = 16,
-    PRUEBA_PASO_SILENCIOSO = 17,
-    PRUEBA_CIRCUITO_VOLTAJE = 18,
-    PRUEBA_TRAZO_PERFECTO = 19,
-    PRUEBA_CARGA_INESTABLE = 20,
-    PRUEBA_SECUENCIA_NEON = 21,
-    PRUEBA_INTERRUPTORES_CAOS = 22,
-    PRUEBA_TANQUES_PLASMA = 23,
-    PRUEBA_PASARELAS_VACIO = 24,
-    PRUEBA_CANTERA_FUGA = 25
+    PRUEBA_ZONA_PRINCIPAL = -4,
+    PRUEBA_MODELOS = -3,
+    PRUEBA_TABLERO = -2,
+    PRUEBA_MINIJUEGO = -1
 };
 
 
 struct ZonaPruebas
 {
     ModoZonaPruebas modoActual = PRUEBA_ZONA_PRINCIPAL;
+    IdMinijuego minijuegoActual = MINIJUEGO_COLOR_SEGURO;
 
     JugadorPrueba jugadores[MAX_JUGADORES_PRUEBA];
 
@@ -114,6 +95,10 @@ struct ZonaPruebas
 
     void CambiarModo(
         ModoZonaPruebas nuevoModo
+    );
+
+    void CambiarMinijuego(
+        IdMinijuego nuevoMinijuego
     );
 
     void Actualizar(

@@ -5,131 +5,6 @@
 #include <cmath>
 
 
-struct DatosMinijuegoCatalogo
-{
-    const char* nombre;
-    const char* descripcion;
-    Color color;
-};
-
-
-static const DatosMinijuegoCatalogo DATOS_CATALOGO[
-    CANTIDAD_MINIJUEGOS_CATALOGO
-] =
-{
-    {
-        "COLOR SEGURO",
-        "Corre a la isla del color indicado sobre un mar de lava rodeado de volcanes.",
-        Color{ 235, 92, 85, 255 }
-    },
-    {
-        "PELOTAS",
-        "Deslizate sobre una cumbre nevada altisima, choca rivales y tiralos de la montana.",
-        Color{ 102, 184, 235, 255 }
-    },
-    {
-        "TRONCO 2V2",
-        "Coordina con tu companero para avanzar mas rapido que el otro equipo.",
-        Color{ 150, 102, 62, 255 }
-    },
-    {
-        "FABRICA 67",
-        "En equipo agarra los 6 y 7 que pasan por las cintas y arma 67 antes que el rival.",
-        Color{ 229, 173, 62, 255 }
-    },
-    {
-        "ISLA BAJO FUEGO",
-        "Esquiva los proyectiles. Un impacto directo te manda volando fuera de la arena.",
-        Color{ 220, 98, 52, 255 }
-    },
-    {
-        "CAPITAN MANDA",
-        "Reacciona apenas aparece la bandera. Fallar o tardar te deja fuera.",
-        Color{ 111, 95, 205, 255 }
-    },
-    {
-        "BARRA GIRATORIA",
-        "Salta la barra, golpea rivales y evita caer de la plataforma.",
-        Color{ 67, 196, 143, 255 }
-    },
-    {
-        "NUCLEOS ENERGIA",
-        "Recolecta energia. Un golpe suelta 3 recogidas y un ground pound puede soltar 5.",
-        Color{ 70, 205, 225, 255 }
-    },
-    {
-        "REFUGIO TALADROS",
-        "1 vs 3 en una cueva: uno elige desde que lado avanzan los taladros y el equipo se cubre.",
-        Color{ 178, 99, 74, 255 }
-    },
-    {
-        "MIRADAS CRUZADAS",
-        "1 vs 3: evita mirar hacia el mismo lado que el jugador solitario durante cinco rondas.",
-        Color{ 171, 124, 221, 255 }
-    },
-    {
-        "MUROS LOCOS",
-        "Busca el hueco de cada muro. Cada oleada acelera y los golpes pueden sacarte de la arena.",
-        Color{ 231, 106, 72, 255 }
-    },
-    {
-        "TORMENTA MAGNETICA",
-        "Sobrevive a un nucleo que alterna atraccion y repulsion mientras cambia de posicion.",
-        Color{ 74, 191, 220, 255 }
-    },
-    {
-        "CONTEO EXPLOSIVO",
-        "Observa los drones en movimiento, recuerdalos y elige la cantidad exacta antes del final.",
-        Color{ 244, 184, 61, 255 }
-    },
-    {
-        "PASO SILENCIOSO",
-        "Avanza mientras el centinela duerme. Si te mueves cuando mira, perderas parte del camino.",
-        Color{ 99, 205, 145, 255 }
-    },
-    {
-        "CIRCUITO VOLTAJE",
-        "Completa cuatro vueltas. Acelera en las rectas y suelta en las curvas para evitar trompos.",
-        Color{ 244, 108, 68, 255 }
-    },
-    {
-        "TRAZO PERFECTO",
-        "Sigue el punto dorado alrededor de la figura. El recorrido mas preciso obtiene la victoria.",
-        Color{ 102, 157, 235, 255 }
-    },
-    {
-        "CARGA INESTABLE",
-        "Pasa la carga en cualquier sentido antes de que explote. El ultimo jugador en pie gana.",
-        Color{ 239, 85, 112, 255 }
-    },
-    {
-        "SECUENCIA NEON",
-        "Memoriza los pulsos direccionales y repitelos sin equivocarte mientras la secuencia crece.",
-        Color{ 119, 91, 222, 255 }
-    },
-    {
-        "INTERRUPTORES",
-        "Elige un interruptor por turno. Si activas la sobrecarga quedas fuera; el ultimo en pie gana.",
-        Color{ 226, 75, 107, 255 }
-    },
-    {
-        "TANQUES PLASMA",
-        "Combate cenital de tanques. Dos impactos te eliminan; esquiva, apunta y dispara hasta quedar solo.",
-        Color{ 65, 190, 226, 255 }
-    },
-    {
-        "PASARELAS VACIO",
-        "Cruza plataformas suspendidas que se derrumban bajo tus pies y llega primero a la meta.",
-        Color{ 102, 160, 232, 255 }
-    },
-    {
-        "CANTERA EN FUGA",
-        "1 vs 3: lanza rocas desde la cima o esquivalas mientras escalas una pendiente en 3D.",
-        Color{ 196, 123, 68, 255 }
-    }
-};
-
-
 static Rectangle ObtenerAreaCatalogo()
 {
     return Rectangle
@@ -150,7 +25,7 @@ static Rectangle ObtenerCeldaCatalogo(
 
     const int columnas = 8;
     const int filas =
-        (CANTIDAD_MINIJUEGOS_CATALOGO + columnas - 1) /
+        (CANTIDAD_MINIJUEGOS + columnas - 1) /
         columnas;
 
     const float separacionX = 11.0f;
@@ -182,7 +57,7 @@ static void DibujarMiniatura(
     Rectangle rect
 )
 {
-    const DatosMinijuegoCatalogo& datos = DATOS_CATALOGO[indice];
+    const DatosMinijuegoCatalogo& datos = ObtenerDatosMinijuegoPorIndice(indice);
 
     DrawRectangle(
         (int)rect.x,
@@ -208,7 +83,7 @@ static void DibujarMiniatura(
 
     switch (indice)
     {
-        case CATALOGO_COLOR_SEGURO:
+        case MINIJUEGO_COLOR_SEGURO:
         {
             DrawCircle((int)cx, (int)cy + 25, 44.0f, ORANGE);
             DrawPoly({ cx, cy - 5.0f }, 6, 31.0f, 30.0f, RAYWHITE);
@@ -216,7 +91,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_PELOTAS:
+        case MINIJUEGO_PELOTAS:
         {
             DrawTriangle(
                 { cx - 48.0f, cy + 34.0f },
@@ -229,7 +104,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_TRONCO:
+        case MINIJUEGO_TRONCO:
         {
             DrawRectangle((int)cx - 48, (int)cy - 11, 96, 22, BROWN);
             DrawCircle((int)cx - 48, (int)cy, 11.0f, DARKBROWN);
@@ -237,7 +112,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_FABRICA_67:
+        case MINIJUEGO_FABRICA_67:
         {
             DrawRectangle((int)cx - 48, (int)cy - 34, 96, 14, DARKGRAY);
             DrawRectangle((int)cx - 48, (int)cy + 23, 96, 14, DARKGRAY);
@@ -246,7 +121,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_ISLA_FUEGO:
+        case MINIJUEGO_ISLA_FUEGO:
         {
             DrawCircle((int)cx, (int)cy + 13, 43.0f, GRAY);
             DrawCircle((int)cx + 17, (int)cy - 25, 11.0f, DARKGRAY);
@@ -254,14 +129,14 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_CAPITAN_MANDA:
+        case MINIJUEGO_CAPITAN_MANDA:
         {
             DrawText("<", (int)cx - 45, (int)cy - 31, 57, SKYBLUE);
             DrawText(">", (int)cx + 8, (int)cy - 31, 57, ORANGE);
             break;
         }
 
-        case CATALOGO_BARRA_GIRATORIA:
+        case MINIJUEGO_BARRA_GIRATORIA:
         {
             DrawCircle((int)cx, (int)cy, 42.0f, GRAY);
             DrawLineEx(
@@ -274,7 +149,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_NUCLEOS_ENERGIA:
+        case MINIJUEGO_NUCLEOS_ENERGIA:
         {
             DrawCircle((int)cx - 23, (int)cy + 5, 19.0f, SKYBLUE);
             DrawCircle((int)cx + 23, (int)cy - 8, 24.0f, GOLD);
@@ -283,7 +158,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_REFUGIO_PINCHOS:
+        case MINIJUEGO_REFUGIO_PINCHOS:
         {
             DrawRectangle((int)cx - 14, (int)cy - 14, 28, 28, GRAY);
             DrawRectangle((int)cx - 53, (int)cy - 6, 25, 12, DARKGRAY);
@@ -304,7 +179,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_MIRADAS_CRUZADAS:
+        case MINIJUEGO_MIRADAS_CRUZADAS:
         {
             DrawCircle((int)cx, (int)cy - 24, 23.0f, GOLD);
             DrawCircle((int)cx - 31, (int)cy + 23, 18.0f, SKYBLUE);
@@ -314,7 +189,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_MUROS_LOCOS:
+        case MINIJUEGO_MUROS_LOCOS:
         {
             DrawRectangle((int)cx - 52, (int)cy - 30, 37, 64, RED);
             DrawRectangle((int)cx + 16, (int)cy - 30, 36, 64, ORANGE);
@@ -324,7 +199,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_TORMENTA_MAGNETICA:
+        case MINIJUEGO_TORMENTA_MAGNETICA:
         {
             DrawCircle((int)cx, (int)cy, 23.0f, SKYBLUE);
             DrawCircleLines((int)cx, (int)cy, 36.0f, RAYWHITE);
@@ -334,7 +209,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_CONTEO_EXPLOSIVO:
+        case MINIJUEGO_CONTEO_EXPLOSIVO:
         {
             DrawCircle((int)cx, (int)cy, 45.0f, Fade(SKYBLUE, 0.25f));
 
@@ -354,7 +229,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_PASO_SILENCIOSO:
+        case MINIJUEGO_PASO_SILENCIOSO:
         {
             DrawRectangle((int)cx - 47, (int)cy + 27, 94, 8, DARKGRAY);
             DrawCircle((int)cx + 30, (int)cy - 25, 17.0f, DARKGRAY);
@@ -372,7 +247,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_CIRCUITO_VOLTAJE:
+        case MINIJUEGO_CIRCUITO_VOLTAJE:
         {
             DrawEllipseLines((int)cx, (int)cy, 49.0f, 31.0f, RAYWHITE);
             DrawEllipseLines((int)cx, (int)cy, 31.0f, 15.0f, DARKGRAY);
@@ -386,7 +261,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_TRAZO_PERFECTO:
+        case MINIJUEGO_TRAZO_PERFECTO:
         {
             Vector2 puntos[] =
             {
@@ -412,7 +287,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_CARGA_INESTABLE:
+        case MINIJUEGO_CARGA_INESTABLE:
         {
             DrawCircle((int)cx, (int)cy, 34.0f, RED);
             DrawCircleLines((int)cx, (int)cy, 42.0f, ORANGE);
@@ -437,7 +312,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_SECUENCIA_NEON:
+        case MINIJUEGO_SECUENCIA_NEON:
         {
             DrawCircle((int)cx, (int)cy - 30, 16.0f, SKYBLUE);
             DrawCircle((int)cx + 34, (int)cy, 16.0f, ORANGE);
@@ -451,7 +326,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_INTERRUPTORES_CAOS:
+        case MINIJUEGO_INTERRUPTORES_CAOS:
         {
             for (int i = 0; i < 5; i++)
             {
@@ -467,7 +342,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_TANQUES_PLASMA:
+        case MINIJUEGO_TANQUES_PLASMA:
         {
             DrawRectanglePro(
                 { cx - 27.0f, cy + 13.0f, 42.0f, 26.0f },
@@ -486,7 +361,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_PASARELAS_VACIO:
+        case MINIJUEGO_PASARELAS_VACIO:
         {
             for (int i = 0; i < 4; i++)
             {
@@ -500,7 +375,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CATALOGO_CANTERA_FUGA:
+        case MINIJUEGO_CANTERA_FUGA:
         {
             DrawTriangle(
                 { cx - 50.0f, cy + 34.0f },
@@ -513,7 +388,7 @@ static void DibujarMiniatura(
             break;
         }
 
-        case CANTIDAD_MINIJUEGOS_CATALOGO:
+        case CANTIDAD_MINIJUEGOS:
             break;
     }
 
@@ -529,7 +404,7 @@ static int MoverIndice(
 {
     const int columnas = 8;
     const int filas =
-        (CANTIDAD_MINIJUEGOS_CATALOGO + columnas - 1) /
+        (CANTIDAD_MINIJUEGOS + columnas - 1) /
         columnas;
 
     int columna = actual % columnas;
@@ -545,9 +420,9 @@ static int MoverIndice(
 
     int candidato = fila * columnas + columna;
 
-    if (candidato >= CANTIDAD_MINIJUEGOS_CATALOGO)
+    if (candidato >= CANTIDAD_MINIJUEGOS)
     {
-        candidato = CANTIDAD_MINIJUEGOS_CATALOGO - 1;
+        candidato = CANTIDAD_MINIJUEGOS - 1;
     }
 
     return candidato;
@@ -591,7 +466,7 @@ void SeleccionMinijuegos::Actualizar(
 
     Vector2 mouse = GetMousePosition();
 
-    for (int i = 0; i < CANTIDAD_MINIJUEGOS_CATALOGO; i++)
+    for (int i = 0; i < CANTIDAD_MINIJUEGOS; i++)
     {
         Rectangle celda = ObtenerCeldaCatalogo(i);
 
@@ -671,7 +546,7 @@ void SeleccionMinijuegos::Dibujar(
         Fade(RAYWHITE, 0.70f)
     );
 
-    for (int i = 0; i < CANTIDAD_MINIJUEGOS_CATALOGO; i++)
+    for (int i = 0; i < CANTIDAD_MINIJUEGOS; i++)
     {
         Rectangle celda = ObtenerCeldaCatalogo(i);
         DibujarMiniatura(i, celda);
@@ -687,7 +562,7 @@ void SeleccionMinijuegos::Dibujar(
         int tamanoNombre = 11;
         while (
             tamanoNombre > 8 &&
-            MeasureText(DATOS_CATALOGO[i].nombre, tamanoNombre) >
+            MeasureText(ObtenerDatosMinijuegoPorIndice(i).nombre, tamanoNombre) >
                 celda.width - 6.0f
         )
         {
@@ -695,10 +570,10 @@ void SeleccionMinijuegos::Dibujar(
         }
 
         int anchoNombre =
-            MeasureText(DATOS_CATALOGO[i].nombre, tamanoNombre);
+            MeasureText(ObtenerDatosMinijuegoPorIndice(i).nombre, tamanoNombre);
 
         DrawText(
-            DATOS_CATALOGO[i].nombre,
+            ObtenerDatosMinijuegoPorIndice(i).nombre,
             (int)(celda.x + celda.width / 2.0f - anchoNombre / 2.0f),
             (int)(celda.y + celda.height - 25.0f),
             tamanoNombre,
@@ -744,7 +619,7 @@ void SeleccionMinijuegos::Dibujar(
     DrawRectangleLinesEx(panel, 4.0f, RED);
 
     const DatosMinijuegoCatalogo& seleccionado =
-        DATOS_CATALOGO[indiceSeleccionado];
+        ObtenerDatosMinijuegoPorIndice(indiceSeleccionado);
 
     DrawText(
         seleccionado.nombre,

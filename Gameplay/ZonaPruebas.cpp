@@ -5,37 +5,36 @@
 #include "Minigames/UtilidadesMinijuegos.h"
 
 
-static const char* NombreModoPrueba(
-    ModoZonaPruebas modo
+static int ObtenerIdModoActual(
+    const ZonaPruebas& zona
 )
 {
-    switch (modo)
+    if (zona.modoActual == PRUEBA_MINIJUEGO)
+    {
+        return static_cast<int>(zona.minijuegoActual);
+    }
+
+    return static_cast<int>(zona.modoActual);
+}
+
+
+static const char* NombreModoPrueba(
+    const ZonaPruebas& zona
+)
+{
+    if (zona.modoActual == PRUEBA_MINIJUEGO)
+    {
+        return ObtenerDatosMinijuego(
+            zona.minijuegoActual
+        ).etiquetaZonaPruebas;
+    }
+
+    switch (ObtenerIdModoActual(zona))
     {
         case PRUEBA_ZONA_PRINCIPAL: return "1 - ZONA PRINCIPAL";
-        case PRUEBA_COLOR_SEGURO: return "2 - COLOR SEGURO";
-        case PRUEBA_PELOTAS_EMPUJON: return "3 - PELOTAS / EMPUJONES";
         case PRUEBA_MODELOS: return "4 - PRUEBA DE MODELOS";
-        case PRUEBA_TRONCO_COORDINADO: return "5 - TRONCO COORDINADO";
-        case PRUEBA_FABRICA_67: return "6 - FABRICA 67";
         case PRUEBA_TABLERO: return "7 - TABLERO";
-        case PRUEBA_ISLA_FUEGO: return "8 - ISLA BAJO FUEGO";
-        case PRUEBA_CAPITAN_MANDA: return "9 - CAPITAN MANDA";
-        case PRUEBA_BARRA_GIRATORIA: return "0 - BARRA GIRATORIA";
-        case PRUEBA_CARGA_INESTABLE: return "F1 - CARGA INESTABLE";
-        case PRUEBA_SECUENCIA_NEON: return "F2 - SECUENCIA NEON";
-        case PRUEBA_INTERRUPTORES_CAOS: return "PAG ARRIBA - INTERRUPTORES DEL CAOS";
-        case PRUEBA_TANQUES_PLASMA: return "PAG ABAJO - TANQUES DE PLASMA";
-        case PRUEBA_PASARELAS_VACIO: return "INICIO - PASARELAS DEL VACIO";
-        case PRUEBA_CANTERA_FUGA: return "FIN - CANTERA EN FUGA";
-        case PRUEBA_CIRCUITO_VOLTAJE: return "F4 - CIRCUITO VOLTAJE";
-        case PRUEBA_TRAZO_PERFECTO: return "F5 - TRAZO PERFECTO";
-        case PRUEBA_CONTEO_EXPLOSIVO: return "F6 - CONTEO EXPLOSIVO";
-        case PRUEBA_PASO_SILENCIOSO: return "F7 - PASO SILENCIOSO";
-        case PRUEBA_TORMENTA_MAGNETICA: return "F8 - TORMENTA MAGNETICA";
-        case PRUEBA_MUROS_LOCOS: return "F9 - MUROS LOCOS";
-        case PRUEBA_NUCLEOS_ENERGIA: return "F10 - NUCLEOS DE ENERGIA";
-        case PRUEBA_REFUGIO_PINCHOS: return "F11 - REFUGIO DE TALADROS";
-        case PRUEBA_MIRADAS_CRUZADAS: return "F12 - MIRADAS CRUZADAS";
+        case PRUEBA_MINIJUEGO: break;
     }
 
     return "PRUEBA";
@@ -239,25 +238,25 @@ static void PrepararTemaVisualZona(
 {
     SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
-    if (zona.modoActual == PRUEBA_COLOR_SEGURO)
+    if (zona.modoActual == PRUEBA_MINIJUEGO && zona.minijuegoActual == MINIJUEGO_COLOR_SEGURO)
     {
         SeleccionarTemaVisualMinijuego(TEMA_VISUAL_LAVA);
         return;
     }
 
-    if (zona.modoActual == PRUEBA_PELOTAS_EMPUJON)
+    if (zona.modoActual == PRUEBA_MINIJUEGO && zona.minijuegoActual == MINIJUEGO_PELOTAS)
     {
         SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NIEVE);
         return;
     }
 
-    if (zona.modoActual == PRUEBA_TORMENTA_MAGNETICA)
+    if (zona.modoActual == PRUEBA_MINIJUEGO && zona.minijuegoActual == MINIJUEGO_TORMENTA_MAGNETICA)
     {
         SeleccionarTemaVisualMinijuego(TEMA_VISUAL_MAGNETICO);
         return;
     }
 
-    if (zona.modoActual == PRUEBA_REFUGIO_PINCHOS)
+    if (zona.modoActual == PRUEBA_MINIJUEGO && zona.minijuegoActual == MINIJUEGO_REFUGIO_PINCHOS)
     {
         SeleccionarTemaVisualMinijuego(TEMA_VISUAL_CUEVA);
 
@@ -370,14 +369,14 @@ void ZonaPruebas::CambiarModo(
         particulas[i].activa = false;
     }
 
-    switch (modoActual)
+    switch (ObtenerIdModoActual(*this))
     {
         case PRUEBA_ZONA_PRINCIPAL:
             ConfigurarZonaPrincipal(*this);
             ConfigurarJugadoresPrincipal(*this);
             break;
 
-        case PRUEBA_COLOR_SEGURO:
+        case MINIJUEGO_COLOR_SEGURO:
             minijuegoColor.Inicializar();
             minijuegoColor.ConfigurarJugadores(
                 jugadores,
@@ -385,7 +384,7 @@ void ZonaPruebas::CambiarModo(
             );
             break;
 
-        case PRUEBA_PELOTAS_EMPUJON:
+        case MINIJUEGO_PELOTAS:
             minijuegoPelotas.Inicializar();
             minijuegoPelotas.ConfigurarJugadores(
                 jugadores,
@@ -397,7 +396,7 @@ void ZonaPruebas::CambiarModo(
             pruebaModelos.Inicializar();
             break;
 
-        case PRUEBA_TRONCO_COORDINADO:
+        case MINIJUEGO_TRONCO:
             minijuegoTronco.Inicializar();
             minijuegoTronco.ConfigurarJugadores(
                 jugadores,
@@ -405,7 +404,7 @@ void ZonaPruebas::CambiarModo(
             );
             break;
 
-        case PRUEBA_FABRICA_67:
+        case MINIJUEGO_FABRICA_67:
             minijuego67.Inicializar();
             break;
 
@@ -413,7 +412,7 @@ void ZonaPruebas::CambiarModo(
             prototipoTablero.Reiniciar();
             break;
 
-        case PRUEBA_ISLA_FUEGO:
+        case MINIJUEGO_ISLA_FUEGO:
             minijuegoIslaFuego.Inicializar();
             minijuegoIslaFuego.ConfigurarJugadores(
                 jugadores,
@@ -421,11 +420,11 @@ void ZonaPruebas::CambiarModo(
             );
             break;
 
-        case PRUEBA_CAPITAN_MANDA:
+        case MINIJUEGO_CAPITAN_MANDA:
             minijuegoCapitanManda.Reiniciar(participantes);
             break;
 
-        case PRUEBA_BARRA_GIRATORIA:
+        case MINIJUEGO_BARRA_GIRATORIA:
             minijuegoBarraGiratoria.Inicializar();
             minijuegoBarraGiratoria.ConfigurarJugadores(
                 jugadores,
@@ -433,7 +432,7 @@ void ZonaPruebas::CambiarModo(
             );
             break;
 
-        case PRUEBA_NUCLEOS_ENERGIA:
+        case MINIJUEGO_NUCLEOS_ENERGIA:
             minijuegoNucleosEnergia.Inicializar();
             minijuegoNucleosEnergia.ConfigurarJugadores(
                 jugadores,
@@ -441,15 +440,15 @@ void ZonaPruebas::CambiarModo(
             );
             break;
 
-        case PRUEBA_REFUGIO_PINCHOS:
+        case MINIJUEGO_REFUGIO_PINCHOS:
             minijuegoRefugioPinchos.Inicializar();
             break;
 
-        case PRUEBA_MIRADAS_CRUZADAS:
+        case MINIJUEGO_MIRADAS_CRUZADAS:
             minijuegoMiradasCruzadas.Inicializar();
             break;
 
-        case PRUEBA_MUROS_LOCOS:
+        case MINIJUEGO_MUROS_LOCOS:
             minijuegoMurosLocos.Inicializar();
             minijuegoMurosLocos.ConfigurarJugadores(
                 jugadores,
@@ -457,7 +456,7 @@ void ZonaPruebas::CambiarModo(
             );
             break;
 
-        case PRUEBA_TORMENTA_MAGNETICA:
+        case MINIJUEGO_TORMENTA_MAGNETICA:
             minijuegoTormentaMagnetica.Inicializar();
             minijuegoTormentaMagnetica.ConfigurarJugadores(
                 jugadores,
@@ -465,40 +464,40 @@ void ZonaPruebas::CambiarModo(
             );
             break;
 
-        case PRUEBA_CONTEO_EXPLOSIVO:
+        case MINIJUEGO_CONTEO_EXPLOSIVO:
             minijuegoConteoExplosivo.Reiniciar(participantes);
             break;
 
-        case PRUEBA_PASO_SILENCIOSO:
+        case MINIJUEGO_PASO_SILENCIOSO:
             minijuegoPasoSilencioso.Reiniciar(participantes);
             break;
 
-        case PRUEBA_CIRCUITO_VOLTAJE:
+        case MINIJUEGO_CIRCUITO_VOLTAJE:
             minijuegoCircuitoVoltaje.Reiniciar(participantes);
             break;
 
-        case PRUEBA_TRAZO_PERFECTO:
+        case MINIJUEGO_TRAZO_PERFECTO:
             minijuegoTrazoPerfecto.Reiniciar(participantes);
             break;
 
-        case PRUEBA_CARGA_INESTABLE:
+        case MINIJUEGO_CARGA_INESTABLE:
             minijuegoCargaInestable.Reiniciar(participantes);
             break;
 
-        case PRUEBA_SECUENCIA_NEON:
+        case MINIJUEGO_SECUENCIA_NEON:
             minijuegoSecuenciaNeon.Reiniciar(participantes);
             break;
 
-        case PRUEBA_INTERRUPTORES_CAOS:
+        case MINIJUEGO_INTERRUPTORES_CAOS:
             minijuegoInterruptoresCaos.Reiniciar(participantes);
             break;
 
-        case PRUEBA_TANQUES_PLASMA:
+        case MINIJUEGO_TANQUES_PLASMA:
             minijuegoTanquesPlasma.Reiniciar(participantes);
             break;
 
-        case PRUEBA_PASARELAS_VACIO:
-        case PRUEBA_CANTERA_FUGA:
+        case MINIJUEGO_PASARELAS_VACIO:
+        case MINIJUEGO_CANTERA_FUGA:
             break;
     }
 
@@ -507,21 +506,21 @@ void ZonaPruebas::CambiarModo(
         ReiniciarJugadores();
     }
 
-    if (modoActual == PRUEBA_TRONCO_COORDINADO)
+    if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_TRONCO)
     {
         minijuegoTronco.Reiniciar(
             participantes,
             MAX_JUGADORES_PRUEBA
         );
     }
-    else if (modoActual == PRUEBA_FABRICA_67)
+    else if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_FABRICA_67)
     {
         minijuego67.Reiniciar(
             participantes,
             MAX_JUGADORES_PRUEBA
         );
     }
-    else if (modoActual == PRUEBA_REFUGIO_PINCHOS)
+    else if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_REFUGIO_PINCHOS)
     {
         minijuegoRefugioPinchos.Reiniciar(
             jugadores,
@@ -529,11 +528,11 @@ void ZonaPruebas::CambiarModo(
             MAX_JUGADORES_PRUEBA
         );
     }
-    else if (modoActual == PRUEBA_MIRADAS_CRUZADAS)
+    else if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_MIRADAS_CRUZADAS)
     {
         minijuegoMiradasCruzadas.Reiniciar(participantes);
     }
-    else if (modoActual == PRUEBA_PASARELAS_VACIO)
+    else if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_PASARELAS_VACIO)
     {
         minijuegoPasarelasVacio.Reiniciar(
             jugadores,
@@ -541,7 +540,7 @@ void ZonaPruebas::CambiarModo(
             MAX_JUGADORES_PRUEBA
         );
     }
-    else if (modoActual == PRUEBA_CANTERA_FUGA)
+    else if (modoActual == PRUEBA_MINIJUEGO && minijuegoActual == MINIJUEGO_CANTERA_FUGA)
     {
         minijuegoCanteraFuga.Reiniciar(
             jugadores,
@@ -549,6 +548,20 @@ void ZonaPruebas::CambiarModo(
             MAX_JUGADORES_PRUEBA
         );
     }
+}
+
+
+void ZonaPruebas::CambiarMinijuego(
+    IdMinijuego nuevoMinijuego
+)
+{
+    if (!EsIdMinijuegoValido(nuevoMinijuego))
+    {
+        return;
+    }
+
+    minijuegoActual = nuevoMinijuego;
+    CambiarModo(PRUEBA_MINIJUEGO);
 }
 
 
@@ -582,20 +595,20 @@ static void ReiniciarModoActual(
     ZonaPruebas& zona
 )
 {
-    switch (zona.modoActual)
+    switch (ObtenerIdModoActual(zona))
     {
         case PRUEBA_ZONA_PRINCIPAL:
             ConfigurarJugadoresPrincipal(zona);
             break;
 
-        case PRUEBA_COLOR_SEGURO:
+        case MINIJUEGO_COLOR_SEGURO:
             zona.minijuegoColor.Reiniciar(
                 zona.jugadores,
                 MAX_JUGADORES_PRUEBA
             );
             break;
 
-        case PRUEBA_PELOTAS_EMPUJON:
+        case MINIJUEGO_PELOTAS:
             zona.minijuegoPelotas.Reiniciar(
                 zona.jugadores,
                 MAX_JUGADORES_PRUEBA
@@ -606,14 +619,14 @@ static void ReiniciarModoActual(
             zona.pruebaModelos.Reiniciar();
             break;
 
-        case PRUEBA_TRONCO_COORDINADO:
+        case MINIJUEGO_TRONCO:
             zona.minijuegoTronco.Reiniciar(
                 zona.participantes,
                 MAX_JUGADORES_PRUEBA
             );
             break;
 
-        case PRUEBA_FABRICA_67:
+        case MINIJUEGO_FABRICA_67:
             zona.minijuego67.Reiniciar(
                 zona.participantes,
                 MAX_JUGADORES_PRUEBA
@@ -624,32 +637,32 @@ static void ReiniciarModoActual(
             zona.prototipoTablero.Reiniciar();
             break;
 
-        case PRUEBA_ISLA_FUEGO:
+        case MINIJUEGO_ISLA_FUEGO:
             zona.minijuegoIslaFuego.Reiniciar(
                 zona.jugadores,
                 MAX_JUGADORES_PRUEBA
             );
             break;
 
-        case PRUEBA_CAPITAN_MANDA:
+        case MINIJUEGO_CAPITAN_MANDA:
             zona.minijuegoCapitanManda.Reiniciar(zona.participantes);
             break;
 
-        case PRUEBA_BARRA_GIRATORIA:
+        case MINIJUEGO_BARRA_GIRATORIA:
             zona.minijuegoBarraGiratoria.Reiniciar(
                 zona.jugadores,
                 MAX_JUGADORES_PRUEBA
             );
             break;
 
-        case PRUEBA_NUCLEOS_ENERGIA:
+        case MINIJUEGO_NUCLEOS_ENERGIA:
             zona.minijuegoNucleosEnergia.Reiniciar(
                 zona.jugadores,
                 MAX_JUGADORES_PRUEBA
             );
             break;
 
-        case PRUEBA_REFUGIO_PINCHOS:
+        case MINIJUEGO_REFUGIO_PINCHOS:
             zona.minijuegoRefugioPinchos.Reiniciar(
                 zona.jugadores,
                 zona.participantes,
@@ -657,57 +670,57 @@ static void ReiniciarModoActual(
             );
             break;
 
-        case PRUEBA_MIRADAS_CRUZADAS:
+        case MINIJUEGO_MIRADAS_CRUZADAS:
             zona.minijuegoMiradasCruzadas.Reiniciar(zona.participantes);
             break;
 
-        case PRUEBA_MUROS_LOCOS:
+        case MINIJUEGO_MUROS_LOCOS:
             zona.minijuegoMurosLocos.Reiniciar(
                 zona.jugadores,
                 MAX_JUGADORES_PRUEBA
             );
             break;
 
-        case PRUEBA_TORMENTA_MAGNETICA:
+        case MINIJUEGO_TORMENTA_MAGNETICA:
             zona.minijuegoTormentaMagnetica.Reiniciar(
                 zona.jugadores,
                 MAX_JUGADORES_PRUEBA
             );
             break;
 
-        case PRUEBA_CONTEO_EXPLOSIVO:
+        case MINIJUEGO_CONTEO_EXPLOSIVO:
             zona.minijuegoConteoExplosivo.Reiniciar(zona.participantes);
             break;
 
-        case PRUEBA_PASO_SILENCIOSO:
+        case MINIJUEGO_PASO_SILENCIOSO:
             zona.minijuegoPasoSilencioso.Reiniciar(zona.participantes);
             break;
 
-        case PRUEBA_CIRCUITO_VOLTAJE:
+        case MINIJUEGO_CIRCUITO_VOLTAJE:
             zona.minijuegoCircuitoVoltaje.Reiniciar(zona.participantes);
             break;
 
-        case PRUEBA_TRAZO_PERFECTO:
+        case MINIJUEGO_TRAZO_PERFECTO:
             zona.minijuegoTrazoPerfecto.Reiniciar(zona.participantes);
             break;
 
-        case PRUEBA_CARGA_INESTABLE:
+        case MINIJUEGO_CARGA_INESTABLE:
             zona.minijuegoCargaInestable.Reiniciar(zona.participantes);
             break;
 
-        case PRUEBA_SECUENCIA_NEON:
+        case MINIJUEGO_SECUENCIA_NEON:
             zona.minijuegoSecuenciaNeon.Reiniciar(zona.participantes);
             break;
 
-        case PRUEBA_INTERRUPTORES_CAOS:
+        case MINIJUEGO_INTERRUPTORES_CAOS:
             zona.minijuegoInterruptoresCaos.Reiniciar(zona.participantes);
             break;
 
-        case PRUEBA_TANQUES_PLASMA:
+        case MINIJUEGO_TANQUES_PLASMA:
             zona.minijuegoTanquesPlasma.Reiniciar(zona.participantes);
             break;
 
-        case PRUEBA_PASARELAS_VACIO:
+        case MINIJUEGO_PASARELAS_VACIO:
             zona.minijuegoPasarelasVacio.Reiniciar(
                 zona.jugadores,
                 zona.participantes,
@@ -715,7 +728,7 @@ static void ReiniciarModoActual(
             );
             break;
 
-        case PRUEBA_CANTERA_FUGA:
+        case MINIJUEGO_CANTERA_FUGA:
             zona.minijuegoCanteraFuga.Reiniciar(
                 zona.jugadores,
                 zona.participantes,
@@ -754,30 +767,30 @@ void ZonaPruebas::Actualizar(
     if (!modoCatalogo)
     {
         if (IsKeyPressed(KEY_ONE)) { CambiarModo(PRUEBA_ZONA_PRINCIPAL); return; }
-        if (IsKeyPressed(KEY_TWO)) { CambiarModo(PRUEBA_COLOR_SEGURO); return; }
-        if (IsKeyPressed(KEY_THREE)) { CambiarModo(PRUEBA_PELOTAS_EMPUJON); return; }
+        if (IsKeyPressed(KEY_TWO)) { CambiarMinijuego(MINIJUEGO_COLOR_SEGURO); return; }
+        if (IsKeyPressed(KEY_THREE)) { CambiarMinijuego(MINIJUEGO_PELOTAS); return; }
         if (IsKeyPressed(KEY_FOUR)) { CambiarModo(PRUEBA_MODELOS); return; }
-        if (IsKeyPressed(KEY_FIVE)) { CambiarModo(PRUEBA_TRONCO_COORDINADO); return; }
-        if (IsKeyPressed(KEY_SIX)) { CambiarModo(PRUEBA_FABRICA_67); return; }
+        if (IsKeyPressed(KEY_FIVE)) { CambiarMinijuego(MINIJUEGO_TRONCO); return; }
+        if (IsKeyPressed(KEY_SIX)) { CambiarMinijuego(MINIJUEGO_FABRICA_67); return; }
         if (IsKeyPressed(KEY_SEVEN)) { CambiarModo(PRUEBA_TABLERO); return; }
-        if (IsKeyPressed(KEY_EIGHT)) { CambiarModo(PRUEBA_ISLA_FUEGO); return; }
-        if (IsKeyPressed(KEY_NINE)) { CambiarModo(PRUEBA_CAPITAN_MANDA); return; }
-        if (IsKeyPressed(KEY_ZERO)) { CambiarModo(PRUEBA_BARRA_GIRATORIA); return; }
-        if (IsKeyPressed(KEY_F1)) { CambiarModo(PRUEBA_CARGA_INESTABLE); return; }
-        if (IsKeyPressed(KEY_F2)) { CambiarModo(PRUEBA_SECUENCIA_NEON); return; }
-        if (IsKeyPressed(KEY_F4)) { CambiarModo(PRUEBA_CIRCUITO_VOLTAJE); return; }
-        if (IsKeyPressed(KEY_F5)) { CambiarModo(PRUEBA_TRAZO_PERFECTO); return; }
-        if (IsKeyPressed(KEY_F6)) { CambiarModo(PRUEBA_CONTEO_EXPLOSIVO); return; }
-        if (IsKeyPressed(KEY_F7)) { CambiarModo(PRUEBA_PASO_SILENCIOSO); return; }
-        if (IsKeyPressed(KEY_F8)) { CambiarModo(PRUEBA_TORMENTA_MAGNETICA); return; }
-        if (IsKeyPressed(KEY_F9)) { CambiarModo(PRUEBA_MUROS_LOCOS); return; }
-        if (IsKeyPressed(KEY_F10)) { CambiarModo(PRUEBA_NUCLEOS_ENERGIA); return; }
-        if (IsKeyPressed(KEY_F11)) { CambiarModo(PRUEBA_REFUGIO_PINCHOS); return; }
-        if (IsKeyPressed(KEY_F12)) { CambiarModo(PRUEBA_MIRADAS_CRUZADAS); return; }
-        if (IsKeyPressed(KEY_PAGE_UP)) { CambiarModo(PRUEBA_INTERRUPTORES_CAOS); return; }
-        if (IsKeyPressed(KEY_PAGE_DOWN)) { CambiarModo(PRUEBA_TANQUES_PLASMA); return; }
-        if (IsKeyPressed(KEY_HOME)) { CambiarModo(PRUEBA_PASARELAS_VACIO); return; }
-        if (IsKeyPressed(KEY_END)) { CambiarModo(PRUEBA_CANTERA_FUGA); return; }
+        if (IsKeyPressed(KEY_EIGHT)) { CambiarMinijuego(MINIJUEGO_ISLA_FUEGO); return; }
+        if (IsKeyPressed(KEY_NINE)) { CambiarMinijuego(MINIJUEGO_CAPITAN_MANDA); return; }
+        if (IsKeyPressed(KEY_ZERO)) { CambiarMinijuego(MINIJUEGO_BARRA_GIRATORIA); return; }
+        if (IsKeyPressed(KEY_F1)) { CambiarMinijuego(MINIJUEGO_CARGA_INESTABLE); return; }
+        if (IsKeyPressed(KEY_F2)) { CambiarMinijuego(MINIJUEGO_SECUENCIA_NEON); return; }
+        if (IsKeyPressed(KEY_F4)) { CambiarMinijuego(MINIJUEGO_CIRCUITO_VOLTAJE); return; }
+        if (IsKeyPressed(KEY_F5)) { CambiarMinijuego(MINIJUEGO_TRAZO_PERFECTO); return; }
+        if (IsKeyPressed(KEY_F6)) { CambiarMinijuego(MINIJUEGO_CONTEO_EXPLOSIVO); return; }
+        if (IsKeyPressed(KEY_F7)) { CambiarMinijuego(MINIJUEGO_PASO_SILENCIOSO); return; }
+        if (IsKeyPressed(KEY_F8)) { CambiarMinijuego(MINIJUEGO_TORMENTA_MAGNETICA); return; }
+        if (IsKeyPressed(KEY_F9)) { CambiarMinijuego(MINIJUEGO_MUROS_LOCOS); return; }
+        if (IsKeyPressed(KEY_F10)) { CambiarMinijuego(MINIJUEGO_NUCLEOS_ENERGIA); return; }
+        if (IsKeyPressed(KEY_F11)) { CambiarMinijuego(MINIJUEGO_REFUGIO_PINCHOS); return; }
+        if (IsKeyPressed(KEY_F12)) { CambiarMinijuego(MINIJUEGO_MIRADAS_CRUZADAS); return; }
+        if (IsKeyPressed(KEY_PAGE_UP)) { CambiarMinijuego(MINIJUEGO_INTERRUPTORES_CAOS); return; }
+        if (IsKeyPressed(KEY_PAGE_DOWN)) { CambiarMinijuego(MINIJUEGO_TANQUES_PLASMA); return; }
+        if (IsKeyPressed(KEY_HOME)) { CambiarMinijuego(MINIJUEGO_PASARELAS_VACIO); return; }
+        if (IsKeyPressed(KEY_END)) { CambiarMinijuego(MINIJUEGO_CANTERA_FUGA); return; }
     }
 
     if (IsKeyPressed(KEY_R))
@@ -812,8 +825,11 @@ void ZonaPruebas::Actualizar(
             // Estos modos reemplazan temporalmente el mando por IA.
             // Reconectar devuelve el control sin teletransportar al inicio.
             if (
-                modoActual == PRUEBA_PASARELAS_VACIO ||
-                modoActual == PRUEBA_CANTERA_FUGA
+                modoActual == PRUEBA_MINIJUEGO &&
+                (
+                    minijuegoActual == MINIJUEGO_PASARELAS_VACIO ||
+                    minijuegoActual == MINIJUEGO_CANTERA_FUGA
+                )
             )
             {
                 continue;
@@ -834,13 +850,13 @@ void ZonaPruebas::Actualizar(
         }
     }
 
-    switch (modoActual)
+    switch (ObtenerIdModoActual(*this))
     {
         case PRUEBA_ZONA_PRINCIPAL:
             ActualizarZonaPrincipal(*this, deltaTime);
             break;
 
-        case PRUEBA_COLOR_SEGURO:
+        case MINIJUEGO_COLOR_SEGURO:
             minijuegoColor.Actualizar(
                 deltaTime,
                 jugadores,
@@ -851,7 +867,7 @@ void ZonaPruebas::Actualizar(
             );
             break;
 
-        case PRUEBA_PELOTAS_EMPUJON:
+        case MINIJUEGO_PELOTAS:
             minijuegoPelotas.Actualizar(
                 deltaTime,
                 jugadores,
@@ -866,7 +882,7 @@ void ZonaPruebas::Actualizar(
             pruebaModelos.Actualizar(deltaTime);
             break;
 
-        case PRUEBA_TRONCO_COORDINADO:
+        case MINIJUEGO_TRONCO:
             minijuegoTronco.Actualizar(
                 deltaTime,
                 MAX_JUGADORES_PRUEBA,
@@ -874,7 +890,7 @@ void ZonaPruebas::Actualizar(
             );
             break;
 
-        case PRUEBA_FABRICA_67:
+        case MINIJUEGO_FABRICA_67:
             minijuego67.Actualizar(
                 deltaTime,
                 MAX_JUGADORES_PRUEBA,
@@ -886,7 +902,7 @@ void ZonaPruebas::Actualizar(
             prototipoTablero.Actualizar(deltaTime);
             break;
 
-        case PRUEBA_ISLA_FUEGO:
+        case MINIJUEGO_ISLA_FUEGO:
             minijuegoIslaFuego.Actualizar(
                 deltaTime,
                 jugadores,
@@ -897,14 +913,14 @@ void ZonaPruebas::Actualizar(
             );
             break;
 
-        case PRUEBA_CAPITAN_MANDA:
+        case MINIJUEGO_CAPITAN_MANDA:
             minijuegoCapitanManda.Actualizar(
                 deltaTime,
                 participantes
             );
             break;
 
-        case PRUEBA_BARRA_GIRATORIA:
+        case MINIJUEGO_BARRA_GIRATORIA:
             minijuegoBarraGiratoria.Actualizar(
                 deltaTime,
                 jugadores,
@@ -915,7 +931,7 @@ void ZonaPruebas::Actualizar(
             );
             break;
 
-        case PRUEBA_NUCLEOS_ENERGIA:
+        case MINIJUEGO_NUCLEOS_ENERGIA:
             minijuegoNucleosEnergia.Actualizar(
                 deltaTime,
                 jugadores,
@@ -927,7 +943,7 @@ void ZonaPruebas::Actualizar(
             );
             break;
 
-        case PRUEBA_REFUGIO_PINCHOS:
+        case MINIJUEGO_REFUGIO_PINCHOS:
             minijuegoRefugioPinchos.Actualizar(
                 deltaTime,
                 jugadores,
@@ -938,14 +954,14 @@ void ZonaPruebas::Actualizar(
             );
             break;
 
-        case PRUEBA_MIRADAS_CRUZADAS:
+        case MINIJUEGO_MIRADAS_CRUZADAS:
             minijuegoMiradasCruzadas.Actualizar(
                 deltaTime,
                 participantes
             );
             break;
 
-        case PRUEBA_MUROS_LOCOS:
+        case MINIJUEGO_MUROS_LOCOS:
             minijuegoMurosLocos.Actualizar(
                 deltaTime,
                 jugadores,
@@ -956,7 +972,7 @@ void ZonaPruebas::Actualizar(
             );
             break;
 
-        case PRUEBA_TORMENTA_MAGNETICA:
+        case MINIJUEGO_TORMENTA_MAGNETICA:
             minijuegoTormentaMagnetica.Actualizar(
                 deltaTime,
                 jugadores,
@@ -967,63 +983,63 @@ void ZonaPruebas::Actualizar(
             );
             break;
 
-        case PRUEBA_CONTEO_EXPLOSIVO:
+        case MINIJUEGO_CONTEO_EXPLOSIVO:
             minijuegoConteoExplosivo.Actualizar(
                 deltaTime,
                 participantes
             );
             break;
 
-        case PRUEBA_PASO_SILENCIOSO:
+        case MINIJUEGO_PASO_SILENCIOSO:
             minijuegoPasoSilencioso.Actualizar(
                 deltaTime,
                 participantes
             );
             break;
 
-        case PRUEBA_CIRCUITO_VOLTAJE:
+        case MINIJUEGO_CIRCUITO_VOLTAJE:
             minijuegoCircuitoVoltaje.Actualizar(
                 deltaTime,
                 participantes
             );
             break;
 
-        case PRUEBA_TRAZO_PERFECTO:
+        case MINIJUEGO_TRAZO_PERFECTO:
             minijuegoTrazoPerfecto.Actualizar(
                 deltaTime,
                 participantes
             );
             break;
 
-        case PRUEBA_CARGA_INESTABLE:
+        case MINIJUEGO_CARGA_INESTABLE:
             minijuegoCargaInestable.Actualizar(
                 deltaTime,
                 participantes
             );
             break;
 
-        case PRUEBA_SECUENCIA_NEON:
+        case MINIJUEGO_SECUENCIA_NEON:
             minijuegoSecuenciaNeon.Actualizar(
                 deltaTime,
                 participantes
             );
             break;
 
-        case PRUEBA_INTERRUPTORES_CAOS:
+        case MINIJUEGO_INTERRUPTORES_CAOS:
             minijuegoInterruptoresCaos.Actualizar(
                 deltaTime,
                 participantes
             );
             break;
 
-        case PRUEBA_TANQUES_PLASMA:
+        case MINIJUEGO_TANQUES_PLASMA:
             minijuegoTanquesPlasma.Actualizar(
                 deltaTime,
                 participantes
             );
             break;
 
-        case PRUEBA_PASARELAS_VACIO:
+        case MINIJUEGO_PASARELAS_VACIO:
             minijuegoPasarelasVacio.Actualizar(
                 deltaTime,
                 jugadores,
@@ -1034,7 +1050,7 @@ void ZonaPruebas::Actualizar(
             );
             break;
 
-        case PRUEBA_CANTERA_FUGA:
+        case MINIJUEGO_CANTERA_FUGA:
             minijuegoCanteraFuga.Actualizar(
                 deltaTime,
                 jugadores,
@@ -1050,13 +1066,13 @@ void ZonaPruebas::Dibujar() const
 {
     PrepararTemaVisualZona(*this);
 
-    switch (modoActual)
+    switch (ObtenerIdModoActual(*this))
     {
         case PRUEBA_ZONA_PRINCIPAL:
             DibujarZonaPrincipal(*this);
             break;
 
-        case PRUEBA_COLOR_SEGURO:
+        case MINIJUEGO_COLOR_SEGURO:
             minijuegoColor.Dibujar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA,
@@ -1067,7 +1083,7 @@ void ZonaPruebas::Dibujar() const
             );
             break;
 
-        case PRUEBA_PELOTAS_EMPUJON:
+        case MINIJUEGO_PELOTAS:
             minijuegoPelotas.Dibujar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA,
@@ -1080,7 +1096,7 @@ void ZonaPruebas::Dibujar() const
             pruebaModelos.Dibujar();
             break;
 
-        case PRUEBA_TRONCO_COORDINADO:
+        case MINIJUEGO_TRONCO:
             minijuegoTronco.Dibujar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA,
@@ -1088,7 +1104,7 @@ void ZonaPruebas::Dibujar() const
             );
             break;
 
-        case PRUEBA_FABRICA_67:
+        case MINIJUEGO_FABRICA_67:
             minijuego67.Dibujar(
                 MAX_JUGADORES_PRUEBA,
                 participantes
@@ -1099,7 +1115,7 @@ void ZonaPruebas::Dibujar() const
             prototipoTablero.Dibujar(mostrarDebug);
             break;
 
-        case PRUEBA_ISLA_FUEGO:
+        case MINIJUEGO_ISLA_FUEGO:
             minijuegoIslaFuego.Dibujar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA,
@@ -1110,11 +1126,11 @@ void ZonaPruebas::Dibujar() const
             );
             break;
 
-        case PRUEBA_CAPITAN_MANDA:
+        case MINIJUEGO_CAPITAN_MANDA:
             minijuegoCapitanManda.Dibujar(participantes);
             break;
 
-        case PRUEBA_BARRA_GIRATORIA:
+        case MINIJUEGO_BARRA_GIRATORIA:
             minijuegoBarraGiratoria.Dibujar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA,
@@ -1125,7 +1141,7 @@ void ZonaPruebas::Dibujar() const
             );
             break;
 
-        case PRUEBA_NUCLEOS_ENERGIA:
+        case MINIJUEGO_NUCLEOS_ENERGIA:
             minijuegoNucleosEnergia.Dibujar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA,
@@ -1134,7 +1150,7 @@ void ZonaPruebas::Dibujar() const
             );
             break;
 
-        case PRUEBA_REFUGIO_PINCHOS:
+        case MINIJUEGO_REFUGIO_PINCHOS:
             minijuegoRefugioPinchos.Dibujar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA,
@@ -1143,11 +1159,11 @@ void ZonaPruebas::Dibujar() const
             );
             break;
 
-        case PRUEBA_MIRADAS_CRUZADAS:
+        case MINIJUEGO_MIRADAS_CRUZADAS:
             minijuegoMiradasCruzadas.Dibujar(participantes);
             break;
 
-        case PRUEBA_MUROS_LOCOS:
+        case MINIJUEGO_MUROS_LOCOS:
             minijuegoMurosLocos.Dibujar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA,
@@ -1158,7 +1174,7 @@ void ZonaPruebas::Dibujar() const
             );
             break;
 
-        case PRUEBA_TORMENTA_MAGNETICA:
+        case MINIJUEGO_TORMENTA_MAGNETICA:
             minijuegoTormentaMagnetica.Dibujar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA,
@@ -1169,39 +1185,39 @@ void ZonaPruebas::Dibujar() const
             );
             break;
 
-        case PRUEBA_CONTEO_EXPLOSIVO:
+        case MINIJUEGO_CONTEO_EXPLOSIVO:
             minijuegoConteoExplosivo.Dibujar(participantes);
             break;
 
-        case PRUEBA_PASO_SILENCIOSO:
+        case MINIJUEGO_PASO_SILENCIOSO:
             minijuegoPasoSilencioso.Dibujar(participantes);
             break;
 
-        case PRUEBA_CIRCUITO_VOLTAJE:
+        case MINIJUEGO_CIRCUITO_VOLTAJE:
             minijuegoCircuitoVoltaje.Dibujar(participantes);
             break;
 
-        case PRUEBA_TRAZO_PERFECTO:
+        case MINIJUEGO_TRAZO_PERFECTO:
             minijuegoTrazoPerfecto.Dibujar(participantes);
             break;
 
-        case PRUEBA_CARGA_INESTABLE:
+        case MINIJUEGO_CARGA_INESTABLE:
             minijuegoCargaInestable.Dibujar(participantes);
             break;
 
-        case PRUEBA_SECUENCIA_NEON:
+        case MINIJUEGO_SECUENCIA_NEON:
             minijuegoSecuenciaNeon.Dibujar(participantes);
             break;
 
-        case PRUEBA_INTERRUPTORES_CAOS:
+        case MINIJUEGO_INTERRUPTORES_CAOS:
             minijuegoInterruptoresCaos.Dibujar(participantes);
             break;
 
-        case PRUEBA_TANQUES_PLASMA:
+        case MINIJUEGO_TANQUES_PLASMA:
             minijuegoTanquesPlasma.Dibujar(participantes);
             break;
 
-        case PRUEBA_PASARELAS_VACIO:
+        case MINIJUEGO_PASARELAS_VACIO:
             minijuegoPasarelasVacio.Dibujar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA,
@@ -1212,7 +1228,7 @@ void ZonaPruebas::Dibujar() const
             );
             break;
 
-        case PRUEBA_CANTERA_FUGA:
+        case MINIJUEGO_CANTERA_FUGA:
             minijuegoCanteraFuga.Dibujar(
                 jugadores,
                 MAX_JUGADORES_PRUEBA,
@@ -1284,7 +1300,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        TextFormat("ACTUAL: %s", NombreModoPrueba(modoActual)),
+        TextFormat("ACTUAL: %s", NombreModoPrueba(*this)),
         30,
         GetScreenHeight() - 87,
         19,
