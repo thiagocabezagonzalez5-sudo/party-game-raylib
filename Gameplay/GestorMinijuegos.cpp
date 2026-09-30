@@ -866,43 +866,7 @@ void GestorMinijuegos::PrepararTemaVisualActivo() const
     if (minijuegoActivo == MINIJUEGO_REFUGIO_PINCHOS)
     {
         SeleccionarTemaVisualMinijuego(TEMA_VISUAL_CUEVA);
-
-        const MinijuegoRefugioPinchos& minijuego =
-            minijuegoRefugioPinchos;
-
-        float progreso = 0.0f;
-        bool seleccionado =
-            minijuego.fase == FASE_PINCHOS_AVISO;
-
-        if (minijuego.fase == FASE_PINCHOS_ATAQUE)
-        {
-            const float DURACION_ATAQUE_VISUAL = 0.52f;
-
-            float avance =
-                1.0f -
-                minijuego.tiempoFase /
-                DURACION_ATAQUE_VISUAL;
-
-            if (avance < 0.0f) avance = 0.0f;
-            if (avance > 1.0f) avance = 1.0f;
-
-            if (avance < 0.56f)
-            {
-                progreso = avance / 0.56f;
-            }
-            else
-            {
-                progreso =
-                    1.0f -
-                    (avance - 0.56f) / 0.44f;
-            }
-        }
-
-        ConfigurarTaladrosVisualesMinijuego(
-            (int)minijuego.direccionAviso,
-            progreso,
-            seleccionado
-        );
+        minijuegoRefugioPinchos.ConfigurarTaladrosVisuales();
     }
 }
 

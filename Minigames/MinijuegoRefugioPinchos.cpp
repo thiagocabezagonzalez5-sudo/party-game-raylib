@@ -1,5 +1,6 @@
 #include "Minigames/MinijuegoRefugioPinchos.h"
 
+#include "Minigames/EfectosVisualesMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
@@ -1011,4 +1012,36 @@ void MinijuegoRefugioPinchos::Dibujar(
 const ResultadoMinijuego& MinijuegoRefugioPinchos::ObtenerResultado() const
 {
     return resultado;
+}
+
+
+void MinijuegoRefugioPinchos::ConfigurarTaladrosVisuales() const
+{
+    const float DURACION_ATAQUE_VISUAL = 0.52f;
+
+    float progreso = 0.0f;
+    bool seleccionado = fase == FASE_PINCHOS_AVISO;
+
+    if (fase == FASE_PINCHOS_ATAQUE)
+    {
+        float avance = 1.0f - tiempoFase / DURACION_ATAQUE_VISUAL;
+
+        if (avance < 0.0f) avance = 0.0f;
+        if (avance > 1.0f) avance = 1.0f;
+
+        if (avance < 0.56f)
+        {
+            progreso = avance / 0.56f;
+        }
+        else
+        {
+            progreso = 1.0f - (avance - 0.56f) / 0.44f;
+        }
+    }
+
+    ConfigurarTaladrosVisualesMinijuego(
+        (int)direccionAviso,
+        progreso,
+        seleccionado
+    );
 }

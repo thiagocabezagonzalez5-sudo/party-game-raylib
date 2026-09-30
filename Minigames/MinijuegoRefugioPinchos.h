@@ -84,4 +84,7 @@ struct MinijuegoRefugioPinchos
     ) const;
 
     const ResultadoMinijuego& ObtenerResultado() const;
+
+    // Publica el estado visual de los taladros (direccion, progreso y aviso).
+    void ConfigurarTaladrosVisuales() const;
 };
