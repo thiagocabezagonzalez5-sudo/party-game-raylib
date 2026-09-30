@@ -788,7 +788,20 @@ void Juego::Actualizar(
 
             if (confirmar || continuarAutomaticamente)
             {
-                partidaTablero.AplicarResultadoMinijuego(*resultado);
+                // Un resultado inconsistente no se premia; la partida
+                // continua igual que al salir del minijuego sin resultado.
+                if (ValidarResultadoMinijuego(*resultado, participantes))
+                {
+                    partidaTablero.AplicarResultadoMinijuego(*resultado);
+                }
+                else
+                {
+                    TraceLog(
+                        LOG_WARNING,
+                        "Resultado de minijuego invalido: se descarto sin aplicar recompensas."
+                    );
+                }
+
                 partidaTablero.ContinuarTrasMinijuego();
                 zonaPruebas.modoCatalogo = false;
                 tiempoResultadoMinijuegoTablero = 0.0f;
