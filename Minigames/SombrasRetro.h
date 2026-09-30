@@ -79,40 +79,33 @@ inline void DibujarSombraRetroCircular(
     const int LADOS = 8;
     Color color = Fade(BLACK, alpha);
 
-    for (int i = 0; i < LADOS; i++)
+    // Cada vertice del borde se comparte entre dos triangulos vecinos,
+    // asi que se calcula una sola vez (9 cos/sin en vez de 16).
+    Vector3 borde[LADOS + 1];
+
+    for (int i = 0; i <= LADOS; i++)
     {
-        float a0 =
+        float a =
             2.0f * PI *
             (float)i /
             (float)LADOS;
 
-        float a1 =
-            2.0f * PI *
-            (float)(i + 1) /
-            (float)LADOS;
-
-        Vector3 p0 =
+        borde[i] =
         {
             centro.x +
-                std::cos(a0) * radioX * expansion,
+                std::cos(a) * radioX * expansion,
             alturaSuelo,
             centro.z +
-                std::sin(a0) * radioZ * expansion
+                std::sin(a) * radioZ * expansion
         };
+    }
 
-        Vector3 p1 =
-        {
-            centro.x +
-                std::cos(a1) * radioX * expansion,
-            alturaSuelo,
-            centro.z +
-                std::sin(a1) * radioZ * expansion
-        };
-
+    for (int i = 0; i < LADOS; i++)
+    {
         DrawTriangle3D(
             centro,
-            p1,
-            p0,
+            borde[i + 1],
+            borde[i],
             color
         );
     }
