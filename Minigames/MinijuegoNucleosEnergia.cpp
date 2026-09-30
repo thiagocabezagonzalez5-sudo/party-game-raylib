@@ -901,3 +901,10 @@ void MinijuegoNucleosEnergia::Dibujar(
         );
     }
 }
+
+
+const ResultadoMinijuego&
+MinijuegoNucleosEnergia::ObtenerResultado() const
+{
+    return resultado;
+}

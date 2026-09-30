@@ -109,4 +109,6 @@ struct MinijuegoNucleosEnergia
         const Participante participantes[],
         bool mostrarDebug
     ) const;
+
+    const ResultadoMinijuego& ObtenerResultado() const;
 };

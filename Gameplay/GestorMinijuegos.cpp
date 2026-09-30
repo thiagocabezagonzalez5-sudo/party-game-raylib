@@ -802,7 +802,7 @@ GestorMinijuegos::ObtenerResultadoActivo() const
         case MINIJUEGO_BARRA_GIRATORIA:
             return &minijuegoBarraGiratoria.ObtenerResultado();
         case MINIJUEGO_NUCLEOS_ENERGIA:
-            return &minijuegoNucleosEnergia.resultado;
+            return &minijuegoNucleosEnergia.ObtenerResultado();
         case MINIJUEGO_REFUGIO_PINCHOS:
             return &minijuegoRefugioPinchos.ObtenerResultado();
         case MINIJUEGO_MIRADAS_CRUZADAS:
