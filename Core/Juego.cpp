@@ -733,8 +733,35 @@ void Juego::Actualizar(
 
             if (partidaTablero.SolicitaMinijuego())
             {
+                // El resultado se decide aca, antes de la animacion.
+                // La ruleta solo lo presenta.
+                ruletaMinijuegos.Iniciar(
+                    ElegirMinijuegoAleatorioTablero(),
+                    &audio
+                );
+
+                estado = ESTADO_RULETA_MINIJUEGO;
+            }
+
+            break;
+        }
+
+        case ESTADO_RULETA_MINIJUEGO:
+        {
+            ActualizarConexionesParticipantes(
+                participantes,
+                MAX_PARTICIPANTES
+            );
+
+            ruletaMinijuegos.Actualizar(
+                deltaTime,
+                ConfirmarConParticipanteHumano(participantes)
+            );
+
+            if (ruletaMinijuegos.Termino())
+            {
                 IdMinijuego minijuegoElegido =
-                    ElegirMinijuegoAleatorioTablero();
+                    ruletaMinijuegos.ObtenerMinijuegoElegido();
 
                 zonaPruebas.Inicializar(
                     participantes,
@@ -909,6 +936,11 @@ void Juego::Dibujar()
 
         case ESTADO_PARTIDA:
             partidaTablero.Dibujar();
+            break;
+
+        case ESTADO_RULETA_MINIJUEGO:
+            partidaTablero.Dibujar();
+            ruletaMinijuegos.Dibujar();
             break;
 
         case ESTADO_MINIJUEGO:

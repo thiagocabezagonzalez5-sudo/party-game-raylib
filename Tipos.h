@@ -24,6 +24,9 @@ enum EstadoJuego
 
     // Reservados para etapas posteriores del proyecto final.
     ESTADO_PARTIDA,
+
+    // Tablero: fin de ronda -> ruleta -> minijuego -> resultado -> tablero.
+    ESTADO_RULETA_MINIJUEGO,
     ESTADO_MINIJUEGO,
     ESTADO_RESULTADO
 };

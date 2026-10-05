@@ -15,6 +15,7 @@
 #include "UI/MenuConfiguracion.h"
 #include "UI/MenuModoJuego.h"
 #include "UI/PantallaLogo.h"
+#include "UI/RuletaMinijuegos.h"
 #include "UI/SeleccionMinijuegos.h"
 #include "UI/SeleccionPersonajes.h"
 
@@ -36,6 +37,7 @@ struct Juego
     PantallaLogo pantallaLogo;
     SeleccionPersonajes seleccionPersonajes;
     SeleccionMinijuegos seleccionMinijuegos;
+    RuletaMinijuegos ruletaMinijuegos;
 
     ZonaPruebas zonaPruebas;
     PartidaTablero partidaTablero;
