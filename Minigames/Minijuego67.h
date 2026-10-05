@@ -42,6 +42,12 @@ struct EstadoJugador67
     // Se aplica tanto despues de agarrar una pieza como despues
     // de colocarla. Evita encadenar dos acciones en el mismo instante.
     float tiempoCooldownInteraccion = 0.0f;
+
+    // Solo para bots. Cada pieza que entra en la zona de recogida
+    // se evalua una vez: el bot puede agarrarla o dejarla pasar.
+    float tiempoDecisionBot = 0.0f;
+    bool botEvaluoPieza = false;
+    bool botAgarraPieza = false;
 };
 
 

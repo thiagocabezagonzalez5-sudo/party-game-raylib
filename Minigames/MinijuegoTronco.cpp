@@ -9,6 +9,11 @@ static const float BLOQUEO_FALLO_TRONCO = 0.26f;
 static const float AVANCE_CORTE_TRONCO = 0.065f;
 static const float VELOCIDAD_SIERRA_VISUAL_TRONCO = 5.4f;
 
+// Debe ser menor que VENTANA_COORDINACION_TRONCO para que un bot
+// alcance a acompanar el golpe iniciado por su companero.
+static const float REACCION_MAXIMA_BOT_TRONCO = 0.22f;
+static const int PROBABILIDAD_ERROR_BOT_TRONCO = 6;
+
 static const float CENTRO_EQUIPO_TRONCO[2] =
 {
     -3.9f,
@@ -183,6 +188,7 @@ static void LimpiarIntentoEquipoTronco(
 
         minijuego.estadosJugadores[i].respondio = false;
         minijuego.estadosJugadores[i].acerto = false;
+        minijuego.estadosJugadores[i].tiempoReaccionBot = -1.0f;
     }
 
     minijuego.equipos[equipo].golpeEnCurso = false;
@@ -232,6 +238,100 @@ static void CompletarGolpeEquipoTronco(
     estadoEquipo.tiempoBloqueo = 0.06f;
 
     LimpiarIntentoEquipoTronco(minijuego, equipo);
+}
+
+
+// Los bots no leen dispositivos: responden despues de un tiempo de
+// reaccion. Si el equipo tiene un humano, el bot espera a que el humano
+// inicie el golpe y lo acompana dentro de la ventana de coordinacion.
+static void DecidirAccionBotTronco(
+    MinijuegoTronco& minijuego,
+    const Participante participantes[],
+    int cantidadMaxima,
+    int indiceJugador,
+    float deltaTime,
+    bool& accionCorrecta,
+    bool& accionIncorrecta
+)
+{
+    accionCorrecta = false;
+    accionIncorrecta = false;
+
+    int equipo = minijuego.equipoPorJugador[indiceJugador];
+    int limite = LimitarCantidadTronco(cantidadMaxima);
+    bool companeroInicio = false;
+    bool equipoConHumano = false;
+
+    for (int i = 0; i < limite; i++)
+    {
+        if (
+            i == indiceJugador ||
+            minijuego.equipoPorJugador[i] != equipo
+        )
+        {
+            continue;
+        }
+
+        if (!participantes[i].esBot)
+        {
+            equipoConHumano = true;
+        }
+
+        if (
+            minijuego.estadosJugadores[i].respondio &&
+            minijuego.estadosJugadores[i].acerto
+        )
+        {
+            companeroInicio = true;
+        }
+    }
+
+    EstadoJugadorTronco& estado =
+        minijuego.estadosJugadores[indiceJugador];
+
+    if (estado.tiempoReaccionBot < 0.0f)
+    {
+        if (companeroInicio)
+        {
+            estado.tiempoReaccionBot =
+                GetRandomValue(8, 22) / 100.0f;
+        }
+        else if (!equipoConHumano)
+        {
+            estado.tiempoReaccionBot =
+                GetRandomValue(30, 58) / 100.0f;
+        }
+        else
+        {
+            // El humano marca el ritmo del equipo.
+            return;
+        }
+    }
+    else if (
+        companeroInicio &&
+        estado.tiempoReaccionBot > REACCION_MAXIMA_BOT_TRONCO
+    )
+    {
+        // Ya empezo el golpe: debe responder antes de que se
+        // cierre la ventana de coordinacion.
+        estado.tiempoReaccionBot = REACCION_MAXIMA_BOT_TRONCO;
+    }
+
+    estado.tiempoReaccionBot -= deltaTime;
+
+    if (estado.tiempoReaccionBot > 0.0f)
+    {
+        return;
+    }
+
+    if (GetRandomValue(1, 100) <= PROBABILIDAD_ERROR_BOT_TRONCO)
+    {
+        accionIncorrecta = true;
+    }
+    else
+    {
+        accionCorrecta = true;
+    }
 }
 
 
@@ -573,20 +673,38 @@ void MinijuegoTronco::Actualizar(
 
             if (!estadoJugador.respondio)
             {
-                AccionTronco accionEsperada =
-                    ObtenerAccionEsperadaTronco(*this, i);
+                bool accionCorrecta = false;
+                bool accionIncorrecta = false;
 
-                bool accionCorrecta =
-                    AccionJugadorPresionadaTronco(
-                        participantes[i],
-                        accionEsperada
+                if (participantes[i].esBot)
+                {
+                    DecidirAccionBotTronco(
+                        *this,
+                        participantes,
+                        cantidadMaxima,
+                        i,
+                        deltaTime,
+                        accionCorrecta,
+                        accionIncorrecta
                     );
+                }
+                else
+                {
+                    AccionTronco accionEsperada =
+                        ObtenerAccionEsperadaTronco(*this, i);
 
-                bool accionIncorrecta =
-                    OtraAccionJugadorPresionadaTronco(
-                        participantes[i],
-                        accionEsperada
-                    );
+                    accionCorrecta =
+                        AccionJugadorPresionadaTronco(
+                            participantes[i],
+                            accionEsperada
+                        );
+
+                    accionIncorrecta =
+                        OtraAccionJugadorPresionadaTronco(
+                            participantes[i],
+                            accionEsperada
+                        );
+                }
 
                 if (accionCorrecta && !accionIncorrecta)
                 {

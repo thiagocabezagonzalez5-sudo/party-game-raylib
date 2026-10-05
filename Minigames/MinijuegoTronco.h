@@ -27,6 +27,10 @@ struct EstadoJugadorTronco
     bool acerto = false;
 
     float animacionGolpe = 0.0f;
+
+    // Solo para bots: segundos hasta responder el golpe actual.
+    // Negativo significa que todavia no eligio un tiempo de reaccion.
+    float tiempoReaccionBot = -1.0f;
 };
 
 

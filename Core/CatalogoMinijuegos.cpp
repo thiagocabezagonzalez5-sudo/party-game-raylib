@@ -27,7 +27,7 @@ static const DatosMinijuegoCatalogo DATOS_MINIJUEGOS[
         "Coordina con tu companero para avanzar mas rapido que el otro equipo.",
         Color{ 150, 102, 62, 255 },
         "5 - TRONCO COORDINADO",
-        false
+        true
     },
     {
         MINIJUEGO_FABRICA_67,
@@ -35,7 +35,7 @@ static const DatosMinijuegoCatalogo DATOS_MINIJUEGOS[
         "En equipo agarra los 6 y 7 que pasan por las cintas y arma 67 antes que el rival.",
         Color{ 229, 173, 62, 255 },
         "6 - FABRICA 67",
-        false
+        true
     },
     {
         MINIJUEGO_ISLA_FUEGO,

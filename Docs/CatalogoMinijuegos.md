@@ -12,8 +12,8 @@
 |---|---|---|---|---|---|---|
 | 1 | Color Seguro | Supervivencia / posicionamiento por color | 2-4 | Sí | — | Terminado |
 | 2 | Pelotas | Empujones / sacar rivales de la arena | 2-4 | Sí | — | Terminado |
-| 3 | Tronco 2V2 | Carrera y coordinación en equipo | 2v2 | No | — | Terminado |
-| 4 | Fábrica 67 | Recolección y coordinación en equipo | 2v2 | No | — | Terminado |
+| 3 | Tronco 2V2 | Carrera y coordinación en equipo | 2v2 | Sí | — | Terminado |
+| 4 | Fábrica 67 | Recolección y coordinación en equipo | 2v2 | Sí | — | Terminado |
 | 5 | Isla Bajo Fuego | Supervivencia / esquivar proyectiles | 2-4 | Sí | — | Terminado |
 | 6 | Capitán Manda | Reacción rápida / eliminación | 2-4 | Sí | — | Terminado |
 | 7 | Barra Giratoria | Saltos / supervivencia / empujones | 2-4 | Sí | — | Terminado |

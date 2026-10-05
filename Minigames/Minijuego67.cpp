@@ -42,6 +42,8 @@ static const float DURACION_FEEDBACK_67 = 0.55f;
 static const float COOLDOWN_TRAS_AGARRAR_67 = 0.30f;
 static const float COOLDOWN_TRAS_COLOCAR_67 = 0.38f;
 
+static const int PROBABILIDAD_AGARRE_BOT_67 = 50;
+
 
 //==================================================
 // UTILIDADES
@@ -459,6 +461,66 @@ static void ColocarPieza67(
             cantidadMaxima
         );
     }
+}
+
+
+// Devuelve si el bot "presiona" el boton principal este fotograma.
+// Solo coloca cuando el orden de la mesa es correcto, asi un bot
+// nunca castiga a su companero humano con un 67 mal armado.
+static bool DecidirPulsacionBot67(
+    Minijuego67& minijuego,
+    int indiceJugador,
+    int equipo,
+    float deltaTime
+)
+{
+    EstadoJugador67& jugador =
+        minijuego.estadosJugadores[indiceJugador];
+
+    const EstadoEquipo67& estadoEquipo =
+        minijuego.equipos[equipo];
+
+    if (jugador.llevaPieza)
+    {
+        jugador.botEvaluoPieza = false;
+
+        bool colocacionCorrecta =
+            (
+                jugador.tipoPieza == PIEZA_NUMERO_6 &&
+                estadoEquipo.mesa == MESA_67_VACIA
+            ) ||
+            (
+                jugador.tipoPieza == PIEZA_NUMERO_7 &&
+                estadoEquipo.mesa == MESA_67_CON_6
+            );
+
+        if (!jugador.mirandoMesa || !colocacionCorrecta)
+        {
+            jugador.tiempoDecisionBot =
+                GetRandomValue(10, 28) / 100.0f;
+
+            return false;
+        }
+
+        jugador.tiempoDecisionBot -= deltaTime;
+
+        return jugador.tiempoDecisionBot <= 0.0f;
+    }
+
+    if (!HayPiezaAlAlcance67(estadoEquipo, jugador.tipoPieza))
+    {
+        jugador.botEvaluoPieza = false;
+        return false;
+    }
+
+    if (!jugador.botEvaluoPieza)
+    {
+        jugador.botEvaluoPieza = true;
+        jugador.botAgarraPieza =
+            GetRandomValue(1, 100) <= PROBABILIDAD_AGARRE_BOT_67;
+    }
+
+    return jugador.botAgarraPieza;
 }
 
 
@@ -1293,10 +1355,25 @@ void Minijuego67::Actualizar(
             continue;
         }
 
-        InputMinijuegoParticipante entrada =
-            LeerInputMinijuegoParticipante(participantes[i]);
+        bool presionar = false;
 
-        if (!entrada.saltar)
+        if (participantes[i].esBot)
+        {
+            presionar =
+                DecidirPulsacionBot67(
+                    *this,
+                    i,
+                    equipo,
+                    deltaTime
+                );
+        }
+        else
+        {
+            presionar =
+                LeerInputMinijuegoParticipante(participantes[i]).saltar;
+        }
+
+        if (!presionar)
         {
             continue;
         }
