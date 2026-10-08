@@ -2,6 +2,7 @@
 
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
+#include "Systems/Audio.h"
 #include "raylib.h"
 
 
@@ -38,12 +39,16 @@ struct EstadoJugadorTrazoPerfecto
     float tiempoNuevaHuella = 0.0f;
     float desfaseBot = 0.0f;
     float errorBot = 0.0f;
+    float retardoBot = 0.2f;
+    Vector2 objetivoSeguido{};
+    bool seguimientoIniciado = false;
 };
 
 
 struct MinijuegoTrazoPerfecto
 {
     ResultadoMinijuego resultado{};
+    AudioJuego* audio = nullptr;
     EstadoJugadorTrazoPerfecto jugadores[MAX_PARTICIPANTES];
 
     FaseTrazoPerfecto fase = FASE_TRAZO_PREPARACION;

@@ -326,6 +326,25 @@ void DibujarSombraModeloJugadorCompartido(
 }
 
 
+// DrawModelEx multiplica la textura por el tinte: con el color puro del
+// jugador (p.ej. azul oscuro) el personaje queda casi negro. Se aclara el
+// tinte hacia el blanco para que se vea la textura y se reconozca el color.
+static Color TinteModeloJugador(
+    Color color
+)
+{
+    const float mezcla = 0.60f;
+
+    return Color
+    {
+        (unsigned char)(color.r + (255 - color.r) * mezcla),
+        (unsigned char)(color.g + (255 - color.g) * mezcla),
+        (unsigned char)(color.b + (255 - color.b) * mezcla),
+        color.a
+    };
+}
+
+
 void DibujarJugadorModeloCompartido(
     const JugadorPrueba& jugador,
     const Participante& participante
@@ -378,7 +397,7 @@ void DibujarJugadorModeloCompartido(
     }
 
     Color color =
-        Fade(participante.color, alpha);
+        Fade(TinteModeloJugador(participante.color), alpha);
 
     Vector3 posicion =
         jugador.posicion;
@@ -482,7 +501,7 @@ void DibujarModeloJugadorEnPosicion(
         { 0.0f, 1.0f, 0.0f },
         anguloY,
         { escala, escala, escala },
-        color
+        TinteModeloJugador(color)
     );
 }
 

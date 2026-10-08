@@ -89,6 +89,9 @@ struct MinijuegoTronco
     bool partidaValida = false;
     bool empate = false;
 
+    // Segundos restantes del aviso "SE RECONFIGURARON LOS EQUIPOS".
+    float avisoReconfiguracion = 0.0f;
+
     void Inicializar();
 
     void ConfigurarJugadores(

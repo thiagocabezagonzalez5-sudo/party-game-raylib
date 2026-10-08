@@ -4,6 +4,9 @@
 
 
 static const float DURACION_PREPARACION_TRONCO = 2.5f;
+
+// Tope duro: si ningun equipo termina de cortar, gana el que mas avanzo.
+static const float DURACION_MAXIMA_TRONCO = 90.0f;
 static const float VENTANA_COORDINACION_TRONCO = 0.34f;
 static const float BLOQUEO_FALLO_TRONCO = 0.26f;
 static const float AVANCE_CORTE_TRONCO = 0.065f;
@@ -565,9 +568,16 @@ void MinijuegoTronco::Actualizar(
             cantidadMaxima
         );
 
+    if (avisoReconfiguracion > 0.0f)
+    {
+        avisoReconfiguracion -= deltaTime;
+        if (avisoReconfiguracion < 0.0f) avisoReconfiguracion = 0.0f;
+    }
+
     if (cantidadConectados != jugadoresEnPartida)
     {
         Reiniciar(participantes, cantidadMaxima);
+        avisoReconfiguracion = 4.0f;
         return;
     }
 
@@ -648,6 +658,15 @@ void MinijuegoTronco::Actualizar(
     }
 
     tiempoPartida += deltaTime;
+
+    if (tiempoPartida >= DURACION_MAXIMA_TRONCO)
+    {
+        float progresoA = equipos[0].progresoCorte;
+        float progresoB = equipos[1].progresoCorte;
+        bool empateTiempo = std::fabs(progresoA - progresoB) < 0.001f;
+        FinalizarResultadoTronco(*this, progresoA > progresoB ? 0 : 1, empateTiempo);
+        return;
+    }
 
     for (int equipo = 0; equipo < 2; equipo++)
     {
@@ -879,6 +898,37 @@ static void DibujarFondoEquipoTronco(
         0.16f,
         Fade(colorEquipo, 0.78f)
     );
+
+    // Tablones verticales sobre la pared (detalle; quedan detras de ventana y puerta).
+    for (int k = -3; k <= 3; k++)
+    {
+        DrawCubeV(
+            { centroX + k * 0.9f, 1.85f, -3.395f },
+            { 0.05f, 3.8f, 0.02f },
+            Color{ 118, 78, 46, 255 }
+        );
+    }
+
+    // Marco y travesanos de la ventana.
+    DrawCubeV({ centroX - 1.65f, 2.15f, -3.32f }, { 0.07f, 1.15f, 0.04f }, Color{ 70, 42, 28, 255 });
+    DrawCubeV({ centroX - 1.65f, 2.15f, -3.32f }, { 1.25f, 0.07f, 0.04f }, Color{ 70, 42, 28, 255 });
+
+    // Tejado inclinado hacia la camara (dos triangulos, cara visible desde arriba).
+    const Vector3 aleroIzq = { centroX - 3.55f, 3.92f, -2.85f };
+    const Vector3 aleroDer = { centroX + 3.55f, 3.92f, -2.85f };
+    const Vector3 cumbreDer = { centroX + 3.55f, 4.75f, -3.60f };
+    const Vector3 cumbreIzq = { centroX - 3.55f, 4.75f, -3.60f };
+    DrawTriangle3D(aleroIzq, aleroDer, cumbreDer, Color{ 150, 58, 46, 255 });
+    DrawTriangle3D(aleroIzq, cumbreDer, cumbreIzq, Color{ 134, 48, 40, 255 });
+    for (int k = 1; k <= 3; k++)
+    {
+        float t = k * 0.25f;
+        DrawLine3D(
+            { aleroIzq.x, aleroIzq.y + (cumbreIzq.y - aleroIzq.y) * t, aleroIzq.z + (cumbreIzq.z - aleroIzq.z) * t },
+            { aleroDer.x, aleroDer.y + (cumbreDer.y - aleroDer.y) * t, aleroDer.z + (cumbreDer.z - aleroDer.z) * t },
+            Color{ 96, 34, 30, 255 }
+        );
+    }
 }
 
 
@@ -932,6 +982,17 @@ static void DibujarTroncoEquipo(
         altoCorte,
         0.11f,
         Color{ 70, 39, 24, 255 }
+    );
+
+    // Monton de aserrin bajo el corte: crece con el progreso (feedback visual).
+    float alturaAserrin = 0.04f + progreso * 0.34f;
+    DrawCylinderEx(
+        { centroX, 0.0f, 0.0f },
+        { centroX, alturaAserrin, 0.0f },
+        0.20f + progreso * 0.50f,
+        0.05f,
+        14,
+        Color{ 226, 192, 128, 255 }
     );
 }
 
@@ -1041,6 +1102,19 @@ static void DibujarJugadoresEquipoTronco(
         DibujarModeloJugadorEnPosicion(
             posicionPies,
             anguloY,
+            participantes[i].color
+        );
+
+        // Flecha del color del jugador sobre la cabeza: el modelo es oscuro.
+        // MODELO FUTURO: puede pasar a ser un icono de jugador del GLB.
+        float rebote = std::sin((float)GetTime() * 5.0f + (float)i) * 0.06f;
+        float cabeza = posicion.y - jugadores[i].tamano.y * 0.5f + 2.15f + rebote;
+        DrawCylinderEx(
+            { posicion.x, cabeza, posicion.z },
+            { posicion.x, cabeza + 0.32f, posicion.z },
+            0.0f,
+            0.20f,
+            10,
             participantes[i].color
         );
     }
@@ -1344,12 +1418,12 @@ void MinijuegoTronco::Dibujar(
 
     DrawText(
         estado == TRONCO_JUGANDO
-        ? TextFormat("TIEMPO JUGADO %.1f s", tiempoPartida)
-        : "SIN TIEMPO MAXIMO",
-        anchoPantalla / 2 - 105,
+        ? TextFormat("TIEMPO RESTANTE %.0f s", std::ceil(DURACION_MAXIMA_TRONCO - tiempoPartida))
+        : TextFormat("TOPE DE TIEMPO: %.0f s", DURACION_MAXIMA_TRONCO),
+        anchoPantalla / 2 - 120,
         27,
         21,
-        SKYBLUE
+        (estado == TRONCO_JUGANDO && DURACION_MAXIMA_TRONCO - tiempoPartida <= 10.0f) ? ORANGE : SKYBLUE
     );
 
     DrawRectangle(
@@ -1367,6 +1441,16 @@ void MinijuegoTronco::Dibujar(
         altoPantalla - 84,
         ORANGE
     );
+
+    if (avisoReconfiguracion > 0.0f)
+    {
+        const char* aviso = "SE RECONFIGURARON LOS EQUIPOS";
+        int tam = 30;
+        int ancho = MeasureText(aviso, tam);
+        DrawRectangle(anchoPantalla / 2 - ancho / 2 - 18, 96, ancho + 36, 48, Fade(BLACK, 0.85f));
+        DrawRectangleLines(anchoPantalla / 2 - ancho / 2 - 18, 96, ancho + 36, 48, GOLD);
+        DrawText(aviso, anchoPantalla / 2 - ancho / 2, 105, tam, GOLD);
+    }
 
     if (!partidaValida)
     {

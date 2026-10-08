@@ -14,6 +14,8 @@ static const float DURACION_PREPARACION_PASARELAS = 2.5f;
 static const float DURACION_CARRERA_PASARELAS = 35.0f;
 static const float Z_INICIO_PASARELAS = 5.6f;
 static const float Z_META_PASARELAS = -30.8f;
+// Segundos de pisada acumulada (de cualquier jugador) que aguanta cada plataforma.
+static const float RESISTENCIA_PLATAFORMA_PASARELAS = 1.5f;
 
 
 static float LimitarPasarelas(float valor, float minimo, float maximo)
@@ -174,7 +176,8 @@ static void FinalizarPasarelas(
 static InputMinijuegoParticipante CrearEntradaBotPasarelas(
     MinijuegoPasarelasVacio& minijuego,
     int indiceJugador,
-    const JugadorPrueba& jugador
+    const JugadorPrueba& jugador,
+    float deltaTime
 )
 {
     InputMinijuegoParticipante entrada{};
@@ -189,21 +192,41 @@ static InputMinijuegoParticipante CrearEntradaBotPasarelas(
     const BloquePrueba& objetivo =
         minijuego.plataformas[estado.indiceObjetivoBot];
 
-    if (jugador.posicion.x < objetivo.posicion.x - 0.22f)
+    int soporte = BuscarPlataformaSoportePasarelas(minijuego, jugador);
+
+    // Al llegar a una plataforma nueva: distancia de salto propia (error de
+    // timing) y 15% de probabilidad de dudar entre 0.2 y 0.6 s.
+    if (soporte >= 0 && jugador.enSuelo && soporte != estado.ultimoSoporteBot)
+    {
+        bool primera = estado.ultimoSoporteBot < 0;
+        estado.ultimoSoporteBot = soporte;
+        estado.desfaseXBot = GetRandomValue(-130, 130) / 100.0f;
+        estado.distanciaSaltoBot = GetRandomValue(50, 95) / 100.0f;
+        if (primera)
+            estado.pausaBot = GetRandomValue(0, 450) / 1000.0f;
+        else if (GetRandomValue(1, 100) <= 15)
+            estado.pausaBot = GetRandomValue(200, 600) / 1000.0f;
+    }
+
+    if (estado.pausaBot > 0.0f)
+    {
+        estado.pausaBot -= deltaTime;
+        return InputMinijuegoParticipante{};
+    }
+
+    if (jugador.posicion.x < objetivo.posicion.x + estado.desfaseXBot - 0.22f)
         entrada.derecha = true;
-    else if (jugador.posicion.x > objetivo.posicion.x + 0.22f)
+    else if (jugador.posicion.x > objetivo.posicion.x + estado.desfaseXBot + 0.22f)
         entrada.izquierda = true;
 
     entrada.adelante = true;
-
-    int soporte = BuscarPlataformaSoportePasarelas(minijuego, jugador);
 
     if (soporte >= 0 && jugador.enSuelo)
     {
         const BloquePrueba& plataforma = minijuego.plataformas[soporte];
         float bordeDelantero = plataforma.posicion.z - plataforma.tamano.z * 0.5f;
 
-        if (jugador.posicion.z <= bordeDelantero + 0.78f)
+        if (jugador.posicion.z <= bordeDelantero + estado.distanciaSaltoBot)
         {
             entrada.saltar = true;
         }
@@ -233,7 +256,12 @@ static void ActualizarDerrumbePlataformas(
             minijuego.estadosPlataformas[plataforma];
         BloquePrueba& bloque = minijuego.plataformas[plataforma];
 
-        if (!estado.activada)
+        // El presupuesto de estabilidad solo se gasta mientras alguien la
+        // pisa: llegar tarde a una plataforma ya no la encuentra rota por
+        // los pasos de otros, pero quedarse parado o dudar si la agota.
+        estado.ocupada = false;
+
+        if (!estado.cayendo)
         {
             for (int jugador = 0; jugador < MAX_PARTICIPANTES; jugador++)
             {
@@ -243,19 +271,20 @@ static void ActualizarDerrumbePlataformas(
                     JugadorSobrePlataformaPasarelas(jugadores[jugador], bloque)
                 )
                 {
-                    estado.activada = true;
-                    estado.tiempoDerrumbe = 1.18f;
+                    estado.ocupada = true;
                     break;
                 }
             }
         }
 
-        if (estado.activada && !estado.cayendo)
+        if (estado.ocupada)
         {
+            estado.activada = true;
             estado.tiempoDerrumbe -= deltaTime;
 
             if (estado.tiempoDerrumbe <= 0.0f)
             {
+                estado.tiempoDerrumbe = 0.0f;
                 estado.cayendo = true;
                 estado.velocidadCaida = 0.8f;
                 bloque.activaColision = false;
@@ -284,6 +313,7 @@ void MinijuegoPasarelasVacio::Inicializar()
     for (int i = 0; i < MAX_PLATAFORMAS_PASARELAS; i++)
     {
         estadosPlataformas[i] = {};
+        estadosPlataformas[i].tiempoDerrumbe = RESISTENCIA_PLATAFORMA_PASARELAS;
         plataformas[i] = {};
     }
 
@@ -329,10 +359,10 @@ void MinijuegoPasarelasVacio::Inicializar()
         );
     }
 
-    camara.position = { 10.5f, 27.0f, 9.0f };
-    camara.target = { 0.0f, -0.2f, -13.5f };
+    camara.position = { 10.5f, 27.0f, 26.6f };
+    camara.target = { 0.0f, -0.2f, 4.1f };
     camara.up = { 0.0f, 1.0f, 0.0f };
-    camara.fovy = 40.0f;
+    camara.fovy = 19.0f;
     camara.projection = CAMERA_ORTHOGRAPHIC;
 
     fase = FASE_PASARELAS_PREPARACION;
@@ -380,6 +410,63 @@ void MinijuegoPasarelasVacio::Reiniciar(
 }
 
 
+// Camara ortografica que sigue al grupo: se acerca cuando los jugadores van
+// juntos y se aleja lo justo cuando se separan, para que nunca queden
+// diminutos ni salgan de pantalla.
+static void ActualizarCamaraPasarelas(
+    MinijuegoPasarelasVacio& minijuego,
+    const JugadorPrueba jugadores[],
+    int cantidadMaxima,
+    float deltaTime
+)
+{
+    float zMinima = 1000.0f;
+    float zMaxima = -1000.0f;
+    int contados = 0;
+
+    for (int i = 0; i < cantidadMaxima && i < MAX_PARTICIPANTES; i++)
+    {
+        if (
+            !minijuego.resultado.participantes[i].participo ||
+            minijuego.estadosJugadores[i].eliminado
+        )
+        {
+            continue;
+        }
+
+        float z = jugadores[i].posicion.z;
+        if (z < zMinima) zMinima = z;
+        if (z > zMaxima) zMaxima = z;
+        contados++;
+    }
+
+    if (contados == 0)
+    {
+        return;
+    }
+
+    float dispersion = zMaxima - zMinima;
+    float zFoco = (zMinima + zMaxima) * 0.5f - 1.5f;
+    float fovDeseado = 19.0f + dispersion * 0.55f;
+    if (fovDeseado > 34.0f) fovDeseado = 34.0f;
+
+    float suavizado = 1.0f - std::exp(-4.0f * deltaTime);
+
+    float objetivoAnterior = minijuego.camara.target.z;
+    float objetivoNuevo = objetivoAnterior + (zFoco - objetivoAnterior) * suavizado;
+
+    minijuego.camara.target = { 0.0f, -0.2f, objetivoNuevo };
+    minijuego.camara.position =
+    {
+        10.5f,
+        27.0f,
+        objetivoNuevo + 22.5f
+    };
+    minijuego.camara.fovy +=
+        (fovDeseado - minijuego.camara.fovy) * suavizado;
+}
+
+
 void MinijuegoPasarelasVacio::Actualizar(
     float deltaTime,
     JugadorPrueba jugadores[],
@@ -390,6 +477,7 @@ void MinijuegoPasarelasVacio::Actualizar(
 )
 {
     tiempoAnimacion += deltaTime;
+    ActualizarCamaraPasarelas(*this, jugadores, cantidadMaxima, deltaTime);
 
     if (fase == FASE_PASARELAS_TERMINADO)
     {
@@ -442,7 +530,7 @@ void MinijuegoPasarelasVacio::Actualizar(
 
         if (participantes[i].esBot || !participantes[i].conectado)
         {
-            entrada = CrearEntradaBotPasarelas(*this, i, jugador);
+            entrada = CrearEntradaBotPasarelas(*this, i, jugador, deltaTime);
         }
         else
         {
@@ -532,17 +620,26 @@ static Color ColorPlataformaPasarelas(
         return Color{ 87, 75, 112, 255 };
     }
 
-    if (estado.activada)
-    {
-        float pulso = std::sin(minijuego.tiempoAnimacion * 18.0f);
-        return pulso > 0.0f
-            ? Color{ 244, 116, 96, 255 }
-            : Color{ 172, 81, 139, 255 };
-    }
-
-    return indice % 2 == 0
+    Color base = indice % 2 == 0
         ? Color{ 91, 126, 213, 255 }
         : Color{ 124, 99, 205, 255 };
+
+    // El color avisa cuanto aguanta: azul entera, naranja a medias, roja casi rota.
+    float gastado = 1.0f - LimitarPasarelas(
+        estado.tiempoDerrumbe / RESISTENCIA_PLATAFORMA_PASARELAS,
+        0.0f,
+        1.0f
+    );
+    Color color = gastado < 0.5f
+        ? ColorLerp(base, Color{ 255, 168, 74, 255 }, gastado * 2.0f)
+        : ColorLerp(Color{ 255, 168, 74, 255 }, Color{ 244, 76, 66, 255 }, (gastado - 0.5f) * 2.0f);
+
+    if (estado.ocupada && std::sin(minijuego.tiempoAnimacion * (10.0f + gastado * 16.0f)) > 0.0f)
+    {
+        color = ColorLerp(color, WHITE, 0.28f);
+    }
+
+    return color;
 }
 
 
@@ -646,8 +743,11 @@ void MinijuegoPasarelasVacio::Dibujar(
 
     DrawRectangle(18, 16, 620, 108, Fade(BLACK, 0.78f));
     DrawText("PASARELAS DEL VACIO", 32, 28, 30, Color{ 151, 202, 255, 255 });
-    DrawText("CORRE Y SALTA: LAS PLATAFORMAS SE DERRUMBAN", 32, 68, 18, RAYWHITE);
-    DrawText("SALTO: ESPACIO / ENTER / A DEL MANDO", 32, 132, 17, RAYWHITE);
+    DrawText("CORRE A LA META: LAS PLATAFORMAS SE ROMPEN SI LAS PISAS MUCHO", 32, 68, 16, RAYWHITE);
+
+    const char* ayuda = "MOVER: WASD / FLECHAS / STICK   SALTAR: ESPACIO / ENTER / A   NO TE QUEDES QUIETO: LA PLATAFORMA SE PONE ROJA Y CAE";
+    DrawRectangle(0, GetScreenHeight() - 38, GetScreenWidth(), 38, Fade(BLACK, 0.78f));
+    DrawText(ayuda, GetScreenWidth() / 2 - MeasureText(ayuda, 16) / 2, GetScreenHeight() - 29, 16, RAYWHITE);
 
     if (fase == FASE_PASARELAS_CARRERA)
     {
@@ -708,8 +808,8 @@ void MinijuegoPasarelasVacio::Dibujar(
         );
 
         DrawText(
-            "R PARA REINICIAR",
-            GetScreenWidth() / 2 - MeasureText("R PARA REINICIAR", 21) / 2,
+            TextoReinicioMinijuego(),
+            GetScreenWidth() / 2 - MeasureText(TextoReinicioMinijuego(), 21) / 2,
             GetScreenHeight() / 2 + 62,
             21,
             RAYWHITE

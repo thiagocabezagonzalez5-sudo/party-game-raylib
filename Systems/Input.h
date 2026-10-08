@@ -1,5 +1,7 @@
 #pragma once
 
+#include "raylib.h"
+
 #include "Core/ConfiguracionJuego.h"
 #include "Core/Participante.h"
 
@@ -95,6 +97,41 @@ const char* ObtenerTextoBotonPrincipal(
 
 const char* ObtenerNombreControlParticipante(
     const Participante& participante
+);
+
+
+//==================================================
+// ZONA MUERTA DEL STICK
+//==================================================
+//
+// Unica zona muerta para el stick izquierdo de todos los mandos (la elige
+// el jugador en Configuracion > Controles). Es RADIAL: se mide la magnitud
+// del vector (x, y), no cada eje por separado, asi las diagonales se
+// comportan igual que los ejes. Fuera de la zona el rango restante se
+// reescala a 0..1 para que el movimiento empiece suave y llegue al maximo.
+// No afecta a gatillos, cruceta ni botones.
+
+// fraccion: 0.05 .. 0.35 (ver ZONA_MUERTA_STICK_* en ConfiguracionJuego.h).
+void EstablecerZonaMuertaStick(
+    float fraccion
+);
+
+float ObtenerZonaMuertaStick();
+
+// Stick izquierdo ya filtrado y reescalado (magnitud 0..1). Devuelve
+// (0, 0) si el mando no esta conectado o el stick esta dentro de la zona.
+Vector2 LeerStickIzquierdo(
+    int indiceGamepad
+);
+
+// Aplica la zona muerta radial actual a un vector de stick crudo.
+Vector2 FiltrarZonaMuertaStick(
+    Vector2 eje
+);
+
+// Stick izquierdo sin filtrar (solo para la vista previa de Configuracion).
+Vector2 LeerStickIzquierdoCrudo(
+    int indiceGamepad
 );
 
 

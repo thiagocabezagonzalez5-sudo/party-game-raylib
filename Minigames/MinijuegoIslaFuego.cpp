@@ -1,7 +1,9 @@
 #include "Minigames/MinijuegoIslaFuego.h"
 
+#include "Minigames/BotsMinijuegos1v3.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
+#include "Systems/CalidadGrafica.h"
 
 #include <cmath>
 
@@ -14,6 +16,7 @@ static const float RADIO_ISLA = 5.2f;
 static const float FUERZA_EXPLOSION_NORMAL = 5.8f;
 static const float FUERZA_EXPLOSION_ESPECIAL = 8.6f;
 static const float DURACION_ATURDIMIENTO = 0.75f;
+static const float MARGEN_TRAS_ATURDIMIENTO = 1.2f;
 
 // La explosion ahora tiene dos zonas distintas. El centro elimina y la
 // corona exterior solo empuja. La corona es mas chica que antes para que el
@@ -243,15 +246,57 @@ static void FinalizarResultadoIsla(MinijuegoIslaFuego& minijuego)
 }
 
 
-static void LanzarProyectilIsla(
+static bool LanzarProyectilIsla(
     MinijuegoIslaFuego& minijuego,
+    const JugadorPrueba jugadores[],
     bool especial
 )
 {
+    float progresoAviso = ObtenerProgresoPartidaIsla(minijuego);
+    float avisoEstimado = AVISO_BOMBA_INICIAL +
+        (AVISO_BOMBA_FINAL - AVISO_BOMBA_INICIAL) * progresoAviso + 0.10f;
+    float radioProteccion = (especial ? RADIO_EMPUJE_ESPECIAL : RADIO_EMPUJE_NORMAL) + 0.9f;
+    Vector3 punto = PuntoAleatorioIsla(especial ? 0.62f : 0.84f);
+    bool valido = false;
+
+    for (int intento = 0; intento < 24 && !valido; intento++)
+    {
+        valido = true;
+
+        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        {
+            const EstadoJugadorIslaFuego& estado = minijuego.estadosJugadores[i];
+
+            if (
+                !minijuego.resultado.participantes[i].participo ||
+                estado.eliminado ||
+                estado.proteccionBomba - avisoEstimado <= 0.0f
+            )
+            {
+                continue;
+            }
+
+            if (MagnitudHorizontalIsla(
+                jugadores[i].posicion.x - punto.x,
+                jugadores[i].posicion.z - punto.z) < radioProteccion)
+            {
+                valido = false;
+                break;
+            }
+        }
+
+        if (!valido) punto = PuntoAleatorioIsla(especial ? 0.62f : 0.84f);
+    }
+
+    if (!valido)
+    {
+        return false;
+    }
+
     minijuego.proyectil = {};
     minijuego.proyectil.activo = true;
     minijuego.proyectil.especial = especial;
-    minijuego.proyectil.puntoImpacto = PuntoAleatorioIsla(especial ? 0.62f : 0.84f);
+    minijuego.proyectil.puntoImpacto = punto;
 
     float progreso = ObtenerProgresoPartidaIsla(minijuego);
     float duracionNormal =
@@ -269,6 +314,7 @@ static void LanzarProyectilIsla(
     minijuego.proyectil.radioExplosion = especial
         ? RADIO_EMPUJE_ESPECIAL
         : RADIO_EMPUJE_NORMAL;
+    return true;
 }
 
 
@@ -374,6 +420,7 @@ static void AplicarExplosionIsla(
             !minijuego.resultado.participantes[i].participo ||
             minijuego.estadosJugadores[i].eliminado ||
             minijuego.estadosJugadores[i].impactoDirecto ||
+            minijuego.estadosJugadores[i].proteccionBomba > 0.0f ||
             !participantes[i].conectado
         )
         {
@@ -422,6 +469,8 @@ static void AplicarExplosionIsla(
         jugador.enSuelo = false;
         minijuego.estadosJugadores[i].tiempoAturdido =
             DURACION_ATURDIMIENTO + (proyectil.especial ? 0.20f : 0.0f);
+        minijuego.estadosJugadores[i].proteccionBomba =
+            minijuego.estadosJugadores[i].tiempoAturdido + MARGEN_TRAS_ATURDIMIENTO;
     }
 }
 
@@ -444,6 +493,7 @@ static bool AplicarImpactosDirectosCaida(
             !minijuego.resultado.participantes[i].participo ||
             estado.eliminado ||
             estado.impactoDirecto ||
+            estado.proteccionBomba > 0.0f ||
             !participantes[i].conectado
         )
         {
@@ -503,8 +553,8 @@ void MinijuegoIslaFuego::ConfigurarJugadores(
 {
     Vector3 spawns[MAX_JUGADORES_PRUEBA] =
     {
-        { -1.7f, 1.05f, 1.7f }, { 1.7f, 1.05f, 1.7f },
-        { -1.7f, 1.05f, -1.7f }, { 1.7f, 1.05f, -1.7f }
+        { -2.7f, 1.05f, 2.7f }, { 2.7f, 1.05f, 2.7f },
+        { -2.7f, 1.05f, -2.7f }, { 2.7f, 1.05f, -2.7f }
     };
 
     int limite = cantidadMaxima < MAX_JUGADORES_PRUEBA
@@ -532,6 +582,7 @@ void MinijuegoIslaFuego::Reiniciar(
         resultado.participantes[i].participo = participaban[i];
         if (participaban[i]) resultado.cantidadParticipantes++;
         estadosJugadores[i] = {};
+        bots[i] = {};
     }
 
     fase = FASE_ISLA_FUEGO_PREPARACION;
@@ -543,6 +594,115 @@ void MinijuegoIslaFuego::Reiniciar(
     proyectil = {};
 
     for (int i = 0; i < cantidadMaxima; i++) ReiniciarJugadorPrueba(jugadores[i]);
+}
+
+
+static float AleatorioIsla(float minimo, float maximo)
+{
+    return minimo + (maximo - minimo) *
+        (float)GetRandomValue(0, 1000) / 1000.0f;
+}
+
+
+// El bot reacciona a la bomba avisada tras 0.25-0.45 s, ubica el impacto con
+// 0.5-1 m de error y a veces (15%) ni la ve. Si cree estar en peligro huye
+// del punto percibido; si no, deriva cerca del centro lejos del borde.
+static InputMinijuegoParticipante CrearEntradaBotIsla(
+    MinijuegoIslaFuego& minijuego,
+    int indice,
+    const JugadorPrueba& jugador,
+    float deltaTime
+)
+{
+    EstadoBotIslaFuego& bot = minijuego.bots[indice];
+    const ProyectilIslaFuego& proyectil = minijuego.proyectil;
+
+    if (!proyectil.activo)
+    {
+        bot.vioProyectil = false;
+        bot.retardo = 0.0f;
+    }
+    else if (!bot.vioProyectil)
+    {
+        if (bot.retardo <= 0.0f)
+        {
+            bot.retardo = AleatorioIsla(0.25f, 0.45f);
+            bot.distraido = GetRandomValue(1, 100) <= 15;
+        }
+
+        bot.retardo -= deltaTime;
+        if (bot.retardo <= 0.0f)
+        {
+            bot.vioProyectil = true;
+            float angulo = AleatorioIsla(0.0f, 6.2832f);
+            float error = AleatorioIsla(0.5f, 1.0f);
+            bot.puntoPercibido = {
+                proyectil.puntoImpacto.x + std::cos(angulo) * error,
+                0.0f,
+                proyectil.puntoImpacto.z + std::sin(angulo) * error
+            };
+
+            float radioPeligro = proyectil.especial
+                ? RADIO_EMPUJE_ESPECIAL
+                : RADIO_EMPUJE_NORMAL;
+            float dx = jugador.posicion.x - bot.puntoPercibido.x;
+            float dz = jugador.posicion.z - bot.puntoPercibido.z;
+            float distancia = MagnitudHorizontalIsla(dx, dz);
+
+            bot.destino = jugador.posicion;
+
+            if (!bot.distraido && distancia < radioPeligro + 0.7f)
+            {
+                if (distancia < 0.05f)
+                {
+                    dx = 1.0f;
+                    dz = 0.0f;
+                    distancia = 1.0f;
+                }
+
+                float salida = radioPeligro + AleatorioIsla(0.3f, 1.1f);
+                Vector3 destino = {
+                    bot.puntoPercibido.x + dx / distancia * salida,
+                    0.0f,
+                    bot.puntoPercibido.z + dz / distancia * salida
+                };
+
+                float limite = RADIO_ISLA - 0.9f;
+                float norma = MagnitudHorizontalIsla(destino.x, destino.z);
+                if (norma > limite)
+                {
+                    destino.x = destino.x / norma * limite;
+                    destino.z = destino.z / norma * limite;
+                }
+                bot.destino = destino;
+            }
+        }
+    }
+
+    if (proyectil.activo && bot.vioProyectil)
+    {
+        return CrearEntradaBotHaciaObjetivo1v3(
+            jugador.posicion, bot.destino, 0.15f
+        );
+    }
+
+    bot.tiempoDeriva -= deltaTime;
+    if (bot.tiempoDeriva <= 0.0f)
+    {
+        bot.tiempoDeriva = AleatorioIsla(0.6f, 1.6f);
+        float distancia = MagnitudHorizontalIsla(
+            jugador.posicion.x, jugador.posicion.z
+        );
+
+        if (distancia > 3.4f || GetRandomValue(1, 100) <= 40)
+            bot.destino = PuntoAleatorioIsla(0.55f);
+        else
+            bot.destino = jugador.posicion;
+    }
+
+    return CrearEntradaBotHaciaObjetivo1v3(
+        jugador.posicion, bot.destino, 0.25f
+    );
 }
 
 
@@ -595,6 +755,12 @@ void MinijuegoIslaFuego::Actualizar(
 
         if (!participantes[i].conectado) continue;
 
+        if (estado.proteccionBomba > 0.0f)
+        {
+            estado.proteccionBomba -= deltaTime;
+            if (estado.proteccionBomba < 0.0f) estado.proteccionBomba = 0.0f;
+        }
+
         if (estado.tiempoAturdido > 0.0f)
         {
             estado.tiempoAturdido -= deltaTime;
@@ -603,7 +769,12 @@ void MinijuegoIslaFuego::Actualizar(
 
         InputMinijuegoParticipante entrada{};
         if (estado.tiempoAturdido <= 0.0f && !estado.impactoDirecto)
-            entrada = LeerInputMinijuegoParticipante(participantes[i]);
+        {
+            if (participantes[i].esBot)
+                entrada = CrearEntradaBotIsla(*this, i, jugador, deltaTime);
+            else
+                entrada = LeerInputMinijuegoParticipante(participantes[i]);
+        }
         entrada.golpear = false;
 
         BloquePrueba sueloJugador = suelo;
@@ -676,7 +847,10 @@ void MinijuegoIslaFuego::Actualizar(
                 probEspecial > 0 &&
                 GetRandomValue(1, 100) <= probEspecial;
 
-            LanzarProyectilIsla(*this, especial);
+            if (!LanzarProyectilIsla(*this, jugadores, especial))
+            {
+                tiempoHastaSiguienteDisparo = 0.15f;
+            }
         }
     }
 
@@ -728,15 +902,33 @@ static void DibujarObjetivoBombaIsla(
         proyectil.puntoImpacto.z
     };
 
-    // Normalmente solo se ve una sombra discreta del punto de caida.
+    // Sombra del punto de caida + anillo de aviso que se cierra al acercarse
+    // el impacto (no revela el radio real de la explosion).
+    float progreso = ObtenerProgresoProyectil(proyectil);
+    float radioSombra = proyectil.especial ? 0.66f : 0.48f;
     DrawCylinder(
         centro,
-        proyectil.especial ? 0.66f : 0.48f,
-        proyectil.especial ? 0.66f : 0.48f,
+        radioSombra,
+        radioSombra,
         0.012f,
         32,
-        Fade(proyectil.especial ? MAROON : BLACK, 0.22f)
+        Fade(proyectil.especial ? MAROON : BLACK, 0.30f + (1.0f - progreso) * 0.25f)
     );
+
+    Color aviso = proyectil.especial
+        ? Color{ 255, 60, 50, 255 }
+        : Color{ 255, 170, 40, 255 };
+    float radioAviso = radioSombra * (1.15f + progreso * 1.6f);
+    for (int k = 0; k < 2; k++)
+    {
+        DrawCircle3D(
+            { centro.x, 0.03f, centro.z },
+            radioAviso + k * 0.035f,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            Fade(aviso, 0.95f)
+        );
+    }
 
     if (!mostrarDebug) return;
 
@@ -765,6 +957,42 @@ static void DibujarObjetivoBombaIsla(
 }
 
 
+// Anillo de color bajo los pies y flecha sobre la cabeza para distinguir
+// jugadores (el modelo compartido es oscuro).
+// MODELO FUTURO: la flecha puede pasar a ser un icono de jugador del GLB.
+static void DibujarIndicadorJugadorIsla(
+    const JugadorPrueba& jugador,
+    Color color
+)
+{
+    float pies = jugador.posicion.y - jugador.tamano.y * 0.5f;
+    if (jugador.cayendo || pies < -0.35f) return;
+
+    Vector3 centro = { jugador.posicion.x, 0.05f, jugador.posicion.z };
+    for (int k = 0; k < 3; k++)
+    {
+        DrawCircle3D(
+            centro,
+            0.52f + k * 0.045f,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            color
+        );
+    }
+
+    float rebote = std::sin((float)GetTime() * 5.0f + jugador.posicion.x) * 0.06f;
+    float cabeza = pies + 2.15f + rebote;
+    DrawCylinderEx(
+        { jugador.posicion.x, cabeza, jugador.posicion.z },
+        { jugador.posicion.x, cabeza + 0.32f, jugador.posicion.z },
+        0.0f,
+        0.20f,
+        10,
+        color
+    );
+}
+
+
 void MinijuegoIslaFuego::Dibujar(
     const JugadorPrueba jugadores[],
     int cantidadMaxima,
@@ -775,16 +1003,40 @@ void MinijuegoIslaFuego::Dibujar(
 ) const
 {
     (void)cantidadMaxima;
-    ClearBackground(Color{ 106, 178, 216, 255 });
+    ClearBackground(Color{ 150, 208, 238, 255 });
     BeginMode3D(camara);
 
-    DrawCylinder(
-        { 0.0f, -0.18f, 0.0f },
-        RADIO_ISLA,
-        RADIO_ISLA,
-        0.18f,
-        64,
-        Color{ 150, 154, 160, 255 }
+    // Mar con espuma alrededor de la isla (decoracion lejana, sin sombra).
+    DrawCylinderEx(
+        { 0.0f, -2.6f, 0.0f },
+        { 0.0f, -2.5f, 0.0f },
+        70.0f,
+        70.0f,
+        48,
+        Color{ 46, 118, 170, 255 }
+    );
+    for (int k = 0; k < 3; k++)
+    {
+        float onda = (float)GetTime() * 0.5f + k * 0.33f;
+        float radioOnda = RADIO_ISLA + 0.8f + (onda - std::floor(onda)) * 3.2f;
+        float opacidad = 0.55f * (1.0f - (onda - std::floor(onda)));
+        DrawCircle3D(
+            { 0.0f, -2.48f, 0.0f },
+            radioOnda,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            Fade(RAYWHITE, opacidad)
+        );
+    }
+
+    // Isla flotante: roca que se afina hacia abajo y capa de tierra arriba.
+    DrawCylinderEx(
+        { 0.0f, -2.5f, 0.0f },
+        { 0.0f, -0.30f, 0.0f },
+        RADIO_ISLA * 0.38f,
+        RADIO_ISLA + 0.12f,
+        32,
+        Color{ 96, 84, 76, 255 }
     );
     DrawCylinder(
         { 0.0f, -0.30f, 0.0f },
@@ -794,13 +1046,58 @@ void MinijuegoIslaFuego::Dibujar(
         64,
         Color{ 72, 76, 84, 255 }
     );
-    DrawCircle3D(
-        { 0.0f, 0.005f, 0.0f },
+    DrawCylinder(
+        { 0.0f, -0.18f, 0.0f },
         RADIO_ISLA,
+        RADIO_ISLA,
+        0.18f,
+        64,
+        Color{ 188, 172, 138, 255 }
+    );
+
+    // Marcas de arena para leer distancias y el borde peligroso.
+    for (int k = 1; k <= 2; k++)
+    {
+        DrawCircle3D(
+            { 0.0f, 0.006f, 0.0f },
+            RADIO_ISLA * 0.31f * k,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            Fade(Color{ 142, 124, 96, 255 }, 0.65f)
+        );
+    }
+    DrawCircle3D(
+        { 0.0f, 0.006f, 0.0f },
+        RADIO_ISLA - 0.05f,
         { 1.0f, 0.0f, 0.0f },
         90.0f,
-        Fade(DARKGRAY, 0.80f)
+        Color{ 120, 98, 74, 255 }
     );
+    DrawCircle3D(
+        { 0.0f, 0.006f, 0.0f },
+        RADIO_ISLA - 0.14f,
+        { 1.0f, 0.0f, 0.0f },
+        90.0f,
+        Color{ 120, 98, 74, 255 }
+    );
+
+    // Piedras del borde (decoracion, sin estampar sombra).
+    int piedras = (int)(18 * FactorCalidadGrafica(CalidadDecoracion()));
+    if (piedras < 6) piedras = 6;
+    for (int k = 0; k < piedras; k++)
+    {
+        float angulo = (2.0f * PI * k) / piedras;
+        float lado = 0.20f + 0.08f * (float)(k % 3);
+        DrawCubeV(
+            {
+                std::cos(angulo) * (RADIO_ISLA + 0.02f),
+                0.05f + lado * 0.2f,
+                std::sin(angulo) * (RADIO_ISLA + 0.02f)
+            },
+            { lado, lado * 0.7f, lado },
+            k % 2 == 0 ? Color{ 128, 124, 120, 255 } : Color{ 104, 100, 98, 255 }
+        );
+    }
 
     if (proyectil.activo)
     {
@@ -824,6 +1121,15 @@ void MinijuegoIslaFuego::Dibujar(
             8,
             BROWN
         );
+        DrawSphere(
+            {
+                posicion.x,
+                posicion.y + ObtenerRadioCuerpoProyectil(proyectil) + 0.42f,
+                posicion.z
+            },
+            0.09f + 0.03f * std::sin((float)GetTime() * 30.0f),
+            ORANGE
+        );
 
         if (mostrarDebug)
         {
@@ -842,6 +1148,7 @@ void MinijuegoIslaFuego::Dibujar(
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         if (estadosJugadores[i].eliminado) continue;
+        DibujarIndicadorJugadorIsla(jugadores[i], participantes[i].color);
         DibujarJugadorCuboPrueba(jugadores[i], participantes[i]);
 
         if (
@@ -857,13 +1164,18 @@ void MinijuegoIslaFuego::Dibujar(
 
     EndMode3D();
 
-    DrawText("MINIJUEGO 8 - ISLA BAJO FUEGO", 25, 25, 30, BLACK);
+    const int ancho = GetScreenWidth();
+    const int alto = GetScreenHeight();
+    const float e = (float)alto / 720.0f;
+
+    DrawRectangle(0, 0, ancho, (int)(76 * e), Fade(BLACK, 0.55f));
+    DrawText("ISLA BAJO FUEGO", (int)(24 * e), (int)(10 * e), (int)(30 * e), RAYWHITE);
     DrawText(
-        "LA SOMBRA MARCA LA CAIDA. EN DEBUG SE VEN LOS DOS RADIOS DE EXPLOSION.",
-        25,
-        68,
-        19,
-        BLACK
+        "LA SOMBRA Y EL ANILLO MARCAN DONDE CAE LA BOMBA. QUE NO TE SAQUE DE LA ISLA",
+        (int)(24 * e),
+        (int)(46 * e),
+        (int)(18 * e),
+        Color{ 200, 224, 240, 255 }
     );
 
     if (fase == FASE_ISLA_FUEGO_JUGANDO)
@@ -871,34 +1183,58 @@ void MinijuegoIslaFuego::Dibujar(
         int intensidad = (int)std::lround(
             ObtenerProgresoPartidaIsla(*this) * 100.0f
         );
+        const char* textoIntensidad = TextFormat("INTENSIDAD %d%%", intensidad);
+        int tamanoIntensidad = (int)(24 * e);
         DrawText(
-            TextFormat("INTENSIDAD: %d%%", intensidad),
-            GetScreenWidth() - 235,
-            25,
-            23,
-            DARKBLUE
+            textoIntensidad,
+            ancho - MeasureText(textoIntensidad, tamanoIntensidad) - (int)(30 * e),
+            (int)(24 * e),
+            tamanoIntensidad,
+            Color{ 255, 190, 90, 255 }
         );
     }
 
-    int yEstado = 100;
+    int cantidadTarjetas = 0;
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (resultado.participantes[i].participo) cantidadTarjetas++;
+    }
+
+    int anchoTarjeta = (int)(190 * e);
+    int altoTarjeta = (int)(44 * e);
+    int separacion = (int)(14 * e);
+    int xTarjeta = ancho / 2 - (cantidadTarjetas * anchoTarjeta + (cantidadTarjetas - 1) * separacion) / 2;
+    int yTarjeta = alto - altoTarjeta - (int)(18 * e);
+
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         if (!resultado.participantes[i].participo) continue;
 
-        const char* estadoTexto = estadosJugadores[i].eliminado
+        bool fuera = estadosJugadores[i].eliminado;
+        const char* estadoTexto = fuera
             ? "FUERA"
             : (estadosJugadores[i].impactoDirecto
                 ? "VOLANDO"
                 : (estadosJugadores[i].tiempoAturdido > 0.0f ? "ATURDIDO" : "EN JUEGO"));
 
+        DrawRectangle(xTarjeta, yTarjeta, anchoTarjeta, altoTarjeta, Fade(BLACK, fuera ? 0.40f : 0.62f));
+        DrawRectangle(xTarjeta, yTarjeta, (int)(8 * e), altoTarjeta, fuera ? GRAY : participantes[i].color);
         DrawText(
-            TextFormat("J%d: %s", participantes[i].numeroJugador, estadoTexto),
-            25,
-            yEstado,
-            18,
-            estadosJugadores[i].eliminado ? DARKGRAY : participantes[i].color
+            TextFormat("J%d", participantes[i].numeroJugador),
+            xTarjeta + (int)(18 * e),
+            yTarjeta + (int)(11 * e),
+            (int)(22 * e),
+            fuera ? GRAY : participantes[i].color
         );
-        yEstado += 24;
+        DrawText(
+            estadoTexto,
+            xTarjeta + (int)(70 * e),
+            yTarjeta + (int)(14 * e),
+            (int)(17 * e),
+            fuera ? GRAY : RAYWHITE
+        );
+
+        xTarjeta += anchoTarjeta + separacion;
     }
 
     if (fase == FASE_ISLA_FUEGO_PREPARACION)
@@ -906,13 +1242,11 @@ void MinijuegoIslaFuego::Dibujar(
         int numero = (int)std::ceil(tiempoPreparacion);
         if (numero < 1) numero = 1;
         const char* texto = TextFormat("%d", numero);
-        DrawText(
-            texto,
-            GetScreenWidth() / 2 - MeasureText(texto, 84) / 2,
-            GetScreenHeight() / 2 - 60,
-            84,
-            ORANGE
-        );
+        int tamano = (int)(96 * e);
+        int x = ancho / 2 - MeasureText(texto, tamano) / 2;
+        int y = alto / 2 - (int)(190 * e);
+        DrawText(texto, x + 4, y + 4, tamano, Fade(BLACK, 0.7f));
+        DrawText(texto, x, y, tamano, ORANGE);
     }
     else if (
         fase == FASE_ISLA_FUEGO_JUGANDO &&
@@ -920,23 +1254,19 @@ void MinijuegoIslaFuego::Dibujar(
     )
     {
         const char* texto = "YA";
-        DrawText(
-            texto,
-            GetScreenWidth() / 2 - MeasureText(texto, 84) / 2,
-            GetScreenHeight() / 2 - 60,
-            84,
-            LIME
-        );
+        int tamano = (int)(96 * e);
+        int x = ancho / 2 - MeasureText(texto, tamano) / 2;
+        int y = alto / 2 - (int)(190 * e);
+        DrawText(texto, x + 4, y + 4, tamano, Fade(BLACK, 0.7f));
+        DrawText(texto, x, y, tamano, LIME);
     }
     else if (fase == FASE_ISLA_FUEGO_TERMINADO)
     {
-        DrawRectangle(
-            GetScreenWidth() / 2 - 330,
-            GetScreenHeight() / 2 - 155,
-            660,
-            310,
-            Fade(BLACK, 0.90f)
-        );
+        int anchoPanel = (int)(520 * e);
+        int altoPanel = (int)(220 * e);
+        int xPanel = ancho / 2 - anchoPanel / 2;
+        int yPanel = (int)(92 * e);
+        DrawRectangle(xPanel, yPanel, anchoPanel, altoPanel, Fade(BLACK, 0.82f));
 
         int ganadores[MAX_PARTICIPANTES]{};
         int cantidadGanadores = ObtenerIndicesGanadores(
@@ -953,13 +1283,13 @@ void MinijuegoIslaFuego::Dibujar(
 
         DrawText(
             titulo,
-            GetScreenWidth() / 2 - MeasureText(titulo, 34) / 2,
-            GetScreenHeight() / 2 - 130,
-            34,
+            ancho / 2 - MeasureText(titulo, (int)(32 * e)) / 2,
+            yPanel + (int)(14 * e),
+            (int)(32 * e),
             GOLD
         );
 
-        int y = GetScreenHeight() / 2 - 72;
+        int y = yPanel + (int)(62 * e);
         for (int i = 0; i < MAX_PARTICIPANTES; i++)
         {
             if (!resultado.participantes[i].participo) continue;
@@ -970,19 +1300,19 @@ void MinijuegoIslaFuego::Dibujar(
                     resultado.participantes[i].posicionFinal,
                     resultado.participantes[i].puntuacionMinijuego / 1000.0f
                 ),
-                GetScreenWidth() / 2 - 210,
+                xPanel + (int)(100 * e),
                 y,
-                22,
+                (int)(21 * e),
                 participantes[i].color
             );
-            y += 30;
+            y += (int)(27 * e);
         }
 
         DrawText(
-            "R PARA REINICIAR",
-            GetScreenWidth() / 2 - MeasureText("R PARA REINICIAR", 22) / 2,
-            GetScreenHeight() / 2 + 112,
-            22,
+            TextoReinicioMinijuego(),
+            ancho / 2 - MeasureText(TextoReinicioMinijuego(), (int)(18 * e)) / 2,
+            yPanel + altoPanel - (int)(30 * e),
+            (int)(18 * e),
             RAYWHITE
         );
     }

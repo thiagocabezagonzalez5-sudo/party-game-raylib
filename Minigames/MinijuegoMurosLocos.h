@@ -19,6 +19,12 @@ struct EstadoJugadorMurosLocos
     int posicionFinal = 0;
     int tiempoSobrevividoMs = 0;
     float cooldownImpacto = 0.0f;
+
+    // Estado de la IA cuando el participante es bot o esta desconectado.
+    int muroBot = -1;
+    float retrasoBot = 0.0f;
+    float objetivoX = 0.0f;
+    float objetivoZ = 0.0f;
 };
 
 

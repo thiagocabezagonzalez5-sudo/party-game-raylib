@@ -4,6 +4,32 @@
 
 
 //==================================================
+// AUDIO DE ACCIONES DEL JUGADOR
+//==================================================
+
+static AudioJuego* audioJugadoresMinijuego = nullptr;
+
+
+void EstablecerAudioJugadoresMinijuego(
+    AudioJuego* audio
+)
+{
+    audioJugadoresMinijuego = audio;
+}
+
+
+void ReproducirSonidoJugadorMinijuego(
+    TipoSonidoJuego tipo
+)
+{
+    if (audioJugadoresMinijuego != nullptr)
+    {
+        audioJugadoresMinijuego->ReproducirSonido(tipo);
+    }
+}
+
+
+//==================================================
 // UTILIDADES
 //==================================================
 
@@ -851,21 +877,35 @@ static void ActualizarMovimientoHorizontal(
             factorFrenoEmpuje;
     }
 
-    ResolverColisionX(
-        jugador,
-        bloques,
-        cantidadBloques,
-        jugador.velocidad.x *
-        deltaTime
+    // Con picos de lag (dt hasta 0.1) y velocidades altas el paso podria
+    // superar el ancho de una pared fina: se subdivide en tramos <= 0.3 m.
+    float movimientoTotalX = jugador.velocidad.x * deltaTime;
+    float movimientoTotalZ = jugador.velocidad.z * deltaTime;
+    float mayorMovimiento = std::fmax(
+        std::fabs(movimientoTotalX),
+        std::fabs(movimientoTotalZ)
     );
 
-    ResolverColisionZ(
-        jugador,
-        bloques,
-        cantidadBloques,
-        jugador.velocidad.z *
-        deltaTime
-    );
+    int subpasos = (int)std::ceil(mayorMovimiento / 0.3f);
+    if (subpasos < 1) subpasos = 1;
+    if (subpasos > 8) subpasos = 8;
+
+    for (int paso = 0; paso < subpasos; paso++)
+    {
+        ResolverColisionX(
+            jugador,
+            bloques,
+            cantidadBloques,
+            movimientoTotalX / (float)subpasos
+        );
+
+        ResolverColisionZ(
+            jugador,
+            bloques,
+            cantidadBloques,
+            movimientoTotalZ / (float)subpasos
+        );
+    }
 }
 
 
@@ -880,6 +920,9 @@ static void ActualizarVertical(
     float deltaTime
 )
 {
+    // Para distinguir un aterrizaje real de seguir apoyado en el suelo.
+    bool estabaEnSuelo = jugador.enSuelo;
+
     const float VELOCIDAD_GOLPE_SUELO =
         24.0f;
 
@@ -906,12 +949,19 @@ static void ActualizarVertical(
             jugador
         );
 
+        ReproducirSonidoJugadorMinijuego(SONIDO_SALTO);
+
         jugador.velocidad.y =
             jugador.fuerzaSalto;
 
         jugador.enSuelo =
             false;
     }
+    // Integracion exacta para aceleracion constante (velocidad media del
+    // paso): la altura y duracion del salto no dependen del FPS.
+    float velocidadAnteriorY =
+        jugador.velocidad.y;
+
     jugador.velocidad.y -=
         jugador.gravedad *
         deltaTime;
@@ -920,7 +970,7 @@ static void ActualizarVertical(
         jugador.posicion.y;
 
     jugador.posicion.y +=
-        jugador.velocidad.y *
+        (velocidadAnteriorY + jugador.velocidad.y) * 0.5f *
         deltaTime;
 
     jugador.enSuelo =
@@ -971,10 +1021,14 @@ static void ActualizarVertical(
 
         if (
             jugador.velocidad.y <= 0.0f &&
-            piesAnteriores >= cajaBloque.max.y &&
+            // Margen: tras apoyar, pies = max.y puede quedar 1 ulp por debajo
+            // y el jugador atravesaria el suelo en ciertas alturas.
+            piesAnteriores >= cajaBloque.max.y - 0.002f &&
             piesActuales <= cajaBloque.max.y
         )
         {
+            float velocidadCaida = jugador.velocidad.y;
+
             bool impactoGolpeSuelo =
                 jugador.golpeSueloActivo;
 
@@ -990,6 +1044,15 @@ static void ActualizarVertical(
 
             jugador.golpeSueloActivo =
                 false;
+
+            if (impactoGolpeSuelo)
+            {
+                ReproducirSonidoJugadorMinijuego(SONIDO_GROUND_POUND);
+            }
+            else if (!estabaEnSuelo && velocidadCaida < -6.0f)
+            {
+                ReproducirSonidoJugadorMinijuego(SONIDO_ATERRIZAJE);
+            }
 
             if (impactoGolpeSuelo)
             {
@@ -1021,7 +1084,7 @@ static void ActualizarVertical(
                 mitadAltoJugador;
 
             if (
-                cabezaAnterior <= cajaBloque.min.y &&
+                cabezaAnterior <= cajaBloque.min.y + 0.002f &&
                 cabezaActual >= cajaBloque.min.y
             )
             {
@@ -1239,6 +1302,11 @@ void ActualizarJugadorPrueba(
 
     if (jugador.posicion.y < -8.0f)
     {
+        if (!jugador.cayendo)
+        {
+            ReproducirSonidoJugadorMinijuego(SONIDO_CAIDA);
+        }
+
         jugador.cayendo =
             true;
 

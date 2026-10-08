@@ -1,6 +1,86 @@
 #include "raylib.h"
 #include "Systems/Input.h"
 
+#include <cmath>
+
+
+//==================================================
+// ZONA MUERTA DEL STICK
+//==================================================
+
+static float zonaMuertaStick =
+    ZONA_MUERTA_STICK_DEFECTO / 100.0f;
+
+
+void EstablecerZonaMuertaStick(
+    float fraccion
+)
+{
+    const float minima = ZONA_MUERTA_STICK_MINIMA / 100.0f;
+    const float maxima = ZONA_MUERTA_STICK_MAXIMA / 100.0f;
+
+    zonaMuertaStick =
+        fraccion < minima ? minima : (fraccion > maxima ? maxima : fraccion);
+}
+
+
+float ObtenerZonaMuertaStick()
+{
+    return zonaMuertaStick;
+}
+
+
+Vector2 LeerStickIzquierdoCrudo(
+    int indiceGamepad
+)
+{
+    if (indiceGamepad < 0 || !IsGamepadAvailable(indiceGamepad))
+    {
+        return Vector2{ 0.0f, 0.0f };
+    }
+
+    return Vector2{
+        GetGamepadAxisMovement(indiceGamepad, GAMEPAD_AXIS_LEFT_X),
+        GetGamepadAxisMovement(indiceGamepad, GAMEPAD_AXIS_LEFT_Y)
+    };
+}
+
+
+Vector2 LeerStickIzquierdo(
+    int indiceGamepad
+)
+{
+    return FiltrarZonaMuertaStick(
+        LeerStickIzquierdoCrudo(indiceGamepad)
+    );
+}
+
+
+Vector2 FiltrarZonaMuertaStick(
+    Vector2 eje
+)
+{
+    float magnitud = std::sqrt(eje.x * eje.x + eje.y * eje.y);
+
+    if (magnitud <= zonaMuertaStick)
+    {
+        return Vector2{ 0.0f, 0.0f };
+    }
+
+    // Reescala (zona .. 1) a (0 .. 1) conservando la direccion.
+    float util = magnitud > 1.0f ? 1.0f : magnitud;
+    float escala = (util - zonaMuertaStick) / (1.0f - zonaMuertaStick) / magnitud;
+
+    return Vector2{ eje.x * escala, eje.y * escala };
+}
+
+
+// Umbral de direccion para entradas digitales (minijuegos, menus): con la
+// direccion normalizada, 0.38 ~ sen(22.5 grados) divide el circulo en 8
+// sectores, asi una diagonal activa los dos ejes y un eje casi puro solo uno.
+static const float UMBRAL_DIRECCION_DIGITAL = 0.38f;
+
+
 
 static InputJugador LeerInputTeclado(
     TipoControl control
@@ -56,27 +136,10 @@ static InputJugador LeerInputGamepad(
         return input;
     }
 
-    const float DEADZONE = 0.2f;
+    Vector2 stick = LeerStickIzquierdo(indiceGamepad);
 
-    float ejeX = GetGamepadAxisMovement(
-        indiceGamepad,
-        GAMEPAD_AXIS_LEFT_X
-    );
-
-    float ejeY = GetGamepadAxisMovement(
-        indiceGamepad,
-        GAMEPAD_AXIS_LEFT_Y
-    );
-
-    if (ejeX > DEADZONE || ejeX < -DEADZONE)
-    {
-        input.moverX = ejeX;
-    }
-
-    if (ejeY > DEADZONE || ejeY < -DEADZONE)
-    {
-        input.moverZ = ejeY;
-    }
+    input.moverX = stick.x;
+    input.moverZ = stick.y;
 
     input.saltar = IsGamepadButtonPressed(
         indiceGamepad,
@@ -240,45 +303,33 @@ InputSeleccionParticipante LeerInputSeleccionParticipante(
     {
         int gamepad = participante.indiceGamepad;
 
+        // Navegacion de menu: exige una inclinacion clara (stick ya
+        // filtrado por la zona muerta).
+        Vector2 stick = LeerStickIzquierdo(gamepad);
+
         entrada.izquierda =
             IsGamepadButtonDown(
                 gamepad,
                 GAMEPAD_BUTTON_LEFT_FACE_LEFT
-            ) ||
-            GetGamepadAxisMovement(
-                gamepad,
-                GAMEPAD_AXIS_LEFT_X
-            ) < -0.45f;
+            ) || stick.x < -0.40f;
 
         entrada.derecha =
             IsGamepadButtonDown(
                 gamepad,
                 GAMEPAD_BUTTON_LEFT_FACE_RIGHT
-            ) ||
-            GetGamepadAxisMovement(
-                gamepad,
-                GAMEPAD_AXIS_LEFT_X
-            ) > 0.45f;
+            ) || stick.x > 0.40f;
 
         entrada.arriba =
             IsGamepadButtonDown(
                 gamepad,
                 GAMEPAD_BUTTON_LEFT_FACE_UP
-            ) ||
-            GetGamepadAxisMovement(
-                gamepad,
-                GAMEPAD_AXIS_LEFT_Y
-            ) < -0.45f;
+            ) || stick.y < -0.40f;
 
         entrada.abajo =
             IsGamepadButtonDown(
                 gamepad,
                 GAMEPAD_BUTTON_LEFT_FACE_DOWN
-            ) ||
-            GetGamepadAxisMovement(
-                gamepad,
-                GAMEPAD_AXIS_LEFT_Y
-            ) > 0.45f;
+            ) || stick.y > 0.40f;
 
         entrada.confirmar =
             IsGamepadButtonPressed(
@@ -358,41 +409,37 @@ InputMinijuegoParticipante LeerInputMinijuegoParticipante(
     if (participante.control == CONTROL_GAMEPAD)
     {
         int gamepad = participante.indiceGamepad;
-        const float DEADZONE = 0.25f;
 
-        float ejeX = GetGamepadAxisMovement(
-            gamepad,
-            GAMEPAD_AXIS_LEFT_X
-        );
-
-        float ejeY = GetGamepadAxisMovement(
-            gamepad,
-            GAMEPAD_AXIS_LEFT_Y
-        );
+        // Movimiento digital de 8 direcciones: fuera de la zona muerta se
+        // usa la DIRECCION del stick (no la magnitud por eje).
+        Vector2 stick = LeerStickIzquierdo(gamepad);
+        float magnitud = std::sqrt(stick.x * stick.x + stick.y * stick.y);
+        float dirX = magnitud > 0.0f ? stick.x / magnitud : 0.0f;
+        float dirY = magnitud > 0.0f ? stick.y / magnitud : 0.0f;
 
         entrada.izquierda =
             IsGamepadButtonDown(
                 gamepad,
                 GAMEPAD_BUTTON_LEFT_FACE_LEFT
-            ) || ejeX < -DEADZONE;
+            ) || dirX < -UMBRAL_DIRECCION_DIGITAL;
 
         entrada.derecha =
             IsGamepadButtonDown(
                 gamepad,
                 GAMEPAD_BUTTON_LEFT_FACE_RIGHT
-            ) || ejeX > DEADZONE;
+            ) || dirX > UMBRAL_DIRECCION_DIGITAL;
 
         entrada.adelante =
             IsGamepadButtonDown(
                 gamepad,
                 GAMEPAD_BUTTON_LEFT_FACE_UP
-            ) || ejeY < -DEADZONE;
+            ) || dirY < -UMBRAL_DIRECCION_DIGITAL;
 
         entrada.atras =
             IsGamepadButtonDown(
                 gamepad,
                 GAMEPAD_BUTTON_LEFT_FACE_DOWN
-            ) || ejeY > DEADZONE;
+            ) || dirY > UMBRAL_DIRECCION_DIGITAL;
 
         entrada.saltar = IsGamepadButtonPressed(
             gamepad,

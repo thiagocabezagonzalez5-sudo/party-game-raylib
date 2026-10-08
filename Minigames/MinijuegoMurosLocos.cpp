@@ -1,5 +1,6 @@
 #include "Minigames/MinijuegoMurosLocos.h"
 
+#include "Minigames/BotsMinijuegos1v3.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 
@@ -187,6 +188,88 @@ static bool ResolverColisionMuroJugador(
 }
 
 
+// IA simple: al aparecer cada muro el bot elige el hueco mas cercano, se
+// ubica en una fila propia (para no estorbarse) y reacciona con retraso. La
+// probabilidad de equivocarse sube con la dificultad, asi que siempre hay
+// un ganador antes de que los muros se vuelvan imposibles.
+static InputMinijuegoParticipante CrearEntradaBotMuros(
+    MinijuegoMurosLocos& minijuego,
+    int indice,
+    const JugadorPrueba& jugador,
+    float deltaTime
+)
+{
+    EstadoJugadorMurosLocos& bot = minijuego.estadosJugadores[indice];
+
+    if (bot.muroBot != minijuego.numeroMuro)
+    {
+        const float filasZ[MAX_JUGADORES_PRUEBA] =
+        {
+            2.6f, 1.5f, 0.4f, 3.7f
+        };
+
+        bool primeraVez = bot.muroBot < 0;
+        bot.muroBot = minijuego.numeroMuro;
+        bot.retrasoBot = (float)GetRandomValue(40, 320) / 1000.0f;
+
+        if (primeraVez)
+        {
+            bot.objetivoZ =
+                filasZ[indice % MAX_JUGADORES_PRUEBA] +
+                (float)GetRandomValue(-20, 20) / 100.0f;
+            bot.objetivoX = jugador.posicion.x;
+        }
+
+        const MuroLoco& muro = minijuego.muro;
+        float mejorCentro = muro.centrosHueco[0];
+
+        for (int i = 1; i < muro.cantidadHuecos; i++)
+        {
+            if (
+                std::fabs(muro.centrosHueco[i] - jugador.posicion.x) <
+                std::fabs(mejorCentro - jugador.posicion.x)
+            )
+            {
+                mejorCentro = muro.centrosHueco[i];
+            }
+        }
+
+        float margen = muro.anchoHueco * 0.5f - jugador.tamano.x * 0.46f - 0.12f;
+        if (margen < 0.05f) margen = 0.05f;
+        if (margen > 0.45f) margen = 0.45f;
+
+        float progreso = Limitar01Muros(
+            minijuego.tiempoJugado / ESCALA_DIFICULTAD_MUROS
+        );
+        float probabilidadError = 0.05f + progreso * 0.30f;
+
+        if ((float)GetRandomValue(0, 999) / 1000.0f < probabilidadError)
+        {
+            // Error: se queda donde estaba o corre hacia un lado al azar.
+            bot.objetivoX = (float)GetRandomValue(-38, 38) / 10.0f;
+        }
+        else
+        {
+            bot.objetivoX =
+                mejorCentro +
+                (float)GetRandomValue(-1000, 1000) / 1000.0f * margen;
+        }
+    }
+
+    if (bot.retrasoBot > 0.0f)
+    {
+        bot.retrasoBot -= deltaTime;
+        return InputMinijuegoParticipante{};
+    }
+
+    return CrearEntradaBotHaciaObjetivo1v3(
+        jugador.posicion,
+        { bot.objetivoX, 0.0f, bot.objetivoZ },
+        0.14f
+    );
+}
+
+
 static void FinalizarMuros(MinijuegoMurosLocos& minijuego)
 {
     if (minijuego.resultado.estado != RESULTADO_MINIJUEGO_EN_CURSO) return;
@@ -235,7 +318,7 @@ void MinijuegoMurosLocos::Inicializar()
     suelo.posicion = { 0.0f, -0.35f, 0.0f };
     suelo.posicionInicial = suelo.posicion;
     suelo.tamano = { ANCHO_ARENA_MUROS, 0.70f, LARGO_ARENA_MUROS };
-    suelo.color = Color{ 202, 153, 82, 255 };
+    suelo.color = Color{ 232, 206, 150, 255 };
     suelo.activaColision = true;
 
     fase = FASE_MUROS_PREPARACION;
@@ -387,7 +470,9 @@ void MinijuegoMurosLocos::Actualizar(
         }
 
         InputMinijuegoParticipante entrada{};
-        if (participantes[i].conectado)
+        if (participantes[i].esBot || !participantes[i].conectado)
+            entrada = CrearEntradaBotMuros(*this, i, jugador, deltaTime);
+        else
             entrada = LeerInputMinijuegoParticipante(participantes[i]);
 
         BloquePrueba sueloJugador = suelo;
@@ -464,7 +549,8 @@ void MinijuegoMurosLocos::Actualizar(
         }
     }
 
-    if (vivosAntes - eliminados <= 1)
+    // Tope duro de seguridad: la ronda nunca queda abierta indefinidamente.
+    if (vivosAntes - eliminados <= 1 || tiempoJugado > 150.0f)
     {
         FinalizarMuros(*this);
     }
@@ -493,7 +579,7 @@ static void DibujarEscenarioDesiertoMuros()
     DrawPlane(
         { 0.0f, -0.72f, -4.0f },
         { 150.0f, 150.0f },
-        Color{ 205, 153, 78, 255 }
+        Color{ 176, 124, 64, 255 }
     );
 
     const float posiciones[7] =
@@ -659,6 +745,72 @@ static void DibujarMuroLoco(const MuroLoco& muro)
 }
 
 
+// Anillo de color bajo los pies y flecha sobre la cabeza: el modelo del
+// jugador es oscuro y sobre la arena no se distingue quien es quien.
+// MODELO FUTURO: la flecha puede pasar a ser un icono de jugador del GLB.
+static void DibujarIndicadorJugadorMuros(
+    const JugadorPrueba& jugador,
+    Color color
+)
+{
+    float pies = jugador.posicion.y - jugador.tamano.y * 0.5f;
+    if (jugador.cayendo || pies < -0.35f) return;
+
+    Vector3 centro = { jugador.posicion.x, pies + 0.04f, jugador.posicion.z };
+    for (int k = 0; k < 3; k++)
+    {
+        DrawCircle3D(
+            centro,
+            0.52f + k * 0.045f,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            color
+        );
+    }
+
+    float rebote = std::sin((float)GetTime() * 5.0f + jugador.posicion.x) * 0.06f;
+    float cabeza = pies + 2.15f + rebote;
+    DrawCylinderEx(
+        { jugador.posicion.x, cabeza, jugador.posicion.z },
+        { jugador.posicion.x, cabeza + 0.32f, jugador.posicion.z },
+        0.0f,
+        0.20f,
+        10,
+        color
+    );
+}
+
+
+// Losas de piedra y marco de la arena: separan la zona de juego de la
+// arena del desierto, que tiene casi el mismo tono. Primitivas V para no
+// generar sombras automaticas.
+// MODELO FUTURO: reemplazar por un templo en ruinas GLB.
+static void DibujarLosasArenaMuros()
+{
+    const Color junta = Color{ 168, 132, 84, 255 };
+    const float alto = 0.02f;
+
+    for (int i = 1; i < 6; i++)
+    {
+        float x = -LIMITE_X_MUROS + ANCHO_ARENA_MUROS * (float)i / 6.0f;
+        DrawCubeV({ x, alto, 0.0f }, { 0.06f, 0.02f, LARGO_ARENA_MUROS }, junta);
+    }
+
+    for (int i = 1; i < 6; i++)
+    {
+        float z = -LIMITE_Z_MUROS + LARGO_ARENA_MUROS * (float)i / 6.0f;
+        DrawCubeV({ 0.0f, alto, z }, { ANCHO_ARENA_MUROS, 0.02f, 0.06f }, junta);
+    }
+
+    const Color marco = Color{ 120, 74, 44, 255 };
+    const float borde = 0.28f;
+    DrawCubeV({ 0.0f, 0.05f, -LIMITE_Z_MUROS + borde * 0.5f }, { ANCHO_ARENA_MUROS, 0.10f, borde }, marco);
+    DrawCubeV({ 0.0f, 0.05f, LIMITE_Z_MUROS - borde * 0.5f }, { ANCHO_ARENA_MUROS, 0.10f, borde }, marco);
+    DrawCubeV({ -LIMITE_X_MUROS + borde * 0.5f, 0.05f, 0.0f }, { borde, 0.10f, LARGO_ARENA_MUROS }, marco);
+    DrawCubeV({ LIMITE_X_MUROS - borde * 0.5f, 0.05f, 0.0f }, { borde, 0.10f, LARGO_ARENA_MUROS }, marco);
+}
+
+
 void MinijuegoMurosLocos::Dibujar(
     const JugadorPrueba jugadores[],
     int cantidadMaxima,
@@ -689,6 +841,8 @@ void MinijuegoMurosLocos::Dibujar(
         Color{ 112, 72, 45, 255 }
     );
 
+    DibujarLosasArenaMuros();
+
     if (fase == FASE_MUROS_JUGANDO && tiempoEntreMuros <= 0.0f)
     {
         DibujarMuroLoco(muro);
@@ -711,6 +865,7 @@ void MinijuegoMurosLocos::Dibujar(
         }
 
         DibujarJugadorCuboPrueba(jugadores[i], participantes[i]);
+        DibujarIndicadorJugadorMuros(jugadores[i], participantes[i].color);
 
         if (mostrarDebug && !jugadores[i].cayendo)
         {
@@ -720,30 +875,34 @@ void MinijuegoMurosLocos::Dibujar(
 
     EndMode3D();
 
-    DrawText("MUROS LOCOS - RUINAS DEL DESIERTO", 24, 22, 30, DARKBROWN);
+    // Panel oscuro para que el texto se lea sobre el desierto.
+    DrawRectangle(14, 12, 640, 106, Fade(BLACK, 0.62f));
+
+    DrawText("MUROS LOCOS - RUINAS DEL DESIERTO", 24, 22, 30, RAYWHITE);
     DrawText(
         "BUSCA EL HUECO ANTES DE QUE EL MURO DE ADOBE TE EMPUJE.",
         24,
         60,
         18,
-        Color{ 91, 58, 39, 255 }
+        Color{ 255, 226, 160, 255 }
     );
     DrawText(
         "LOS MUROS SE ACELERAN HASTA QUE SOLO QUEDE UN JUGADOR.",
         24,
         86,
         16,
-        Color{ 112, 72, 45, 255 }
+        LIGHTGRAY
     );
 
     if (fase == FASE_MUROS_JUGANDO)
     {
+        DrawRectangle(GetScreenWidth() - 204, 12, 190, 40, Fade(BLACK, 0.62f));
         DrawText(
             TextFormat("MURO %d", numeroMuro),
             GetScreenWidth() - 190,
-            24,
+            22,
             20,
-            DARKBROWN
+            RAYWHITE
         );
     }
 
@@ -819,8 +978,8 @@ void MinijuegoMurosLocos::Dibujar(
         }
 
         DrawText(
-            "R PARA REINICIAR",
-            GetScreenWidth() / 2 - MeasureText("R PARA REINICIAR", 21) / 2,
+            TextoReinicioMinijuego(),
+            GetScreenWidth() / 2 - MeasureText(TextoReinicioMinijuego(), 21) / 2,
             GetScreenHeight() / 2 + 105,
             21,
             RAYWHITE

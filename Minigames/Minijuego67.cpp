@@ -743,6 +743,22 @@ static void DibujarMesa67(
 }
 
 
+// El tinte puro multiplica la textura oscura del modelo: se aclara hacia el
+// blanco para que el color del jugador se reconozca en la vista del equipo.
+static Color TinteJugador67(Color color)
+{
+    const float mezcla = 0.62f;
+
+    return Color
+    {
+        (unsigned char)(color.r + (255 - color.r) * mezcla),
+        (unsigned char)(color.g + (255 - color.g) * mezcla),
+        (unsigned char)(color.b + (255 - color.b) * mezcla),
+        color.a
+    };
+}
+
+
 static void DibujarJugador67(
     const Minijuego67& minijuego,
     int indice,
@@ -755,7 +771,7 @@ static void DibujarJugador67(
     Color color =
         estado.tiempoStun > 0.0f
         ? Fade(RED, 0.72f)
-        : participante.color;
+        : TinteJugador67(participante.color);
 
     float giro = -90.0f;
 
@@ -782,6 +798,18 @@ static void DibujarJugador67(
         0.14f,
         24,
         Fade(participante.color, 0.62f)
+    );
+
+    // Flecha del color del jugador sobre la cabeza: el modelo es oscuro.
+    // MODELO FUTURO: puede pasar a ser un icono de jugador del GLB.
+    float rebote = std::sin((float)GetTime() * 5.0f + (float)indice) * 0.06f;
+    DrawCylinderEx(
+        { X_JUGADOR_67, 2.30f + rebote, z },
+        { X_JUGADOR_67, 2.62f + rebote, z },
+        0.0f,
+        0.30f,
+        10,
+        participante.color
     );
 
     const Model* modeloJugador =
@@ -1034,10 +1062,10 @@ void Minijuego67::Inicializar()
 
     for (int equipo = 0; equipo < 2; equipo++)
     {
-        camarasEquipo[equipo].position = { 7.8f, 10.7f, 12.4f };
-        camarasEquipo[equipo].target = { -1.0f, 0.55f, 0.0f };
+        camarasEquipo[equipo].position = { 6.6f, 10.7f, 12.4f };
+        camarasEquipo[equipo].target = { -2.2f, 0.55f, 0.0f };
         camarasEquipo[equipo].up = { 0.0f, 1.0f, 0.0f };
-        camarasEquipo[equipo].fovy = 12.2f;
+        camarasEquipo[equipo].fovy = 14.4f;
         camarasEquipo[equipo].projection = CAMERA_ORTHOGRAPHIC;
     }
 
@@ -1227,9 +1255,16 @@ void Minijuego67::Actualizar(
     int mascaraActual =
         CrearMascaraParticipantes67(participantes, cantidadMaxima);
 
+    if (avisoReconfiguracion > 0.0f)
+    {
+        avisoReconfiguracion -= deltaTime;
+        if (avisoReconfiguracion < 0.0f) avisoReconfiguracion = 0.0f;
+    }
+
     if (mascaraActual != mascaraJugadoresEnPartida)
     {
         Reiniciar(participantes, cantidadMaxima);
+        avisoReconfiguracion = 4.0f;
         return;
     }
 
@@ -1477,6 +1512,15 @@ void Minijuego67::Dibujar(
 
     DrawRectangle(mitad - 3, 0, 6, alto, BLACK);
 
+    if (avisoReconfiguracion > 0.0f)
+    {
+        const char* aviso = "SE RECONFIGURARON LOS EQUIPOS";
+        int anchoAviso = MeasureText(aviso, 30);
+        DrawRectangle(ancho / 2 - anchoAviso / 2 - 18, 24, anchoAviso + 36, 48, Fade(BLACK, 0.88f));
+        DrawRectangleLines(ancho / 2 - anchoAviso / 2 - 18, 24, anchoAviso + 36, 48, GOLD);
+        DrawText(aviso, ancho / 2 - anchoAviso / 2, 33, 30, GOLD);
+    }
+
     if (estadoPartida == FABRICA_67_ESPERANDO_JUGADORES)
     {
         DrawRectangle(
@@ -1565,8 +1609,8 @@ void Minijuego67::Dibujar(
         );
 
         DrawText(
-            "R PARA REINICIAR",
-            ancho / 2 - MeasureText("R PARA REINICIAR", 17) / 2,
+            TextoReinicioMinijuego(),
+            ancho / 2 - MeasureText(TextoReinicioMinijuego(), 17) / 2,
             alto / 2 + 49,
             17,
             LIGHTGRAY

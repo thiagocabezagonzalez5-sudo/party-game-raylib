@@ -2,7 +2,17 @@
 
 #include "raylib.h"
 
-#include "Systems/FondoAnimado.h"
+#include "UI/Hub3D.h"
+
+// Opciones del HUB (valor de opcionSeleccionada).
+enum OpcionMenuPrincipal
+{
+    OPCION_MENU_PARTIDA = 0,
+    OPCION_MENU_MINIJUEGOS,
+    OPCION_MENU_CONFIGURACION,
+    OPCION_MENU_SALIR,
+    OPCION_MENU_CANTIDAD
+};
 
 struct MenuPrincipal
 {
@@ -13,7 +23,10 @@ struct MenuPrincipal
     int opcionSeleccionada =
         0;
 
-    bool empezarJuego =
+    bool empezarTablero =
+        false;
+
+    bool empezarMinijuegos =
         false;
 
     bool abrirConfiguracion =
@@ -24,17 +37,17 @@ struct MenuPrincipal
 
 
     //------------------------------
-    // FONDO
+    // ESCENARIO
     //------------------------------
 
-    FondoAnimado fondo;
+    Hub3D hub;
 
     bool recursosCargados =
         false;
 
 
     //------------------------------
-    // TRANSICION
+    // TRANSICION DE ENTRADA
     //------------------------------
 
     float tiempoEntrada =
@@ -43,34 +56,29 @@ struct MenuPrincipal
     bool entradaActiva =
         false;
 
+    // true: fade desde blanco (viene del logo). false: desde negro.
     bool fadeBlancoActivo =
         true;
 
-    const float DURACION_FADE_VIDEO =
-        0.65f;
-
-    const float RETRASO_MENU =
-        0.10f;
-
-    const float DURACION_FADE_MENU =
-        0.35f;
-
 
     //------------------------------
-    // CLICK / ENTER VISUAL
+    // CAMARA E INTERACCION
     //------------------------------
 
-    int botonPresionado =
-        -1;
+    // Segundos desde la ultima accion del jugador.
+    float tiempoSinInput =
+        999.0f;
 
-    int accionPendiente =
-        -1;
+    bool confirmando =
+        false;
 
-    float tiempoBotonPresionado =
+    float tiempoConfirmacion =
         0.0f;
 
-    const float DURACION_BOTON_PRESION =
-        0.12f;
+    // Ultimo estado del stick de cada gamepad (-1, 0, 1) para detectar flancos.
+    int ejeHorizontalPrevio[4] = {};
+
+    int ejeVerticalPrevio[4] = {};
 
 
     //------------------------------
@@ -88,6 +96,13 @@ struct MenuPrincipal
     );
 
     void Dibujar();
+
+    // Fondo ambiental para otras pantallas (sin carteles ni seleccion).
+    void ActualizarFondo(
+        float deltaTime
+    );
+
+    void DibujarFondo();
 
     void Descargar();
 };

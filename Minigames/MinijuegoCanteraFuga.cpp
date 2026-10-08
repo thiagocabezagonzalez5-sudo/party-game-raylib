@@ -2,6 +2,7 @@
 
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
+#include "Systems/CalidadGrafica.h"
 #include "Systems/Input.h"
 
 #include "raylib.h"
@@ -115,6 +116,37 @@ static void FinalizarCantera(
 }
 
 
+static int ContarEscaladoresCantera(const MinijuegoCanteraFuga& minijuego)
+{
+    int escaladores = 0;
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (i != minijuego.indiceSolo && minijuego.resultado.participantes[i].participo)
+        {
+            escaladores++;
+        }
+    }
+
+    return escaladores < 1 ? 1 : (escaladores > 3 ? 3 : escaladores);
+}
+
+
+// Con mas escaladores solo importa el que lidera, asi que el operador
+// necesita rocas mas seguidas y golpes que frenen mas para seguir en juego.
+static float RecargaRocaCantera(const MinijuegoCanteraFuga& minijuego)
+{
+    const float recargas[3] = { 0.95f, 0.45f, 0.15f };
+    return recargas[ContarEscaladoresCantera(minijuego) - 1];
+}
+
+
+static float AturdimientoCantera(const MinijuegoCanteraFuga& minijuego)
+{
+    return DURACION_ATURDIDO_CANTERA + 0.2f * (float)(ContarEscaladoresCantera(minijuego) - 1);
+}
+
+
 static void LanzarRocaCantera(MinijuegoCanteraFuga& minijuego)
 {
     if (minijuego.cooldownRoca > 0.0f)
@@ -141,7 +173,7 @@ static void LanzarRocaCantera(MinijuegoCanteraFuga& minijuego)
         };
         roca.velocidadX = GetRandomValue(-65, 65) / 100.0f;
         roca.velocidadZ = GetRandomValue(61, 73) / 10.0f;
-        minijuego.cooldownRoca = RECARGA_ROCA_CANTERA;
+        minijuego.cooldownRoca = RecargaRocaCantera(minijuego);
         return;
     }
 }
@@ -224,10 +256,14 @@ static void ActualizarControlSoloCantera(
                 minijuego.posicionTolvaX = xObjetivo;
         }
 
-        if (minijuego.tiempoDecisionBot <= 0.0f)
+        bool alineado =
+            objetivo >= 0 &&
+            std::fabs(minijuego.posicionTolvaX - jugadores[objetivo].posicion.x) < 0.9f;
+
+        if (minijuego.tiempoDecisionBot <= 0.0f && alineado)
         {
             lanzar = true;
-            minijuego.tiempoDecisionBot = GetRandomValue(72, 126) / 100.0f;
+            minijuego.tiempoDecisionBot = GetRandomValue(30, 70) / 100.0f * RecargaRocaCantera(minijuego) / RECARGA_ROCA_CANTERA;
         }
     }
     else
@@ -330,13 +366,13 @@ static void ActualizarRocasCantera(
 
             EstadoJugadorCanteraFuga& estado =
                 minijuego.estadosJugadores[jugadorIndice];
-            estado.tiempoAturdido = DURACION_ATURDIDO_CANTERA;
+            estado.tiempoAturdido = AturdimientoCantera(minijuego);
             estado.impulsoLateral = dx >= 0.0f ? 2.1f : -2.1f;
             estado.impactosRecibidos++;
             minijuego.impactosSolo++;
 
             jugador.aplastado = true;
-            jugador.tiempoAplastado = DURACION_ATURDIDO_CANTERA;
+            jugador.tiempoAplastado = estado.tiempoAturdido;
             roca.velocidadX -= estado.impulsoLateral * 0.34f;
         }
     }
@@ -578,6 +614,25 @@ void MinijuegoCanteraFuga::Actualizar(
 }
 
 
+// Cuadrilatero sobre la rampa (mismo plano que la colision), visible desde arriba.
+static void DibujarCuadroPendienteCantera(
+    float x0,
+    float x1,
+    float zAbajo,
+    float zArriba,
+    float elevacion,
+    Color color
+)
+{
+    Vector3 a = { x0, AlturaPendienteCantera(zAbajo) + elevacion, zAbajo };
+    Vector3 b = { x1, AlturaPendienteCantera(zAbajo) + elevacion, zAbajo };
+    Vector3 c = { x1, AlturaPendienteCantera(zArriba) + elevacion, zArriba };
+    Vector3 d = { x0, AlturaPendienteCantera(zArriba) + elevacion, zArriba };
+    DrawTriangle3D(a, c, d, color);
+    DrawTriangle3D(a, b, c, color);
+}
+
+
 static void DibujarPendienteCantera()
 {
     // El dibujo y la colision comparten extremos y funcion de altura.
@@ -586,40 +641,79 @@ static void DibujarPendienteCantera()
     Vector3 arribaIzquierda = { -4.75f, AlturaPendienteCantera(Z_CIMA_CANTERA), Z_CIMA_CANTERA };
     Vector3 arribaDerecha = { 4.75f, AlturaPendienteCantera(Z_CIMA_CANTERA), Z_CIMA_CANTERA };
 
-    Color suelo = Color{ 159, 113, 71, 255 };
+    Color suelo = Color{ 214, 170, 104, 255 };
     DrawTriangle3D(abajoIzquierda, arribaDerecha, arribaIzquierda, suelo);
     DrawTriangle3D(abajoIzquierda, abajoDerecha, arribaDerecha, suelo);
     DrawCube({ 0.0f, -0.2f, Z_BASE_CANTERA + 0.275f }, 9.5f, 0.4f, 0.55f, suelo);
 
-    for (int linea = 0; linea <= 10; linea++)
+    // Franjas alternas: dan sensacion de pendiente y de avance.
+    const int franjas = 10;
+    for (int k = 0; k < franjas; k += 2)
     {
-        float t = linea / 10.0f;
-        float z = Z_BASE_CANTERA + (Z_CIMA_CANTERA - Z_BASE_CANTERA) * t;
-        float y = AlturaPendienteCantera(z) + 0.018f;
-
-        DrawLine3D(
-            { -4.72f, y, z },
-            { 4.72f, y, z },
-            Fade(Color{ 78, 55, 42, 255 }, 0.58f)
-        );
+        float zAbajo = Z_BASE_CANTERA + (Z_CIMA_CANTERA - Z_BASE_CANTERA) * (k / (float)franjas);
+        float zArriba = Z_BASE_CANTERA + (Z_CIMA_CANTERA - Z_BASE_CANTERA) * ((k + 1) / (float)franjas);
+        DibujarCuadroPendienteCantera(-4.75f, 4.75f, zAbajo, zArriba, 0.012f, Color{ 196, 150, 90, 255 });
     }
 
-    DrawCylinderEx(
-        { -5.05f, 0.15f, Z_BASE_CANTERA },
-        { -5.05f, 5.15f, Z_CIMA_CANTERA },
-        0.18f,
-        0.18f,
-        10,
-        Color{ 74, 69, 66, 255 }
-    );
-    DrawCylinderEx(
-        { 5.05f, 0.15f, Z_BASE_CANTERA },
-        { 5.05f, 5.15f, Z_CIMA_CANTERA },
-        0.18f,
-        0.18f,
-        10,
-        Color{ 74, 69, 66, 255 }
-    );
+    // Linea de meta en cuadros en la cima.
+    const int columnas = 10;
+    for (int fila = 0; fila < 2; fila++)
+    {
+        for (int columna = 0; columna < columnas; columna++)
+        {
+            if ((fila + columna) % 2 != 0) continue;
+            float x0 = -4.75f + 9.5f * (columna / (float)columnas);
+            float x1 = -4.75f + 9.5f * ((columna + 1) / (float)columnas);
+            DibujarCuadroPendienteCantera(
+                x0,
+                x1,
+                Z_CIMA_CANTERA + 0.55f * (fila + 1),
+                Z_CIMA_CANTERA + 0.55f * fila,
+                0.02f,
+                Color{ 245, 240, 228, 255 }
+            );
+        }
+    }
+
+    // Barandillas con franjas de peligro amarillo/oscuro.
+    for (int lado = 0; lado < 2; lado++)
+    {
+        float x = lado == 0 ? -5.05f : 5.05f;
+        const int tramos = 10;
+        for (int k = 0; k < tramos; k++)
+        {
+            float t0 = k / (float)tramos;
+            float t1 = (k + 1) / (float)tramos;
+            DrawCylinderEx(
+                { x, 0.15f + 5.0f * t0, Z_BASE_CANTERA + (Z_CIMA_CANTERA - Z_BASE_CANTERA) * t0 },
+                { x, 0.15f + 5.0f * t1, Z_BASE_CANTERA + (Z_CIMA_CANTERA - Z_BASE_CANTERA) * t1 },
+                0.18f,
+                0.18f,
+                10,
+                k % 2 == 0 ? Color{ 238, 192, 52, 255 } : Color{ 58, 54, 52, 255 }
+            );
+        }
+    }
+
+    // Banderas de meta a ambos lados de la cima.
+    for (int lado = 0; lado < 2; lado++)
+    {
+        float x = lado == 0 ? -4.7f : 4.7f;
+        float y = AlturaPendienteCantera(Z_CIMA_CANTERA);
+        DrawCylinderEx({ x, y, Z_CIMA_CANTERA }, { x, y + 1.7f, Z_CIMA_CANTERA }, 0.05f, 0.05f, 6, Color{ 70, 66, 64, 255 });
+        DrawTriangle3D(
+            { x, y + 1.7f, Z_CIMA_CANTERA },
+            { x, y + 1.25f, Z_CIMA_CANTERA },
+            { x + (lado == 0 ? 0.8f : -0.8f), y + 1.48f, Z_CIMA_CANTERA },
+            Color{ 226, 60, 52, 255 }
+        );
+        DrawTriangle3D(
+            { x, y + 1.7f, Z_CIMA_CANTERA },
+            { x + (lado == 0 ? 0.8f : -0.8f), y + 1.48f, Z_CIMA_CANTERA },
+            { x, y + 1.25f, Z_CIMA_CANTERA },
+            Color{ 226, 60, 52, 255 }
+        );
+    }
 }
 
 
@@ -648,13 +742,14 @@ void MinijuegoCanteraFuga::Dibujar(
 {
     (void)cantidadMaxima;
 
-    ClearBackground(Color{ 188, 142, 90, 255 });
+    // Cielo de polvo claro, para separarlo del suelo oscuro de la cantera.
+    ClearBackground(Color{ 238, 206, 160, 255 });
     BeginMode3D(camara);
 
     DrawPlane(
         { 0.0f, -0.22f, 0.0f },
         { 85.0f, 85.0f },
-        Color{ 122, 91, 63, 255 }
+        Color{ 104, 78, 58, 255 }
     );
 
     DibujarPendienteCantera();
@@ -664,7 +759,9 @@ void MinijuegoCanteraFuga::Dibujar(
         : RED;
     DibujarTolvaCantera(posicionTolvaX, colorSolo);
 
-    for (int i = 0; i < 18; i++)
+    int cantidadPiedras = (int)(18 * FactorCalidadGrafica(CalidadDecoracion()));
+    if (cantidadPiedras < 6) cantidadPiedras = 6;
+    for (int i = 0; i < cantidadPiedras; i++)
     {
         float x = -13.0f + (float)((i * 19) % 26);
         float z = -13.0f + (float)((i * 11) % 27);
@@ -673,8 +770,8 @@ void MinijuegoCanteraFuga::Dibujar(
             { x, radio - 0.05f, z },
             radio,
             i % 2 == 0
-                ? Color{ 91, 75, 64, 255 }
-                : Color{ 109, 86, 68, 255 }
+                ? Color{ 84, 68, 58, 255 }
+                : Color{ 96, 76, 62, 255 }
         );
     }
 
@@ -682,8 +779,9 @@ void MinijuegoCanteraFuga::Dibujar(
     {
         if (!rocas[i].activa) continue;
 
-        DrawSphere(rocas[i].posicion, rocas[i].radio, Color{ 77, 69, 65, 255 });
-        DrawSphereWires(rocas[i].posicion, rocas[i].radio, 8, 8, Color{ 145, 127, 111, 255 });
+        // Roca peligrosa: gris frio casi negro con borde claro, fuera de la gama del suelo.
+        DrawSphere(rocas[i].posicion, rocas[i].radio, Color{ 52, 56, 66, 255 });
+        DrawSphereWires(rocas[i].posicion, rocas[i].radio * 1.02f, 8, 8, Color{ 200, 206, 218, 255 });
 
         if (mostrarDebug)
         {
@@ -702,6 +800,20 @@ void MinijuegoCanteraFuga::Dibujar(
         participanteVisual.conectado = true;
         DibujarJugadorCuboPrueba(jugadores[i], participanteVisual);
 
+        // Flecha del color del jugador sobre la cabeza (el modelo es oscuro).
+        // MODELO FUTURO: puede pasar a ser un icono de jugador del GLB.
+        float pies = jugadores[i].posicion.y - jugadores[i].tamano.y * 0.5f;
+        float rebote = std::sin((float)GetTime() * 5.0f + (float)i) * 0.06f;
+        float cabeza = pies + 2.15f + rebote;
+        DrawCylinderEx(
+            { jugadores[i].posicion.x, cabeza, jugadores[i].posicion.z },
+            { jugadores[i].posicion.x, cabeza + 0.34f, jugadores[i].posicion.z },
+            0.0f,
+            0.22f,
+            10,
+            participantes[i].color
+        );
+
         if (mostrarDebug)
         {
             DrawBoundingBox(CrearHitboxJugadorPrueba(jugadores[i]), LIME);
@@ -710,41 +822,98 @@ void MinijuegoCanteraFuga::Dibujar(
 
     EndMode3D();
 
-    DrawRectangle(18, 16, 720, 112, Fade(BLACK, 0.79f));
-    DrawText("CANTERA EN FUGA - 1 VS 3", 32, 28, 30, GOLD);
+    const int ancho = GetScreenWidth();
+    const int alto = GetScreenHeight();
+    const float e = (float)alto / 720.0f;
+
+    DrawRectangle(0, 0, ancho, (int)(94 * e), Fade(BLACK, 0.82f));
+    DrawText("CANTERA EN FUGA - 1 VS 3", (int)(24 * e), (int)(6 * e), (int)(30 * e), GOLD);
 
     if (indiceSolo >= 0)
     {
+        // Chip con el color del operador y texto blanco: el color solo no
+        // se lee sobre el fondo oscuro.
+        int yOperador = (int)(42 * e);
+        int tamanoOperador = (int)(18 * e);
+        DrawRectangle((int)(24 * e), yOperador, tamanoOperador, tamanoOperador, participantes[indiceSolo].color);
+        DrawRectangleLines((int)(24 * e), yOperador, tamanoOperador, tamanoOperador, RAYWHITE);
         DrawText(
             TextFormat(
                 "J%d CONTROLA LA TOLVA%s",
                 participantes[indiceSolo].numeroJugador,
                 participantes[indiceSolo].esBot ? " (BOT)" : ""
             ),
-            32,
-            68,
-            19,
-            participantes[indiceSolo].color
+            (int)(24 * e) + tamanoOperador + (int)(8 * e),
+            yOperador,
+            tamanoOperador,
+            RAYWHITE
         );
     }
 
     DrawText(
-        "SOLO: IZQ/DER + E / SHIFT DER / B  |  EQUIPO: SUBE Y ESQUIVA",
-        32,
-        96,
-        17,
-        RAYWHITE
+        "OPERADOR: IZQ/DER MUEVEN LA TOLVA, E / SHIFT DER / B SUELTA ROCA   |   ESCALADORES: SUBE Y ESQUIVA",
+        (int)(24 * e),
+        (int)(68 * e),
+        (int)(15 * e),
+        LIGHTGRAY
     );
 
     if (fase == FASE_CANTERA_JUGANDO)
     {
+        const char* reloj = TextFormat("%.1f", tiempoRestante);
+        int tamanoReloj = (int)(40 * e);
         DrawText(
-            TextFormat("TIEMPO %.1f", tiempoRestante),
-            GetScreenWidth() - 190,
-            28,
-            23,
-            tiempoRestante <= 5.0f ? RED : GOLD
+            reloj,
+            ancho - MeasureText(reloj, tamanoReloj) - (int)(30 * e),
+            (int)(16 * e),
+            tamanoReloj,
+            tiempoRestante <= 5.0f ? Color{ 255, 90, 80, 255 } : GOLD
         );
+    }
+
+    // Tarjetas inferiores: progreso de cada escalador hacia la cima.
+    int cantidadTarjetas = 0;
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (resultado.participantes[i].participo && i != indiceSolo) cantidadTarjetas++;
+    }
+
+    int anchoTarjeta = (int)(210 * e);
+    int altoTarjeta = (int)(46 * e);
+    int separacion = (int)(14 * e);
+    int xTarjeta = ancho / 2 - (cantidadTarjetas * anchoTarjeta + (cantidadTarjetas - 1) * separacion) / 2;
+    int yTarjeta = alto - altoTarjeta - (int)(16 * e);
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (!resultado.participantes[i].participo || i == indiceSolo) continue;
+
+        float proporcion = CalcularProgresoCantera(jugadores[i].posicion.z);
+
+        DrawRectangle(xTarjeta, yTarjeta, anchoTarjeta, altoTarjeta, Fade(BLACK, 0.62f));
+        DrawRectangle(xTarjeta, yTarjeta, (int)(8 * e), altoTarjeta, participantes[i].color);
+        DrawText(
+            TextFormat("J%d", participantes[i].numeroJugador),
+            xTarjeta + (int)(18 * e),
+            yTarjeta + (int)(5 * e),
+            (int)(20 * e),
+            participantes[i].color
+        );
+        const char* porcentaje = TextFormat("%d%%", (int)(proporcion * 100.0f));
+        DrawText(
+            porcentaje,
+            xTarjeta + anchoTarjeta - MeasureText(porcentaje, (int)(18 * e)) - (int)(12 * e),
+            yTarjeta + (int)(6 * e),
+            (int)(18 * e),
+            RAYWHITE
+        );
+        int xBarra = xTarjeta + (int)(18 * e);
+        int yBarra = yTarjeta + (int)(32 * e);
+        int anchoBarra = anchoTarjeta - (int)(32 * e);
+        DrawRectangle(xBarra, yBarra, anchoBarra, (int)(8 * e), Fade(WHITE, 0.25f));
+        DrawRectangle(xBarra, yBarra, (int)(anchoBarra * proporcion), (int)(8 * e), participantes[i].color);
+
+        xTarjeta += anchoTarjeta + separacion;
     }
 
     if (fase == FASE_CANTERA_PREPARACION)
@@ -752,13 +921,11 @@ void MinijuegoCanteraFuga::Dibujar(
         int numero = (int)std::ceil(tiempoPreparacion);
         if (numero < 1) numero = 1;
         const char* texto = TextFormat("%d", numero);
-        DrawText(
-            texto,
-            GetScreenWidth() / 2 - MeasureText(texto, 88) / 2,
-            GetScreenHeight() / 2 - 54,
-            88,
-            GOLD
-        );
+        int tamano = (int)(96 * e);
+        int x = ancho / 2 - MeasureText(texto, tamano) / 2;
+        int y = alto / 2 - (int)(190 * e);
+        DrawText(texto, x + 4, y + 4, tamano, Fade(BLACK, 0.7f));
+        DrawText(texto, x, y, tamano, GOLD);
     }
     else if (fase == FASE_CANTERA_TERMINADO && resultado.estado == RESULTADO_MINIJUEGO_FINALIZADO)
     {
@@ -768,25 +935,23 @@ void MinijuegoCanteraFuga::Dibujar(
             ? "GANA EL OPERADOR"
             : "GANAN LOS ESCALADORES";
 
-        DrawRectangle(
-            GetScreenWidth() / 2 - 290,
-            GetScreenHeight() / 2 - 92,
-            580,
-            184,
-            Fade(BLACK, 0.91f)
-        );
+        int anchoPanel = (int)(520 * e);
+        int altoPanel = (int)(120 * e);
+        int xPanel = ancho / 2 - anchoPanel / 2;
+        int yPanel = (int)(270 * e);
+        DrawRectangle(xPanel, yPanel, anchoPanel, altoPanel, Fade(BLACK, 0.82f));
         DrawText(
             titulo,
-            GetScreenWidth() / 2 - MeasureText(titulo, 34) / 2,
-            GetScreenHeight() / 2 - 51,
-            34,
+            ancho / 2 - MeasureText(titulo, (int)(34 * e)) / 2,
+            yPanel + (int)(22 * e),
+            (int)(34 * e),
             GOLD
         );
         DrawText(
-            "R PARA REINICIAR",
-            GetScreenWidth() / 2 - MeasureText("R PARA REINICIAR", 21) / 2,
-            GetScreenHeight() / 2 + 25,
-            21,
+            TextoReinicioMinijuego(),
+            ancho / 2 - MeasureText(TextoReinicioMinijuego(), (int)(18 * e)) / 2,
+            yPanel + altoPanel - (int)(36 * e),
+            (int)(18 * e),
             RAYWHITE
         );
     }

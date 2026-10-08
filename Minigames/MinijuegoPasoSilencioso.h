@@ -2,6 +2,7 @@
 
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
+#include "Systems/Audio.h"
 #include "raylib.h"
 
 
@@ -21,19 +22,28 @@ struct EstadoJugadorPasoSilencioso
     bool castigadoEnAlerta = false;
 
     bool botAvanzando = false;
+    bool botAnticipo = false;
     float reaccionBot = 0.0f;
+
+    // Feedback visual del castigo.
+    float progresoVisual = 0.0f;
+    float flashCastigo = 0.0f;
+    float perdidaFlotante = 0.0f;
 };
 
 
 struct MinijuegoPasoSilencioso
 {
     ResultadoMinijuego resultado{};
+    AudioJuego* audio = nullptr;
     EstadoJugadorPasoSilencioso jugadores[MAX_PARTICIPANTES];
 
     Camera3D camara{};
     FasePasoSilencioso fase = FASE_PASO_PREPARACION;
 
     bool centinelaAlerta = false;
+    bool avisoPrevio = false;
+    float tiempoEnAlerta = 0.0f;
     float tiempoPreparacion = 0.0f;
     float tiempoEstadoCentinela = 0.0f;
     float tiempoCarrera = 0.0f;

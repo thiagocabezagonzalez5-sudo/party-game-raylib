@@ -1,5 +1,6 @@
 #include "Minigames/MinijuegoColorSeguro.h"
 #include "Minigames/CombateMinijuegos.h"
+#include "Minigames/BotsMinijuegos1v3.h"
 
 #include <cmath>
 
@@ -178,6 +179,87 @@ static void DibujarTelevisor(Color colorPantalla)
     DrawCube({ -1.45f, 2.0f, -8.2f }, 0.30f, 1.45f, 0.30f, DARKGRAY);
     DrawCube({ 1.45f, 2.0f, -8.2f }, 0.30f, 1.45f, 0.30f, DARKGRAY);
     DrawCube({ 0.0f, 1.25f, -8.2f }, 4.0f, 0.25f, 1.0f, DARKGRAY);
+}
+
+
+// Anillo de color bajo los pies y flecha sobre la cabeza: el modelo del
+// jugador es oscuro y sobre la lava no se distingue quien es quien.
+// MODELO FUTURO: la flecha puede pasar a ser un icono de jugador del GLB.
+static void DibujarIndicadorJugadorColorSeguro(
+    const JugadorPrueba& jugador,
+    Color color
+)
+{
+    float pies = jugador.posicion.y - jugador.tamano.y * 0.5f;
+    if (jugador.cayendo || pies < -0.35f) return;
+
+    Vector3 centro = { jugador.posicion.x, pies + 0.04f, jugador.posicion.z };
+    for (int k = 0; k < 3; k++)
+    {
+        DrawCircle3D(
+            centro,
+            0.52f + k * 0.045f,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            color
+        );
+    }
+
+    float rebote = std::sin((float)GetTime() * 5.0f + jugador.posicion.x) * 0.06f;
+    float cabeza = pies + 2.15f + rebote;
+    DrawCylinderEx(
+        { jugador.posicion.x, cabeza, jugador.posicion.z },
+        { jugador.posicion.x, cabeza + 0.32f, jugador.posicion.z },
+        0.0f,
+        0.20f,
+        10,
+        color
+    );
+}
+
+
+// Costras de basalto y brasas sobre el lago de lava: sin esto las
+// plataformas flotan sobre un plano naranja liso. Usa primitivas V/Ex para
+// que las sombras automaticas no ensucien el suelo.
+static void DibujarLagoLavaColorSeguro(float tiempo)
+{
+    const float nivel = -2.20f;
+
+    for (int i = 0; i < 14; i++)
+    {
+        float a = (float)i * 2.399f;
+        float r = 6.0f + std::fmod((float)i * 3.7f, 9.0f);
+        Vector3 pos = { std::cos(a) * r, nivel, std::sin(a) * r * 0.8f };
+        float ancho = 1.6f + (float)(i % 4) * 0.7f;
+        float largo = 1.0f + (float)(i % 3) * 0.6f;
+
+        DrawCubeV(pos, { ancho, 0.05f, largo }, Color{ 96, 36, 26, 255 });
+
+        float brillo = 0.5f + 0.5f * std::sin(tiempo * 1.8f + (float)i);
+        DrawCubeV(
+            { pos.x + ancho * 0.7f, nivel + 0.02f, pos.z },
+            { 0.12f, 0.05f, largo * 1.4f },
+            Color{ 255, (unsigned char)(190 + 60 * brillo), 70, 255 }
+        );
+    }
+
+    // Resplandor bajo las plataformas.
+    DrawCylinderEx(
+        { 0.0f, nivel, 0.0f },
+        { 0.0f, nivel + 0.03f, 0.0f },
+        9.5f,
+        9.5f,
+        36,
+        Color{ 255, 200, 80, 255 }
+    );
+    DrawCylinderEx(
+        { 0.0f, nivel + 0.03f, 0.0f },
+        { 0.0f, nivel + 0.05f, 0.0f },
+        7.0f,
+        7.0f,
+        36,
+        Color{ 255, 160, 45, 255 }
+    );
 }
 
 
@@ -467,6 +549,64 @@ static void ActualizarTemblorCamara(
 }
 
 
+// IA simple: al empezar cada ronda el bot decide (tras un breve retraso de
+// reaccion) correr hacia el color indicado por la TV. Con una probabilidad
+// que crece por ronda se equivoca de plataforma, para que haya ganador.
+static InputMinijuegoParticipante CrearEntradaBotColorSeguro(
+    MinijuegoColorSeguro& minijuego,
+    int indice,
+    const JugadorPrueba& jugador,
+    float deltaTime
+)
+{
+    EstadoJugadorColorSeguro& bot = minijuego.estadosJugadores[indice];
+
+    if (bot.rondaBot != minijuego.numeroRonda)
+    {
+        bot.rondaBot = minijuego.numeroRonda;
+        bot.retrasoBot = (float)GetRandomValue(120, 650) / 1000.0f;
+
+        float probabilidadError =
+            0.06f + 0.025f * (float)(minijuego.numeroRonda - 1);
+
+        if (probabilidadError > 0.40f)
+        {
+            probabilidadError = 0.40f;
+        }
+
+        int destino = minijuego.indicePlataformaSegura;
+
+        if (
+            minijuego.cantidadPlataformas > 1 &&
+            (float)GetRandomValue(0, 999) / 1000.0f < probabilidadError
+        )
+        {
+            do
+            {
+                destino = GetRandomValue(0, minijuego.cantidadPlataformas - 1);
+            }
+            while (destino == minijuego.indicePlataformaSegura);
+        }
+
+        bot.objetivoBot = minijuego.plataformas[destino].posicion;
+        bot.objetivoBot.x += (float)GetRandomValue(-800, 800) / 1000.0f;
+        bot.objetivoBot.z += (float)GetRandomValue(-700, 700) / 1000.0f;
+    }
+
+    if (bot.retrasoBot > 0.0f)
+    {
+        bot.retrasoBot -= deltaTime;
+        return InputMinijuegoParticipante{};
+    }
+
+    return CrearEntradaBotHaciaObjetivo1v3(
+        jugador.posicion,
+        bot.objetivoBot,
+        0.25f
+    );
+}
+
+
 void MinijuegoColorSeguro::Inicializar()
 {
     resultado = {};
@@ -680,10 +820,16 @@ void MinijuegoColorSeguro::Actualizar(
 
         InputMinijuegoParticipante entrada{};
 
-        if (
-            participantes[i].activo &&
-            participantes[i].conectado
-        )
+        if (participantes[i].esBot || !participantes[i].conectado)
+        {
+            entrada = CrearEntradaBotColorSeguro(
+                *this,
+                i,
+                jugador,
+                deltaTime
+            );
+        }
+        else if (participantes[i].activo)
         {
             entrada = LeerInputMinijuegoParticipante(participantes[i]);
         }
@@ -775,6 +921,8 @@ void MinijuegoColorSeguro::Dibujar(
 
     BeginMode3D(camara);
 
+    DibujarLagoLavaColorSeguro((float)GetTime());
+
     for (int i = 0; i < cantidadPlataformas; i++)
     {
         DibujarPlataformaHexagonal(plataformas[i]);
@@ -803,6 +951,14 @@ void MinijuegoColorSeguro::Dibujar(
 
         DibujarJugadorCuboPrueba(jugadores[i], participantes[i]);
 
+        if (participantes[i].activo)
+        {
+            DibujarIndicadorJugadorColorSeguro(
+                jugadores[i],
+                participantes[i].color
+            );
+        }
+
         if (
             mostrarDebug &&
             participantes[i].activo &&
@@ -819,7 +975,11 @@ void MinijuegoColorSeguro::Dibujar(
 
     EndMode3D();
 
-    DrawText("MINIJUEGO 1 - COLOR SEGURO", 25, 25, 30, BLACK);
+    // Panel estrecho: no tapa la TV que indica el color seguro.
+    DrawRectangle(15, 15, 480, 198, Fade(BLACK, 0.62f));
+    DrawRectangle(15, 218, 250, 24 * 4 + 8, Fade(BLACK, 0.62f));
+
+    DrawText("MINIJUEGO 1 - COLOR SEGURO", 25, 25, 30, RAYWHITE);
 
     DrawText(
         TextFormat(
@@ -841,7 +1001,7 @@ void MinijuegoColorSeguro::Dibujar(
         25,
         105,
         22,
-        BLACK
+        RAYWHITE
     );
 
     DrawText(
@@ -851,26 +1011,26 @@ void MinijuegoColorSeguro::Dibujar(
         25,
         138,
         20,
-        BLACK
+        RAYWHITE
     );
 
     DrawText(
-        "SIN TIEMPO MAXIMO - CADA RONDA DA MENOS TIEMPO PARA ELEGIR",
+        "SIN LIMITE: CADA RONDA DA MENOS TIEMPO",
         25,
         168,
         17,
-        DARKGRAY
+        LIGHTGRAY
     );
 
     DrawText(
-        "SALTO EN EL AIRE: GROUND POUND   E/SHIFT/B: GOLPEAR",
+        "AIRE: GROUND POUND   E/SHIFT/B: GOLPEAR",
         25,
-        192,
+        190,
         17,
-        DARKGRAY
+        LIGHTGRAY
     );
 
-    int yEstado = 220;
+    int yEstado = 223;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -899,7 +1059,7 @@ void MinijuegoColorSeguro::Dibujar(
             yEstado,
             18,
             estadosJugadores[i].eliminado
-            ? DARKGRAY
+            ? GRAY
             : participantes[i].color
         );
 
@@ -999,7 +1159,7 @@ void MinijuegoColorSeguro::Dibujar(
             y += 31;
         }
 
-        const char* reiniciar = "R PARA REINICIAR";
+        const char* reiniciar = TextoReinicioMinijuego();
 
         DrawText(
             reiniciar,

@@ -241,6 +241,7 @@ void ZonaPruebas::Inicializar(
     volverAlMenu = false;
     mostrarDebug = false;
     modoCatalogo = false;
+    modoTablero = false;
 
     participantes = participantesJuego;
     cantidadParticipantes = cantidadParticipantesJuego;
@@ -254,6 +255,7 @@ void ZonaPruebas::Inicializar(
     contextoMinijuego.audio = audio;
 
     InicializarTexturasTematicasMinijuegos();
+    EstablecerAudioJugadoresMinijuego(audio);
     InicializarModelosEscenariosRetro3D();
 
     for (int i = 0; i < MAX_PARTICULAS_TIERRA; i++)
@@ -373,14 +375,15 @@ void ZonaPruebas::Actualizar(
 )
 {
     ActualizarEfectosVisualesMinijuegos(deltaTime);
+    EstablecerRondaOficialTableroMinijuegos(modoTablero);
 
-    if (IsKeyPressed(KEY_ESCAPE))
+    if (!modoTablero && IsKeyPressed(KEY_ESCAPE))
     {
         volverAlMenu = true;
         return;
     }
 
-    if (IsKeyPressed(KEY_F3))
+    if (!modoTablero && IsKeyPressed(KEY_F3))
     {
         mostrarDebug = !mostrarDebug;
     }
@@ -412,9 +415,26 @@ void ZonaPruebas::Actualizar(
         if (IsKeyPressed(KEY_PAGE_DOWN)) { CambiarMinijuego(MINIJUEGO_TANQUES_PLASMA); return; }
         if (IsKeyPressed(KEY_HOME)) { CambiarMinijuego(MINIJUEGO_PASARELAS_VACIO); return; }
         if (IsKeyPressed(KEY_END)) { CambiarMinijuego(MINIJUEGO_CANTERA_FUGA); return; }
+
+        // Las teclas directas ya estan agotadas: "," y "." recorren todo
+        // el catalogo en orden, incluidos los minijuegos sin atajo propio.
+        if (IsKeyPressed(KEY_COMMA) || IsKeyPressed(KEY_PERIOD))
+        {
+            int paso = IsKeyPressed(KEY_PERIOD) ? 1 : -1;
+            int indice =
+                modoActual == PRUEBA_MINIJUEGO
+                    ? (int)gestorMinijuegos.ObtenerIdActivo() + paso
+                    : (paso > 0 ? 0 : CANTIDAD_MINIJUEGOS - 1);
+
+            if (indice < 0) indice = CANTIDAD_MINIJUEGOS - 1;
+            if (indice >= CANTIDAD_MINIJUEGOS) indice = 0;
+
+            CambiarMinijuego(ObtenerIdMinijuegoPorIndice(indice));
+            return;
+        }
     }
 
-    if (IsKeyPressed(KEY_R))
+    if (!modoTablero && IsKeyPressed(KEY_R))
     {
         ReiniciarModoActual(*this);
         return;
@@ -498,6 +518,7 @@ void ZonaPruebas::Actualizar(
 void ZonaPruebas::Dibujar() const
 {
     PrepararTemaVisualZona(*this);
+    EstablecerRondaOficialTableroMinijuegos(modoTablero);
 
     switch (modoActual)
     {
@@ -519,6 +540,12 @@ void ZonaPruebas::Dibujar() const
                 mostrarDebug
             );
             break;
+    }
+
+    if (modoTablero)
+    {
+        // Ronda oficial: Juego dibuja su propia barra inferior.
+        return;
     }
 
     if (modoCatalogo)
@@ -575,7 +602,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "INICIO PASARELAS  FIN CANTERA",
+        "INICIO PASARELAS  FIN CANTERA   , ANTERIOR  . SIGUIENTE (TODO EL CATALOGO)",
         30,
         GetScreenHeight() - 115,
         15,
@@ -632,4 +659,5 @@ void ZonaPruebas::Descargar()
     pruebaModelos.Descargar();
     DescargarModelosEscenariosRetro3D();
     DescargarTexturasTematicasMinijuegos();
+    EstablecerAudioJugadoresMinijuego(nullptr);
 }

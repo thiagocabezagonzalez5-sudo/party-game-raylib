@@ -1,5 +1,9 @@
 #include "Minigames/MinijuegoTrazoPerfecto.h"
 
+#include "Minigames/EfectosVisualesMinijuegos.h"
+
+#include "Minigames/AudioMinijuegos.h"
+#include "raylib.h"
 #include "raymath.h"
 #include "Systems/Input.h"
 
@@ -229,6 +233,8 @@ static void FinalizarTrazoPerfecto(
         : DESENLACE_EMPATE;
 
     minijuego.fase = FASE_TRAZO_TERMINADO;
+
+    ReproducirSonidoMinijuego(minijuego.audio, SONIDO_RESULTADO);
 }
 
 
@@ -263,6 +269,23 @@ static void ActualizarCursorBotTrazo(
     float deltaTime
 )
 {
+    // El bot sigue el trazo con retardo (filtro de primer orden).
+    if (!jugador.seguimientoIniciado)
+    {
+        jugador.objetivoSeguido = objetivo;
+        jugador.seguimientoIniciado = true;
+    }
+    else
+    {
+        float k = deltaTime / jugador.retardoBot;
+        if (k > 1.0f) k = 1.0f;
+        jugador.objetivoSeguido = Vector2Add(
+            jugador.objetivoSeguido,
+            Vector2Scale(Vector2Subtract(objetivo, jugador.objetivoSeguido), k)
+        );
+    }
+    objetivo = jugador.objetivoSeguido;
+
     Vector2 objetivoImperfecto =
     {
         objetivo.x + std::sin(
@@ -292,61 +315,6 @@ static void ActualizarCursorBotTrazo(
             );
         }
     }
-}
-
-
-static Vector2 TransformarPuntoPanelTrazo(
-    Vector2 punto,
-    Rectangle panel
-)
-{
-    float altoDibujo = panel.height - 54.0f;
-    float escala = fminf(panel.width * 0.35f, altoDibujo * 0.42f);
-
-    return
-    {
-        panel.x + panel.width * 0.5f + punto.x * escala,
-        panel.y + 46.0f + altoDibujo * 0.5f + punto.y * escala
-    };
-}
-
-
-static Rectangle ObtenerPanelTrazo(
-    int orden,
-    int cantidadParticipantes
-)
-{
-    int columnas = cantidadParticipantes <= 2
-        ? cantidadParticipantes
-        : 2;
-
-    int filas = (cantidadParticipantes + columnas - 1) / columnas;
-
-    float margenX = 22.0f;
-    float inicioY = 112.0f;
-    float margenInferior = 22.0f;
-    float separacion = 12.0f;
-
-    float ancho =
-        (GetScreenWidth() - margenX * 2.0f -
-            separacion * (columnas - 1)) /
-        columnas;
-
-    float alto =
-        (GetScreenHeight() - inicioY - margenInferior -
-            separacion * (filas - 1)) /
-        filas;
-
-    int columna = orden % columnas;
-    int fila = orden / columnas;
-
-    return
-    {
-        margenX + columna * (ancho + separacion),
-        inicioY + fila * (alto + separacion),
-        ancho,
-        alto
-    };
 }
 
 
@@ -393,7 +361,10 @@ void MinijuegoTrazoPerfecto::Reiniciar(
         jugadores[i].huellas[0] = inicio;
         jugadores[i].cantidadHuellas = 1;
         jugadores[i].desfaseBot = GetRandomValue(0, 628) / 100.0f;
-        jugadores[i].errorBot = 0.025f + i * 0.012f;
+        // Habilidad aleatoria por bot y partida (no depende del indice).
+        jugadores[i].errorBot = GetRandomValue(30, 80) / 1000.0f;
+        jugadores[i].retardoBot = GetRandomValue(150, 300) / 1000.0f;
+        jugadores[i].seguimientoIniciado = false;
     }
 }
 
@@ -412,7 +383,9 @@ void MinijuegoTrazoPerfecto::Actualizar(
 
     if (fase == FASE_TRAZO_PREPARACION)
     {
+        float preparacionAntes = tiempoPreparacion;
         tiempoPreparacion -= deltaTime;
+        ActualizarAudioCuentaRegresiva(audio, preparacionAntes, tiempoPreparacion);
 
         if (tiempoPreparacion <= 0.0f)
         {
@@ -423,7 +396,9 @@ void MinijuegoTrazoPerfecto::Actualizar(
         return;
     }
 
+    float trazoAntes = tiempoTrazo;
     tiempoTrazo -= deltaTime;
+    ActualizarAudioAlertaTiempo(audio, trazoAntes, tiempoTrazo);
     progresoObjetivo = 1.0f -
         Clamp(tiempoTrazo / DURACION_TRAZO_PERFECTO, 0.0f, 1.0f);
 
@@ -438,7 +413,7 @@ void MinijuegoTrazoPerfecto::Actualizar(
 
         EstadoJugadorTrazoPerfecto& jugador = jugadores[i];
 
-        if (participantes[i].esBot)
+        if (participantes[i].esBot || !participantes[i].conectado)
         {
             ActualizarCursorBotTrazo(
                 jugador,
@@ -490,11 +465,300 @@ void MinijuegoTrazoPerfecto::Actualizar(
 }
 
 
+
+//==================================================
+// VISUAL 3D (independiente de la logica)
+//==================================================
+//
+// MODELO FUTURO: reemplazar por GLB las mesas de cartografia estelar,
+// el pincel / punta luminosa, las estrellas de la figura, los telescopios
+// y columnas de laton del observatorio.
+//==================================================
+
+
+static const float MEDIO_LADO_MESA_TRAZO = 3.5f;
+static const float ESCALA_FIGURA_TRAZO = 2.75f;
+static const float SEPARACION_MESAS_TRAZO = 7.7f;
+// Las filas llevan mas aire para que la etiqueta de la fila inferior no
+// roce el borde de las mesas de arriba.
+static const float SEPARACION_FILAS_TRAZO = 8.7f;
+static const float ALTURA_SUPERFICIE_TRAZO = 0.2f;
+
+
+static Camera3D ObtenerCamaraTrazo(int cantidadParticipantes)
+{
+    Camera3D camara{};
+
+    if (cantidadParticipantes <= 2)
+    {
+        camara.position = { 0.0f, 12.5f, 8.5f };
+        camara.target = { 0.0f, 0.0f, -0.6f };
+    }
+    else
+    {
+        camara.position = { 0.0f, 19.6f, 13.0f };
+        camara.target = { 0.0f, 0.0f, -0.1f };
+    }
+
+    camara.up = { 0.0f, 1.0f, 0.0f };
+    camara.fovy = 45.0f;
+    camara.projection = CAMERA_PERSPECTIVE;
+    return camara;
+}
+
+
+// Centro de la mesa de cada jugador (cuadricula de 1 o 2 columnas).
+static Vector3 CentroMesaTrazo(int orden, int cantidadParticipantes)
+{
+    int columnas = cantidadParticipantes <= 2 ? cantidadParticipantes : 2;
+    if (columnas < 1) columnas = 1;
+    int filas = (cantidadParticipantes + columnas - 1) / columnas;
+    if (filas < 1) filas = 1;
+
+    int columna = orden % columnas;
+    int fila = orden / columnas;
+
+    return Vector3
+    {
+        (columna - (columnas - 1) * 0.5f) * SEPARACION_MESAS_TRAZO,
+        0.0f,
+        (fila - (filas - 1) * 0.5f) * SEPARACION_FILAS_TRAZO
+    };
+}
+
+
+// Punto de la figura (-1..1) llevado a la superficie de una mesa.
+static Vector3 PuntoEnMesaTrazo(Vector3 centroMesa, Vector2 punto, float altura)
+{
+    return Vector3
+    {
+        centroMesa.x + punto.x * ESCALA_FIGURA_TRAZO,
+        altura,
+        centroMesa.z + punto.y * ESCALA_FIGURA_TRAZO
+    };
+}
+
+
+static void DibujarObservatorioTrazo(float tiempo)
+{
+    // Suelo del observatorio con aros de astrolabio.
+    DrawCylinder({ 0.0f, -0.6f, 0.0f }, 17.0f, 17.0f, 0.3f, 48, Color{ 18, 16, 36, 255 });
+
+    for (int aro = 0; aro < 4; aro++)
+    {
+        DrawCircle3D(
+            { 0.0f, -0.28f, 0.0f },
+            6.0f + aro * 3.2f,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            Fade(Color{ 214, 170, 80, 255 }, 0.28f - aro * 0.04f)
+        );
+    }
+
+    // Marcas zodiacales y columnas de laton en el perimetro.
+    for (int k = 0; k < 12; k++)
+    {
+        float angulo = k * PI / 6.0f;
+        float x = std::cos(angulo) * 16.0f;
+        float z = std::sin(angulo) * 16.0f;
+        DrawCylinder({ x, -0.3f, z }, 0.35f, 0.45f, 3.0f, 8, Color{ 150, 112, 56, 255 });
+        DrawSphereEx({ x, 2.9f, z }, 0.3f, 8, 8, Fade(Color{ 255, 220, 140, 255 }, 0.6f + 0.4f * std::sin(tiempo * 2.0f + k)));
+    }
+
+    // Telescopio en un lado (tubo inclinado sobre un soporte).
+    DrawCylinder({ -13.5f, -0.3f, -3.0f }, 0.5f, 0.9f, 2.2f, 8, Color{ 120, 90, 50, 255 });
+    DrawCylinderEx({ -13.5f, 2.0f, -3.0f }, { -10.5f, 4.2f, -5.0f }, 0.55f, 0.75f, 10, Color{ 70, 80, 120, 255 });
+    DrawCylinderEx({ -10.5f, 4.2f, -5.0f }, { -10.1f, 4.45f, -5.2f }, 0.8f, 0.8f, 10, Color{ 200, 170, 90, 255 });
+
+    // Polvo de estrellas flotando sobre las mesas.
+    for (int s = 0; s < 36; s++)
+    {
+        float x = std::fmod(s * 7.13f, 26.0f) - 13.0f;
+        float z = std::fmod(s * 4.37f, 18.0f) - 9.0f;
+        float y = 1.2f + std::fmod(s * 1.91f, 4.0f) + std::sin(tiempo * 0.8f + s) * 0.25f;
+        DrawSphereEx({ x, y, z }, 0.05f + 0.03f * std::sin(tiempo * 3.0f + s * 1.7f), 4, 4, Fade(RAYWHITE, 0.6f));
+    }
+}
+
+
+// Estrella de cinco puntas horizontal (visible desde la camara cenital).
+static void DibujarEstrellaTrazo(
+    Vector3 centro,
+    float radioExterior,
+    float giro,
+    Color color
+)
+{
+    const float radioInterior = radioExterior * 0.46f;
+    Vector3 vertices[10];
+
+    for (int v = 0; v < 10; v++)
+    {
+        float angulo = giro + v * PI / 5.0f;
+        float radio = v % 2 == 0 ? radioExterior : radioInterior;
+        vertices[v] =
+        {
+            centro.x + std::cos(angulo) * radio,
+            centro.y,
+            centro.z + std::sin(angulo) * radio
+        };
+    }
+
+    // Ambos sentidos de giro para que no dependa del culling.
+    for (int v = 0; v < 10; v++)
+    {
+        Vector3 a = vertices[v];
+        Vector3 b = vertices[(v + 1) % 10];
+        DrawTriangle3D(centro, a, b, color);
+        DrawTriangle3D(centro, b, a, color);
+    }
+}
+
+
+static void DibujarMesaTrazo(
+    Vector3 centro,
+    Color colorJugador,
+    const Vector2* puntos,
+    int cantidadPuntos,
+    float tiempo
+)
+{
+    // Mesa: patas, losa y superficie de carta estelar.
+    DrawCube({ centro.x, -0.1f, centro.z }, MEDIO_LADO_MESA_TRAZO * 2.0f + 0.4f, 0.3f, MEDIO_LADO_MESA_TRAZO * 2.0f + 0.4f, Color{ 56, 44, 34, 255 });
+    DrawCube({ centro.x, 0.15f, centro.z }, MEDIO_LADO_MESA_TRAZO * 2.0f, 0.1f, MEDIO_LADO_MESA_TRAZO * 2.0f, Color{ 14, 18, 44, 255 });
+
+    // Borde luminoso del color del jugador.
+    float lado = MEDIO_LADO_MESA_TRAZO;
+    DrawCube({ centro.x, 0.18f, centro.z - lado }, lado * 2.0f, 0.06f, 0.12f, colorJugador);
+    DrawCube({ centro.x, 0.18f, centro.z + lado }, lado * 2.0f, 0.06f, 0.12f, colorJugador);
+    DrawCube({ centro.x - lado, 0.18f, centro.z }, 0.12f, 0.06f, lado * 2.0f, colorJugador);
+    DrawCube({ centro.x + lado, 0.18f, centro.z }, 0.12f, 0.06f, lado * 2.0f, colorJugador);
+
+    // Cuadricula tenue.
+    for (int g = -2; g <= 2; g++)
+    {
+        DrawLine3D({ centro.x + g * 1.2f, 0.21f, centro.z - lado + 0.2f }, { centro.x + g * 1.2f, 0.21f, centro.z + lado - 0.2f }, Fade(SKYBLUE, 0.10f));
+        DrawLine3D({ centro.x - lado + 0.2f, 0.21f, centro.z + g * 1.2f }, { centro.x + lado - 0.2f, 0.21f, centro.z + g * 1.2f }, Fade(SKYBLUE, 0.10f));
+    }
+
+    // Constelacion objetivo: aristas luminosas y estrellas en los vertices.
+    for (int p = 0; p < cantidadPuntos; p++)
+    {
+        Vector3 inicio = PuntoEnMesaTrazo(centro, puntos[p], ALTURA_SUPERFICIE_TRAZO + 0.04f);
+        Vector3 fin = PuntoEnMesaTrazo(centro, puntos[(p + 1) % cantidadPuntos], ALTURA_SUPERFICIE_TRAZO + 0.04f);
+
+        DrawCylinderEx(inicio, fin, 0.07f, 0.07f, 4, Fade(Color{ 150, 215, 255, 255 }, 0.55f));
+        DrawSphereEx(inicio, 0.13f + 0.03f * std::sin(tiempo * 3.0f + p), 6, 6, Fade(WHITE, 0.9f));
+    }
+}
+
+
 void MinijuegoTrazoPerfecto::Dibujar(
     const Participante participantes[]
 ) const
 {
-    ClearBackground(Color{ 24, 20, 35, 255 });
+    ClearBackground(Color{ 10, 8, 26, 255 });
+
+    int cantidadPuntos = 0;
+    const Vector2* puntos = ObtenerPuntosTrazo(forma, cantidadPuntos);
+    Vector2 objetivo = PuntoRecorridoTrazo(forma, progresoObjetivo);
+    int cantidad = resultado.cantidadParticipantes > 0 ? resultado.cantidadParticipantes : 1;
+
+    Camera3D camara = ObtenerCamaraTrazo(cantidad);
+    Vector2 etiquetaSuperior[MAX_PARTICIPANTES]{};
+    Vector2 etiquetaInferior[MAX_PARTICIPANTES]{};
+
+    BeginMode3D(camara);
+
+    DibujarObservatorioTrazo(tiempoAnimacion);
+
+    int orden = 0;
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (!resultado.participantes[i].participo)
+        {
+            continue;
+        }
+
+        Vector3 centro = CentroMesaTrazo(orden, cantidad);
+        orden++;
+
+        Color color = participantes[i].color;
+        const EstadoJugadorTrazoPerfecto& jugador = jugadores[i];
+
+        DibujarMesaTrazo(centro, color, puntos, cantidadPuntos, tiempoAnimacion);
+
+        // Huellas del trazo: tubo luminoso del color del jugador.
+        for (int h = 1; h < jugador.cantidadHuellas; h++)
+        {
+            DrawCylinderEx(
+                PuntoEnMesaTrazo(centro, jugador.huellas[h - 1], ALTURA_SUPERFICIE_TRAZO + 0.08f),
+                PuntoEnMesaTrazo(centro, jugador.huellas[h], ALTURA_SUPERFICIE_TRAZO + 0.08f),
+                0.07f,
+                0.07f,
+                3,
+                Fade(color, 0.75f)
+            );
+        }
+
+        // Estrella dorada que hay que seguir: contorno oscuro, cuerpo dorado
+        // brillante y nucleo blanco, con un haz de luz hasta la mesa.
+        Vector3 estrella = PuntoEnMesaTrazo(centro, objetivo, 0.85f);
+        float latido = 1.0f + std::sin(tiempoAnimacion * 6.0f) * 0.08f;
+        float giroEstrella = tiempoAnimacion * 1.2f;
+        DrawCylinderEx(
+            PuntoEnMesaTrazo(centro, objetivo, ALTURA_SUPERFICIE_TRAZO),
+            estrella,
+            0.04f,
+            0.10f,
+            4,
+            Fade(GOLD, 0.45f)
+        );
+        DrawCircle3D(
+            { estrella.x, ALTURA_SUPERFICIE_TRAZO + 0.03f, estrella.z },
+            0.5f * latido,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            Fade(GOLD, 0.8f)
+        );
+        DibujarEstrellaTrazo({ estrella.x, estrella.y, estrella.z }, 0.78f * latido, giroEstrella, Color{ 40, 22, 8, 255 });
+        DibujarEstrellaTrazo({ estrella.x, estrella.y + 0.02f, estrella.z }, 0.64f * latido, giroEstrella, Color{ 255, 205, 40, 255 });
+        DibujarEstrellaTrazo({ estrella.x, estrella.y + 0.04f, estrella.z }, 0.34f * latido, giroEstrella, Color{ 255, 250, 200, 255 });
+
+        // Pincel: cono con la punta sobre el cursor, mas esfera de tinta.
+        Vector3 punta = PuntoEnMesaTrazo(centro, jugador.cursor, ALTURA_SUPERFICIE_TRAZO + 0.1f);
+        DrawCylinder(punta, 0.22f, 0.0f, 0.8f, 8, color);
+        DrawCylinder({ punta.x, punta.y + 0.8f, punta.z }, 0.12f, 0.22f, 0.9f, 8, ColorLerp(color, RAYWHITE, 0.5f));
+        DrawSphereEx(punta, 0.14f, 6, 6, WHITE);
+        DrawCircle3D({ punta.x, ALTURA_SUPERFICIE_TRAZO + 0.02f, punta.z }, 0.3f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(color, 0.8f));
+
+        // Linea de error entre pincel y estrella: verde si va bien, roja si no.
+        float distancia = Vector2Distance(jugador.cursor, objetivo);
+        float calidad = 1.0f - Clamp(distancia / 0.42f, 0.0f, 1.0f);
+
+        if (fase == FASE_TRAZO_DIBUJANDO)
+        {
+            DrawLine3D(
+                { punta.x, punta.y + 0.05f, punta.z },
+                { estrella.x, estrella.y, estrella.z },
+                ColorLerp(Color{ 255, 70, 60, 255 }, LIME, calidad)
+            );
+        }
+
+        etiquetaSuperior[i] = GetWorldToScreen(
+            { centro.x - MEDIO_LADO_MESA_TRAZO, 0.3f, centro.z - MEDIO_LADO_MESA_TRAZO },
+            camara
+        );
+        etiquetaInferior[i] = GetWorldToScreen(
+            { centro.x - MEDIO_LADO_MESA_TRAZO, 0.3f, centro.z + MEDIO_LADO_MESA_TRAZO },
+            camara
+        );
+    }
+
+    EndMode3D();
+
+    int ancho = GetScreenWidth();
 
     DrawText("TRAZO PERFECTO", 24, 20, 30, GOLD);
     DrawText(
@@ -509,41 +773,33 @@ void MinijuegoTrazoPerfecto::Dibujar(
     {
         DrawText(
             TextFormat("PREPARATE: %.1f", tiempoPreparacion),
-            GetScreenWidth() - 260,
+            ancho - 260,
             26,
             22,
             RAYWHITE
         );
+
+        const char* numero = TextFormat("%d", (int)std::ceil(tiempoPreparacion));
+        DrawText(numero, ancho / 2 - MeasureText(numero, 120) / 2, GetScreenHeight() / 2 - 60, 120, Fade(GOLD, 0.9f));
     }
     else if (fase == FASE_TRAZO_DIBUJANDO)
     {
         DrawText(
             TextFormat("TIEMPO: %.1f", tiempoTrazo),
-            GetScreenWidth() - 218,
+            ancho - 218,
             26,
             22,
-            RAYWHITE
+            tiempoTrazo <= 5.0f ? ORANGE : RAYWHITE
         );
 
-        DrawText(
-            "MUEVE TU MARCADOR Y SIGUE EL PUNTO DORADO",
-            GetScreenWidth() - 470,
-            60,
-            17,
-            LIGHTGRAY
-        );
+        const char* ayuda = "MUEVE TU PINCEL (WASD / FLECHAS / STICK) Y SIGUE LA ESTRELLA DORADA";
+        DrawText(ayuda, ancho - MeasureText(ayuda, 17) - 24, 60, 17, GOLD);
     }
     else
     {
-        DrawText("RESULTADOS", GetScreenWidth() - 190, 26, 22, RAYWHITE);
-        DrawText("R PARA REPETIR", GetScreenWidth() - 190, 60, 17, LIGHTGRAY);
+        DrawText("RESULTADOS", ancho - 190, 26, 22, RAYWHITE);
+        DrawText(TextoReinicioMinijuego(), ancho - 190, 60, 17, LIGHTGRAY);
     }
-
-    int cantidadPuntos = 0;
-    const Vector2* puntos = ObtenerPuntosTrazo(forma, cantidadPuntos);
-    Vector2 objetivo = PuntoRecorridoTrazo(forma, progresoObjetivo);
-
-    int orden = 0;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -552,115 +808,31 @@ void MinijuegoTrazoPerfecto::Dibujar(
             continue;
         }
 
-        Rectangle panel = ObtenerPanelTrazo(
-            orden,
-            resultado.cantidadParticipantes
-        );
-
-        DrawRectangleRec(panel, Fade(BLACK, 0.58f));
-        DrawRectangleLinesEx(panel, 3.0f, participantes[i].color);
-
-        DrawText(
-            TextFormat("J%d", participantes[i].numeroJugador),
-            (int)panel.x + 12,
-            (int)panel.y + 10,
-            20,
-            participantes[i].color
-        );
-
         int puntuacion = fase == FASE_TRAZO_TERMINADO
             ? jugadores[i].puntuacionFinal
             : CalcularPuntuacionTrazo(jugadores[i]);
 
         DrawText(
-            TextFormat("PRECISION %d%%", puntuacion),
-            (int)(panel.x + panel.width - 164.0f),
-            (int)panel.y + 12,
-            18,
-            RAYWHITE
-        );
-
-        for (int punto = 0; punto < cantidadPuntos; punto++)
-        {
-            Vector2 inicio = TransformarPuntoPanelTrazo(
-                puntos[punto],
-                panel
-            );
-
-            Vector2 fin = TransformarPuntoPanelTrazo(
-                puntos[(punto + 1) % cantidadPuntos],
-                panel
-            );
-
-            DrawLineEx(inicio, fin, 7.0f, Fade(RAYWHITE, 0.24f));
-            DrawLineEx(inicio, fin, 2.0f, Fade(SKYBLUE, 0.70f));
-        }
-
-        for (int huella = 1; huella < jugadores[i].cantidadHuellas; huella++)
-        {
-            DrawLineEx(
-                TransformarPuntoPanelTrazo(
-                    jugadores[i].huellas[huella - 1],
-                    panel
-                ),
-                TransformarPuntoPanelTrazo(
-                    jugadores[i].huellas[huella],
-                    panel
-                ),
-                3.0f,
-                Fade(participantes[i].color, 0.64f)
-            );
-        }
-
-        Vector2 posicionObjetivo = TransformarPuntoPanelTrazo(
-            objetivo,
-            panel
-        );
-
-        Vector2 posicionCursor = TransformarPuntoPanelTrazo(
-            jugadores[i].cursor,
-            panel
-        );
-
-        float pulso = 8.0f + std::sin(tiempoAnimacion * 6.0f) * 2.0f;
-        DrawCircleV(posicionObjetivo, pulso, GOLD);
-        DrawCircleLines(
-            (int)posicionObjetivo.x,
-            (int)posicionObjetivo.y,
-            pulso + 4.0f,
-            RAYWHITE
-        );
-
-        DrawCircleV(posicionCursor, 9.0f, participantes[i].color);
-        DrawCircleLines(
-            (int)posicionCursor.x,
-            (int)posicionCursor.y,
-            11.0f,
-            RAYWHITE
+            TextFormat("J%d  PRECISION %d%%", participantes[i].numeroJugador, puntuacion),
+            (int)etiquetaSuperior[i].x,
+            (int)etiquetaSuperior[i].y - 26,
+            20,
+            participantes[i].color
         );
 
         if (fase == FASE_TRAZO_TERMINADO)
         {
-            const char* texto =
-                resultado.participantes[i].posicionFinal == 1
-                ? "GANADOR"
-                : TextFormat(
-                    "PUESTO %d",
-                    resultado.participantes[i].posicionFinal
-                );
-
+            bool ganador = resultado.participantes[i].posicionFinal == 1;
             DrawText(
-                texto,
-                (int)panel.x + 12,
-                (int)(panel.y + panel.height - 30.0f),
-                18,
-                resultado.participantes[i].posicionFinal == 1
-                    ? GOLD
-                    : LIGHTGRAY
+                ganador
+                    ? "GANADOR"
+                    : TextFormat("PUESTO %d", resultado.participantes[i].posicionFinal),
+                (int)etiquetaInferior[i].x,
+                (int)etiquetaInferior[i].y + 4,
+                22,
+                ganador ? GOLD : LIGHTGRAY
             );
         }
-
-        orden++;
     }
 }
 

@@ -20,6 +20,10 @@ struct EstadoJugadorIslaFuego
     int tiempoSobrevividoMs = 0;
     float tiempoAturdido = 0.0f;
 
+    // Tras un aturdimiento ninguna bomba puede alcanzar al jugador hasta
+    // 1.2 s despues de que recupere el control (evita cadenas inevitables).
+    float proteccionBomba = 0.0f;
+
     // Un impacto directo con el cuerpo de la bomba no es
     // un simple empujon de area: lanza al jugador y, tras
     // una fraccion de segundo visible, lo elimina.
@@ -41,6 +45,19 @@ struct ProyectilIslaFuego
 };
 
 
+// IA de bots: ven la bomba con retardo, la ubican con error y a veces
+// se distraen. Nada de esto depende del indice del jugador.
+struct EstadoBotIslaFuego
+{
+    bool vioProyectil = false;
+    bool distraido = false;
+    float retardo = 0.0f;
+    Vector3 puntoPercibido{};
+    Vector3 destino{};
+    float tiempoDeriva = 0.0f;
+};
+
+
 struct MinijuegoIslaFuego
 {
     ResultadoMinijuego resultado;
@@ -48,6 +65,8 @@ struct MinijuegoIslaFuego
     EstadoJugadorIslaFuego estadosJugadores[
         MAX_JUGADORES_PRUEBA
     ];
+
+    EstadoBotIslaFuego bots[MAX_JUGADORES_PRUEBA];
 
     BloquePrueba suelo;
 

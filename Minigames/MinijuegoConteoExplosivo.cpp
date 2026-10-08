@@ -1,5 +1,6 @@
 #include "Minigames/MinijuegoConteoExplosivo.h"
 
+#include "Minigames/AudioMinijuegos.h"
 #include "Minigames/TiposMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -164,6 +165,8 @@ static void FinalizarConteo(
         : DESENLACE_EMPATE;
 
     minijuego.fase = FASE_CONTEO_TERMINADO;
+
+    ReproducirSonidoMinijuego(minijuego.audio, SONIDO_RESULTADO);
     minijuego.tiempoFase = 0.0f;
 }
 
@@ -253,7 +256,7 @@ void MinijuegoConteoExplosivo::Reiniciar(
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        jugadores[i].respuesta = 10;
+        jugadores[i].respuesta = 17;
         jugadores[i].retrasoBot = GetRandomValue(35, 160) / 100.0f;
     }
 }
@@ -279,7 +282,17 @@ void MinijuegoConteoExplosivo::Actualizar(
         return;
     }
 
+    float faseAntes = tiempoFase;
     tiempoFase -= deltaTime;
+
+    if (fase == FASE_CONTEO_PREPARACION)
+    {
+        ActualizarAudioCuentaRegresiva(audio, faseAntes, tiempoFase);
+    }
+    else if (fase == FASE_CONTEO_RESPUESTA)
+    {
+        ActualizarAudioAlertaTiempo(audio, faseAntes, tiempoFase, 3.0f);
+    }
 
     if (fase == FASE_CONTEO_PREPARACION)
     {
@@ -297,6 +310,7 @@ void MinijuegoConteoExplosivo::Actualizar(
         if (tiempoFase <= 0.0f)
         {
             fase = FASE_CONTEO_RESPUESTA;
+            ReproducirSonidoMinijuego(audio, SONIDO_INICIO_MINIJUEGO);
             tiempoFase = DURACION_RESPUESTA_CONTEO;
         }
 
@@ -312,17 +326,21 @@ void MinijuegoConteoExplosivo::Actualizar(
 
         EstadoJugadorConteoExplosivo& jugador = jugadores[i];
 
-        if (participantes[i].esBot)
+        if (participantes[i].esBot || !participantes[i].conectado)
         {
             jugador.retrasoBot -= deltaTime;
 
             if (!jugador.botRespondio && jugador.retrasoBot <= 0.0f)
             {
-                int error = GetRandomValue(-2, 2);
+                int margen = (int)std::ceil((float)cantidadDrones * 0.3f);
+                if (margen < 2) margen = 2;
 
-                if (GetRandomValue(0, 99) < 38)
+                // 10% exacto; el resto falla por 1..margen (nunca 0).
+                int error = 0;
+                if (GetRandomValue(0, 99) >= 10)
                 {
-                    error = 0;
+                    error = GetRandomValue(1, margen);
+                    if (GetRandomValue(0, 1) == 0) error = -error;
                 }
 
                 jugador.respuesta = cantidadDrones + error;
@@ -339,11 +357,48 @@ void MinijuegoConteoExplosivo::Actualizar(
         if (entrada.golpear)
         {
             jugador.respuesta++;
+            ReproducirSonidoMinijuego(audio, SONIDO_BOTON);
         }
 
         if (entrada.saltar)
         {
             jugador.respuesta--;
+            ReproducirSonidoMinijuego(audio, SONIDO_BOTON);
+        }
+
+        // Direcciones: derecha/izquierda +-1 (mantener acelera), arriba/abajo +-5.
+        int direccion = 0;
+        if (entrada.derecha) direccion = 1;
+        else if (entrada.izquierda) direccion = -1;
+        else if (entrada.adelante) direccion = 5;
+        else if (entrada.atras) direccion = -5;
+
+        if (direccion == 0)
+        {
+            jugador.direccionMantenida = 0;
+            jugador.tiempoMantenido = 0.0f;
+        }
+        else
+        {
+            if (direccion != jugador.direccionMantenida)
+            {
+                jugador.direccionMantenida = direccion;
+                jugador.tiempoMantenido = 0.0f;
+                jugador.proximoPaso = 0.0f;
+            }
+
+            jugador.tiempoMantenido += deltaTime;
+            jugador.proximoPaso -= deltaTime;
+
+            if (jugador.proximoPaso <= 0.0f)
+            {
+                jugador.respuesta += direccion;
+                ReproducirSonidoMinijuego(audio, SONIDO_BOTON);
+
+                float espera = 0.30f - jugador.tiempoMantenido * 0.12f;
+                if (espera < 0.07f) espera = 0.07f;
+                jugador.proximoPaso = jugador.tiempoMantenido <= 0.0f ? 0.35f : espera;
+            }
         }
 
         jugador.respuesta = Clamp(jugador.respuesta, 0, 30);
@@ -356,6 +411,67 @@ void MinijuegoConteoExplosivo::Actualizar(
 }
 
 
+//==================================================
+// ESCENARIO: hangar de pruebas de drones (solo visual)
+//==================================================
+//
+// MODELO FUTURO: reemplazar por GLB el hangar, los pilares con
+// reflectores, la torre de control, el skyline y la jaula de pruebas.
+//==================================================
+static void DibujarHangarConteo(float tiempo)
+{
+    // Suelo del hangar y plataforma de pruebas.
+    DrawCube({ 0.0f, -0.3f, 0.0f }, 40.0f, 0.4f, 26.0f, Color{ 22, 28, 44, 255 });
+    DrawCube({ 0.0f, -0.05f, 0.0f }, 13.0f, 0.1f, 8.5f, Color{ 31, 47, 72, 255 });
+
+    for (int g = -6; g <= 6; g++)
+    {
+        DrawLine3D({ (float)g, 0.02f, -4.2f }, { (float)g, 0.02f, 4.2f }, Fade(SKYBLUE, 0.14f));
+    }
+
+    for (int g = -4; g <= 4; g++)
+    {
+        DrawLine3D({ -6.5f, 0.02f, (float)g }, { 6.5f, 0.02f, (float)g }, Fade(SKYBLUE, 0.14f));
+    }
+
+    // Muro trasero con skyline nocturno y ventanas encendidas.
+    DrawCube({ 0.0f, 5.0f, -9.0f }, 40.0f, 10.0f, 0.6f, Color{ 14, 18, 34, 255 });
+
+    for (int e = 0; e < 14; e++)
+    {
+        float alto = 2.5f + std::fmod(e * 1.7f, 4.0f);
+        float x = -17.0f + e * 2.6f;
+        DrawCube({ x, alto * 0.5f, -8.5f }, 2.0f, alto, 0.5f, Color{ 24, 30, 54, 255 });
+
+        for (int v = 0; v < 3; v++)
+        {
+            if ((e * 3 + v) % 2 == 0)
+            {
+                DrawCube({ x, 1.0f + v * 1.1f, -8.2f }, 0.5f, 0.3f, 0.05f, Fade(GOLD, 0.7f));
+            }
+        }
+    }
+
+    // Pilares laterales con reflectores y haz de luz.
+    for (int lado = -1; lado <= 1; lado += 2)
+    {
+        for (int k = 0; k < 2; k++)
+        {
+            float x = lado * 8.2f;
+            float z = -3.0f + k * 6.0f;
+            DrawCube({ x, 3.0f, z }, 0.7f, 6.0f, 0.7f, Color{ 52, 60, 84, 255 });
+            DrawSphereEx({ x, 6.1f, z }, 0.3f, 8, 8, Fade(SKYBLUE, 0.7f + 0.3f * std::sin(tiempo * 3.0f + k)));
+            DrawCylinderEx({ x, 6.0f, z }, { x * 0.35f, 0.0f, 0.0f }, 0.04f, 0.5f, 8, Fade(SKYBLUE, 0.05f));
+        }
+    }
+
+    // Torre de control a un lado.
+    DrawCube({ 12.0f, 2.5f, -5.0f }, 2.0f, 5.0f, 2.0f, Color{ 38, 46, 70, 255 });
+    DrawCube({ 12.0f, 5.4f, -5.0f }, 3.0f, 0.9f, 3.0f, Color{ 60, 90, 130, 255 });
+    DrawSphereEx({ 12.0f, 6.2f, -5.0f }, 0.25f, 6, 6, Fade(RED, 0.5f + 0.5f * std::sin(tiempo * 5.0f)));
+}
+
+
 void MinijuegoConteoExplosivo::Dibujar(
     const Participante participantes[]
 ) const
@@ -363,14 +479,8 @@ void MinijuegoConteoExplosivo::Dibujar(
     ClearBackground(Color{ 17, 24, 43, 255 });
 
     BeginMode3D(camara);
+    DibujarHangarConteo(tiempoAnimacion);
 
-    DrawPlane(
-        { 0.0f, 0.0f, 0.0f },
-        { 13.0f, 8.5f },
-        Color{ 31, 47, 72, 255 }
-    );
-
-    DrawGrid(14, 1.0f);
 
     DrawCubeWires(
         { 0.0f, 2.0f, 0.0f },
@@ -393,12 +503,13 @@ void MinijuegoConteoExplosivo::Dibujar(
     }
     else
     {
+        // Los drones se ocultan, pero el hangar sigue visible (atenuado).
         DrawCube(
             { 0.0f, 2.2f, 0.0f },
             12.7f,
             4.5f,
             8.2f,
-            Color{ 11, 16, 29, 255 }
+            Fade(Color{ 11, 16, 29, 255 }, 0.30f)
         );
 
         DrawCubeWires(
@@ -449,13 +560,14 @@ void MinijuegoConteoExplosivo::Dibujar(
 
             int panelX = x + orden * (anchoPanel + separacion);
             Color color = participantes[i].color;
+            bool esHumano = !(participantes[i].esBot || !participantes[i].conectado);
 
             DrawRectangle(
                 panelX,
                 GetScreenHeight() - 190,
                 anchoPanel,
                 116,
-                Fade(BLACK, 0.78f)
+                Fade(esHumano ? Color{ 40, 40, 20, 255 } : BLACK, 0.82f)
             );
 
             DrawRectangleLinesEx(
@@ -465,9 +577,14 @@ void MinijuegoConteoExplosivo::Dibujar(
                     (float)anchoPanel,
                     116.0f
                 },
-                3.0f,
+                esHumano ? 5.0f : 2.0f,
                 color
             );
+
+            if (esHumano && fase == FASE_CONTEO_RESPUESTA)
+            {
+                DrawText("TU RESPUESTA", panelX + 14, GetScreenHeight() - 112, 16, GOLD);
+            }
 
             DrawText(
                 TextFormat("J%d", participantes[i].numeroJugador),
@@ -487,6 +604,18 @@ void MinijuegoConteoExplosivo::Dibujar(
 
             if (fase == FASE_CONTEO_TERMINADO)
             {
+                int signado = jugadores[i].respuesta - cantidadDrones;
+                const char* error = signado == 0
+                    ? "EXACTO"
+                    : TextFormat("%+d", signado);
+                DrawText(
+                    error,
+                    panelX + anchoPanel - MeasureText(error, 30) - 14,
+                    GetScreenHeight() - 168,
+                    30,
+                    signado == 0 ? LIME : ORANGE
+                );
+
                 const char* texto =
                     resultado.participantes[i].posicionFinal == 1
                     ? "GANADOR"
@@ -510,10 +639,10 @@ void MinijuegoConteoExplosivo::Dibujar(
     if (fase == FASE_CONTEO_RESPUESTA)
     {
         DrawText(
-            "GOLPEAR: +1     SALTAR: -1",
-            GetScreenWidth() / 2 - 174,
+            "GOLPEAR +1  SALTAR -1  |  DERECHA/IZQ: MANTEN PARA ACELERAR  |  ARRIBA/ABAJO: +-5",
+            GetScreenWidth() / 2 - 380,
             148,
-            21,
+            19,
             RAYWHITE
         );
     }

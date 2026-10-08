@@ -7,112 +7,75 @@
 #include "Systems/Audio.h"
 
 
-enum PantallaMenuConfiguracion
-{
-    CONFIG_SELECCION_CATEGORIA = 0,
-    CONFIG_DETALLE_CATEGORIA
-};
-
-
 enum CategoriaConfiguracion
 {
-    CATEGORIA_AUDIO = 0,
-    CATEGORIA_VIDEO,
-    CATEGORIA_CONTROL,
-    CATEGORIA_ACERCA_DE,
+    CATEGORIA_VIDEO = 0,
+    CATEGORIA_GRAFICOS,
+    CATEGORIA_AUDIO,
+    CATEGORIA_CONTROLES,
+    CATEGORIA_JUEGO,
+    CATEGORIA_ACCESIBILIDAD,
 
     CANTIDAD_CATEGORIAS_CONFIGURACION
 };
 
 
-enum OpcionAudio
+// Cada opcion tiene un identificador propio; las categorias solo
+// deciden cuales se listan (ver ObtenerOpcionCategoria en el .cpp).
+enum OpcionConfiguracion
 {
-    AUDIO_VOLUMEN_SONIDOS = 0,
-    AUDIO_VOLUMEN_MUSICA,
-    AUDIO_VOLVER,
+    OPCION_NINGUNA = -1,
 
-    CANTIDAD_OPCIONES_AUDIO
-};
+    OPCION_VIDEO_MODO = 0,
+    OPCION_VIDEO_RESOLUCION,
+    OPCION_VIDEO_FPS,
+    OPCION_VIDEO_MOSTRAR_FPS,
+    OPCION_VIDEO_VSYNC,
 
+    OPCION_GRAFICO_PRESET,
+    OPCION_GRAFICO_PARTICULAS,
+    OPCION_GRAFICO_DECORACION,
+    OPCION_GRAFICO_EFECTOS,
+    OPCION_GRAFICO_SOMBRAS,
 
-enum OpcionVideo
-{
-    VIDEO_MODO_VENTANA = 0,
-    VIDEO_RESOLUCION,
-    VIDEO_FPS,
-    VIDEO_MOSTRAR_FPS,
-    VIDEO_VOLVER,
+    OPCION_AUDIO_SONIDOS,
+    OPCION_AUDIO_MUSICA,
 
-    CANTIDAD_OPCIONES_VIDEO
-};
+    OPCION_CONTROL_MODO_TECLADO,
+    OPCION_CONTROL_ZONA_MUERTA,
 
+    OPCION_JUEGO_RESTAURAR,
 
-enum OpcionControl
-{
-    CONTROL_MODO_TECLADO = 0,
-    CONTROL_VOLVER,
-
-    CANTIDAD_OPCIONES_CONTROL
+    OPCION_ACCESIBILIDAD_MOVIMIENTO
 };
 
 
 struct MenuConfiguracion
 {
     //------------------------------
-    // PANTALLA
-    //------------------------------
-
-    PantallaMenuConfiguracion pantallaActual =
-        CONFIG_SELECCION_CATEGORIA;
-
-
-    //------------------------------
-    // CATEGORIAS
+    // SELECCION
     //------------------------------
 
     int categoriaActual =
-        CATEGORIA_AUDIO;
+        CATEGORIA_VIDEO;
 
-    int categoriaCursor =
-        CATEGORIA_AUDIO;
+    int opcionSeleccionada[CANTIDAD_CATEGORIAS_CONFIGURACION] =
+        {};
 
     int categoriaHover =
         -1;
 
 
     //------------------------------
-    // OPCIONES
+    // ESTADOS PARA EL LLAMADOR
     //------------------------------
 
-    int opcionAudioSeleccionada =
-        0;
-
-    int opcionVideoSeleccionada =
-        0;
-
-    int opcionControlSeleccionada =
-        0;
-
-
-    //------------------------------
-    // ESTADOS
-    //------------------------------
-
+    // El menu termino su animacion de salida: Juego debe volver al HUB.
     bool volver =
         false;
 
+    // Algo cambio y ya es definitivo: Juego debe guardar config.ini.
     bool configuracionCambiada =
-        false;
-
-
-    //------------------------------
-    // MOUSE
-    //------------------------------
-
-    bool arrastrandoVolumenSonidos =
-        false;
-
-    bool arrastrandoVolumenMusica =
         false;
 
 
@@ -129,23 +92,96 @@ struct MenuConfiguracion
     bool saliendo =
         false;
 
-    bool transicionContenidoActiva =
+    bool cambiandoCategoria =
         false;
-
-    bool transicionContenidoSaliendo =
-        false;
-
-    PantallaMenuConfiguracion pantallaDestino =
-        CONFIG_SELECCION_CATEGORIA;
 
     int categoriaDestino =
-        CATEGORIA_AUDIO;
+        CATEGORIA_VIDEO;
 
     const float DURACION_TRANSICION =
         0.25f;
 
     const float DURACION_TRANSICION_CONTENIDO =
-        0.16f;
+        0.12f;
+
+
+    //------------------------------
+    // ENTRADA
+    //------------------------------
+
+    float bloqueoEntrada =
+        0.0f;
+
+    int direccionPrevia =
+        0;
+
+    float tiempoDireccion =
+        0.0f;
+
+    float siguienteRepeticion =
+        0.0f;
+
+    int ejeHorizontalPrevio =
+        0;
+
+    int ejeVerticalPrevio =
+        0;
+
+    Vector2 mouseAnterior =
+        { 0.0f, 0.0f };
+
+
+    //------------------------------
+    // MOUSE / PREVIEW DE SONIDO
+    //------------------------------
+
+    int opcionArrastrada =
+        OPCION_NINGUNA;
+
+    float enfriamientoPreview =
+        0.0f;
+
+
+    //------------------------------
+    // CONFIRMACION DE VIDEO
+    //------------------------------
+
+    // Tras cambiar modo o resolucion se pide confirmar; si no se confirma
+    // a tiempo, se vuelve a lo anterior.
+    bool confirmandoVideo =
+        false;
+
+    float tiempoConfirmacion =
+        0.0f;
+
+    ModoVentana modoPrevio =
+        MODO_VENTANA;
+
+    int resolucionPrevia =
+        0;
+
+    const float DURACION_CONFIRMACION =
+        10.0f;
+
+
+    //------------------------------
+    // AVISOS
+    //------------------------------
+
+    bool restaurarArmado =
+        false;
+
+    float tiempoRestaurar =
+        0.0f;
+
+    const char* aviso =
+        "";
+
+    float tiempoAviso =
+        0.0f;
+
+    bool vsyncSincronizado =
+        false;
 
 
     //------------------------------

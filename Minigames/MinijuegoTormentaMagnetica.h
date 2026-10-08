@@ -3,6 +3,7 @@
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
+#include "Systems/Audio.h"
 
 
 const int MAX_PINCHOS_TORMENTA_MAGNETICA = 12;
@@ -30,6 +31,25 @@ struct PinchoTormentaMagnetica
     Vector3 posicion{};
     Vector3 velocidad{};
     float tiempoVida = 0.0f;
+
+    // Telegrafia: marca en el suelo antes de que el pincho caiga.
+    float aviso = 0.0f;
+    float avisoTotal = 0.85f;
+};
+
+
+// IA de bots: perciben el cambio de campo con retraso (~0.3 s) y con error
+// en la posicion del nucleo; a veces se distraen de los pinchos.
+struct EstadoBotTormentaMagnetica
+{
+    int cambiosVistos = 0;
+    float retardo = 0.0f;
+    bool campoAtrae = true;
+    Vector3 nucleoPercibido{};
+    Vector3 ancla{};
+    float tiempoAncla = 0.0f;
+    float tiempoAtencion = 0.0f;
+    bool atento = true;
 };
 
 
@@ -44,6 +64,8 @@ struct MinijuegoTormentaMagnetica
     PinchoTormentaMagnetica pinchos[
         MAX_PINCHOS_TORMENTA_MAGNETICA
     ];
+
+    EstadoBotTormentaMagnetica bots[MAX_JUGADORES_PRUEBA];
 
     BloquePrueba suelo;
     Camera3D camara{};
@@ -61,6 +83,9 @@ struct MinijuegoTormentaMagnetica
     float tiempoAnimacion = 0.0f;
 
     int cambiosCampo = 0;
+    float tiempoDesdeCambio = 99.0f;
+
+    AudioJuego* audio = nullptr;
 
     void Inicializar();
 

@@ -3,6 +3,7 @@
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
+#include "Systems/Audio.h"
 
 
 enum FaseMinijuegoPelotas
@@ -21,13 +22,28 @@ struct EstadoJugadorPelotas
 };
 
 
+// Parametros aleatorios por partida de cada bot (no dependen del indice).
+struct EstadoBotPelotas
+{
+    float faseX = 0.0f;
+    float faseZ = 0.0f;
+    float faseDuda = 0.0f;
+    float amplitudError = 0.9f;
+    float retardoBorde = 0.0f;
+    float esperaBorde = 0.0f;
+};
+
+
 struct MinijuegoPelotas
 {
     ResultadoMinijuego resultado;
+    AudioJuego* audio = nullptr;
 
     EstadoJugadorPelotas estadosJugadores[
         MAX_JUGADORES_PRUEBA
     ];
+
+    EstadoBotPelotas bots[MAX_JUGADORES_PRUEBA];
 
     BloquePrueba bloques[1];
     int cantidadBloques = 0;
@@ -40,6 +56,7 @@ struct MinijuegoPelotas
     float tiempoPreparacion = 3.0f;
     float tiempoRestante = 60.0f;
     float tiempoJugado = 0.0f;
+    bool terminoPorTiempo = false;
 
     void Inicializar();
 

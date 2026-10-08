@@ -3,6 +3,30 @@
 #include "Systems/Input.h"
 #include "UI/MiniaturasMinijuegos.h"
 
+#include <cmath>
+
+
+static const int COLUMNAS_CATALOGO = 8;
+
+// Filas visibles a la vez. Con mas minijuegos la grilla se desplaza
+// en lugar de achicar las miniaturas hasta volverlas ilegibles.
+static const int FILAS_VISIBLES_CATALOGO = 4;
+
+
+static int ObtenerFilasTotalesCatalogo()
+{
+    return
+        (CANTIDAD_MINIJUEGOS + COLUMNAS_CATALOGO - 1) /
+        COLUMNAS_CATALOGO;
+}
+
+
+static int ObtenerFilaInicialMaxima()
+{
+    int maximo = ObtenerFilasTotalesCatalogo() - FILAS_VISIBLES_CATALOGO;
+    return maximo > 0 ? maximo : 0;
+}
+
 
 static Rectangle ObtenerAreaCatalogo()
 {
@@ -11,35 +35,51 @@ static Rectangle ObtenerAreaCatalogo()
         45.0f,
         150.0f,
         GetScreenWidth() - 460.0f,
-        430.0f
+        // En ventanas bajas se reduce para no pisar el texto inferior.
+        std::fmin(430.0f, GetScreenHeight() - 290.0f)
     };
 }
 
 
+static bool EsCeldaVisible(
+    int indice,
+    int filaInicial
+)
+{
+    int fila = indice / COLUMNAS_CATALOGO;
+
+    return
+        fila >= filaInicial &&
+        fila < filaInicial + FILAS_VISIBLES_CATALOGO;
+}
+
+
 static Rectangle ObtenerCeldaCatalogo(
-    int indice
+    int indice,
+    int filaInicial
 )
 {
     Rectangle area = ObtenerAreaCatalogo();
 
-    const int columnas = 8;
+    int filasTotales = ObtenerFilasTotalesCatalogo();
     const int filas =
-        (CANTIDAD_MINIJUEGOS + columnas - 1) /
-        columnas;
+        filasTotales < FILAS_VISIBLES_CATALOGO
+            ? filasTotales
+            : FILAS_VISIBLES_CATALOGO;
 
     const float separacionX = 11.0f;
     const float separacionY = 10.0f;
 
     float anchoCelda =
-        (area.width - separacionX * (columnas - 1)) /
-        (float)columnas;
+        (area.width - separacionX * (COLUMNAS_CATALOGO - 1)) /
+        (float)COLUMNAS_CATALOGO;
 
     float altoCelda =
         (area.height - separacionY * (filas - 1)) /
         (float)filas;
 
-    int columna = indice % columnas;
-    int fila = indice / columnas;
+    int columna = indice % COLUMNAS_CATALOGO;
+    int fila = indice / COLUMNAS_CATALOGO - filaInicial;
 
     return Rectangle
     {
@@ -57,10 +97,8 @@ static int MoverIndice(
     int deltaY
 )
 {
-    const int columnas = 8;
-    const int filas =
-        (CANTIDAD_MINIJUEGOS + columnas - 1) /
-        columnas;
+    const int columnas = COLUMNAS_CATALOGO;
+    const int filas = ObtenerFilasTotalesCatalogo();
 
     int columna = actual % columnas;
     int fila = actual / columnas;
@@ -91,6 +129,7 @@ void SeleccionMinijuegos::Inicializar()
     confirmado = false;
     volver = false;
     progresoPanel = 0.0f;
+    filaInicial = 0;
 }
 
 
@@ -119,11 +158,31 @@ void SeleccionMinijuegos::Actualizar(
     if (entrada.abajo)
         nuevoIndice = MoverIndice(nuevoIndice, 0, 1);
 
-    Vector2 mouse = GetMousePosition();
+    // La rueda desplaza la grilla sin cambiar la seleccion.
+    float rueda = GetMouseWheelMove();
+    if (rueda > 0.0f) filaInicial--;
+    if (rueda < 0.0f) filaInicial++;
+    if (filaInicial < 0) filaInicial = 0;
+    if (filaInicial > ObtenerFilaInicialMaxima()) filaInicial = ObtenerFilaInicialMaxima();
 
-    for (int i = 0; i < CANTIDAD_MINIJUEGOS; i++)
+    Vector2 mouse = GetMousePosition();
+    Vector2 deltaMouse = GetMouseDelta();
+
+    // El mouse solo elige si se movio o hizo clic; asi una flecha que
+    // desplaza la grilla no queda pisada por un cursor quieto.
+    bool mouseActivo =
+        deltaMouse.x != 0.0f ||
+        deltaMouse.y != 0.0f ||
+        IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+
+    for (int i = 0; i < CANTIDAD_MINIJUEGOS && mouseActivo; i++)
     {
-        Rectangle celda = ObtenerCeldaCatalogo(i);
+        if (!EsCeldaVisible(i, filaInicial))
+        {
+            continue;
+        }
+
+        Rectangle celda = ObtenerCeldaCatalogo(i, filaInicial);
 
         if (CheckCollisionPointRec(mouse, celda))
         {
@@ -133,6 +192,17 @@ void SeleccionMinijuegos::Actualizar(
             {
                 confirmado = true;
             }
+        }
+    }
+
+    // Al cambiar la seleccion, mantener visible su fila.
+    if (nuevoIndice != indiceSeleccionado)
+    {
+        int filaSeleccion = nuevoIndice / COLUMNAS_CATALOGO;
+        if (filaSeleccion < filaInicial) filaInicial = filaSeleccion;
+        if (filaSeleccion >= filaInicial + FILAS_VISIBLES_CATALOGO)
+        {
+            filaInicial = filaSeleccion - FILAS_VISIBLES_CATALOGO + 1;
         }
     }
 
@@ -201,9 +271,50 @@ void SeleccionMinijuegos::Dibujar(
         Fade(RAYWHITE, 0.70f)
     );
 
+    // Indicador de desplazamiento cuando hay mas filas que las visibles.
+    if (ObtenerFilaInicialMaxima() > 0)
+    {
+        float altoBarra = area.height + 36.0f;
+        float proporcion =
+            (float)FILAS_VISIBLES_CATALOGO /
+            (float)ObtenerFilasTotalesCatalogo();
+        float avance =
+            (float)filaInicial / (float)ObtenerFilaInicialMaxima();
+        float altoPulgar = altoBarra * proporcion;
+
+        DrawRectangle(
+            (int)(area.x + area.width + 18.0f),
+            (int)(area.y - 18.0f),
+            6,
+            (int)altoBarra,
+            Fade(RAYWHITE, 0.18f)
+        );
+
+        DrawRectangle(
+            (int)(area.x + area.width + 18.0f),
+            (int)(area.y - 18.0f + (altoBarra - altoPulgar) * avance),
+            6,
+            (int)altoPulgar,
+            Fade(RAYWHITE, 0.80f)
+        );
+
+        DrawText(
+            TextFormat("%d / %d", indiceSeleccionado + 1, CANTIDAD_MINIJUEGOS),
+            (int)area.x,
+            (int)(area.y + area.height + 24.0f),
+            16,
+            LIGHTGRAY
+        );
+    }
+
     for (int i = 0; i < CANTIDAD_MINIJUEGOS; i++)
     {
-        Rectangle celda = ObtenerCeldaCatalogo(i);
+        if (!EsCeldaVisible(i, filaInicial))
+        {
+            continue;
+        }
+
+        Rectangle celda = ObtenerCeldaCatalogo(i, filaInicial);
         DibujarMiniaturaMinijuego(
             ObtenerIdMinijuegoPorIndice(i),
             celda

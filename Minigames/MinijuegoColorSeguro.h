@@ -29,6 +29,11 @@ struct EstadoJugadorColorSeguro
     int posicionFinal = 0;
     int tiempoSobrevividoMs = 0;
     int rondasSobrevividas = 0;
+
+    // Estado de la IA cuando el participante es bot o esta desconectado.
+    int rondaBot = -1;
+    float retrasoBot = 0.0f;
+    Vector3 objetivoBot{};
 };
 
 

@@ -126,52 +126,18 @@ struct SolicitudInicioSeleccion
 //==================================================
 // PERSONAJE
 //==================================================
+//
+// El roster son los 4 personajes reales del juego. Se muestran en 3D con
+// el modelo compartido (Minigames/ModeloJugadorCompartido); aqui solo
+// viven el nombre y el color de cada uno. No se cargan texturas propias.
 
 struct PersonajeSeleccion
 {
-    //------------------------------
-    // DATOS
-    //------------------------------
-
     const char* nombre =
         "";
 
     Color color =
         LIGHTGRAY;
-
-
-    //------------------------------
-    // ARCHIVOS
-    //------------------------------
-
-    const char* rutaIcono =
-        "";
-
-    const char* rutaRetrato =
-        "";
-
-
-    //------------------------------
-    // TEXTURAS
-    //------------------------------
-
-    Texture2D icono =
-        {};
-
-    Texture2D retrato =
-        {};
-
-
-
-    //------------------------------
-    // ESTADOS
-    //------------------------------
-
-    bool iconoCargado =
-        false;
-
-    bool retratoCargado =
-        false;
 };
 
 
@@ -181,21 +147,13 @@ struct PersonajeSeleccion
 
 struct JugadorSeleccion
 {
-    //------------------------------
-    // PERSONAJE
-    //------------------------------
-
     int cursorPersonaje =
         0;
 
     bool listo =
         false;
 
-
-    //------------------------------
-    // BLOQUEOS DEL STICK
-    //------------------------------
-
+    // Bloqueos del stick (un empuje = un movimiento).
     bool bloqueoHorizontal =
         false;
 
@@ -207,41 +165,20 @@ struct JugadorSeleccion
 //==================================================
 // SELECCION DE PERSONAJES
 //==================================================
+//
+// Escena 3D (UI/SeleccionPersonajes3D) con un pedestal por personaje y
+// un cursor de color por jugador humano. Los puestos sin unirse seran
+// bots (los completa Juego al iniciar la partida).
 
 struct SeleccionPersonajes
 {
-    //------------------------------
-    // PERSONAJES
-    //------------------------------
-
     PersonajeSeleccion personajes[
         MAX_PERSONAJES_SELECCION
     ];
 
-
-    //------------------------------
-    // JUGADORES
-    //------------------------------
-
     JugadorSeleccion jugadores[
         MAX_JUGADORES_SELECCION
     ];
-
-
-    //------------------------------
-    // GRID
-    //------------------------------
-
-    int columnas =
-        2;
-
-    int filas =
-        2;
-
-
-    //------------------------------
-    // RECURSOS
-    //------------------------------
 
     bool recursosCargados =
         false;
@@ -269,6 +206,51 @@ struct SeleccionPersonajes
 
     const float DURACION_ENTRADA =
         0.30f;
+
+
+    //------------------------------
+    // ESTADO VISUAL (solo presentacion)
+    //------------------------------
+
+    float tiempoEscena =
+        0.0f;
+
+    // 0..1 suavizado: personaje apuntado por algun humano.
+    float foco[MAX_PERSONAJES_SELECCION] = {};
+
+    // Segundos desde que alguien confirmo ese personaje
+    // (>= DURACION_REACCION = sin reaccion).
+    float tiempoReaccion[MAX_PERSONAJES_SELECCION] = {};
+
+    // Segundos que el puesto lleva sin humano (escalona los bots).
+    float tiempoComoBot[MAX_JUGADORES_SELECCION] = {};
+
+    // Aviso "CONTROL DESCONECTADO" restante, en segundos.
+    float avisoDesconexion[MAX_JUGADORES_SELECCION] = {};
+
+    // Segundos con todos los jugadores listos (fiesta de confeti).
+    float tiempoTodosListos =
+        0.0f;
+
+    const float DURACION_REACCION =
+        0.75f;
+
+
+    //------------------------------
+    // EVENTOS DE SONIDO DEL ULTIMO Actualizar()
+    //------------------------------
+    //
+    // La pantalla no recibe AudioJuego: Juego puede leer estas banderas
+    // despues de Actualizar() y reproducir el sonido que corresponda.
+
+    bool sonidoMover =
+        false;
+
+    bool sonidoConfirmar =
+        false;
+
+    bool sonidoCancelar =
+        false;
 
 
     //------------------------------

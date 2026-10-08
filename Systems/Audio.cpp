@@ -2,24 +2,62 @@
 
 #include "Core/RecursosJuego.h"
 
+#include <cstdio>
 
-struct RutasSonidoJuego
+
+// Rutas base sin extension, en el mismo orden que TipoSonidoJuego.
+static const char* const RUTAS_SONIDOS[] =
 {
-    const char* wav = nullptr;
-    const char* mp3 = nullptr;
+    RUTA_SFX_UI_MOVER,
+    RUTA_SFX_UI_CONFIRMAR,
+    RUTA_SFX_CUENTA_REGRESIVA,
+    RUTA_SFX_INICIO_MINIJUEGO,
+    RUTA_SFX_RECOGER_NUCLEO,
+    RUTA_SFX_RECOGER_NUCLEO_ESPECIAL,
+    RUTA_SFX_ALERTA_TIEMPO,
+    RUTA_SFX_RESULTADO,
+
+    RUTA_SFX_UI_CANCELAR,
+
+    RUTA_SFX_SALTO,
+    RUTA_SFX_ATERRIZAJE,
+    RUTA_SFX_GOLPE,
+    RUTA_SFX_CAIDA,
+    RUTA_SFX_GROUND_POUND,
+
+    RUTA_SFX_DADO,
+    RUTA_SFX_PASO_TABLERO,
+    RUTA_SFX_MONEDA,
+    RUTA_SFX_COMPRA,
+    RUTA_SFX_CASILLA_POSITIVA,
+    RUTA_SFX_CASILLA_NEGATIVA,
+    RUTA_SFX_EVENTO_TABLERO,
+    RUTA_SFX_RULETA_TICK,
+
+    RUTA_SFX_RECOGER_OBJETO,
+    RUTA_SFX_EXPLOSION,
+    RUTA_SFX_BOTON,
+    RUTA_SFX_DISPARO,
+    RUTA_SFX_PLATAFORMA,
+    RUTA_SFX_IMPACTO,
+    RUTA_SFX_ACIERTO,
+    RUTA_SFX_ERROR,
+    RUTA_SFX_ELIMINADO
 };
 
+static_assert(
+    sizeof(RUTAS_SONIDOS) / sizeof(RUTAS_SONIDOS[0]) ==
+        CANTIDAD_SONIDOS_JUEGO,
+    "Cada TipoSonidoJuego necesita su ruta en RUTAS_SONIDOS"
+);
 
-static const RutasSonidoJuego RUTAS_SONIDOS[CANTIDAD_SONIDOS_JUEGO] =
+
+// Para efectos cortos preferimos WAV; OGG y MP3 son alternativas.
+static const char* const EXTENSIONES_SONIDO[] =
 {
-    { RUTA_SFX_UI_MOVER_WAV, RUTA_SFX_UI_MOVER_MP3 },
-    { RUTA_SFX_UI_CONFIRMAR_WAV, RUTA_SFX_UI_CONFIRMAR_MP3 },
-    { RUTA_SFX_CUENTA_REGRESIVA_WAV, RUTA_SFX_CUENTA_REGRESIVA_MP3 },
-    { RUTA_SFX_INICIO_MINIJUEGO_WAV, RUTA_SFX_INICIO_MINIJUEGO_MP3 },
-    { RUTA_SFX_RECOGER_NUCLEO_WAV, RUTA_SFX_RECOGER_NUCLEO_MP3 },
-    { RUTA_SFX_RECOGER_NUCLEO_ESPECIAL_WAV, RUTA_SFX_RECOGER_NUCLEO_ESPECIAL_MP3 },
-    { RUTA_SFX_ALERTA_TIEMPO_WAV, RUTA_SFX_ALERTA_TIEMPO_MP3 },
-    { RUTA_SFX_RESULTADO_WAV, RUTA_SFX_RESULTADO_MP3 }
+    ".wav",
+    ".ogg",
+    ".mp3"
 };
 
 
@@ -38,8 +76,7 @@ static float LimitarFloat(
 static void CargarSonidoDesdeArchivo(
     AudioJuego& audio,
     TipoSonidoJuego tipo,
-    const char* rutaWav,
-    const char* rutaMp3
+    const char* rutaBase
 )
 {
     if (!audio.dispositivoInicializado)
@@ -47,25 +84,32 @@ static void CargarSonidoDesdeArchivo(
         return;
     }
 
-    const char* rutaElegida = nullptr;
+    char rutaElegida[256]{};
+    bool encontrada = false;
 
-    // Para efectos cortos preferimos WAV. Si no existe,
-    // permitimos MP3 con el mismo nombre como alternativa.
-    if (FileExists(rutaWav))
+    for (const char* extension : EXTENSIONES_SONIDO)
     {
-        rutaElegida = rutaWav;
+        std::snprintf(
+            rutaElegida,
+            sizeof(rutaElegida),
+            "%s%s",
+            rutaBase,
+            extension
+        );
+
+        if (FileExists(rutaElegida))
+        {
+            encontrada = true;
+            break;
+        }
     }
-    else if (FileExists(rutaMp3))
-    {
-        rutaElegida = rutaMp3;
-    }
-    else
+
+    if (!encontrada)
     {
         TraceLog(
             LOG_WARNING,
-            "No se encontro SFX. Agrega %s o %s",
-            rutaWav,
-            rutaMp3
+            "No se encontro SFX. Agrega %s.wav, .ogg o .mp3",
+            rutaBase
         );
 
         return;
@@ -129,10 +173,49 @@ void AudioJuego::Inicializar()
         CargarSonidoDesdeArchivo(
             *this,
             (TipoSonidoJuego)i,
-            RUTAS_SONIDOS[i].wav,
-            RUTAS_SONIDOS[i].mp3
+            RUTAS_SONIDOS[i]
         );
     }
+}
+
+
+// Rutas base (sin extension) de las categorias que no son el menu.
+static const char* const RUTAS_MUSICA_CATEGORIA[CANTIDAD_CATEGORIAS_MUSICA] =
+{
+    nullptr,
+    RUTA_MUSICA_TABLERO,
+    RUTA_MUSICA_MINIJUEGO,
+    RUTA_MUSICA_RESULTADO
+};
+
+
+static bool CargarPistaMusica(
+    AudioJuego& audio,
+    CategoriaMusica categoria,
+    const char* ruta
+)
+{
+    if (ruta == nullptr || !FileExists(ruta))
+    {
+        return false;
+    }
+
+    Music musica = LoadMusicStream(ruta);
+
+    if (!IsMusicValid(musica))
+    {
+        TraceLog(LOG_WARNING, "No se pudo cargar musica: %s", ruta);
+        return false;
+    }
+
+    musica.looping = true;
+    SetMusicVolume(musica, audio.volumenMusica);
+
+    audio.musicas[categoria] = musica;
+    audio.musicasCargadas[categoria] = true;
+
+    TraceLog(LOG_INFO, "Musica cargada: %s", ruta);
+    return true;
 }
 
 
@@ -145,7 +228,7 @@ void AudioJuego::CargarMusicaMenu(
         return;
     }
 
-    if (musicaMenuCargada)
+    if (musicasCargadas[MUSICA_MENU])
     {
         return;
     }
@@ -160,55 +243,91 @@ void AudioJuego::CargarMusicaMenu(
         rutaElegida = RUTA_MUSICA_MENU;
     }
 
-    if (!FileExists(rutaElegida))
+    if (!CargarPistaMusica(*this, MUSICA_MENU, rutaElegida))
     {
         TraceLog(
             LOG_WARNING,
             "No se encontro musica del menu: %s",
             rutaElegida
         );
-
-        return;
     }
 
-    musicaMenu = LoadMusicStream(rutaElegida);
-
-    if (!IsMusicValid(musicaMenu))
+    // Categorias opcionales: se prueban .ogg y .mp3.
+    for (int i = 0; i < CANTIDAD_CATEGORIAS_MUSICA; i++)
     {
-        TraceLog(
-            LOG_WARNING,
-            "No se pudo cargar musica del menu: %s",
-            rutaElegida
-        );
+        if (RUTAS_MUSICA_CATEGORIA[i] == nullptr || musicasCargadas[i])
+        {
+            continue;
+        }
 
-        return;
+        const char* extensiones[] = { ".ogg", ".mp3" };
+        bool cargada = false;
+
+        for (const char* extension : extensiones)
+        {
+            char rutaPista[256]{};
+            std::snprintf(
+                rutaPista,
+                sizeof(rutaPista),
+                "%s%s",
+                RUTAS_MUSICA_CATEGORIA[i],
+                extension
+            );
+
+            if (CargarPistaMusica(*this, (CategoriaMusica)i, rutaPista))
+            {
+                cargada = true;
+                break;
+            }
+        }
+
+        if (!cargada)
+        {
+            TraceLog(
+                LOG_INFO,
+                "Musica opcional ausente: %s (.ogg/.mp3); se mantiene la pista actual",
+                RUTAS_MUSICA_CATEGORIA[i]
+            );
+        }
     }
-
-    musicaMenu.looping = true;
-    musicaMenuCargada = true;
-
-    SetMusicVolume(
-        musicaMenu,
-        volumenMusica
-    );
 }
 
 
 void AudioJuego::ReproducirMusicaMenu()
 {
-    if (!musicaMenuCargada)
+    if (!musicasCargadas[MUSICA_MENU] || musicaActual == MUSICA_MENU)
     {
         return;
     }
 
-    if (musicaMenuSonando)
+    if (musicaActual >= 0)
+    {
+        StopMusicStream(musicas[musicaActual]);
+    }
+
+    PlayMusicStream(musicas[MUSICA_MENU]);
+    musicaActual = MUSICA_MENU;
+}
+
+
+void AudioJuego::SeleccionarMusica(
+    CategoriaMusica categoria
+)
+{
+    if (
+        musicaActual < 0 ||
+        categoria < 0 ||
+        categoria >= CANTIDAD_CATEGORIAS_MUSICA ||
+        categoria == musicaActual ||
+        !musicasCargadas[categoria]
+    )
     {
         return;
     }
 
-    PlayMusicStream(musicaMenu);
-
-    musicaMenuSonando = true;
+    StopMusicStream(musicas[musicaActual]);
+    PlayMusicStream(musicas[categoria]);
+    musicaActual = categoria;
 }
 
 
@@ -234,12 +353,9 @@ void AudioJuego::ReproducirSonido(
 
 void AudioJuego::Actualizar()
 {
-    if (
-        musicaMenuCargada &&
-        musicaMenuSonando
-    )
+    if (musicaActual >= 0 && musicasCargadas[musicaActual])
     {
-        UpdateMusicStream(musicaMenu);
+        UpdateMusicStream(musicas[musicaActual]);
     }
 }
 
@@ -254,12 +370,15 @@ void AudioJuego::AplicarVolumenMusica(
         1.0f
     );
 
-    if (musicaMenuCargada)
+    for (int i = 0; i < CANTIDAD_CATEGORIAS_MUSICA; i++)
     {
-        SetMusicVolume(
-            musicaMenu,
-            volumenMusica
-        );
+        if (musicasCargadas[i])
+        {
+            SetMusicVolume(
+                musicas[i],
+                volumenMusica
+            );
+        }
     }
 }
 
@@ -295,14 +414,19 @@ void AudioJuego::AplicarVolumenSonidos(
 
 void AudioJuego::Descargar()
 {
-    if (musicaMenuCargada)
+    for (int i = 0; i < CANTIDAD_CATEGORIAS_MUSICA; i++)
     {
-        StopMusicStream(musicaMenu);
-        UnloadMusicStream(musicaMenu);
+        if (!musicasCargadas[i])
+        {
+            continue;
+        }
 
-        musicaMenuCargada = false;
-        musicaMenuSonando = false;
+        StopMusicStream(musicas[i]);
+        UnloadMusicStream(musicas[i]);
+        musicasCargadas[i] = false;
     }
+
+    musicaActual = -1;
 
     for (
         int i = 0;

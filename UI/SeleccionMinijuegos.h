@@ -16,6 +16,9 @@ struct SeleccionMinijuegos
 
     float progresoPanel = 0.0f;
 
+    // Primera fila visible de la grilla; permite mas minijuegos que filas.
+    int filaInicial = 0;
+
     void Inicializar();
 
     void Actualizar(

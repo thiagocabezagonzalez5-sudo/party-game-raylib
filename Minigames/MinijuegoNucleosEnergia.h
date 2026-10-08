@@ -69,6 +69,10 @@ struct MinijuegoNucleosEnergia
 
     int puntuaciones[MAX_PARTICIPANTES]{};
 
+    // Para desempatar si dos llegan a la meta en el mismo frame.
+    int puntuacionesPrevias[MAX_PARTICIPANTES]{};
+    int golpesRecibidos[MAX_PARTICIPANTES]{};
+
     ResultadoMinijuego resultado{};
 
     FaseMinijuegoNucleos fase =

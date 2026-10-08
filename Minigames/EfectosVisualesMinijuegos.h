@@ -63,6 +63,13 @@ struct EstadoEfectosVisualesMinijuegos
     float duracionTemblor = 0.0f;
     float intensidadTemblor = 0.0f;
 
+    // Accesibilidad: "reducir movimiento" anula el temblor de camara.
+    bool reducirMovimiento = false;
+
+    // Ronda oficial lanzada desde el tablero (ZonaPruebas.modoTablero):
+    // ahi R no reinicia, asi que los minijuegos no deben ofrecerlo.
+    bool rondaOficialTablero = false;
+
     int direccionTaladros = 0;
     float progresoTaladros = 0.0f;
     bool taladrosSeleccionados = false;
@@ -228,6 +235,43 @@ inline void ActualizarEfectosVisualesMinijuegos(
 }
 
 
+// ZonaPruebas lo actualiza cada frame segun su modo.
+inline void EstablecerRondaOficialTableroMinijuegos(
+    bool oficial
+)
+{
+    ObtenerEstadoEfectosVisualesMinijuegos().rondaOficialTablero = oficial;
+}
+
+
+// Texto del aviso de reinicio en la pantalla final de cada minijuego.
+// En una ronda oficial de tablero se devuelve vacio: R esta bloqueada y
+// Juego ya muestra como se vuelve al tablero.
+inline const char* TextoReinicioMinijuego()
+{
+    return ObtenerEstadoEfectosVisualesMinijuegos().rondaOficialTablero
+        ? ""
+        : "R PARA REINICIAR";
+}
+
+
+// Opcion de accesibilidad (la aplica Juego desde ConfiguracionJuego).
+inline void EstablecerReducirMovimientoMinijuegos(
+    bool reducir
+)
+{
+    ObtenerEstadoEfectosVisualesMinijuegos().reducirMovimiento = reducir;
+}
+
+
+// Los minijuegos con temblor propio pueden multiplicar su intensidad por
+// este factor para respetar la misma opcion.
+inline float ObtenerFactorMovimientoCamaraMinijuegos()
+{
+    return ObtenerEstadoEfectosVisualesMinijuegos().reducirMovimiento ? 0.0f : 1.0f;
+}
+
+
 inline void ActivarTemblorCamaraGeneral(
     float intensidad = 0.16f,
     float duracion = 0.26f
@@ -235,6 +279,11 @@ inline void ActivarTemblorCamaraGeneral(
 {
     EstadoEfectosVisualesMinijuegos& estado =
         ObtenerEstadoEfectosVisualesMinijuegos();
+
+    if (estado.reducirMovimiento)
+    {
+        return;
+    }
 
     if (
         intensidad > estado.intensidadTemblor ||
@@ -307,6 +356,26 @@ inline void SeleccionarTemaVisualMinijuego(
 )
 {
     ObtenerEstadoEfectosVisualesMinijuegos().tema = tema;
+}
+
+
+// Deja el estado visual global como si no hubiera minijuego activo.
+// Debe llamarse al salir de un minijuego hacia pantallas que no lo son
+// (tablero, menus): BeginMode3D esta redefinido y dibujaria el tema
+// del ultimo minijuego, y un temblor pendiente quedaria congelado.
+inline void ReiniciarEstadoVisualMinijuegos()
+{
+    EstadoEfectosVisualesMinijuegos& estado =
+        ObtenerEstadoEfectosVisualesMinijuegos();
+
+    estado.tema = TEMA_VISUAL_NINGUNO;
+    estado.tiempoTemblor = 0.0f;
+    estado.duracionTemblor = 0.0f;
+    estado.intensidadTemblor = 0.0f;
+    estado.direccionTaladros = 0;
+    estado.progresoTaladros = 0.0f;
+    estado.taladrosSeleccionados = false;
+    estado.rondaOficialTablero = false;
 }
 
 

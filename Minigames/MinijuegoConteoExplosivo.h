@@ -2,6 +2,7 @@
 
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
+#include "Systems/Audio.h"
 #include "raylib.h"
 
 
@@ -32,12 +33,18 @@ struct EstadoJugadorConteoExplosivo
     int diferencia = 0;
     bool botRespondio = false;
     float retrasoBot = 0.0f;
+
+    // Seleccion rapida: mantener una direccion repite y acelera.
+    int direccionMantenida = 0;
+    float tiempoMantenido = 0.0f;
+    float proximoPaso = 0.0f;
 };
 
 
 struct MinijuegoConteoExplosivo
 {
     ResultadoMinijuego resultado{};
+    AudioJuego* audio = nullptr;
 
     DronConteoExplosivo drones[MAX_DRONES_CONTEO_EXPLOSIVO];
     EstadoJugadorConteoExplosivo jugadores[MAX_PARTICIPANTES];

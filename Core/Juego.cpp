@@ -2,7 +2,12 @@
 #include "Core/CatalogoMinijuegos.h"
 
 #include "raylib.h"
+
+#include <cmath>
+#include <algorithm>
 #include "Systems/Input.h"
+#include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Systems/CalidadGrafica.h"
 
 
 //==================================================
@@ -89,18 +94,176 @@ static void PrepararSeleccionDePersonajes(
 }
 
 
-static IdMinijuego ElegirMinijuegoAleatorioTablero()
+static IdMinijuego ElegirMinijuegoAleatorioTablero(
+    const Participante participantes[]
+)
 {
-    const int cantidadOpciones =
-        ObtenerCantidadMinijuegosDisponiblesTablero();
+    int indices[MAX_PARTICIPANTES]{};
+    int jugadores = ObtenerIndicesParticipantesActivos(
+        participantes,
+        indices,
+        MAX_PARTICIPANTES
+    );
 
-    if (cantidadOpciones <= 0)
+    // Solo se sortean minijuegos jugables con esta cantidad de participantes
+    // (p.ej. los 2 vs 2 estrictos quedan fuera con 3 jugadores).
+    IdMinijuego candidatos[CANTIDAD_MINIJUEGOS]{};
+    int cantidadCandidatos = 0;
+    const int disponibles = ObtenerCantidadMinijuegosDisponiblesTablero();
+
+    for (int i = 0; i < disponibles; i++)
+    {
+        IdMinijuego id = ObtenerMinijuegoDisponibleTablero(i);
+
+        if (MinijuegoAdmiteCantidadJugadores(id, jugadores))
+        {
+            candidatos[cantidadCandidatos] = id;
+            cantidadCandidatos++;
+        }
+    }
+
+    if (cantidadCandidatos <= 0)
     {
         return MINIJUEGO_COLOR_SEGURO;
     }
 
-    return ObtenerMinijuegoDisponibleTablero(
-        GetRandomValue(0, cantidadOpciones - 1)
+    return candidatos[GetRandomValue(0, cantidadCandidatos - 1)];
+}
+
+
+// Arma una partida de tablero nueva (monedas, trofeos, ronda, gimmicks y
+// fichas vuelven a su estado inicial). En la primera partida los puestos
+// libres se completan con bots; en una revancha los bots ya existen y
+// CompletarParticipantesConBots los convertiria en humanos.
+static void PrepararPartidaTablero(
+    Juego& juego,
+    IdTablero tablero,
+    int rondas,
+    bool completarBots
+)
+{
+    if (completarBots)
+    {
+        CompletarParticipantesConBots(
+            juego.participantes,
+            MAX_PARTICIPANTES
+        );
+    }
+
+    juego.cantidadParticipantes = MAX_PARTICIPANTES;
+
+    juego.partidaTablero.Inicializar(
+        juego.participantes,
+        MAX_PARTICIPANTES,
+        &juego.audio,
+        tablero
+    );
+
+    juego.partidaTablero.cantidadRondas = rondas;
+
+    juego.zonaPruebas.modoCatalogo = false;
+    juego.zonaPruebas.modoTablero = false;
+    juego.tiempoResultadoMinijuegoTablero = 0.0f;
+    juego.tiempoRondaMinijuegoTablero = 0.0f;
+    juego.confirmandoSalida = false;
+}
+
+
+static void VolverAlHub(
+    Juego& juego
+)
+{
+    juego.confirmandoSalida = false;
+    juego.menuModoJuego.Inicializar();
+    juego.menuPrincipal.PrepararEntrada(false);
+    juego.estado = ESTADO_MENU;
+}
+
+
+static void DibujarConfirmacionSalida(
+    int opcion,
+    float tiempo
+)
+{
+    const int ancho = GetScreenWidth();
+    const int alto = GetScreenHeight();
+    const float aparicion =
+        tiempo >= 0.2f ? 1.0f : tiempo / 0.2f;
+
+    DrawRectangle(0, 0, ancho, alto, Fade(BLACK, 0.62f * aparicion));
+
+    Rectangle panel =
+    {
+        ancho / 2.0f - 300.0f,
+        alto / 2.0f - 130.0f,
+        600.0f,
+        260.0f
+    };
+
+    DrawRectangleRec(panel, Fade(Color{ 24, 27, 35, 255 }, aparicion));
+    DrawRectangleLinesEx(panel, 4.0f, Fade(ORANGE, aparicion));
+
+    const char* titulo = "SALIR DE LA PARTIDA?";
+    const char* aviso = "SE PIERDE EL PROGRESO DE ESTA PARTIDA";
+
+    DrawText(
+        titulo,
+        ancho / 2 - MeasureText(titulo, 34) / 2,
+        (int)panel.y + 34,
+        34,
+        Fade(RAYWHITE, aparicion)
+    );
+
+    DrawText(
+        aviso,
+        ancho / 2 - MeasureText(aviso, 18) / 2,
+        (int)panel.y + 84,
+        18,
+        Fade(LIGHTGRAY, aparicion)
+    );
+
+    const char* textos[2] = { "CONTINUAR", "SALIR AL HUB" };
+
+    for (int i = 0; i < 2; i++)
+    {
+        Rectangle boton =
+        {
+            panel.x + 40.0f + i * 270.0f,
+            panel.y + 130.0f,
+            250.0f,
+            56.0f
+        };
+
+        const bool elegido = i == opcion;
+
+        DrawRectangleRec(
+            boton,
+            Fade(elegido ? ORANGE : Color{ 40, 44, 58, 255 }, aparicion)
+        );
+
+        DrawRectangleLinesEx(
+            boton,
+            elegido ? 4.0f : 2.0f,
+            Fade(elegido ? RAYWHITE : GRAY, aparicion)
+        );
+
+        DrawText(
+            textos[i],
+            (int)(boton.x + boton.width / 2.0f) - MeasureText(textos[i], 22) / 2,
+            (int)boton.y + 17,
+            22,
+            Fade(elegido ? BLACK : RAYWHITE, aparicion)
+        );
+    }
+
+    const char* ayuda = "IZQ / DER: ELEGIR   |   ESPACIO / A: ACEPTAR   |   ESC / B: CONTINUAR";
+
+    DrawText(
+        ayuda,
+        ancho / 2 - MeasureText(ayuda, 16) / 2,
+        (int)panel.y + 216,
+        16,
+        Fade(GRAY, aparicion)
     );
 }
 
@@ -257,34 +420,13 @@ void Juego::Inicializar()
         config.indiceFPS = 1;
     }
 
-    if (
-        config.indiceResolucion < 0 ||
-        config.indiceResolucion >= cantidadResoluciones
-    )
-    {
-        config.indiceResolucion = indiceNativo;
-    }
-
-    if (
-        config.indiceFPS < 0 ||
-        config.indiceFPS >= CANTIDAD_OPCIONES_FPS
-    )
-    {
-        config.indiceFPS = 1;
-    }
-
-    if (
-        config.modoTeclado < TECLADO_COMPLETO ||
-        config.modoTeclado > TECLADO_DIVIDIDO
-    )
-    {
-        config.modoTeclado = TECLADO_DIVIDIDO;
-    }
-
-    if (config.volumenMusica < 0.0f) config.volumenMusica = 0.0f;
-    if (config.volumenMusica > 1.0f) config.volumenMusica = 1.0f;
-    if (config.volumenSonidos < 0.0f) config.volumenSonidos = 0.0f;
-    if (config.volumenSonidos > 1.0f) config.volumenSonidos = 1.0f;
+    // Rangos, indices y NaN se corrigen en un solo lugar (ConfiguracionJuego).
+    NormalizarConfiguracion(
+        config,
+        cantidadResoluciones,
+        CANTIDAD_OPCIONES_FPS,
+        indiceNativo
+    );
 
     cantidadParticipantes = 0;
 
@@ -311,6 +453,10 @@ void Juego::Inicializar()
     );
 
     config.modoVentana = modoActual;
+    AplicarVSync(config.vsync);
+    EstablecerReducirMovimientoMinijuegos(config.reducirMovimiento);
+    EstablecerZonaMuertaStick(config.zonaMuertaStick / 100.0f);
+    EstablecerOpcionesCalidadGrafica(ObtenerOpcionesCalidadDesdeConfiguracion(config));
 
     audio.Inicializar();
     audio.AplicarVolumenMusica(config.volumenMusica);
@@ -399,10 +545,39 @@ void Juego::InicializarResoluciones()
 // ACTUALIZAR
 //==================================================
 
+// Categoria de musica para cada estado. Si la categoria no tiene pista,
+// AudioJuego mantiene la que ya suena (hoy solo existe la del menu).
+static CategoriaMusica ObtenerCategoriaMusicaEstado(
+    EstadoJuego estado
+)
+{
+    switch (estado)
+    {
+        case ESTADO_PARTIDA:
+        case ESTADO_RULETA_MINIJUEGO:
+        case ESTADO_TABLERO_VACIO:
+        case ESTADO_INTRO_TABLERO:
+        case ESTADO_ORDEN_TURNO:
+        case ESTADO_RESULTADOS_PARTIDA:
+            return MUSICA_TABLERO;
+
+        case ESTADO_ZONA_PRUEBAS:
+        case ESTADO_MINIJUEGO:
+            return MUSICA_MINIJUEGO;
+
+        default:
+            return MUSICA_MENU;
+    }
+}
+
+
 void Juego::Actualizar(
     float deltaTime
 )
 {
+    const EstadoJuego estadoAlEntrar = estado;
+
+    audio.SeleccionarMusica(ObtenerCategoriaMusicaEstado(estado));
     audio.Actualizar();
 
     switch (estado)
@@ -459,12 +634,20 @@ void Juego::Actualizar(
                 audio.ReproducirSonido(SONIDO_UI_MOVER);
             }
 
-            if (menuPrincipal.empezarJuego)
+            // El HUB elige el modo directamente con sus objetos 3D
+            // (dirigible = partida de tablero, barco = minijuegos libres).
+            if (menuPrincipal.empezarTablero || menuPrincipal.empezarMinijuegos)
             {
                 audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
-                menuPrincipal.empezarJuego = false;
                 menuModoJuego.Inicializar();
-                estado = ESTADO_SELECCION_MODO;
+                menuModoJuego.opcionSeleccionada =
+                    menuPrincipal.empezarTablero
+                        ? MODO_JUEGO_TABLERO
+                        : MODO_JUEGO_MINIJUEGOS;
+                menuPrincipal.empezarTablero = false;
+                menuPrincipal.empezarMinijuegos = false;
+                PrepararSeleccionDePersonajes(*this);
+                estado = ESTADO_SELECCION_JUGADORES;
             }
 
             if (menuPrincipal.abrirConfiguracion)
@@ -487,7 +670,7 @@ void Juego::Actualizar(
 
         case ESTADO_CONFIGURACION:
         {
-            menuPrincipal.fondo.Actualizar(deltaTime);
+            menuPrincipal.ActualizarFondo(deltaTime);
 
             menuConfiguracion.Actualizar(
                 config,
@@ -507,6 +690,7 @@ void Juego::Actualizar(
             if (menuConfiguracion.volver)
             {
                 menuConfiguracion.volver = false;
+                audio.ReproducirSonido(SONIDO_UI_CANCELAR);
                 GuardarConfiguracion(RUTA_CONFIGURACION_JUEGO, config);
                 menuPrincipal.PrepararEntrada(false);
                 estado = ESTADO_MENU;
@@ -517,7 +701,7 @@ void Juego::Actualizar(
 
         case ESTADO_SELECCION_MODO:
         {
-            menuPrincipal.fondo.Actualizar(deltaTime);
+            menuPrincipal.ActualizarFondo(deltaTime);
 
             int opcionAnterior = menuModoJuego.opcionSeleccionada;
             menuModoJuego.Actualizar(deltaTime);
@@ -529,6 +713,7 @@ void Juego::Actualizar(
 
             if (menuModoJuego.volver)
             {
+                audio.ReproducirSonido(SONIDO_UI_CANCELAR);
                 menuPrincipal.PrepararEntrada(false);
                 estado = ESTADO_MENU;
                 break;
@@ -546,7 +731,7 @@ void Juego::Actualizar(
 
         case ESTADO_TABLERO_VACIO:
         {
-            menuPrincipal.fondo.Actualizar(deltaTime);
+            menuPrincipal.ActualizarFondo(deltaTime);
 
             if (
                 IsKeyPressed(KEY_ESCAPE) ||
@@ -554,7 +739,8 @@ void Juego::Actualizar(
             )
             {
                 menuModoJuego.Inicializar();
-                estado = ESTADO_SELECCION_MODO;
+                menuPrincipal.PrepararEntrada(false);
+                estado = ESTADO_MENU;
             }
 
             break;
@@ -562,13 +748,17 @@ void Juego::Actualizar(
 
         case ESTADO_SELECCION_JUGADORES:
         {
-            menuPrincipal.fondo.Actualizar(deltaTime);
 
             seleccionPersonajes.Actualizar(
                 deltaTime,
                 participantes,
                 MAX_PARTICIPANTES
             );
+
+            // La pantalla avisa con banderas; el audio vive en Juego.
+            if (seleccionPersonajes.sonidoMover) audio.ReproducirSonido(SONIDO_UI_MOVER);
+            if (seleccionPersonajes.sonidoConfirmar) audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
+            if (seleccionPersonajes.sonidoCancelar) audio.ReproducirSonido(SONIDO_UI_CANCELAR);
 
             int cantidadHumana = 0;
             bool activosPreparados = true;
@@ -595,42 +785,56 @@ void Juego::Actualizar(
                 menuModoJuego.opcionSeleccionada ==
                 MODO_JUEGO_MINIJUEGOS;
 
+            // Basta un humano: los puestos libres se completan con bots.
             bool cantidadValida =
-                EsCantidadParticipantesValida(cantidadHumana) &&
+                cantidadHumana >= 1 &&
+                cantidadHumana <= MAX_PARTICIPANTES &&
                 (!modoMinijuegos || participantes[0].activo);
 
             seleccionPersonajes.todosListos =
                 cantidadValida && activosPreparados;
 
+            // Con todos listos se muestra el cartel y hace falta una nueva
+            // confirmacion (no se avanza solo ni con la misma pulsacion).
+            if (seleccionPersonajes.todosListos)
+            {
+                tiempoTodosListos += deltaTime;
+            }
+            else
+            {
+                tiempoTodosListos = 0.0f;
+            }
+
             seleccionPersonajes.iniciarPartida =
-                seleccionPersonajes.todosListos;
+                seleccionPersonajes.todosListos &&
+                tiempoTodosListos >= 0.4f &&
+                ConfirmarConParticipanteHumano(participantes);
 
             if (seleccionPersonajes.iniciarPartida)
             {
                 seleccionPersonajes.iniciarPartida = false;
+                tiempoTodosListos = 0.0f;
                 audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
-
-                CompletarParticipantesConBots(
-                    participantes,
-                    MAX_PARTICIPANTES
-                );
-
-                cantidadParticipantes = MAX_PARTICIPANTES;
 
                 if (modoMinijuegos)
                 {
+                    CompletarParticipantesConBots(
+                        participantes,
+                        MAX_PARTICIPANTES
+                    );
+
+                    cantidadParticipantes = MAX_PARTICIPANTES;
+
                     seleccionMinijuegos.Inicializar();
                     estado = ESTADO_SELECCION_MINIJUEGO;
                 }
                 else
                 {
-                    partidaTablero.Inicializar(
-                        participantes,
-                        MAX_PARTICIPANTES,
-                        &audio
-                    );
-
-                    estado = ESTADO_PARTIDA;
+                    // Los bots se completan recien al comenzar la partida:
+                    // asi se puede volver a elegir jugadores sin perder
+                    // la seleccion.
+                    seleccionTablero.Inicializar();
+                    estado = ESTADO_SELECCION_TABLERO;
                 }
 
                 break;
@@ -640,7 +844,211 @@ void Juego::Actualizar(
             {
                 seleccionPersonajes.volverAlMenu = false;
                 menuModoJuego.Inicializar();
-                estado = ESTADO_SELECCION_MODO;
+                menuPrincipal.PrepararEntrada(false);
+                estado = ESTADO_MENU;
+            }
+
+            break;
+        }
+
+        case ESTADO_SELECCION_TABLERO:
+        {
+            menuPrincipal.ActualizarFondo(deltaTime);
+
+            ActualizarConexionesParticipantes(
+                participantes,
+                MAX_PARTICIPANTES
+            );
+
+            seleccionTablero.Actualizar(
+                deltaTime,
+                participantes,
+                MAX_PARTICIPANTES,
+                audio
+            );
+
+            if (seleccionTablero.volver)
+            {
+                // Vuelve a jugadores conservando la seleccion hecha.
+                seleccionTablero.volver = false;
+                seleccionPersonajes.alphaEntrada = 0.0f;
+                seleccionPersonajes.iniciarPartida =
+                    SolicitudInicioSeleccion{};
+                estado = ESTADO_SELECCION_JUGADORES;
+            }
+            else if (seleccionTablero.confirmado)
+            {
+                seleccionTablero.confirmado = false;
+                configuracionPartida.Inicializar(
+                    seleccionTablero.ObtenerIdElegido()
+                );
+                estado = ESTADO_CONFIGURACION_PARTIDA;
+            }
+
+            break;
+        }
+
+        case ESTADO_CONFIGURACION_PARTIDA:
+        {
+            menuPrincipal.ActualizarFondo(deltaTime);
+
+            ActualizarConexionesParticipantes(
+                participantes,
+                MAX_PARTICIPANTES
+            );
+
+            configuracionPartida.Actualizar(
+                deltaTime,
+                participantes,
+                MAX_PARTICIPANTES,
+                audio
+            );
+
+            if (configuracionPartida.volver)
+            {
+                configuracionPartida.volver = false;
+                seleccionTablero.Inicializar();
+                estado = ESTADO_SELECCION_TABLERO;
+            }
+            else if (configuracionPartida.confirmado)
+            {
+                configuracionPartida.confirmado = false;
+
+                // Un mando que se desconecto durante la eleccion libera su
+                // puesto (lo ocupa un bot). Debe quedar al menos un humano.
+                int humanosConectados = 0;
+
+                for (int i = 0; i < MAX_PARTICIPANTES; i++)
+                {
+                    if (!participantes[i].activo)
+                    {
+                        continue;
+                    }
+
+                    if (participantes[i].conectado)
+                    {
+                        humanosConectados++;
+                    }
+                    else
+                    {
+                        participantes[i].activo = false;
+                        participantes[i].personajeSeleccionado = -1;
+                        seleccionPersonajes.jugadores[i].listo = false;
+                    }
+                }
+
+                if (humanosConectados < 1)
+                {
+                    seleccionPersonajes.alphaEntrada = 0.0f;
+                    seleccionPersonajes.iniciarPartida =
+                        SolicitudInicioSeleccion{};
+                    estado = ESTADO_SELECCION_JUGADORES;
+                    break;
+                }
+
+                PrepararPartidaTablero(
+                    *this,
+                    configuracionPartida.tablero,
+                    configuracionPartida.ObtenerRondas(),
+                    true
+                );
+
+                introTablero.Inicializar(
+                    configuracionPartida.tablero,
+                    configuracionPartida.ObtenerRondas()
+                );
+
+                estado = ESTADO_INTRO_TABLERO;
+            }
+
+            break;
+        }
+
+        case ESTADO_INTRO_TABLERO:
+        {
+            ActualizarConexionesParticipantes(
+                participantes,
+                MAX_PARTICIPANTES
+            );
+
+            introTablero.Actualizar(
+                deltaTime,
+                participantes,
+                MAX_PARTICIPANTES
+            );
+
+            if (introTablero.terminada)
+            {
+                ordenTurno.Inicializar(partidaTablero);
+                estado = ESTADO_ORDEN_TURNO;
+            }
+
+            break;
+        }
+
+        case ESTADO_ORDEN_TURNO:
+        {
+            ActualizarConexionesParticipantes(
+                participantes,
+                MAX_PARTICIPANTES
+            );
+
+            ordenTurno.Actualizar(
+                deltaTime,
+                participantes,
+                MAX_PARTICIPANTES,
+                audio
+            );
+
+            if (ordenTurno.terminado)
+            {
+                partidaTablero.tiempoFase = 0.0f;
+                estado = ESTADO_PARTIDA;
+            }
+
+            break;
+        }
+
+        case ESTADO_RESULTADOS_PARTIDA:
+        {
+            ActualizarConexionesParticipantes(
+                participantes,
+                MAX_PARTICIPANTES
+            );
+
+            resultadosPartida.Actualizar(
+                deltaTime,
+                participantes,
+                MAX_PARTICIPANTES,
+                audio
+            );
+
+            const AccionResultados accion = resultadosPartida.accion;
+            resultadosPartida.accion = RESULTADOS_NINGUNA;
+
+            if (accion == RESULTADOS_REVANCHA)
+            {
+                // Mismo tablero, jugadores y rondas; todo el estado de la
+                // partida (monedas, trofeos, ronda, gimmicks, fichas y
+                // orden de turno) se reconstruye.
+                PrepararPartidaTablero(
+                    *this,
+                    partidaTablero.idTablero,
+                    partidaTablero.cantidadRondas,
+                    false
+                );
+
+                ordenTurno.Inicializar(partidaTablero);
+                estado = ESTADO_ORDEN_TURNO;
+            }
+            else if (accion == RESULTADOS_NUEVA_PARTIDA)
+            {
+                PrepararSeleccionDePersonajes(*this);
+                estado = ESTADO_SELECCION_JUGADORES;
+            }
+            else if (accion == RESULTADOS_VOLVER_HUB)
+            {
+                VolverAlHub(*this);
             }
 
             break;
@@ -648,7 +1056,7 @@ void Juego::Actualizar(
 
         case ESTADO_SELECCION_MINIJUEGO:
         {
-            menuPrincipal.fondo.Actualizar(deltaTime);
+            menuPrincipal.ActualizarFondo(deltaTime);
 
             int indiceAnterior = seleccionMinijuegos.indiceSeleccionado;
 
@@ -664,6 +1072,7 @@ void Juego::Actualizar(
 
             if (seleccionMinijuegos.volver)
             {
+                audio.ReproducirSonido(SONIDO_UI_CANCELAR);
                 PrepararSeleccionDePersonajes(*this);
                 estado = ESTADO_SELECCION_JUGADORES;
                 break;
@@ -722,12 +1131,78 @@ void Juego::Actualizar(
                 MAX_PARTICIPANTES
             );
 
+            if (partidaTablero.fase == FASE_PARTIDA_TABLERO_TERMINADA)
+            {
+                // Partida invalida (sin jugadores o recorrido roto): no hay
+                // nada que mostrar ni forma de jugarla.
+                if (
+                    partidaTablero.cantidadJugadores <= 0 ||
+                    !partidaTablero.tablero.recorridoValido
+                )
+                {
+                    VolverAlHub(*this);
+                    break;
+                }
+
+                resultadosPartida.Inicializar(partidaTablero);
+                estado = ESTADO_RESULTADOS_PARTIDA;
+                break;
+            }
+
+            if (confirmandoSalida)
+            {
+                tiempoSalida += deltaTime;
+
+                EntradaFlujo entrada =
+                    lectorSalida.Leer(participantes, MAX_PARTICIPANTES);
+
+                if (tiempoSalida < BLOQUEO_ENTRADA_FLUJO)
+                {
+                    break;
+                }
+
+                if (entrada.cancelar)
+                {
+                    confirmandoSalida = false;
+                    audio.ReproducirSonido(SONIDO_UI_CANCELAR);
+                }
+                else if (entrada.confirmar)
+                {
+                    audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
+
+                    if (opcionSalida == 0)
+                    {
+                        confirmandoSalida = false;
+                    }
+                    else
+                    {
+                        VolverAlHub(*this);
+                    }
+                }
+                else if (
+                    entrada.izquierda ||
+                    entrada.derecha ||
+                    entrada.arriba ||
+                    entrada.abajo
+                )
+                {
+                    opcionSalida = 1 - opcionSalida;
+                    audio.ReproducirSonido(SONIDO_UI_MOVER);
+                }
+
+                break;
+            }
+
             partidaTablero.Actualizar(deltaTime);
 
             if (partidaTablero.SolicitaSalida())
             {
-                menuModoJuego.Inicializar();
-                estado = ESTADO_SELECCION_MODO;
+                // ESC pide confirmacion: no se pierde la partida por error.
+                partidaTablero.salidaSolicitada = false;
+                confirmandoSalida = true;
+                opcionSalida = 0;
+                tiempoSalida = 0.0f;
+                lectorSalida.Reiniciar();
                 break;
             }
 
@@ -736,7 +1211,7 @@ void Juego::Actualizar(
                 // El resultado se decide aca, antes de la animacion.
                 // La ruleta solo lo presenta.
                 ruletaMinijuegos.Iniciar(
-                    ElegirMinijuegoAleatorioTablero(),
+                    ElegirMinijuegoAleatorioTablero(participantes),
                     &audio
                 );
 
@@ -770,9 +1245,11 @@ void Juego::Actualizar(
                 );
 
                 zonaPruebas.modoCatalogo = true;
+                zonaPruebas.modoTablero = true;
                 zonaPruebas.CambiarMinijuego(minijuegoElegido);
 
                 tiempoResultadoMinijuegoTablero = 0.0f;
+                tiempoRondaMinijuegoTablero = 0.0f;
                 estado = ESTADO_MINIJUEGO;
             }
 
@@ -783,10 +1260,13 @@ void Juego::Actualizar(
         {
             zonaPruebas.Actualizar(deltaTime);
 
+            // En ronda de tablero ZonaPruebas nunca pide salir (modoTablero),
+            // pero se conserva como red de seguridad.
             if (zonaPruebas.volverAlMenu)
             {
                 zonaPruebas.volverAlMenu = false;
                 zonaPruebas.modoCatalogo = false;
+                zonaPruebas.modoTablero = false;
                 partidaTablero.ContinuarTrasMinijuego();
                 estado = ESTADO_PARTIDA;
                 break;
@@ -794,6 +1274,40 @@ void Juego::Actualizar(
 
             const ResultadoMinijuego* resultado =
                 zonaPruebas.ObtenerResultadoMinijuego();
+
+            tiempoRondaMinijuegoTablero += deltaTime;
+
+            if (tiempoRondaMinijuegoTablero >= 240.0f)
+            {
+                TraceLog(LOG_WARNING, "Ronda de tablero sin final tras 240 s: se vuelve al tablero sin premios.");
+                partidaTablero.ContinuarTrasMinijuego();
+                zonaPruebas.modoCatalogo = false;
+                zonaPruebas.modoTablero = false;
+                tiempoResultadoMinijuegoTablero = 0.0f;
+                estado = ESTADO_PARTIDA;
+                break;
+            }
+
+            // Sin ESC en la ronda oficial, una ronda cancelada (por ejemplo,
+            // menos de 2 participantes) debe volver sola al tablero.
+            if (
+                resultado != nullptr &&
+                resultado->estado == RESULTADO_MINIJUEGO_CANCELADO
+            )
+            {
+                tiempoResultadoMinijuegoTablero += deltaTime;
+
+                if (tiempoResultadoMinijuegoTablero >= 2.0f)
+                {
+                    partidaTablero.ContinuarTrasMinijuego();
+                    zonaPruebas.modoCatalogo = false;
+                    zonaPruebas.modoTablero = false;
+                    tiempoResultadoMinijuegoTablero = 0.0f;
+                    estado = ESTADO_PARTIDA;
+                }
+
+                break;
+            }
 
             if (
                 resultado == nullptr ||
@@ -807,11 +1321,11 @@ void Juego::Actualizar(
             tiempoResultadoMinijuegoTablero += deltaTime;
 
             bool confirmar =
-                tiempoResultadoMinijuegoTablero >= 1.0f &&
+                tiempoResultadoMinijuegoTablero >= 1.5f &&
                 ConfirmarConParticipanteHumano(participantes);
 
             bool continuarAutomaticamente =
-                tiempoResultadoMinijuegoTablero >= 3.0f;
+                tiempoResultadoMinijuegoTablero >= 7.0f;
 
             if (confirmar || continuarAutomaticamente)
             {
@@ -831,6 +1345,7 @@ void Juego::Actualizar(
 
                 partidaTablero.ContinuarTrasMinijuego();
                 zonaPruebas.modoCatalogo = false;
+                zonaPruebas.modoTablero = false;
                 tiempoResultadoMinijuegoTablero = 0.0f;
                 estado = ESTADO_PARTIDA;
             }
@@ -840,6 +1355,42 @@ void Juego::Actualizar(
 
         case ESTADO_RESULTADO:
             break;
+    }
+
+    // Fundido corto desde negro al cambiar de pantalla. Tablero y ruleta
+    // comparten escena, y el logo ya tiene su propia transicion.
+    if (fundidoEntrada > 0.0f)
+    {
+        fundidoEntrada -= deltaTime / 0.28f;
+
+        if (fundidoEntrada < 0.0f)
+        {
+            fundidoEntrada = 0.0f;
+        }
+    }
+
+    if (estado != estadoAlEntrar)
+    {
+        const bool escenaCompartida =
+            (estado == ESTADO_PARTIDA && estadoAlEntrar == ESTADO_RULETA_MINIJUEGO) ||
+            (estado == ESTADO_RULETA_MINIJUEGO && estadoAlEntrar == ESTADO_PARTIDA);
+
+        if (!escenaCompartida && estadoAlEntrar != ESTADO_LOGO)
+        {
+            fundidoEntrada = 1.0f;
+        }
+    }
+
+    // Al dejar un minijuego (ronda de tablero o pruebas) se limpia el estado
+    // visual global: si no, el tablero dibujaria el tema del ultimo
+    // minijuego (por ejemplo la montana nevada de Pelotas).
+    if (
+        estado != estadoAlEntrar &&
+        (estadoAlEntrar == ESTADO_MINIJUEGO ||
+         estadoAlEntrar == ESTADO_ZONA_PRUEBAS)
+    )
+    {
+        ReiniciarEstadoVisualMinijuegos();
     }
 }
 
@@ -877,7 +1428,7 @@ void Juego::Dibujar()
             break;
 
         case ESTADO_CONFIGURACION:
-            menuPrincipal.fondo.DibujarPantallaCompleta();
+            menuPrincipal.DibujarFondo();
             menuConfiguracion.Dibujar(
                 config,
                 resoluciones,
@@ -886,18 +1437,18 @@ void Juego::Dibujar()
             break;
 
         case ESTADO_SELECCION_MODO:
-            menuPrincipal.fondo.DibujarPantallaCompleta();
+            menuPrincipal.DibujarFondo();
             menuModoJuego.Dibujar();
             break;
 
         case ESTADO_TABLERO_VACIO:
-            menuPrincipal.fondo.DibujarPantallaCompleta();
+            menuPrincipal.DibujarFondo();
             DibujarTableroVacio();
             break;
 
         case ESTADO_SELECCION_JUGADORES:
         {
-            menuPrincipal.fondo.DibujarPantallaCompleta();
+            // La seleccion 3D dibuja su propia escena completa.
 
             seleccionPersonajes.Dibujar(
                 participantes,
@@ -913,11 +1464,30 @@ void Juego::Dibujar()
                 const char* aviso =
                     "JUGADOR 1 DEBE UNIRSE PARA ELEGIR EL MINIJUEGO";
 
+                // Entre las etiquetas de los personajes y los paneles de
+                // jugador (que empiezan a 124 px de abajo en escala 720p).
+                float escala = std::fmin(
+                    GetScreenHeight() / 720.0f,
+                    GetScreenWidth() / 1280.0f
+                );
+                int tamano = std::max(14, (int)(12.0f * escala));
+                int anchoTexto = MeasureText(aviso, tamano);
+                int x = GetScreenWidth() / 2 - anchoTexto / 2;
+                int y = GetScreenHeight() - (int)(150.0f * escala);
+
+                DrawRectangle(
+                    x - 10,
+                    y - 4,
+                    anchoTexto + 20,
+                    tamano + 8,
+                    Fade(BLACK, 0.70f)
+                );
+
                 DrawText(
                     aviso,
-                    GetScreenWidth() / 2 - MeasureText(aviso, 18) / 2,
-                    GetScreenHeight() - 76,
-                    18,
+                    x,
+                    y,
+                    tamano,
                     ORANGE
                 );
             }
@@ -925,8 +1495,33 @@ void Juego::Dibujar()
             break;
         }
 
+        case ESTADO_SELECCION_TABLERO:
+            menuPrincipal.DibujarFondo();
+            seleccionTablero.Dibujar();
+            break;
+
+        case ESTADO_CONFIGURACION_PARTIDA:
+            menuPrincipal.DibujarFondo();
+            configuracionPartida.Dibujar(
+                participantes,
+                MAX_PARTICIPANTES
+            );
+            break;
+
+        case ESTADO_INTRO_TABLERO:
+            introTablero.Dibujar();
+            break;
+
+        case ESTADO_ORDEN_TURNO:
+            ordenTurno.Dibujar(participantes);
+            break;
+
+        case ESTADO_RESULTADOS_PARTIDA:
+            resultadosPartida.Dibujar(participantes);
+            break;
+
         case ESTADO_SELECCION_MINIJUEGO:
-            menuPrincipal.fondo.DibujarPantallaCompleta();
+            menuPrincipal.DibujarFondo();
             seleccionMinijuegos.Dibujar(participantes[0]);
             break;
 
@@ -936,6 +1531,12 @@ void Juego::Dibujar()
 
         case ESTADO_PARTIDA:
             partidaTablero.Dibujar();
+
+            if (confirmandoSalida)
+            {
+                DibujarConfirmacionSalida(opcionSalida, tiempoSalida);
+            }
+
             break;
 
         case ESTADO_RULETA_MINIJUEGO:
@@ -964,8 +1565,11 @@ void Juego::Dibujar()
 
             const char* texto =
                 terminado
-                    ? "RESULTADO LISTO | CONFIRMAR PARA VOLVER AL TABLERO"
-                    : "MINIJUEGO DE RONDA | ESC: SALTAR Y VOLVER AL TABLERO";
+                    ? TextFormat(
+                        "RESULTADO | VUELTA AL TABLERO EN %d s (CONFIRMAR PARA SEGUIR YA)",
+                        (int)std::ceil(std::fmax(0.0f, 7.0f - tiempoResultadoMinijuegoTablero))
+                    )
+                    : "MINIJUEGO DE RONDA | JUEGA HASTA EL FINAL PARA VOLVER AL TABLERO";
 
             DrawText(
                 texto,
@@ -981,6 +1585,17 @@ void Juego::Dibujar()
         case ESTADO_RESULTADO:
             ClearBackground(BLACK);
             break;
+    }
+
+    if (fundidoEntrada > 0.0f)
+    {
+        DrawRectangle(
+            0,
+            0,
+            GetScreenWidth(),
+            GetScreenHeight(),
+            Fade(BLACK, fundidoEntrada)
+        );
     }
 
     if (
@@ -1012,6 +1627,7 @@ void Juego::Descargar()
     GuardarConfiguracion(RUTA_CONFIGURACION_JUEGO, config);
 
     zonaPruebas.Descargar();
+    DescargarVistaPreviaTableros();
     seleccionPersonajes.Descargar();
     audio.Descargar();
     pantallaLogo.Descargar();

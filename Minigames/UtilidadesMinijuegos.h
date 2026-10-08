@@ -3,7 +3,20 @@
 #include "Core/Participante.h"
 #include "Minigames/ModeloJugadorCompartido.h"
 #include "Minigames/TiposMinijuegos.h"
+#include "Systems/Audio.h"
 #include "Systems/Input.h"
+
+
+// Sonidos compartidos de acciones del jugador (salto, aterrizaje, golpe,
+// ground pound). ZonaPruebas asigna el audio una vez; si es nullptr no suena.
+void EstablecerAudioJugadoresMinijuego(
+    AudioJuego* audio
+);
+
+
+void ReproducirSonidoJugadorMinijuego(
+    TipoSonidoJuego tipo
+);
 
 
 void ReiniciarJugadorPrueba(

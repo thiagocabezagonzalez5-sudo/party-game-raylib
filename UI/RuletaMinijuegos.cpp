@@ -353,7 +353,7 @@ void RuletaMinijuegos::Actualizar(
             if (tiempoDesdeUltimoTick >= SEPARACION_TICKS_RULETA)
             {
                 tiempoDesdeUltimoTick = 0.0f;
-                ReproducirSonidoRuleta(*this, SONIDO_UI_MOVER);
+                ReproducirSonidoRuleta(*this, SONIDO_RULETA_TICK);
             }
         }
     }

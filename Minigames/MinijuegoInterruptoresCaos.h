@@ -2,6 +2,7 @@
 
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
+#include "Systems/Audio.h"
 
 
 inline constexpr int MAX_INTERRUPTORES_CAOS = 5;
@@ -29,6 +30,7 @@ struct EstadoJugadorInterruptoresCaos
 struct MinijuegoInterruptoresCaos
 {
     ResultadoMinijuego resultado{};
+    AudioJuego* audio = nullptr;
     EstadoJugadorInterruptoresCaos jugadores[MAX_PARTICIPANTES];
 
     bool interruptoresUsados[MAX_INTERRUPTORES_CAOS]{};

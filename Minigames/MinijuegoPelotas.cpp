@@ -1,5 +1,7 @@
 #include "Minigames/MinijuegoPelotas.h"
 
+#include "Minigames/AudioMinijuegos.h"
+#include "Minigames/BotsMinijuegos1v3.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 
 #include <cmath>
@@ -7,6 +9,8 @@
 
 static const float DURACION_PREPARACION_PELOTAS = 3.0f;
 static const float DURACION_TEXTO_YA_PELOTAS = 0.75f;
+static const float DURACION_PARTIDA_PELOTAS = 60.0f;
+static const float GRACIA_INICIAL_PELOTAS = 1.2f;
 
 static const float VELOCIDAD_MAXIMA_PELOTAS = 9.0f;
 static const float ACELERACION_MAXIMA_PELOTAS = 6.0f;
@@ -382,8 +386,60 @@ static void DibujarMontanaNievePelotas()
             i % 2 == 0 ? hieloClaro : hieloOscuro
         );
         DrawLine3D(cimaA, cimaB, Fade(SKYBLUE, 0.45f));
+
+        // Borde de hielo azul: marca donde termina la zona segura.
+        Vector3 bordeIntA = PuntoCircularPelotas(i, RADIO_ARENA_PELOTAS - 0.60f, 0.04f);
+        Vector3 bordeIntB = PuntoCircularPelotas(siguiente, RADIO_ARENA_PELOTAS - 0.60f, 0.04f);
+        Vector3 bordeExtA = PuntoCircularPelotas(i, RADIO_ARENA_PELOTAS - 0.04f, 0.04f);
+        Vector3 bordeExtB = PuntoCircularPelotas(siguiente, RADIO_ARENA_PELOTAS - 0.04f, 0.04f);
+        Color hieloBorde = i % 2 == 0
+            ? Color{ 120, 178, 214, 255 }
+            : Color{ 96, 154, 196, 255 };
+
+        DrawTriangle3D(bordeIntA, bordeIntB, bordeExtB, hieloBorde);
+        DrawTriangle3D(bordeIntA, bordeExtB, bordeExtA, hieloBorde);
     }
 
+    // Anillos de referencia en el centro de la cumbre.
+    DrawCircle3D({ 0.0f, 0.05f, 0.0f }, 1.2f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(hieloOscuro, 0.75f));
+    DrawCircle3D({ 0.0f, 0.05f, 0.0f }, 1.25f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(hieloOscuro, 0.75f));
+    DrawCircle3D({ 0.0f, 0.05f, 0.0f }, 3.3f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(hieloClaro, 0.80f));
+}
+
+
+// Anillo de color bajo los pies y flecha sobre la cabeza: el modelo del
+// jugador es oscuro y sobre la nieve no se distingue quien es quien.
+// MODELO FUTURO: la flecha puede pasar a ser un icono de jugador del GLB.
+static void DibujarIndicadorJugadorPelotas(
+    const JugadorPrueba& jugador,
+    Color color
+)
+{
+    float pies = jugador.posicion.y - jugador.tamano.y * 0.5f;
+    if (jugador.cayendo || pies < -0.35f) return;
+
+    Vector3 centro = { jugador.posicion.x, 0.075f, jugador.posicion.z };
+    for (int k = 0; k < 3; k++)
+    {
+        DrawCircle3D(
+            centro,
+            0.52f + k * 0.045f,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            color
+        );
+    }
+
+    float rebote = std::sin((float)GetTime() * 5.0f + jugador.posicion.x) * 0.06f;
+    float cabeza = pies + 2.15f + rebote;
+    DrawCylinderEx(
+        { jugador.posicion.x, cabeza, jugador.posicion.z },
+        { jugador.posicion.x, cabeza + 0.32f, jugador.posicion.z },
+        0.0f,
+        0.20f,
+        10,
+        color
+    );
 }
 
 
@@ -446,8 +502,116 @@ static int ContarJugadoresVivosPelotas(
 }
 
 
+// IA de bots: evita el borde, y si esta a salvo embiste a un rival desde
+// el lado del centro para empujarlo hacia afuera. Un ruido lento le quita
+// perfeccion y evita que se quede atascado.
+static InputMinijuegoParticipante CrearEntradaBotPelotas(
+    MinijuegoPelotas& minijuego,
+    const JugadorPrueba jugadores[],
+    const Participante participantes[],
+    int indice,
+    float deltaTime
+)
+{
+    const JugadorPrueba& yo = jugadores[indice];
+    EstadoBotPelotas& bot = minijuego.bots[indice];
+    float t = minijuego.tiempoJugado;
+    float distanciaCentro = MagnitudHorizontalPelotas(yo.posicion.x, yo.posicion.z);
+
+    // Peligro: cerca del borde se vuelve al centro (con anticipacion por inercia).
+    float proyectadaX = yo.posicion.x + yo.velocidad.x * 0.35f;
+    float proyectadaZ = yo.posicion.z + yo.velocidad.z * 0.35f;
+    float distanciaProyectada = MagnitudHorizontalPelotas(proyectadaX, proyectadaZ);
+
+    bool peligro = distanciaCentro > 4.3f || distanciaProyectada > 4.7f;
+
+    if (!peligro)
+    {
+        bot.esperaBorde = 0.0f;
+    }
+    else
+    {
+        if (bot.esperaBorde <= 0.0f)
+            bot.retardoBorde = (float)GetRandomValue(200, 400) / 1000.0f;
+        bot.esperaBorde += deltaTime;
+    }
+
+    if (peligro && bot.esperaBorde >= bot.retardoBorde)
+    {
+        return CrearEntradaBotHaciaObjetivo1v3(
+            yo.posicion,
+            { 0.0f, yo.posicion.y, 0.0f },
+            0.25f
+        );
+    }
+
+    int objetivo = -1;
+    float mejor = 1000000.0f;
+
+    for (int j = 0; j < MAX_PARTICIPANTES; j++)
+    {
+        if (
+            j == indice ||
+            !participantes[j].activo ||
+            !minijuego.resultado.participantes[j].participo ||
+            minijuego.estadosJugadores[j].eliminado ||
+            jugadores[j].cayendo
+        )
+        {
+            continue;
+        }
+
+        float dx = jugadores[j].posicion.x - yo.posicion.x;
+        float dz = jugadores[j].posicion.z - yo.posicion.z;
+        float distancia = dx * dx + dz * dz;
+
+        if (distancia < mejor)
+        {
+            mejor = distancia;
+            objetivo = j;
+        }
+    }
+
+    if (objetivo < 0)
+    {
+        return CrearEntradaBotHaciaObjetivo1v3(yo.posicion, { 0.0f, yo.posicion.y, 0.0f }, 0.5f);
+    }
+
+    Vector3 rival = jugadores[objetivo].posicion;
+    float distanciaRival = MagnitudHorizontalPelotas(rival.x, rival.z);
+    float haciaFueraX = distanciaRival > 0.001f ? rival.x / distanciaRival : 1.0f;
+    float haciaFueraZ = distanciaRival > 0.001f ? rival.z / distanciaRival : 0.0f;
+
+    // Estoy del lado del centro respecto al rival?
+    float lado =
+        (yo.posicion.x - rival.x) * haciaFueraX +
+        (yo.posicion.z - rival.z) * haciaFueraZ;
+
+    Vector3 meta = rival;
+
+    if (lado > -0.4f)
+    {
+        // Rodear: ponerse entre el centro y el rival antes de embestir.
+        meta.x = rival.x - haciaFueraX * 2.4f;
+        meta.z = rival.z - haciaFueraZ * 2.4f;
+    }
+
+    // Error lento de punteria y pausas cortas de duda.
+    meta.x += std::sin(t * 1.3f + bot.faseX) * bot.amplitudError;
+    meta.z += std::cos(t * 1.1f + bot.faseZ) * bot.amplitudError;
+
+    if (std::sin(t * 0.7f + bot.faseDuda) > 0.93f)
+    {
+        meta = { 0.0f, yo.posicion.y, 0.0f };
+    }
+
+    return CrearEntradaBotHaciaObjetivo1v3(yo.posicion, meta, 0.3f);
+}
+
+
 static void FinalizarResultadoPelotas(
     MinijuegoPelotas& minijuego,
+    const JugadorPrueba jugadores[],
     const Participante participantes[]
 )
 {
@@ -457,10 +621,76 @@ static void FinalizarResultadoPelotas(
     }
 
     int vivos = ContarJugadoresVivosPelotas(minijuego, participantes);
+    minijuego.terminoPorTiempo = vivos > 1;
+
+    // Desempate por tiempo agotado: entre los que siguen en pie gana quien
+    // esta mas cerca del centro de la montana.
+    if (vivos > 1)
+    {
+        float distancias[MAX_PARTICIPANTES]{};
+
+        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        {
+            distancias[i] = MagnitudHorizontalPelotas(
+                jugadores[i].posicion.x,
+                jugadores[i].posicion.z
+            );
+        }
+
+        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        {
+            if (
+                !participantes[i].activo ||
+                !minijuego.resultado.participantes[i].participo ||
+                minijuego.estadosJugadores[i].eliminado
+            )
+            {
+                continue;
+            }
+
+            int posicion = 1;
+
+            for (int j = 0; j < MAX_PARTICIPANTES; j++)
+            {
+                if (
+                    j != i &&
+                    participantes[j].activo &&
+                    minijuego.resultado.participantes[j].participo &&
+                    !minijuego.estadosJugadores[j].eliminado &&
+                    distancias[j] < distancias[i] - 0.05f
+                )
+                {
+                    posicion++;
+                }
+            }
+
+            minijuego.estadosJugadores[i].posicionFinal = posicion;
+            minijuego.estadosJugadores[i].tiempoSobrevividoMs =
+                (int)std::lround(minijuego.tiempoJugado * 1000.0f);
+        }
+    }
+
+    int primeros = 0;
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (
+            minijuego.resultado.participantes[i].participo &&
+            (minijuego.estadosJugadores[i].eliminado
+                ? minijuego.estadosJugadores[i].posicionFinal == 1
+                : (vivos > 1
+                    ? minijuego.estadosJugadores[i].posicionFinal == 1
+                    : true))
+        )
+        {
+            primeros++;
+        }
+    }
 
     minijuego.resultado.estado = RESULTADO_MINIJUEGO_FINALIZADO;
     minijuego.resultado.desenlace =
-        vivos == 1 ? DESENLACE_CON_GANADOR : DESENLACE_EMPATE;
+        primeros == 1 ? DESENLACE_CON_GANADOR : DESENLACE_EMPATE;
+    ReproducirSonidoMinijuego(minijuego.audio, SONIDO_RESULTADO);
 
     int tiempoFinalMs =
         (int)std::lround(minijuego.tiempoJugado * 1000.0f);
@@ -479,7 +709,11 @@ static void FinalizarResultadoPelotas(
 
         if (!estadoJugador.eliminado)
         {
-            estadoJugador.posicionFinal = 1;
+            if (vivos <= 1)
+            {
+                estadoJugador.posicionFinal = 1;
+            }
+
             estadoJugador.tiempoSobrevividoMs = tiempoFinalMs;
         }
 
@@ -493,14 +727,30 @@ static void FinalizarResultadoPelotas(
 }
 
 
+static void SortearBotsPelotas(MinijuegoPelotas& minijuego)
+{
+    for (int i = 0; i < MAX_JUGADORES_PRUEBA; i++)
+    {
+        EstadoBotPelotas& bot = minijuego.bots[i];
+        bot = {};
+        bot.faseX = (float)GetRandomValue(0, 6283) / 1000.0f;
+        bot.faseZ = (float)GetRandomValue(0, 6283) / 1000.0f;
+        bot.faseDuda = (float)GetRandomValue(0, 6283) / 1000.0f;
+        bot.amplitudError = (float)GetRandomValue(600, 1400) / 1000.0f;
+    }
+}
+
+
 void MinijuegoPelotas::Inicializar()
 {
     resultado = {};
     resultado.formato = FORMATO_MINIJUEGO_INDIVIDUAL;
     fase = FASE_PELOTAS_PREPARACION;
     tiempoPreparacion = DURACION_PREPARACION_PELOTAS;
-    tiempoRestante = 0.0f;
+    tiempoRestante = DURACION_PARTIDA_PELOTAS;
     tiempoJugado = 0.0f;
+    terminoPorTiempo = false;
+    SortearBotsPelotas(*this);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -581,8 +831,10 @@ void MinijuegoPelotas::Reiniciar(
 
     fase = FASE_PELOTAS_PREPARACION;
     tiempoPreparacion = DURACION_PREPARACION_PELOTAS;
-    tiempoRestante = 0.0f;
+    tiempoRestante = DURACION_PARTIDA_PELOTAS;
     tiempoJugado = 0.0f;
+    terminoPorTiempo = false;
+    SortearBotsPelotas(*this);
 
     for (int i = 0; i < cantidadMaxima; i++)
     {
@@ -618,7 +870,9 @@ void MinijuegoPelotas::Actualizar(
             jugadores[i].empuje = {};
         }
 
+        float preparacionAntes = tiempoPreparacion;
         tiempoPreparacion -= deltaTime;
+        ActualizarAudioCuentaRegresiva(audio, preparacionAntes, tiempoPreparacion);
 
         if (tiempoPreparacion <= 0.0f)
         {
@@ -650,8 +904,20 @@ void MinijuegoPelotas::Actualizar(
             continue;
         }
 
-        InputMinijuegoParticipante entrada =
-            LeerInputMinijuegoParticipante(participantes[i]);
+        // Gracia inicial: los bots esperan para que un humano se oriente.
+        InputMinijuegoParticipante entrada{};
+
+        if (participantes[i].esBot)
+        {
+            if (tiempoJugado >= GRACIA_INICIAL_PELOTAS + bots[i].faseDuda * 0.08f)
+            {
+                entrada = CrearEntradaBotPelotas(*this, jugadores, participantes, i, deltaTime);
+            }
+        }
+        else
+        {
+            entrada = LeerInputMinijuegoParticipante(participantes[i]);
+        }
 
         float velocidadAnteriorX = jugador.velocidad.x;
         float velocidadAnteriorZ = jugador.velocidad.z;
@@ -702,7 +968,10 @@ void MinijuegoPelotas::Actualizar(
     }
 
     ResolverColisionesPelotas(jugadores, participantes, cantidadMaxima);
-    PotenciarEmpujesPelotas(jugadores, participantes, cantidadMaxima);
+    if (tiempoJugado >= GRACIA_INICIAL_PELOTAS)
+    {
+        PotenciarEmpujesPelotas(jugadores, participantes, cantidadMaxima);
+    }
 
     int eliminadosEsteFrame = 0;
 
@@ -740,9 +1009,19 @@ void MinijuegoPelotas::Actualizar(
 
     int vivosDespues = vivosAntes - eliminadosEsteFrame;
 
-    if (vivosDespues <= 1)
+    float restanteAntes = tiempoRestante;
+    tiempoRestante -= deltaTime;
+    ActualizarAudioAlertaTiempo(audio, restanteAntes, tiempoRestante);
+
+    if (eliminadosEsteFrame > 0)
     {
-        FinalizarResultadoPelotas(*this, participantes);
+        ReproducirSonidoMinijuego(audio, SONIDO_CAIDA);
+    }
+
+    if (vivosDespues <= 1 || tiempoRestante <= 0.0f)
+    {
+        if (tiempoRestante < 0.0f) tiempoRestante = 0.0f;
+        FinalizarResultadoPelotas(*this, jugadores, participantes);
     }
 }
 
@@ -768,6 +1047,7 @@ void MinijuegoPelotas::Dibujar(
             continue;
         }
 
+        DibujarIndicadorJugadorPelotas(jugadores[i], participantes[i].color);
         DibujarJugadorPelotaPrueba(jugadores[i], participantes[i]);
 
         if (
@@ -791,43 +1071,87 @@ void MinijuegoPelotas::Dibujar(
         DibujarContornoColisionMontanaPelotas(camara);
     }
 
-    DrawText("MINIJUEGO 2 - PELOTAS / EMPUJONES", 25, 25, 30, BLACK);
-    DrawText("EMPUJA A LOS DEMAS FUERA DE LA MONTANA", 25, 70, 22, BLACK);
-    DrawText("NIEVE RESBALADIZA - ACELERA Y CONSERVA LA INERCIA", 25, 102, 20, BLACK);
-    DrawText("MAS VELOCIDAD = MAS FUERZA DE EMPUJE", 25, 132, 20, MAROON);
+    const int ancho = GetScreenWidth();
+    const int alto = GetScreenHeight();
+    const float e = (float)alto / 720.0f;
 
-    int posicionY = 168;
+    // Barra superior translucida: el texto no compite con las montanas.
+    DrawRectangle(0, 0, ancho, (int)(76 * e), Fade(BLACK, 0.55f));
+    DrawText("PELOTAS - EMPUJONES", (int)(24 * e), (int)(10 * e), (int)(30 * e), RAYWHITE);
+    DrawText(
+        "EMPUJA A LOS DEMAS FUERA. MAS VELOCIDAD = MAS EMPUJE. SI SE ACABA EL TIEMPO GANA EL MAS CERCANO AL CENTRO",
+        (int)(24 * e),
+        (int)(46 * e),
+        (int)(18 * e),
+        Color{ 200, 224, 240, 255 }
+    );
+
+    if (fase == FASE_PELOTAS_JUGANDO)
+    {
+        const char* reloj = TextFormat("%.0f", tiempoRestante > 0.0f ? tiempoRestante : 0.0f);
+        int tamanoReloj = (int)(46 * e);
+        DrawText(
+            reloj,
+            ancho - MeasureText(reloj, tamanoReloj) - (int)(30 * e),
+            (int)(14 * e),
+            tamanoReloj,
+            tiempoRestante <= 10.0f ? Color{ 255, 90, 80, 255 } : RAYWHITE
+        );
+    }
+
+    // Tarjetas inferiores: color del jugador y barra de velocidad.
+    int cantidadTarjetas = 0;
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (participantes[i].activo && participantes[i].conectado) cantidadTarjetas++;
+    }
+
+    int anchoTarjeta = (int)(210 * e);
+    int altoTarjeta = (int)(50 * e);
+    int separacion = (int)(14 * e);
+    int xTarjeta = ancho / 2 - (cantidadTarjetas * anchoTarjeta + (cantidadTarjetas - 1) * separacion) / 2;
+    int yTarjeta = alto - altoTarjeta - (int)(18 * e);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        if (
-            !participantes[i].activo ||
-            !participantes[i].conectado ||
-            estadosJugadores[i].eliminado
-        )
+        if (!participantes[i].activo || !participantes[i].conectado) continue;
+
+        bool fuera = estadosJugadores[i].eliminado;
+        float velocidad = MagnitudHorizontalPelotas(jugadores[i].velocidad.x, jugadores[i].velocidad.z);
+        float proporcion = velocidad / VELOCIDAD_MAXIMA_PELOTAS;
+        if (proporcion > 1.0f) proporcion = 1.0f;
+
+        DrawRectangle(xTarjeta, yTarjeta, anchoTarjeta, altoTarjeta, Fade(BLACK, fuera ? 0.40f : 0.62f));
+        DrawRectangle(xTarjeta, yTarjeta, (int)(8 * e), altoTarjeta, fuera ? GRAY : participantes[i].color);
+        DrawText(
+            TextFormat("J%d", participantes[i].numeroJugador),
+            xTarjeta + (int)(18 * e),
+            yTarjeta + (int)(6 * e),
+            (int)(22 * e),
+            fuera ? GRAY : participantes[i].color
+        );
+
+        if (fuera)
         {
-            continue;
+            DrawText("FUERA", xTarjeta + (int)(80 * e), yTarjeta + (int)(10 * e), (int)(20 * e), GRAY);
+        }
+        else
+        {
+            int xBarra = xTarjeta + (int)(18 * e);
+            int yBarra = yTarjeta + (int)(34 * e);
+            int anchoBarra = anchoTarjeta - (int)(32 * e);
+            DrawRectangle(xBarra, yBarra, anchoBarra, (int)(8 * e), Fade(WHITE, 0.25f));
+            DrawRectangle(xBarra, yBarra, (int)(anchoBarra * proporcion), (int)(8 * e), participantes[i].color);
+            DrawText(
+                TextFormat("%.1f", velocidad),
+                xTarjeta + anchoTarjeta - MeasureText(TextFormat("%.1f", velocidad), (int)(18 * e)) - (int)(12 * e),
+                yTarjeta + (int)(8 * e),
+                (int)(18 * e),
+                RAYWHITE
+            );
         }
 
-        float velocidad = MagnitudHorizontalPelotas(
-            jugadores[i].velocidad.x,
-            jugadores[i].velocidad.z
-        );
-
-        DrawText(
-            TextFormat(
-                "J%d VELOCIDAD: %.1f / %.1f",
-                participantes[i].numeroJugador,
-                velocidad,
-                VELOCIDAD_MAXIMA_PELOTAS
-            ),
-            25,
-            posicionY,
-            18,
-            participantes[i].color
-        );
-
-        posicionY += 24;
+        xTarjeta += anchoTarjeta + separacion;
     }
 
     if (fase == FASE_PELOTAS_PREPARACION)
@@ -835,14 +1159,11 @@ void MinijuegoPelotas::Dibujar(
         int numero = (int)std::ceil(tiempoPreparacion);
         if (numero < 1) numero = 1;
         const char* texto = TextFormat("%d", numero);
-
-        DrawText(
-            texto,
-            GetScreenWidth() / 2 - MeasureText(texto, 84) / 2,
-            GetScreenHeight() / 2 - 60,
-            84,
-            ORANGE
-        );
+        int tamano = (int)(96 * e);
+        int x = ancho / 2 - MeasureText(texto, tamano) / 2;
+        int y = alto / 2 - (int)(150 * e);
+        DrawText(texto, x + 4, y + 4, tamano, Fade(BLACK, 0.7f));
+        DrawText(texto, x, y, tamano, ORANGE);
     }
     else if (
         fase == FASE_PELOTAS_JUGANDO &&
@@ -850,23 +1171,20 @@ void MinijuegoPelotas::Dibujar(
     )
     {
         const char* texto = "YA";
-        DrawText(
-            texto,
-            GetScreenWidth() / 2 - MeasureText(texto, 84) / 2,
-            GetScreenHeight() / 2 - 60,
-            84,
-            LIME
-        );
+        int tamano = (int)(96 * e);
+        int x = ancho / 2 - MeasureText(texto, tamano) / 2;
+        int y = alto / 2 - (int)(150 * e);
+        DrawText(texto, x + 4, y + 4, tamano, Fade(BLACK, 0.7f));
+        DrawText(texto, x, y, tamano, LIME);
     }
     else if (fase == FASE_PELOTAS_TERMINADO)
     {
-        DrawRectangle(
-            GetScreenWidth() / 2 - 330,
-            GetScreenHeight() / 2 - 155,
-            660,
-            310,
-            Fade(BLACK, 0.90f)
-        );
+        // Panel compacto en la parte alta: deja ver la cumbre y al ganador.
+        int anchoPanel = (int)(330 * e);
+        int altoPanel = (int)(232 * e);
+        int xPanel = ancho - anchoPanel - (int)(16 * e);
+        int yPanel = (int)(92 * e);
+        DrawRectangle(xPanel, yPanel, anchoPanel, altoPanel, Fade(BLACK, 0.82f));
 
         int indicesGanadores[MAX_PARTICIPANTES]{};
         int cantidadGanadores = ObtenerIndicesGanadores(
@@ -887,20 +1205,27 @@ void MinijuegoPelotas::Dibujar(
 
         DrawText(
             titulo,
-            GetScreenWidth() / 2 - MeasureText(titulo, 34) / 2,
-            GetScreenHeight() / 2 - 130,
-            34,
+            xPanel + anchoPanel / 2 - MeasureText(titulo, (int)(24 * e)) / 2,
+            yPanel + (int)(14 * e),
+            (int)(24 * e),
             GOLD
         );
 
-        int y = GetScreenHeight() / 2 - 75;
+        const char* motivo = terminoPorTiempo
+            ? "TIEMPO AGOTADO: GANA EL MAS CERCANO AL CENTRO"
+            : "QUEDA UN SOLO JUGADOR EN PIE";
+        DrawText(
+            motivo,
+            xPanel + anchoPanel / 2 - MeasureText(motivo, (int)(12 * e)) / 2,
+            yPanel + (int)(46 * e),
+            (int)(12 * e),
+            LIGHTGRAY
+        );
 
+        int y = yPanel + (int)(72 * e);
         for (int i = 0; i < MAX_PARTICIPANTES; i++)
         {
-            if (!resultado.participantes[i].participo)
-            {
-                continue;
-            }
+            if (!resultado.participantes[i].participo) continue;
 
             DrawText(
                 TextFormat(
@@ -909,20 +1234,19 @@ void MinijuegoPelotas::Dibujar(
                     resultado.participantes[i].posicionFinal,
                     resultado.participantes[i].puntuacionMinijuego / 1000.0f
                 ),
-                GetScreenWidth() / 2 - 210,
+                xPanel + (int)(22 * e),
                 y,
-                22,
+                (int)(18 * e),
                 participantes[i].color
             );
-
-            y += 30;
+            y += (int)(26 * e);
         }
 
         DrawText(
-            "R PARA REINICIAR",
-            GetScreenWidth() / 2 - MeasureText("R PARA REINICIAR", 22) / 2,
-            GetScreenHeight() / 2 + 112,
-            22,
+            TextoReinicioMinijuego(),
+            xPanel + anchoPanel / 2 - MeasureText(TextoReinicioMinijuego(), (int)(15 * e)) / 2,
+            yPanel + altoPanel - (int)(26 * e),
+            (int)(15 * e),
             RAYWHITE
         );
     }

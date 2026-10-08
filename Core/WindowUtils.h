@@ -51,3 +51,9 @@ void AplicarModoVentana(
     ModoVentana nuevoModo,
     Resolucion resolucion
 );
+
+
+// Activa o desactiva la sincronizacion vertical sin recrear la ventana.
+void AplicarVSync(
+    bool activo
+);

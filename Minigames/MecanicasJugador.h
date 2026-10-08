@@ -516,70 +516,70 @@ inline void ResolverColisionesJugadoresSinEmpuje(
                 ? cajaA.max.z - cajaB.min.z
                 : cajaB.max.z - cajaA.min.z;
 
-            if (solapeX < solapeZ)
+            // Se corrige sobre el eje de menor solape. "a" siempre tiene el
+            // indice menor, asi que la resolucion NO puede depender de ese
+            // orden: si solo uno avanza hacia el otro, se frena al que avanza
+            // (no hay empuje); si avanzan los dos (o ninguno), la correccion
+            // se reparte a partes iguales y ambos se frenan en ese eje.
+            bool ejeX = solapeX < solapeZ;
+
+            float posicionA = ejeX ? a.posicion.x : a.posicion.z;
+            float posicionB = ejeX ? b.posicion.x : b.posicion.z;
+            float velocidadA = ejeX ? a.velocidad.x : a.velocidad.z;
+            float velocidadB = ejeX ? b.velocidad.x : b.velocidad.z;
+            float solape = ejeX ? solapeX : solapeZ;
+
+            // Signo hacia el que se separa "a" (alejandose de "b").
+            float signoA = posicionA < posicionB ? -1.0f : 1.0f;
+
+            bool aVaHaciaB = velocidadA * -signoA > 0.001f;
+            bool bVaHaciaA = velocidadB * signoA > 0.001f;
+
+            float correccion = solape + MARGEN;
+            float correccionA = 0.0f;
+            float correccionB = 0.0f;
+
+            if (aVaHaciaB && !bVaHaciaA)
             {
-                bool aEstaALaIzquierda = a.posicion.x < b.posicion.x;
-                bool aVaHaciaB = aEstaALaIzquierda
-                    ? a.velocidad.x > 0.001f
-                    : a.velocidad.x < -0.001f;
-                bool bVaHaciaA = aEstaALaIzquierda
-                    ? b.velocidad.x < -0.001f
-                    : b.velocidad.x > 0.001f;
+                correccionA = correccion;
+            }
+            else if (bVaHaciaA && !aVaHaciaB)
+            {
+                correccionB = correccion;
+            }
+            else
+            {
+                correccionA = correccion * 0.5f;
+                correccionB = correccion * 0.5f;
+            }
 
-                bool corregirA = false;
-
-                if (aVaHaciaB && !bVaHaciaA)
-                    corregirA = true;
-                else if (bVaHaciaA && !aVaHaciaB)
-                    corregirA = false;
-                else
-                    corregirA = std::fabs(a.velocidad.x) >= std::fabs(b.velocidad.x);
-
-                float correccion = solapeX + MARGEN;
-
-                if (corregirA)
+            if (correccionA > 0.0f)
+            {
+                if (ejeX)
                 {
-                    a.posicion.x += aEstaALaIzquierda ? -correccion : correccion;
+                    a.posicion.x += signoA * correccionA;
                     a.velocidad.x = 0.0f;
                     a.empuje.x = 0.0f;
                 }
                 else
                 {
-                    b.posicion.x += aEstaALaIzquierda ? correccion : -correccion;
-                    b.velocidad.x = 0.0f;
-                    b.empuje.x = 0.0f;
-                }
-            }
-            else
-            {
-                bool aEstaArriba = a.posicion.z < b.posicion.z;
-                bool aVaHaciaB = aEstaArriba
-                    ? a.velocidad.z > 0.001f
-                    : a.velocidad.z < -0.001f;
-                bool bVaHaciaA = aEstaArriba
-                    ? b.velocidad.z < -0.001f
-                    : b.velocidad.z > 0.001f;
-
-                bool corregirA = false;
-
-                if (aVaHaciaB && !bVaHaciaA)
-                    corregirA = true;
-                else if (bVaHaciaA && !aVaHaciaB)
-                    corregirA = false;
-                else
-                    corregirA = std::fabs(a.velocidad.z) >= std::fabs(b.velocidad.z);
-
-                float correccion = solapeZ + MARGEN;
-
-                if (corregirA)
-                {
-                    a.posicion.z += aEstaArriba ? -correccion : correccion;
+                    a.posicion.z += signoA * correccionA;
                     a.velocidad.z = 0.0f;
                     a.empuje.z = 0.0f;
                 }
+            }
+
+            if (correccionB > 0.0f)
+            {
+                if (ejeX)
+                {
+                    b.posicion.x -= signoA * correccionB;
+                    b.velocidad.x = 0.0f;
+                    b.empuje.x = 0.0f;
+                }
                 else
                 {
-                    b.posicion.z += aEstaArriba ? correccion : -correccion;
+                    b.posicion.z -= signoA * correccionB;
                     b.velocidad.z = 0.0f;
                     b.empuje.z = 0.0f;
                 }
@@ -678,11 +678,18 @@ inline void ResolverGolpesJugadoresConEfectos(
             continue;
         }
 
+        // Se golpea al objetivo valido MAS CERCANO del cono, no al primero
+        // por indice: el numero de jugador no debe dar prioridad.
+        int mejorObjetivo = -1;
+        float mejorDistancia = 0.0f;
+        float mejorNormalX = 0.0f;
+        float mejorNormalZ = 0.0f;
+
         for (int j = 0; j < cantidadMaxima; j++)
         {
             if (i == j) continue;
 
-            JugadorPrueba& objetivo = jugadores[j];
+            const JugadorPrueba& objetivo = jugadores[j];
 
             if (
                 !participantes[j].activo ||
@@ -714,6 +721,21 @@ inline void ResolverGolpesJugadoresConEfectos(
             if (frente < 0.25f)
                 continue;
 
+            if (mejorObjetivo < 0 || distancia < mejorDistancia)
+            {
+                mejorObjetivo = j;
+                mejorDistancia = distancia;
+                mejorNormalX = normalX;
+                mejorNormalZ = normalZ;
+            }
+        }
+
+        if (mejorObjetivo >= 0)
+        {
+            JugadorPrueba& objetivo = jugadores[mejorObjetivo];
+            float normalX = mejorNormalX;
+            float normalZ = mejorNormalZ;
+
             objetivo.empuje.x += normalX * FUERZA_GOLPE_JUGADOR_ESTANDAR;
             objetivo.empuje.z += normalZ * FUERZA_GOLPE_JUGADOR_ESTANDAR;
             objetivo.tiempoRalentizado = DURACION_RALENTIZACION_GOLPE;
@@ -734,7 +756,7 @@ inline void ResolverGolpesJugadoresConEfectos(
             );
 
             atacante.golpeYaConecto = true;
-            break;
+            ReproducirSonidoJugadorMinijuego(SONIDO_GOLPE);
         }
     }
 }

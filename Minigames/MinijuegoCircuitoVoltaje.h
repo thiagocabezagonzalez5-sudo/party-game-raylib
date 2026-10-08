@@ -2,6 +2,7 @@
 
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
+#include "Systems/Audio.h"
 
 
 enum FaseCircuitoVoltaje
@@ -19,6 +20,10 @@ struct EstadoJugadorCircuitoVoltaje
     float tiempoExcesoCurva = 0.0f;
     float tiempoTrompo = 0.0f;
 
+    // Personalidad del bot, sorteada al reiniciar para que las partidas varien.
+    float margenBot = 0.06f;
+    float faseErrorBot = 0.0f;
+
     int trompos = 0;
     bool llegoMeta = false;
 };
@@ -27,6 +32,7 @@ struct EstadoJugadorCircuitoVoltaje
 struct MinijuegoCircuitoVoltaje
 {
     ResultadoMinijuego resultado{};
+    AudioJuego* audio = nullptr;
     EstadoJugadorCircuitoVoltaje jugadores[MAX_PARTICIPANTES];
 
     FaseCircuitoVoltaje fase = FASE_CIRCUITO_PREPARACION;

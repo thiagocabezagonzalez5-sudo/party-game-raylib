@@ -72,12 +72,7 @@ inline constexpr const char* RUTA_TEXTURA_JUGADOR =
 inline constexpr const char* RUTA_LOGO_CREADOR =
     "Assets/UI/LogoCreador.png";
 
-inline constexpr const char* RUTA_FONDO_MENU =
-    "Assets/UI/MenuFondo.gif";
-
-inline constexpr const char* RUTA_FONDO_MENU_ALTERNATIVO =
-    "Assets/UI/MenuFondoCristina.gif";
-
+// El menu ya no usa fondos GIF: el HUB 3D (UI/Hub3D.*) es su fondo.
 
 //==================================================
 // AUDIO
@@ -86,45 +81,57 @@ inline constexpr const char* RUTA_FONDO_MENU_ALTERNATIVO =
 inline constexpr const char* RUTA_MUSICA_MENU =
     "Assets/Audio/Musica/musicaMenu.mp3";
 
-inline constexpr const char* RUTA_SFX_UI_MOVER_WAV =
-    "Assets/Audio/SFX/ui_mover.wav";
-inline constexpr const char* RUTA_SFX_UI_MOVER_MP3 =
-    "Assets/Audio/SFX/ui_mover.mp3";
+// Pistas opcionales por categoria (base sin extension; se prueba .ogg y .mp3).
+// Si faltan, se mantiene la pista que ya suena.
+inline constexpr const char* RUTA_MUSICA_TABLERO = "Assets/Audio/Musica/tablero";
+inline constexpr const char* RUTA_MUSICA_MINIJUEGO = "Assets/Audio/Musica/minijuego";
+inline constexpr const char* RUTA_MUSICA_RESULTADO = "Assets/Audio/Musica/resultado";
 
-inline constexpr const char* RUTA_SFX_UI_CONFIRMAR_WAV =
-    "Assets/Audio/SFX/ui_confirmar.wav";
-inline constexpr const char* RUTA_SFX_UI_CONFIRMAR_MP3 =
-    "Assets/Audio/SFX/ui_confirmar.mp3";
+// Efectos de sonido: cada ruta es una base SIN extension. Systems/Audio.cpp
+// prueba, en este orden, ".wav", ".ogg" y ".mp3". Si no existe ninguno, el
+// juego continua sin ese sonido y avisa en la consola.
 
-inline constexpr const char* RUTA_SFX_CUENTA_REGRESIVA_WAV =
-    "Assets/Audio/SFX/cuenta_regresiva.wav";
-inline constexpr const char* RUTA_SFX_CUENTA_REGRESIVA_MP3 =
-    "Assets/Audio/SFX/cuenta_regresiva.mp3";
+// Rutas historicas (raiz de SFX); se conservan para no romper archivos ya
+// colocados por el usuario.
+inline constexpr const char* RUTA_SFX_UI_MOVER = "Assets/Audio/SFX/ui_mover";
+inline constexpr const char* RUTA_SFX_UI_CONFIRMAR = "Assets/Audio/SFX/ui_confirmar";
+inline constexpr const char* RUTA_SFX_CUENTA_REGRESIVA = "Assets/Audio/SFX/cuenta_regresiva";
+inline constexpr const char* RUTA_SFX_INICIO_MINIJUEGO = "Assets/Audio/SFX/inicio_minijuego";
+inline constexpr const char* RUTA_SFX_RECOGER_NUCLEO = "Assets/Audio/SFX/recoger_nucleo";
+inline constexpr const char* RUTA_SFX_RECOGER_NUCLEO_ESPECIAL = "Assets/Audio/SFX/recoger_nucleo_especial";
+inline constexpr const char* RUTA_SFX_ALERTA_TIEMPO = "Assets/Audio/SFX/alerta_tiempo";
+inline constexpr const char* RUTA_SFX_RESULTADO = "Assets/Audio/SFX/resultado";
 
-inline constexpr const char* RUTA_SFX_INICIO_MINIJUEGO_WAV =
-    "Assets/Audio/SFX/inicio_minijuego.wav";
-inline constexpr const char* RUTA_SFX_INICIO_MINIJUEGO_MP3 =
-    "Assets/Audio/SFX/inicio_minijuego.mp3";
+// UI
+inline constexpr const char* RUTA_SFX_UI_CANCELAR = "Assets/Audio/SFX/UI/ui_cancelar";
 
-inline constexpr const char* RUTA_SFX_RECOGER_NUCLEO_WAV =
-    "Assets/Audio/SFX/recoger_nucleo.wav";
-inline constexpr const char* RUTA_SFX_RECOGER_NUCLEO_MP3 =
-    "Assets/Audio/SFX/recoger_nucleo.mp3";
+// Jugador
+inline constexpr const char* RUTA_SFX_SALTO = "Assets/Audio/SFX/Jugador/salto";
+inline constexpr const char* RUTA_SFX_ATERRIZAJE = "Assets/Audio/SFX/Jugador/aterrizaje";
+inline constexpr const char* RUTA_SFX_GOLPE = "Assets/Audio/SFX/Jugador/golpe";
+inline constexpr const char* RUTA_SFX_CAIDA = "Assets/Audio/SFX/Jugador/caida";
+inline constexpr const char* RUTA_SFX_GROUND_POUND = "Assets/Audio/SFX/Jugador/ground_pound";
 
-inline constexpr const char* RUTA_SFX_RECOGER_NUCLEO_ESPECIAL_WAV =
-    "Assets/Audio/SFX/recoger_nucleo_especial.wav";
-inline constexpr const char* RUTA_SFX_RECOGER_NUCLEO_ESPECIAL_MP3 =
-    "Assets/Audio/SFX/recoger_nucleo_especial.mp3";
+// Tablero
+inline constexpr const char* RUTA_SFX_DADO = "Assets/Audio/SFX/Tablero/dado";
+inline constexpr const char* RUTA_SFX_PASO_TABLERO = "Assets/Audio/SFX/Tablero/paso";
+inline constexpr const char* RUTA_SFX_MONEDA = "Assets/Audio/SFX/Tablero/moneda";
+inline constexpr const char* RUTA_SFX_COMPRA = "Assets/Audio/SFX/Tablero/compra";
+inline constexpr const char* RUTA_SFX_CASILLA_POSITIVA = "Assets/Audio/SFX/Tablero/casilla_positiva";
+inline constexpr const char* RUTA_SFX_CASILLA_NEGATIVA = "Assets/Audio/SFX/Tablero/casilla_negativa";
+inline constexpr const char* RUTA_SFX_EVENTO_TABLERO = "Assets/Audio/SFX/Tablero/evento";
+inline constexpr const char* RUTA_SFX_RULETA_TICK = "Assets/Audio/SFX/Tablero/ruleta_tick";
 
-inline constexpr const char* RUTA_SFX_ALERTA_TIEMPO_WAV =
-    "Assets/Audio/SFX/alerta_tiempo.wav";
-inline constexpr const char* RUTA_SFX_ALERTA_TIEMPO_MP3 =
-    "Assets/Audio/SFX/alerta_tiempo.mp3";
-
-inline constexpr const char* RUTA_SFX_RESULTADO_WAV =
-    "Assets/Audio/SFX/resultado.wav";
-inline constexpr const char* RUTA_SFX_RESULTADO_MP3 =
-    "Assets/Audio/SFX/resultado.mp3";
+// Minijuegos (eventos comunes reutilizables)
+inline constexpr const char* RUTA_SFX_RECOGER_OBJETO = "Assets/Audio/SFX/Minijuegos/recoger";
+inline constexpr const char* RUTA_SFX_EXPLOSION = "Assets/Audio/SFX/Minijuegos/explosion";
+inline constexpr const char* RUTA_SFX_BOTON = "Assets/Audio/SFX/Minijuegos/boton";
+inline constexpr const char* RUTA_SFX_DISPARO = "Assets/Audio/SFX/Minijuegos/disparo";
+inline constexpr const char* RUTA_SFX_PLATAFORMA = "Assets/Audio/SFX/Minijuegos/plataforma";
+inline constexpr const char* RUTA_SFX_IMPACTO = "Assets/Audio/SFX/Minijuegos/impacto";
+inline constexpr const char* RUTA_SFX_ACIERTO = "Assets/Audio/SFX/Minijuegos/acierto";
+inline constexpr const char* RUTA_SFX_ERROR = "Assets/Audio/SFX/Minijuegos/error";
+inline constexpr const char* RUTA_SFX_ELIMINADO = "Assets/Audio/SFX/Minijuegos/eliminado";
 
 
 //==================================================

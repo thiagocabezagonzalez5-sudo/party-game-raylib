@@ -2,6 +2,11 @@
 
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
+#include "Systems/Audio.h"
+#include "raylib.h"
+
+
+inline constexpr int MAX_PARTICULAS_CARGA = 80;
 
 
 enum FaseCargaInestable
@@ -22,16 +27,35 @@ struct EstadoJugadorCargaInestable
 };
 
 
+// Chispa de la explosion (solo visual).
+struct ParticulaCarga
+{
+    bool activa = false;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    Color color = WHITE;
+};
+
+
 struct MinijuegoCargaInestable
 {
     ResultadoMinijuego resultado{};
+    AudioJuego* audio = nullptr;
     EstadoJugadorCargaInestable jugadores[MAX_PARTICIPANTES];
+    ParticulaCarga particulas[MAX_PARTICULAS_CARGA];
 
     FaseCargaInestable fase = FASE_CARGA_PREPARACION;
 
     int portador = -1;
     int portadorExplosion = -1;
     int numeroRonda = 0;
+
+    // Solo visual: de quien viene la carga en vuelo (-1 = caldera central).
+    int origenPase = -1;
+    float progresoPase = 1.0f;
+    float tiempoTick = 0.0f;
 
     float tiempoPreparacion = 0.0f;
     float tiempoCarga = 0.0f;

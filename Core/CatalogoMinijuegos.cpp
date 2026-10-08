@@ -1,9 +1,7 @@
 #include "Core/CatalogoMinijuegos.h"
 
 
-static const DatosMinijuegoCatalogo DATOS_MINIJUEGOS[
-    CANTIDAD_MINIJUEGOS
-] =
+static const DatosMinijuegoCatalogo DATOS_MINIJUEGOS[] =
 {
     {
         MINIJUEGO_COLOR_SEGURO,
@@ -27,6 +25,7 @@ static const DatosMinijuegoCatalogo DATOS_MINIJUEGOS[
         "Coordina con tu companero para avanzar mas rapido que el otro equipo.",
         Color{ 150, 102, 62, 255 },
         "5 - TRONCO COORDINADO",
+        true,
         true
     },
     {
@@ -35,6 +34,7 @@ static const DatosMinijuegoCatalogo DATOS_MINIJUEGOS[
         "En equipo agarra los 6 y 7 que pasan por las cintas y arma 67 antes que el rival.",
         Color{ 229, 173, 62, 255 },
         "6 - FABRICA 67",
+        true,
         true
     },
     {
@@ -180,8 +180,238 @@ static const DatosMinijuegoCatalogo DATOS_MINIJUEGOS[
         Color{ 196, 123, 68, 255 },
         "FIN - CANTERA EN FUGA",
         true
+    },
+    {
+        MINIJUEGO_TERRITORIO_CONQUISTA,
+        "TERRITORIO",
+        "Pisa baldosas para pintarlas de tu color. El ground pound reclama un area; gana quien domine mas.",
+        Color{ 120, 200, 90, 255 },
+        "CATALOGO - TERRITORIO EN CONQUISTA",
+        true
+    },
+    {
+        MINIJUEGO_DEFENSA_NUCLEO,
+        "DEFENSA NUCLEO",
+        "2 vs 2: devuelve el nucleo que rebota y acelera hasta meterlo en el arco rival. Primero a 5 gana.",
+        Color{ 90, 140, 240, 255 },
+        "CATALOGO - DEFENSA DEL NUCLEO",
+        true
+    },
+    {
+        MINIJUEGO_LLUVIA_APILADA,
+        "LLUVIA APILADA",
+        "Atrapa las piezas que caen, apilalas y aseguralas en tu base. Un golpe hace caer la pila rival.",
+        Color{ 235, 150, 200, 255 },
+        "CATALOGO - LLUVIA APILADA",
+        true
+    },
+    {
+        MINIJUEGO_CUERDA_ACANTILADO,
+        "CUERDA ACANTILADO",
+        "1 vs 3: tira de la cuerda al ritmo del pulso. El bando arrastrado cae al mar.",
+        Color{ 200, 170, 110, 255 },
+        "CATALOGO - CUERDA DEL ACANTILADO",
+        true
+    },
+    {
+        MINIJUEGO_ULTIMO_ASIENTO,
+        "ULTIMO ASIENTO",
+        "Cuando calla la musica, ocupa una taza. Empuja rivales: el que queda sin taza sale.",
+        Color{ 150, 90, 220, 255 },
+        "CATALOGO - ULTIMO ASIENTO",
+        true
+    },
+    {
+        MINIJUEGO_CAJAS_PUERTO,
+        "CAJAS DEL PUERTO",
+        "1 vs 3: escondete en un contenedor y evita las cargas de la grua del solitario.",
+        Color{ 52, 120, 160, 255 },
+        "CATALOGO - CAJAS DEL PUERTO",
+        true
+    },
+    {
+        MINIJUEGO_LABERINTO_INCLINADO,
+        "LABERINTO JADE",
+        "Inclina tu losa del templo y guia la esfera de jade al altar; evita agujeros y dardos.",
+        Color{ 52, 176, 128, 255 },
+        "CATALOGO - LABERINTO JADE",
+        true
+    },
+    {
+        MINIJUEGO_VETA_CRISTAL,
+        "VETA DE CRISTAL",
+        "2 vs 2: golpea geodas con la cabeza, junta gemas y esquiva la vagoneta.",
+        Color{ 90, 200, 235, 255 },
+        "CATALOGO - VETA DE CRISTAL",
+        true
+    },
+    {
+        MINIJUEGO_CAPSULAS_BARAJADAS,
+        "CAPSULAS BARAJADAS",
+        "Sigue el nucleo entre capsulas barajadas y elige. Confirmar rapido vale doble. 2-4 jugadores",
+        Color{ 80, 230, 170, 255 },
+        "CATALOGO - CAPSULAS BARAJADAS",
+        true
+    },
+    {
+        MINIJUEGO_BATEO_METEORICO,
+        "BATEO METEORICO",
+        "Batea meteoritos en el momento justo para lanzarlos a los anillos; el dorado vale doble, el rojo no.",
+        Color{ 80, 140, 240, 255 },
+        "CATALOGO - BATEO METEORICO",
+        true
+    },
+    {
+        MINIJUEGO_RACIMO_TOXICO,
+        "RACIMO TOXICO",
+        "Por turnos toma 1 o 2 frutos del racimo; las bayas toxicas quitan vidas y el dorado salta un turno.",
+        Color{ 70, 150, 70, 255 },
+        "CATALOGO - RACIMO TOXICO",
+        true
+    },
+    {
+        MINIJUEGO_TESORERO_ACORRALADO,
+        "TESORERO CERCADO",
+        "El trio persigue al tesorero y lo golpea para que suelte monedas. Las rejas cambian el patio. 1 vs 3",
+        Color{ 232, 186, 64, 255 },
+        "CATALOGO - TESORERO CERCADO",
+        true
+    },
+    {
+        MINIJUEGO_DESCENSO_NUBES,
+        "DESCENSO EN NUBES",
+        "Planea entre nubes, recoge anillos, esquiva tormentas y aterriza en el centro. 2-4 jugadores",
+        Color{ 110, 190, 245, 255 },
+        "CATALOGO - DESCENSO EN NUBES",
+        true
+    },
+    {
+        MINIJUEGO_VOLEA_MAGMA,
+        "VOLEA DE MAGMA",
+        "Voley 2v2 sobre obsidiana: golpea la roca de magma sobre la red; si cae en tu mitad, punto rival.",
+        Color{ 255, 120, 40, 255 },
+        "CATALOGO - VOLEA DE MAGMA",
+        true
+    },
+    {
+        MINIJUEGO_PAREJAS_GLACIAR,
+        "PAREJAS GLACIARES",
+        "Memoria por turnos: derrite bloques de hielo, haz parejas y busca la aurora que vale 3 puntos.",
+        Color{ 90, 170, 220, 255 },
+        "CATALOGO - PAREJAS GLACIARES",
+        true
+    },
+    {
+        MINIJUEGO_ESFERAS_CANON,
+        "ESFERAS DEL CANON",
+        "Rueda tu esfera de piedra por el canon: esquiva grietas, arena y cactus. Rampa de atajo. 2-4 jugadores",
+        Color{ 214, 110, 64, 255 },
+        "CATALOGO - ESFERAS DEL CANON",
+        true
+    },
+    {
+        MINIJUEGO_PESCA_ISLA,
+        "PESCA ISLENA",
+        "Lanza el anzuelo, engancha al pez justo al picar y gana el tira y afloja. Cuidado con las botas",
+        Color{ 60, 210, 215, 255 },
+        "CATALOGO - PESCA ISLENA",
+        true
+    },
+    {
+        MINIJUEGO_RODILLOS_NEON,
+        "RODILLOS NEON",
+        "Detiene tus 3 rodillos neon en el momento justo: iguales dan puntos y parar en la linea da comodin.",
+        Color{ 255, 60, 200, 255 },
+        "CATALOGO - RODILLOS NEON",
+        true
+    },
+    {
+        MINIJUEGO_BOLAS_AZUCAR,
+        "BOLAS DE AZUCAR",
+        "Crea una bola, hazla crecer rodando por azucar glas y lanzala a tus rivales. El chocolate la derrite.",
+        Color{ 240, 110, 160, 255 },
+        "CATALOGO - BOLAS DE AZUCAR",
+        true
+    },
+    {
+        MINIJUEGO_GRUA_CHATARRA,
+        "GRUA DE CHATARRA",
+        "Maneja tu garra magnetica, centrala sobre la chatarra valiosa y llevala a tu tolva. 2-4 jugadores",
+        Color{ 232, 150, 48, 255 },
+        "CATALOGO - GRUA DE CHATARRA",
+        true
+    },
+    {
+        MINIJUEGO_PISOTON_PLAGAS,
+        "PISOTON DE PLAGAS",
+        "Aplasta plagas con ground pound en un jardin gigante. Esquiva avispas y disputa la flor. Todos contra todos",
+        Color{ 96, 172, 64, 255 },
+        "CATALOGO - PISOTON DE PLAGAS",
+        true
+    },
+    {
+        MINIJUEGO_BALSAS_RAPIDO,
+        "BALSAS DEL RAPIDO",
+        "Rema en equipo por el rio de la selva, esquiva rocas y elige cascada o remanso. Primero a la meta.",
+        Color{ 40, 190, 170, 255 },
+        "CATALOGO - BALSAS DEL RAPIDO",
+        true
+    },
+    {
+        MINIJUEGO_AUTOS_GLOBO,
+        "AUTOS DE GLOBO",
+        "Autos flotantes con globos: embiste de lado para reventar los de tus rivales. Usa el turbo y las placas",
+        Color{ 96, 200, 240, 255 },
+        "CATALOGO - AUTOS DE GLOBO",
+        true
+    },
+    {
+        MINIJUEGO_SENDERO_INVISIBLE,
+        "SENDERO INVISIBLE",
+        "Memoriza la ruta segura de las losas del cementerio. Cada caida revela una grieta a todos.",
+        Color{ 120, 230, 150, 255 },
+        "CATALOGO - SENDERO INVISIBLE",
+        true
+    },
+    {
+        MINIJUEGO_BANQUETE_TURBO,
+        "BANQUETE TURBO",
+        "Machaca el boton para devorar raciones espaciales. Rechaza las picantes con salto. Las doradas valen x2",
+        Color{ 90, 170, 240, 255 },
+        "CATALOGO - BANQUETE TURBO",
+        true
+    },
+    {
+        MINIJUEGO_TUBERIAS_DESIERTO,
+        "TUBERIAS DESIERTO",
+        "Sigue las tuberias de piedra del oasis y elige la entrada del cantaro dorado. Cuidado con el espejismo.",
+        Color{ 235, 170, 70, 255 },
+        "CATALOGO - TUBERIAS DESIERTO",
+        true
+    },
+    {
+        MINIJUEGO_TREPA_MASTIL,
+        "TREPA EL MASTIL",
+        "Alterna salto y accion para trepar tu mastil. Aprovecha las olas y esquiva cuervos. Gana el primero en la cofa",
+        Color{ 70, 140, 210, 255 },
+        "CATALOGO - TREPA EL MASTIL",
+        true
+    },
+    {
+        MINIJUEGO_GUARDIAN_RUINAS,
+        "GUARDIAN DE RUINAS",
+        "Un guardian defiende el portal con escudo y embestida; el trio lanza orbes que rebotan en las columnas.",
+        Color{ 100, 220, 200, 255 },
+        "CATALOGO - GUARDIAN DE RUINAS",
+        true
     }
 };
+
+static_assert(
+    sizeof(DATOS_MINIJUEGOS) / sizeof(DATOS_MINIJUEGOS[0]) ==
+        CANTIDAD_MINIJUEGOS,
+    "Cada IdMinijuego necesita su entrada en DATOS_MINIJUEGOS"
+);
 
 
 bool EsIdMinijuegoValido(
@@ -278,4 +508,23 @@ IdMinijuego ObtenerMinijuegoDisponibleTablero(
     }
 
     return MINIJUEGO_COLOR_SEGURO;
+}
+
+
+bool MinijuegoAdmiteCantidadJugadores(
+    IdMinijuego id,
+    int cantidadJugadores
+)
+{
+    if (cantidadJugadores < 2)
+    {
+        return false;
+    }
+
+    if (ObtenerDatosMinijuego(id).requiereParDeJugadores)
+    {
+        return cantidadJugadores % 2 == 0;
+    }
+
+    return true;
 }

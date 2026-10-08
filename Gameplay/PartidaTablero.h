@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Board/CatalogoTableros.h"
 #include "Board/Tablero.h"
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
@@ -103,10 +104,40 @@ struct PartidaTablero
 
     Camera3D camara{};
 
+    // Estado visual de la camara tipo diorama (suavizado hacia el foco).
+    Vector3 camaraFoco{};
+    float camaraZoom = 1.0f;
+    int camaraRondaVista = 0;
+    float camaraTiempoVista = 0.0f;
+    int camaraTrofeoVisto = -1;
+    float camaraTiempoTrofeo = 0.0f;
+
+    // --- Tablero elegido y estado de su gimmick ---
+
+    IdTablero idTablero = TABLERO_ISLA_ARBOLEDA;
+    const DefinicionTablero* definicion = nullptr;
+
+    float tiempoTablero = 0.0f;
+
+    // Estado generico del gimmick: gimmickActivo es el objetivo
+    // logico y gimmickAnim (0..1) su animacion suavizada.
+    bool gimmickActivo = false;
+    float gimmickAnim = 0.0f;
+    int casillaPeligro = -1;
+
+    // Texto del evento de la casilla actual (vacio = texto comun).
+    char textoEvento[96] = {};
+
+    // Estado del gimmick para el HUD y aviso temporal de ronda.
+    char estadoGimmick[96] = {};
+    char mensajeGimmick[96] = {};
+    float tiempoMensajeGimmick = 0.0f;
+
     void Inicializar(
         Participante participantesJuego[],
         int cantidadParticipantesJuego,
-        AudioJuego* audioJuego
+        AudioJuego* audioJuego,
+        IdTablero id = TABLERO_ISLA_ARBOLEDA
     );
 
     void Reiniciar();
@@ -127,3 +158,37 @@ struct PartidaTablero
 
     bool SolicitaSalida() const;
 };
+
+
+//==================================================
+// UTILIDADES PARA LOS TABLEROS (hooks de gimmick)
+//==================================================
+
+// Participante (0..3) que tiene el turno, o -1.
+int ObtenerParticipanteTurnoTableroFinal(
+    const PartidaTablero& partida
+);
+
+void ReproducirSonidoTablero(
+    PartidaTablero& partida,
+    TipoSonidoJuego tipo
+);
+
+// Mueve la ficha al instante a otra casilla (teletransporte).
+void TeletransportarJugadorTablero(
+    PartidaTablero& partida,
+    int participante,
+    int casilla
+);
+
+// Muestra un aviso de gimmick durante unos segundos.
+void EstablecerMensajeGimmick(
+    PartidaTablero& partida,
+    const char* texto
+);
+
+// Escena 3D completa (decoracion, ruta, gimmick, trofeo, fichas).
+// Debe llamarse dentro de BeginMode3D. Sirve tambien a la vista previa.
+void DibujarEscenaTablero3D(
+    const PartidaTablero& partida
+);

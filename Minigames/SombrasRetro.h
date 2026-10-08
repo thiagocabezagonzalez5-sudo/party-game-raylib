@@ -2,6 +2,7 @@
 
 #include "raylib.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Systems/CalidadGrafica.h"
 
 #include <cmath>
 
@@ -32,7 +33,8 @@ inline void DibujarSombraRetroCircular(
     float radioX,
     float radioZ,
     float alturaSuelo = 0.018f,
-    float alphaBase = 0.27f
+    float alphaBase = 0.27f,
+    int lados = 8
 )
 {
     if (radioX <= 0.025f || radioZ <= 0.025f)
@@ -76,7 +78,7 @@ inline void DibujarSombraRetroCircular(
         posicionObjeto.z + desplazamiento * 0.45f
     };
 
-    const int LADOS = 8;
+    const int LADOS = lados < 3 ? 3 : (lados > 8 ? 8 : lados);
     Color color = Fade(BLACK, alpha);
 
     // Cada vertice del borde se comparte entre dos triangulos vecinos,
@@ -286,6 +288,29 @@ inline bool EsAcumulacionNieveViejaRetro(
 }
 
 
+// Calidad de sombras para PROPS (cubos, esferas y cilindros): BAJA no las
+// dibuja, MEDIA las reduce a objetos mas grandes y a 6 lados. Las sombras de
+// personajes (DrawModelEx) y de pelotas-jugador se mantienen en todos los
+// niveles porque ayudan a leer la posicion respecto al suelo.
+inline float EscalaUmbralSombraPropRetro()
+{
+    switch (CalidadSombras())
+    {
+        case CALIDAD_BAJA: return 1.0e6f;
+        case CALIDAD_MEDIA: return 2.0f;
+        default: break;
+    }
+
+    return 1.0f;
+}
+
+
+inline int LadosSombraPropRetro()
+{
+    return CalidadSombras() == CALIDAD_MEDIA ? 6 : 8;
+}
+
+
 inline void DibujarCuboConSombraRetro(
     Vector3 posicion,
     float ancho,
@@ -301,10 +326,12 @@ inline void DibujarCuboConSombraRetro(
             largo
         );
 
+    float umbralSombra = EscalaUmbralSombraPropRetro();
+
     bool objetoVisible =
-        ancho >= 0.20f &&
-        largo >= 0.20f &&
-        alto >= 0.08f;
+        ancho >= 0.20f * umbralSombra &&
+        largo >= 0.20f * umbralSombra &&
+        alto >= 0.08f * umbralSombra;
 
     if (
         !yaTieneSombraDeJugador &&
@@ -352,12 +379,15 @@ inline void DibujarEsferaConSombraRetro(
         radio >= 0.60f &&
         radio <= 0.70f;
 
-    if (!pelotaJugador && radio >= 0.10f)
+    if (!pelotaJugador && radio >= 0.10f * EscalaUmbralSombraPropRetro())
     {
         DibujarSombraRetroCircular(
             posicion,
             radio * 0.92f,
-            radio * 0.72f
+            radio * 0.72f,
+            0.018f,
+            0.27f,
+            LadosSombraPropRetro()
         );
     }
 
@@ -389,14 +419,17 @@ inline void DibujarCilindroConSombraRetro(
 
     if (
         !esBaseGrande &&
-        radio >= 0.10f &&
-        alto >= 0.07f
+        radio >= 0.10f * EscalaUmbralSombraPropRetro() &&
+        alto >= 0.07f * EscalaUmbralSombraPropRetro()
     )
     {
         DibujarSombraRetroCircular(
             posicion,
             radio * 0.92f,
-            radio * 0.72f
+            radio * 0.72f,
+            0.018f,
+            0.27f,
+            LadosSombraPropRetro()
         );
     }
 

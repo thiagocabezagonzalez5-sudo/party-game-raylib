@@ -2,6 +2,7 @@
 
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
+#include "Systems/Audio.h"
 
 
 inline constexpr int MAX_PULSOS_SECUENCIA_NEON = 8;
@@ -40,12 +41,18 @@ struct EstadoJugadorSecuenciaNeon
 
     float tiempoRespuestaBot = 0.0f;
     int indiceFalloBot = -1;
+
+    // Solo visual: ultimo boton pulsado en la consola del jugador.
+    int ultimoPulso = -1;
+    float tiempoUltimoPulso = 0.0f;
+    bool ultimoPulsoCorrecto = true;
 };
 
 
 struct MinijuegoSecuenciaNeon
 {
     ResultadoMinijuego resultado{};
+    AudioJuego* audio = nullptr;
     EstadoJugadorSecuenciaNeon jugadores[MAX_PARTICIPANTES];
 
     PulsoSecuenciaNeon secuencia[MAX_PULSOS_SECUENCIA_NEON];
@@ -61,6 +68,9 @@ struct MinijuegoSecuenciaNeon
     float tiempoRespuesta = 0.0f;
     float tiempoResolucion = 0.0f;
     float tiempoAnimacion = 0.0f;
+
+    // Solo visual: brillo residual (0..1) de cada panel gigante.
+    float brilloPanel[CANTIDAD_PULSOS_NEON]{};
 
     void Inicializar();
 

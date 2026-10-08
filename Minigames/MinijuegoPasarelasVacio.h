@@ -22,6 +22,10 @@ struct EstadoJugadorPasarelasVacio
     bool llegoMeta = false;
     int posicionFinal = 0;
     int indiceObjetivoBot = 1;
+    int ultimoSoporteBot = -1;
+    float distanciaSaltoBot = 0.78f;
+    float desfaseXBot = 0.0f;
+    float pausaBot = 0.0f;
     float progresoMaximo = 0.0f;
 };
 
@@ -29,8 +33,9 @@ struct EstadoJugadorPasarelasVacio
 struct EstadoPlataformaPasarelas
 {
     bool activada = false;
+    bool ocupada = false;
     bool cayendo = false;
-    float tiempoDerrumbe = 0.0f;
+    float tiempoDerrumbe = 1.5f;
     float velocidadCaida = 0.0f;
 };
 

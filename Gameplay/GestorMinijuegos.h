@@ -11,9 +11,12 @@
 #include "Minigames/MinijuegoCircuitoVoltaje.h"
 #include "Minigames/MinijuegoColorSeguro.h"
 #include "Minigames/MinijuegoConteoExplosivo.h"
+#include "Minigames/MinijuegoCuerdaAcantilado.h"
+#include "Minigames/MinijuegoDefensaNucleo.h"
 #include "Minigames/Minijuego67.h"
 #include "Minigames/MinijuegoInterruptoresCaos.h"
 #include "Minigames/MinijuegoIslaFuego.h"
+#include "Minigames/MinijuegoLluviaApilada.h"
 #include "Minigames/MinijuegoMiradasCruzadas.h"
 #include "Minigames/MinijuegoMurosLocos.h"
 #include "Minigames/MinijuegoNucleosEnergia.h"
@@ -23,9 +26,34 @@
 #include "Minigames/MinijuegoRefugioPinchos.h"
 #include "Minigames/MinijuegoSecuenciaNeon.h"
 #include "Minigames/MinijuegoTanquesPlasma.h"
+#include "Minigames/MinijuegoTerritorioConquista.h"
 #include "Minigames/MinijuegoTormentaMagnetica.h"
 #include "Minigames/MinijuegoTrazoPerfecto.h"
 #include "Minigames/MinijuegoTronco.h"
+#include "Minigames/MinijuegoUltimoAsiento.h"
+#include "Minigames/MinijuegoCajasPuerto.h"
+#include "Minigames/MinijuegoLaberintoInclinado.h"
+#include "Minigames/MinijuegoVetaCristal.h"
+#include "Minigames/MinijuegoCapsulasBarajadas.h"
+#include "Minigames/MinijuegoBateoMeteorico.h"
+#include "Minigames/MinijuegoRacimoToxico.h"
+#include "Minigames/MinijuegoTesoreroAcorralado.h"
+#include "Minigames/MinijuegoDescensoNubes.h"
+#include "Minigames/MinijuegoVoleaMagma.h"
+#include "Minigames/MinijuegoParejasGlaciar.h"
+#include "Minigames/MinijuegoEsferasCanon.h"
+#include "Minigames/MinijuegoPescaIsla.h"
+#include "Minigames/MinijuegoRodillosNeon.h"
+#include "Minigames/MinijuegoBolasAzucar.h"
+#include "Minigames/MinijuegoGruaChatarra.h"
+#include "Minigames/MinijuegoPisotonPlagas.h"
+#include "Minigames/MinijuegoBalsasRapido.h"
+#include "Minigames/MinijuegoAutosGlobo.h"
+#include "Minigames/MinijuegoSenderoInvisible.h"
+#include "Minigames/MinijuegoBanqueteTurbo.h"
+#include "Minigames/MinijuegoTuberiasDesierto.h"
+#include "Minigames/MinijuegoTrepaMastil.h"
+#include "Minigames/MinijuegoGuardianRuinas.h"
 
 
 // Punto unico de propiedad y dispatch de los minijuegos.
@@ -56,6 +84,34 @@ struct GestorMinijuegos
     MinijuegoTanquesPlasma minijuegoTanquesPlasma;
     MinijuegoPasarelasVacio minijuegoPasarelasVacio;
     MinijuegoCanteraFuga minijuegoCanteraFuga;
+    MinijuegoTerritorioConquista minijuegoTerritorioConquista;
+    MinijuegoDefensaNucleo minijuegoDefensaNucleo;
+    MinijuegoLluviaApilada minijuegoLluviaApilada;
+    MinijuegoCuerdaAcantilado minijuegoCuerdaAcantilado;
+    MinijuegoUltimoAsiento minijuegoUltimoAsiento;
+    MinijuegoCajasPuerto minijuegoCajasPuerto;
+    MinijuegoLaberintoInclinado minijuegoLaberintoInclinado;
+    MinijuegoVetaCristal minijuegoVetaCristal;
+    MinijuegoCapsulasBarajadas minijuegoCapsulasBarajadas;
+    MinijuegoBateoMeteorico minijuegoBateoMeteorico;
+    MinijuegoRacimoToxico minijuegoRacimoToxico;
+    MinijuegoTesoreroAcorralado minijuegoTesoreroAcorralado;
+    MinijuegoDescensoNubes minijuegoDescensoNubes;
+    MinijuegoVoleaMagma minijuegoVoleaMagma;
+    MinijuegoParejasGlaciar minijuegoParejasGlaciar;
+    MinijuegoEsferasCanon minijuegoEsferasCanon;
+    MinijuegoPescaIsla minijuegoPescaIsla;
+    MinijuegoRodillosNeon minijuegoRodillosNeon;
+    MinijuegoBolasAzucar minijuegoBolasAzucar;
+    MinijuegoGruaChatarra minijuegoGruaChatarra;
+    MinijuegoPisotonPlagas minijuegoPisotonPlagas;
+    MinijuegoBalsasRapido minijuegoBalsasRapido;
+    MinijuegoAutosGlobo minijuegoAutosGlobo;
+    MinijuegoSenderoInvisible minijuegoSenderoInvisible;
+    MinijuegoBanqueteTurbo minijuegoBanqueteTurbo;
+    MinijuegoTuberiasDesierto minijuegoTuberiasDesierto;
+    MinijuegoTrepaMastil minijuegoTrepaMastil;
+    MinijuegoGuardianRuinas minijuegoGuardianRuinas;
 
     void Inicializar();
 

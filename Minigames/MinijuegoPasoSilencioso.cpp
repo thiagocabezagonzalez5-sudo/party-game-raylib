@@ -1,5 +1,7 @@
 #include "Minigames/MinijuegoPasoSilencioso.h"
 
+#include "Minigames/AudioMinijuegos.h"
+#include "Minigames/EfectosVisualesMinijuegos.h"
 #include "Minigames/ModeloJugadorCompartido.h"
 #include "Minigames/TiposMinijuegos.h"
 #include "Systems/Input.h"
@@ -11,6 +13,8 @@ static const float DURACION_PREPARACION_PASO = 2.5f;
 static const float DURACION_CARRERA_PASO = 35.0f;
 static const float VELOCIDAD_AVANCE_PASO = 0.105f;
 static const float RETROCESO_ALERTA_PASO = 0.17f;
+static const float GRACIA_ALERTA_PASO = 0.3f;
+static const float AVISO_PREVIO_PASO = 0.4f;
 
 
 static float PosicionXCarrilPaso(int indiceParticipante)
@@ -50,8 +54,15 @@ static void CambiarEstadoCentinela(
 )
 {
     minijuego.centinelaAlerta = !minijuego.centinelaAlerta;
+    minijuego.avisoPrevio = false;
+    minijuego.tiempoEnAlerta = 0.0f;
     minijuego.tiempoEstadoCentinela =
         NuevaDuracionEstadoCentinela(minijuego.centinelaAlerta);
+
+    if (minijuego.centinelaAlerta)
+    {
+        ReproducirSonidoMinijuego(minijuego.audio, SONIDO_IMPACTO);
+    }
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -60,7 +71,7 @@ static void CambiarEstadoCentinela(
 
         if (
             !minijuego.resultado.participantes[i].participo ||
-            !participantes[i].esBot
+            !(participantes[i].esBot || !participantes[i].conectado)
         )
         {
             continue;
@@ -68,13 +79,17 @@ static void CambiarEstadoCentinela(
 
         if (minijuego.centinelaAlerta)
         {
-            jugador.botAvanzando = true;
-            jugador.reaccionBot = GetRandomValue(7, 34) / 100.0f;
+            // Quien no se anticipo al aviso reacciona en 0.18-0.45 s.
+            jugador.botAvanzando = !jugador.botAnticipo;
+            jugador.reaccionBot = jugador.botAnticipo
+                ? 0.0f
+                : GetRandomValue(18, 45) / 100.0f;
         }
         else
         {
+            jugador.botAnticipo = false;
             jugador.botAvanzando = false;
-            jugador.reaccionBot = GetRandomValue(8, 42) / 100.0f;
+            jugador.reaccionBot = GetRandomValue(18, 45) / 100.0f;
         }
     }
 }
@@ -157,6 +172,8 @@ static void FinalizarPasoSilencioso(
         : DESENLACE_EMPATE;
 
     minijuego.fase = FASE_PASO_TERMINADO;
+
+    ReproducirSonidoMinijuego(minijuego.audio, SONIDO_RESULTADO);
 }
 
 
@@ -164,10 +181,19 @@ static void DibujarCentinelaPaso(
     const MinijuegoPasoSilencioso& minijuego
 )
 {
-    Color colorLuz = minijuego.centinelaAlerta ? RED : LIME;
+    Color colorLuz = minijuego.centinelaAlerta
+        ? RED
+        : (minijuego.avisoPrevio ? ORANGE : LIME);
     float giro = minijuego.centinelaAlerta
         ? std::sin(minijuego.tiempoAnimacion * 8.0f) * 18.0f
-        : 180.0f;
+        : (minijuego.avisoPrevio
+            ? 180.0f + std::sin(minijuego.tiempoAnimacion * 45.0f) * 40.0f
+            : 180.0f);
+
+    // Pedestal y brazos de piedra de la estatua.
+    DrawCube({ 0.0f, 0.2f, -9.2f }, 3.6f, 0.4f, 3.4f, Color{ 84, 86, 104, 255 });
+    DrawCube({ -1.7f, 1.7f, -9.2f }, 0.5f, 0.5f, 1.2f, Color{ 64, 70, 82, 255 });
+    DrawCube({ 1.7f, 1.7f, -9.2f }, 0.5f, 0.5f, 1.2f, Color{ 64, 70, 82, 255 });
 
     DrawCylinder(
         { 0.0f, 1.15f, -9.2f },
@@ -226,6 +252,85 @@ static void DibujarCentinelaPaso(
 }
 
 
+//==================================================
+// ESCENARIO: TEMPLO NOCTURNO DEL CENTINELA (solo visual)
+//==================================================
+//
+// MODELO FUTURO: reemplazar por GLB las columnas con capitel, el muro del
+// fondo con su arco, la estatua del centinela con su pedestal, las antorchas
+// y la alfombra ceremonial. La logica (carriles, meta, estados) no depende
+// de nada de esto.
+//==================================================
+
+static void DibujarEscenarioTemploPaso(
+    const MinijuegoPasoSilencioso& minijuego
+)
+{
+    bool alerta = minijuego.centinelaAlerta;
+    Color luz = alerta ? Color{ 255, 70, 60, 255 } : Color{ 110, 235, 130, 255 };
+
+    // Suelo de piedra y alfombra ceremonial bajo los carriles.
+    DrawPlane({ 0.0f, -0.09f, -2.0f }, { 40.0f, 40.0f }, Color{ 22, 24, 36, 255 });
+    DrawCube({ 0.0f, -0.03f, -0.5f }, 10.6f, 0.04f, 17.6f, Color{ 96, 28, 40, 255 });
+    DrawCube({ -5.2f, 0.0f, -0.5f }, 0.14f, 0.05f, 17.6f, GOLD);
+    DrawCube({ 5.2f, 0.0f, -0.5f }, 0.14f, 0.05f, 17.6f, GOLD);
+
+    // Columnas a ambos lados con antorchas que cambian de color.
+    for (int i = 0; i < 5; i++)
+    {
+        float z = 7.0f - (float)i * 4.2f;
+
+        for (int lado = -1; lado <= 1; lado += 2)
+        {
+            float x = (float)lado * 8.0f;
+
+            DrawCube({ x, 0.25f, z }, 1.5f, 0.5f, 1.5f, Color{ 70, 72, 88, 255 });
+            DrawCylinder({ x, 0.5f, z }, 0.55f, 0.48f, 2.8f, 10, Color{ 120, 122, 140, 255 });
+            DrawCube({ x, 3.5f, z }, 1.5f, 0.45f, 1.5f, Color{ 84, 86, 104, 255 });
+            DrawSphere({ x - (float)lado * 0.95f, 2.1f, z }, 0.2f, luz);
+            DrawCircle3D(
+                { x - (float)lado * 0.95f, 0.01f, z },
+                1.1f,
+                { 1.0f, 0.0f, 0.0f },
+                90.0f,
+                Fade(luz, 0.35f)
+            );
+        }
+    }
+
+    // Muro del fondo con arco hacia la meta.
+    DrawCube({ 0.0f, 3.0f, -13.0f }, 20.0f, 6.0f, 0.8f, Color{ 48, 50, 68, 255 });
+    DrawCube({ 0.0f, 2.2f, -12.55f }, 5.0f, 4.4f, 0.2f, Color{ 14, 16, 26, 255 });
+    DrawCube({ -2.7f, 2.4f, -12.5f }, 0.5f, 4.8f, 0.5f, Color{ 120, 122, 140, 255 });
+    DrawCube({ 2.7f, 2.4f, -12.5f }, 0.5f, 4.8f, 0.5f, Color{ 120, 122, 140, 255 });
+    DrawCube({ 0.0f, 5.0f, -12.5f }, 6.0f, 0.6f, 0.6f, Color{ 120, 122, 140, 255 });
+
+    // Meta: arco dorado sobre la linea de llegada.
+    DrawCube({ -5.2f, 1.0f, -8.05f }, 0.25f, 2.0f, 0.25f, GOLD);
+    DrawCube({ 5.2f, 1.0f, -8.05f }, 0.25f, 2.0f, 0.25f, GOLD);
+    DrawCube({ 0.0f, 2.0f, -8.05f }, 10.65f, 0.25f, 0.25f, GOLD);
+
+    // Pedestales de salida bajo cada carril.
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        DrawCube(
+            { PosicionXCarrilPaso(i), 0.02f, 7.75f },
+            1.9f, 0.16f, 0.5f,
+            Color{ 150, 150, 168, 255 }
+        );
+    }
+
+    // Reflector del suelo frente a la estatua: verde dormido, rojo alerta.
+    DrawCircle3D(
+        { 0.0f, 0.02f, -8.6f },
+        3.2f,
+        { 1.0f, 0.0f, 0.0f },
+        90.0f,
+        Fade(luz, 0.45f)
+    );
+}
+
+
 void MinijuegoPasoSilencioso::Inicializar()
 {
     resultado = {};
@@ -264,7 +369,7 @@ void MinijuegoPasoSilencioso::Reiniciar(
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        jugadores[i].reaccionBot = GetRandomValue(8, 42) / 100.0f;
+        jugadores[i].reaccionBot = GetRandomValue(18, 45) / 100.0f;
     }
 }
 
@@ -283,7 +388,9 @@ void MinijuegoPasoSilencioso::Actualizar(
 
     if (fase == FASE_PASO_PREPARACION)
     {
+        float preparacionAntes = tiempoPreparacion;
         tiempoPreparacion -= deltaTime;
+        ActualizarAudioCuentaRegresiva(audio, preparacionAntes, tiempoPreparacion);
 
         if (tiempoPreparacion <= 0.0f)
         {
@@ -294,8 +401,29 @@ void MinijuegoPasoSilencioso::Actualizar(
         return;
     }
 
+    float carreraAntes = tiempoCarrera;
     tiempoCarrera -= deltaTime;
+    ActualizarAudioAlertaTiempo(audio, carreraAntes, tiempoCarrera);
     tiempoEstadoCentinela -= deltaTime;
+
+    if (centinelaAlerta)
+    {
+        tiempoEnAlerta += deltaTime;
+    }
+    else if (!avisoPrevio && tiempoEstadoCentinela <= AVISO_PREVIO_PASO)
+    {
+        // Aviso: el centinela tiembla antes de girar la cabeza.
+        avisoPrevio = true;
+        ReproducirSonidoMinijuego(audio, SONIDO_ALERTA_TIEMPO);
+
+        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        {
+            jugadores[i].botAnticipo =
+                resultado.participantes[i].participo &&
+                (participantes[i].esBot || !participantes[i].conectado) &&
+                GetRandomValue(0, 99) < 30;
+        }
+    }
 
     if (tiempoEstadoCentinela <= 0.0f)
     {
@@ -317,11 +445,20 @@ void MinijuegoPasoSilencioso::Actualizar(
         EstadoJugadorPasoSilencioso& jugador = jugadores[i];
         bool avanzando = false;
 
-        if (participantes[i].esBot)
+        jugador.flashCastigo = Clamp(jugador.flashCastigo - deltaTime, 0.0f, 10.0f);
+        jugador.perdidaFlotante = Clamp(jugador.perdidaFlotante - deltaTime, 0.0f, 10.0f);
+        jugador.progresoVisual += (jugador.progreso - jugador.progresoVisual) *
+            Clamp(deltaTime * 9.0f, 0.0f, 1.0f);
+
+        if (participantes[i].esBot || !participantes[i].conectado)
         {
             jugador.reaccionBot -= deltaTime;
 
-            if (jugador.reaccionBot <= 0.0f)
+            if (jugador.botAnticipo)
+            {
+                jugador.botAvanzando = false;
+            }
+            else if (jugador.reaccionBot <= 0.0f)
             {
                 jugador.botAvanzando = !centinelaAlerta;
             }
@@ -338,12 +475,21 @@ void MinijuegoPasoSilencioso::Actualizar(
 
         if (centinelaAlerta)
         {
-            if (avanzando && !jugador.castigadoEnAlerta)
+            if (
+                avanzando &&
+                !jugador.castigadoEnAlerta &&
+                tiempoEnAlerta > GRACIA_ALERTA_PASO
+            )
             {
+                float antes = jugador.progreso;
                 jugador.progreso -= RETROCESO_ALERTA_PASO;
                 jugador.progreso = Clamp(jugador.progreso, 0.0f, 1.0f);
+                jugador.perdidaFlotante = 1.4f;
+                jugador.flashCastigo = 0.5f;
+                jugador.progresoVisual = antes;
                 jugador.penalizaciones++;
                 jugador.castigadoEnAlerta = true;
+                ReproducirSonidoMinijuego(audio, SONIDO_GOLPE);
             }
 
             continue;
@@ -378,11 +524,7 @@ void MinijuegoPasoSilencioso::Dibujar(
 
     BeginMode3D(camara);
 
-    DrawPlane(
-        { 0.0f, -0.06f, -0.6f },
-        { 10.5f, 18.5f },
-        Color{ 36, 42, 58, 255 }
-    );
+    DibujarEscenarioTemploPaso(*this);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -420,7 +562,7 @@ void MinijuegoPasoSilencioso::Dibujar(
         }
 
         float x = PosicionXCarrilPaso(i);
-        float z = PosicionZProgresoPaso(jugadores[i].progreso);
+        float z = PosicionZProgresoPaso(jugadores[i].progresoVisual);
 
         DrawCircle3D(
             { x, 0.03f, z },
@@ -429,6 +571,17 @@ void MinijuegoPasoSilencioso::Dibujar(
             90.0f,
             Fade(BLACK, 0.36f)
         );
+
+        if (jugadores[i].flashCastigo > 0.0f)
+        {
+            DrawCircle3D(
+                { x, 0.05f, z },
+                0.55f + (0.5f - jugadores[i].flashCastigo) * 1.6f,
+                { 1.0f, 0.0f, 0.0f },
+                90.0f,
+                Fade(RED, jugadores[i].flashCastigo * 1.6f)
+            );
+        }
 
         DibujarModeloJugadorEnPosicion(
             { x, 0.04f, z },
@@ -440,6 +593,43 @@ void MinijuegoPasoSilencioso::Dibujar(
     DibujarCentinelaPaso(*this);
 
     EndMode3D();
+
+    // "-X%" flotante sobre quien fue castigado y destello si es un humano.
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (!resultado.participantes[i].participo)
+        {
+            continue;
+        }
+
+        bool humano = !(participantes[i].esBot || !participantes[i].conectado);
+
+        if (humano && jugadores[i].flashCastigo > 0.0f)
+        {
+            DrawRectangleLinesEx(
+                { 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() },
+                14.0f,
+                Fade(RED, jugadores[i].flashCastigo)
+            );
+        }
+
+        if (jugadores[i].perdidaFlotante <= 0.0f)
+        {
+            continue;
+        }
+
+        float subida = (1.4f - jugadores[i].perdidaFlotante) * 1.2f;
+        Vector2 pantalla = GetWorldToScreen(
+            { PosicionXCarrilPaso(i), 2.4f + subida, PosicionZProgresoPaso(jugadores[i].progresoVisual) },
+            camara
+        );
+        const char* texto = TextFormat("-%d%%", (int)(RETROCESO_ALERTA_PASO * 100.0f + 0.5f));
+        int ancho = MeasureText(texto, 30);
+
+        DrawText(texto, (int)pantalla.x - ancho / 2 + 2, (int)pantalla.y + 2, 30, Fade(BLACK, 0.7f));
+        DrawText(texto, (int)pantalla.x - ancho / 2, (int)pantalla.y, 30,
+            Fade(RED, Clamp(jugadores[i].perdidaFlotante, 0.0f, 1.0f)));
+    }
 
     DrawRectangle(18, 16, 515, 126, Fade(BLACK, 0.78f));
     DrawText("PASO SILENCIOSO", 32, 28, 30, GOLD);
@@ -458,11 +648,13 @@ void MinijuegoPasoSilencioso::Dibujar(
     else if (fase == FASE_PASO_CARRERA)
     {
         DrawText(
-            centinelaAlerta ? "ALTO! TE ESTA MIRANDO" : "AVANZA! ESTA DORMIDO",
+            centinelaAlerta
+                ? "ALTO! TE ESTA MIRANDO"
+                : (avisoPrevio ? "CUIDADO... VA A MIRAR" : "AVANZA! ESTA DORMIDO"),
             32,
             68,
             23,
-            centinelaAlerta ? RED : LIME
+            centinelaAlerta ? RED : (avisoPrevio ? ORANGE : LIME)
         );
 
         DrawText(
@@ -476,7 +668,7 @@ void MinijuegoPasoSilencioso::Dibujar(
     else
     {
         DrawText("RESULTADOS", 32, 68, 23, RAYWHITE);
-        DrawText("R PARA JUGAR DE NUEVO", 32, 101, 18, LIGHTGRAY);
+        DrawText(TextoReinicioMinijuego(), 32, 101, 18, LIGHTGRAY);
     }
 
     int yInicial = GetScreenHeight() - 174;
@@ -546,6 +738,14 @@ void MinijuegoPasoSilencioso::Dibujar(
 
     if (fase != FASE_PASO_TERMINADO)
     {
+        DrawRectangle(
+            GetScreenWidth() / 2 - 350,
+            154,
+            700,
+            28,
+            Fade(BLACK, 0.6f)
+        );
+
         DrawText(
             "MANTEN ADELANTE PARA AVANZAR. SUELTA CUANDO SE PONGA ROJO.",
             GetScreenWidth() / 2 - 338,

@@ -44,6 +44,10 @@ struct ZonaPruebas
     PrototipoTablero prototipoTablero;
 
     bool modoCatalogo = false;
+
+    // Ronda oficial lanzada desde el tablero: no se puede reiniciar (R),
+    // abandonar (ESC) ni abrir el debug (F3). El minijuego debe terminar.
+    bool modoTablero = false;
     bool mostrarDebug = false;
     bool volverAlMenu = false;
 

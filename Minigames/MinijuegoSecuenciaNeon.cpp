@@ -1,9 +1,24 @@
 #include "Minigames/MinijuegoSecuenciaNeon.h"
 
+#include "Minigames/AudioMinijuegos.h"
+#include "Minigames/UtilidadesMinijuegos.h"
 #include "raylib.h"
+#include "raymath.h"
+#include "rlgl.h"
 #include "Systems/Input.h"
 
 #include <cmath>
+
+
+//==================================================
+// SECUENCIA NEON - SALA DE SINTETIZADOR 3D
+//==================================================
+//
+// Logica: la secuencia crece cada ronda; los jugadores la repiten con
+// las cuatro direcciones y quien falla o se queda sin tiempo cae.
+// Visual: cuatro paneles gigantes en el muro del fondo (se encienden al
+// mostrar la secuencia) y una consola con pedestal para cada jugador.
+//==================================================
 
 
 static const float DURACION_PREPARACION_SECUENCIA = 2.5f;
@@ -30,21 +45,6 @@ static int ContarVivosSecuencia(
     }
 
     return cantidad;
-}
-
-
-static const char* SimboloPulsoNeon(PulsoSecuenciaNeon pulso)
-{
-    switch (pulso)
-    {
-        case PULSO_NEON_ARRIBA: return "^";
-        case PULSO_NEON_DERECHA: return ">";
-        case PULSO_NEON_ABAJO: return "V";
-        case PULSO_NEON_IZQUIERDA: return "<";
-        case CANTIDAD_PULSOS_NEON: break;
-    }
-
-    return "?";
 }
 
 
@@ -126,20 +126,32 @@ static void RegistrarPulsoJugador(
         return;
     }
 
+    jugador.ultimoPulso = (int)pulso;
+    jugador.tiempoUltimoPulso = 0.28f;
+
     if (pulso != minijuego.secuencia[jugador.indiceRespuesta])
     {
         jugador.eliminado = true;
         jugador.falloEstaRonda = true;
+        jugador.ultimoPulsoCorrecto = false;
+        ReproducirSonidoMinijuego(minijuego.audio, SONIDO_ERROR);
         return;
     }
 
+    jugador.ultimoPulsoCorrecto = true;
     jugador.indiceRespuesta++;
     jugador.aciertosTotales++;
+    minijuego.brilloPanel[pulso] = 0.6f;
 
     if (jugador.indiceRespuesta >= minijuego.cantidadPulsos)
     {
         jugador.completoRonda = true;
         jugador.rondasSuperadas++;
+        ReproducirSonidoMinijuego(minijuego.audio, SONIDO_ACIERTO);
+    }
+    else
+    {
+        ReproducirSonidoMinijuego(minijuego.audio, SONIDO_BOTON);
     }
 }
 
@@ -220,6 +232,8 @@ static void ComenzarMuestraSecuencia(
     minijuego.pulsoVisible = true;
     minijuego.tiempoPasoMuestra = DURACION_PULSO_VISIBLE;
     minijuego.fase = FASE_SECUENCIA_MOSTRANDO;
+
+    ReproducirSonidoMinijuego(minijuego.audio, SONIDO_BOTON);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -304,6 +318,8 @@ static void FinalizarSecuenciaNeon(
         : DESENLACE_EMPATE;
 
     minijuego.fase = FASE_SECUENCIA_TERMINADO;
+
+    ReproducirSonidoMinijuego(minijuego.audio, SONIDO_RESULTADO);
 }
 
 
@@ -311,6 +327,8 @@ static void ComenzarResolucionSecuencia(
     MinijuegoSecuenciaNeon& minijuego
 )
 {
+    bool huboEliminadoPorTiempo = false;
+
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         EstadoJugadorSecuenciaNeon& jugador = minijuego.jugadores[i];
@@ -323,54 +341,18 @@ static void ComenzarResolucionSecuencia(
         {
             jugador.eliminado = true;
             jugador.falloEstaRonda = true;
+            jugador.ultimoPulsoCorrecto = false;
+            huboEliminadoPorTiempo = true;
         }
+    }
+
+    if (huboEliminadoPorTiempo)
+    {
+        ReproducirSonidoMinijuego(minijuego.audio, SONIDO_ERROR);
     }
 
     minijuego.fase = FASE_SECUENCIA_RESOLUCION;
     minijuego.tiempoResolucion = DURACION_RESOLUCION_SECUENCIA;
-}
-
-
-static void DibujarPadNeon(
-    Vector2 posicion,
-    PulsoSecuenciaNeon pulso,
-    bool encendido,
-    float tiempoAnimacion
-)
-{
-    Color color = ColorPulsoNeon(pulso);
-    float radio = encendido
-        ? 52.0f + std::sin(tiempoAnimacion * 10.0f) * 3.0f
-        : 44.0f;
-
-    if (encendido)
-    {
-        DrawCircleV(posicion, radio + 18.0f, Fade(color, 0.20f));
-    }
-
-    DrawCircleV(
-        posicion,
-        radio,
-        encendido ? color : Fade(color, 0.20f)
-    );
-
-    DrawCircleLines(
-        (int)posicion.x,
-        (int)posicion.y,
-        radio,
-        encendido ? RAYWHITE : Fade(RAYWHITE, 0.32f)
-    );
-
-    const char* simbolo = SimboloPulsoNeon(pulso);
-    int tamano = 42;
-
-    DrawText(
-        simbolo,
-        (int)posicion.x - MeasureText(simbolo, tamano) / 2,
-        (int)posicion.y - tamano / 2,
-        tamano,
-        encendido ? BLACK : Fade(RAYWHITE, 0.55f)
-    );
 }
 
 
@@ -387,6 +369,11 @@ void MinijuegoSecuenciaNeon::Inicializar()
     for (int i = 0; i < MAX_PULSOS_SECUENCIA_NEON; i++)
     {
         secuencia[i] = PULSO_NEON_ARRIBA;
+    }
+
+    for (int i = 0; i < CANTIDAD_PULSOS_NEON; i++)
+    {
+        brilloPanel[i] = 0.0f;
     }
 
     cantidadPulsos = 0;
@@ -432,6 +419,21 @@ void MinijuegoSecuenciaNeon::Actualizar(
 {
     tiempoAnimacion += deltaTime;
 
+    for (int i = 0; i < CANTIDAD_PULSOS_NEON; i++)
+    {
+        brilloPanel[i] -= deltaTime * 2.5f;
+        if (brilloPanel[i] < 0.0f) brilloPanel[i] = 0.0f;
+    }
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        jugadores[i].tiempoUltimoPulso -= deltaTime;
+        if (jugadores[i].tiempoUltimoPulso < 0.0f)
+        {
+            jugadores[i].tiempoUltimoPulso = 0.0f;
+        }
+    }
+
     if (fase == FASE_SECUENCIA_TERMINADO)
     {
         return;
@@ -439,7 +441,9 @@ void MinijuegoSecuenciaNeon::Actualizar(
 
     if (fase == FASE_SECUENCIA_PREPARACION)
     {
+        float preparacionAntes = tiempoPreparacion;
         tiempoPreparacion -= deltaTime;
+        ActualizarAudioCuentaRegresiva(audio, preparacionAntes, tiempoPreparacion);
 
         if (tiempoPreparacion <= 0.0f)
         {
@@ -473,6 +477,7 @@ void MinijuegoSecuenciaNeon::Actualizar(
                 {
                     pulsoVisible = true;
                     tiempoPasoMuestra = DURACION_PULSO_VISIBLE;
+                    ReproducirSonidoMinijuego(audio, SONIDO_BOTON);
                 }
             }
         }
@@ -482,7 +487,9 @@ void MinijuegoSecuenciaNeon::Actualizar(
 
     if (fase == FASE_SECUENCIA_RESPONDIENDO)
     {
+        float respuestaAntes = tiempoRespuesta;
         tiempoRespuesta -= deltaTime;
+        ActualizarAudioAlertaTiempo(audio, respuestaAntes, tiempoRespuesta, 3.0f);
 
         for (int i = 0; i < MAX_PARTICIPANTES; i++)
         {
@@ -497,7 +504,7 @@ void MinijuegoSecuenciaNeon::Actualizar(
                 continue;
             }
 
-            if (participantes[i].esBot)
+            if (participantes[i].esBot || !participantes[i].conectado)
             {
                 jugador.tiempoRespuestaBot -= deltaTime;
 
@@ -557,77 +564,368 @@ void MinijuegoSecuenciaNeon::Actualizar(
 }
 
 
+//==================================================
+// VISUAL 3D (independiente de la logica)
+//==================================================
+//
+// MODELO FUTURO: reemplazar por GLB los cuatro paneles gigantes con sus
+// flechas, las pilas de bocinas, el muro del fondo con su estructura,
+// la viga de luces del techo y las consolas / pedestales de jugador.
+//==================================================
+
+
+static const float Z_PANELES_SECUENCIA = -8.4f;
+static const float Z_JUGADORES_SECUENCIA = 2.4f;
+static const float Z_CONSOLAS_SECUENCIA = 3.6f;
+static const float SEPARACION_JUGADORES_SECUENCIA = 4.4f;
+static const float LADO_PANEL_SECUENCIA = 2.3f;
+
+
+static Camera3D ObtenerCamaraSecuencia()
+{
+    Camera3D camara{};
+    camara.position = { 0.0f, 9.5f, 15.0f };
+    camara.target = { 0.0f, 3.2f, -2.0f };
+    camara.up = { 0.0f, 1.0f, 0.0f };
+    camara.fovy = 50.0f;
+    camara.projection = CAMERA_PERSPECTIVE;
+    return camara;
+}
+
+
+// Centro del panel gigante (cruz de direcciones en el muro del fondo).
+static Vector3 CentroPanelSecuencia(PulsoSecuenciaNeon pulso)
+{
+    switch (pulso)
+    {
+        case PULSO_NEON_ARRIBA: return { 0.0f, 7.8f, Z_PANELES_SECUENCIA };
+        case PULSO_NEON_DERECHA: return { 2.7f, 5.2f, Z_PANELES_SECUENCIA };
+        case PULSO_NEON_ABAJO: return { 0.0f, 2.6f, Z_PANELES_SECUENCIA };
+        case PULSO_NEON_IZQUIERDA: return { -2.7f, 5.2f, Z_PANELES_SECUENCIA };
+        case CANTIDAD_PULSOS_NEON: break;
+    }
+
+    return { 0.0f, 5.2f, Z_PANELES_SECUENCIA };
+}
+
+
+static float AnguloFlechaSecuencia(PulsoSecuenciaNeon pulso)
+{
+    switch (pulso)
+    {
+        case PULSO_NEON_ARRIBA: return 0.0f;
+        case PULSO_NEON_DERECHA: return -90.0f;
+        case PULSO_NEON_ABAJO: return 180.0f;
+        case PULSO_NEON_IZQUIERDA: return 90.0f;
+        case CANTIDAD_PULSOS_NEON: break;
+    }
+
+    return 0.0f;
+}
+
+
+// Flecha 3D hecha con un cubo (cuerpo) y un cono de 3 caras (punta).
+// Se dibuja apuntando hacia arriba en el sistema local actual.
+static void DibujarFlecha3D(float escala, Color color)
+{
+    DrawCube({ 0.0f, -0.3f * escala, 0.0f }, 0.5f * escala, 1.0f * escala, 0.3f * escala, color);
+    DrawCylinder({ 0.0f, 0.2f * escala, 0.0f }, 0.0f, 0.75f * escala, 0.8f * escala, 3, color);
+}
+
+
+static void DibujarPanelNeon3D(
+    PulsoSecuenciaNeon pulso,
+    float luz,
+    float tiempo
+)
+{
+    Color color = ColorPulsoNeon(pulso);
+    Vector3 centro = CentroPanelSecuencia(pulso);
+    Color cuerpo = ColorLerp(Color{ 22, 24, 44, 255 }, color, 0.18f + 0.62f * luz);
+    Color flecha = ColorLerp(Fade(color, 0.5f), WHITE, luz * 0.85f);
+
+    // Marco y placa del panel.
+    DrawCube(centro, LADO_PANEL_SECUENCIA + 0.3f, LADO_PANEL_SECUENCIA + 0.3f, 0.45f, Color{ 12, 12, 24, 255 });
+    DrawCube({ centro.x, centro.y, centro.z + 0.2f }, LADO_PANEL_SECUENCIA, LADO_PANEL_SECUENCIA, 0.3f, cuerpo);
+    DrawCubeWires(centro, LADO_PANEL_SECUENCIA + 0.3f, LADO_PANEL_SECUENCIA + 0.3f, 0.45f, Fade(color, 0.5f + 0.5f * luz));
+
+    // Flecha del panel.
+    rlPushMatrix();
+    rlTranslatef(centro.x, centro.y, centro.z + 0.42f);
+    rlRotatef(AnguloFlechaSecuencia(pulso), 0.0f, 0.0f, 1.0f);
+    DibujarFlecha3D(1.0f + 0.08f * luz * std::sin(tiempo * 30.0f), flecha);
+    rlPopMatrix();
+
+    if (luz > 0.05f)
+    {
+        // Halo frontal y luz de escenario sobre el suelo.
+        DrawCube(
+            { centro.x, centro.y, centro.z + 0.5f },
+            LADO_PANEL_SECUENCIA + 0.9f,
+            LADO_PANEL_SECUENCIA + 0.9f,
+            0.1f,
+            Fade(color, 0.22f * luz)
+        );
+        DrawCube(
+            { centro.x, 0.03f, Z_PANELES_SECUENCIA + 3.6f },
+            LADO_PANEL_SECUENCIA + 0.4f,
+            0.02f,
+            6.4f,
+            Fade(color, 0.32f * luz)
+        );
+    }
+}
+
+
+static void DibujarEscenarioSecuencia(float tiempo, float energia)
+{
+    // Suelo oscuro con rejilla de neon.
+    DrawCube({ 0.0f, -0.2f, 0.0f }, 60.0f, 0.3f, 40.0f, Color{ 10, 10, 22, 255 });
+
+    for (int x = -20; x <= 20; x += 2)
+    {
+        DrawLine3D({ (float)x, 0.0f, -9.0f }, { (float)x, 0.0f, 10.0f }, Fade(Color{ 120, 70, 220, 255 }, 0.35f));
+    }
+
+    for (int z = -8; z <= 10; z += 2)
+    {
+        DrawLine3D({ -20.0f, 0.0f, (float)z }, { 20.0f, 0.0f, (float)z }, Fade(Color{ 120, 70, 220, 255 }, 0.35f));
+    }
+
+    // Muro trasero con franjas de neon.
+    DrawCube({ 0.0f, 7.0f, -9.1f }, 46.0f, 16.0f, 0.6f, Color{ 18, 14, 36, 255 });
+
+    for (int f = 0; f < 4; f++)
+    {
+        DrawCube(
+            { 0.0f, 1.0f + f * 4.2f, -8.75f },
+            46.0f,
+            0.06f,
+            0.08f,
+            Fade(Color{ 200, 90, 255, 255 }, 0.35f + 0.25f * std::sin(tiempo * 2.0f + f))
+        );
+    }
+
+    // Pilas de bocinas laterales que laten con la energia de la sala.
+    for (int lado = -1; lado <= 1; lado += 2)
+    {
+        float x = lado * 11.5f;
+        DrawCube({ x, 3.5f, -6.0f }, 3.2f, 7.0f, 2.4f, Color{ 24, 22, 40, 255 });
+        DrawCubeWires({ x, 3.5f, -6.0f }, 3.2f, 7.0f, 2.4f, Fade(Color{ 120, 70, 220, 255 }, 0.6f));
+
+        for (int fila = 0; fila < 2; fila++)
+        {
+            float y = 2.0f + fila * 3.0f;
+            float latido = 1.0f + energia * 0.12f * std::sin(tiempo * 18.0f);
+
+            rlPushMatrix();
+            rlTranslatef(x, y, -4.75f);
+            rlScalef(1.0f, 1.0f, 0.25f);
+            DrawSphereEx({ 0.0f, 0.0f, 0.0f }, 1.0f * latido, 10, 10, Color{ 40, 38, 60, 255 });
+            DrawSphereEx({ 0.0f, 0.0f, 0.0f }, 0.45f * latido, 8, 8, Fade(Color{ 90, 220, 255, 255 }, 0.5f + 0.4f * energia));
+            rlPopMatrix();
+        }
+    }
+
+    // Ecualizador: barras que bailan a cada lado de los paneles.
+    for (int b = 0; b < 16; b++)
+    {
+        float x = b < 8 ? -13.5f + b * 1.0f : 6.5f + (b - 8) * 1.0f;
+        float altura = 0.4f + (std::sin(tiempo * 3.0f + b * 0.8f) * 0.5f + 0.5f) * (0.8f + energia * 1.8f);
+        Color color = b % 2 == 0 ? Color{ 255, 70, 200, 255 } : Color{ 70, 220, 255, 255 };
+        DrawCube({ x, altura * 0.5f, -7.6f }, 0.7f, altura, 0.7f, Fade(color, 0.85f));
+    }
+
+    // Viga de luces del techo.
+    DrawCylinderEx({ -14.0f, 11.5f, -2.0f }, { 14.0f, 11.5f, -2.0f }, 0.2f, 0.2f, 8, Color{ 70, 70, 90, 255 });
+
+    for (int l = 0; l < 8; l++)
+    {
+        float parpadeo = 0.5f + 0.5f * std::sin(tiempo * 4.0f + l * 1.3f);
+        Color color = l % 2 == 0 ? Color{ 255, 70, 200, 255 } : Color{ 70, 220, 255, 255 };
+        DrawSphereEx({ -12.0f + l * 3.4f, 11.2f, -2.0f }, 0.3f, 8, 8, Fade(color, 0.4f + 0.6f * parpadeo));
+    }
+}
+
+
+static void DibujarConsolaJugador3D(
+    const EstadoJugadorSecuenciaNeon& estado,
+    const Participante& participante,
+    Vector3 posicionJugador,
+    int cantidadPulsos,
+    bool mostrarProgreso
+)
+{
+    float xBase = posicionJugador.x;
+    Color color = participante.color;
+    Color metal = estado.eliminado ? Color{ 40, 22, 26, 255 } : Color{ 36, 34, 56, 255 };
+
+    // Pedestal bajo el jugador y consola frente a el.
+    DrawCylinder({ xBase, 0.0f, Z_JUGADORES_SECUENCIA }, 1.3f, 1.4f, 0.15f, 20, Color{ 28, 28, 44, 255 });
+    DrawCircle3D({ xBase, 0.17f, Z_JUGADORES_SECUENCIA }, 1.15f, { 1.0f, 0.0f, 0.0f }, 90.0f, estado.eliminado ? Fade(RED, 0.5f) : color);
+    DrawCube({ xBase, 0.5f, Z_CONSOLAS_SECUENCIA }, 3.4f, 1.0f, 1.5f, metal);
+    DrawCube({ xBase, 1.02f, Z_CONSOLAS_SECUENCIA + 0.7f }, 3.4f, 0.06f, 0.1f, estado.eliminado ? RED : color);
+
+    // Cuatro botones en cruz; el ultimo pulsado se ilumina.
+    static const float desplazamientoX[CANTIDAD_PULSOS_NEON] = { 0.0f, 0.75f, 0.0f, -0.75f };
+    static const float desplazamientoZ[CANTIDAD_PULSOS_NEON] = { -0.4f, 0.0f, 0.4f, 0.0f };
+
+    for (int d = 0; d < CANTIDAD_PULSOS_NEON; d++)
+    {
+        Color base = ColorPulsoNeon((PulsoSecuenciaNeon)d);
+        bool encendido = estado.ultimoPulso == d && estado.tiempoUltimoPulso > 0.0f;
+        Color colorBoton = encendido
+            ? (estado.ultimoPulsoCorrecto ? WHITE : RED)
+            : Fade(base, 0.35f);
+
+        DrawCube(
+            { xBase + desplazamientoX[d], 1.07f, Z_CONSOLAS_SECUENCIA + desplazamientoZ[d] },
+            0.55f,
+            encendido ? 0.14f : 0.08f,
+            0.4f,
+            colorBoton
+        );
+    }
+
+    // Indicadores de progreso sobre la cabeza.
+    float inicio = xBase - (cantidadPulsos - 1) * 0.17f;
+
+    for (int k = 0; k < cantidadPulsos; k++)
+    {
+        Color luz = Fade(GRAY, 0.5f);
+
+        if (estado.eliminado)
+        {
+            luz = Fade(RED, 0.8f);
+        }
+        else if (estado.completoRonda)
+        {
+            luz = LIME;
+        }
+        else if (mostrarProgreso && k < estado.indiceRespuesta)
+        {
+            luz = color;
+        }
+
+        DrawSphereEx({ inicio + k * 0.34f, 3.1f, Z_JUGADORES_SECUENCIA }, 0.11f, 6, 6, luz);
+    }
+}
+
+
 void MinijuegoSecuenciaNeon::Dibujar(
     const Participante participantes[]
 ) const
 {
-    ClearBackground(Color{ 10, 13, 29, 255 });
+    ClearBackground(Color{ 8, 8, 20, 255 });
 
-    DrawRectangleGradientV(
-        0,
-        0,
-        GetScreenWidth(),
-        GetScreenHeight(),
-        Fade(Color{ 38, 18, 66, 255 }, 0.62f),
-        Fade(Color{ 7, 16, 31, 255 }, 0.92f)
-    );
+    float energia = 0.0f;
 
-    Vector2 centro =
+    for (int i = 0; i < CANTIDAD_PULSOS_NEON; i++)
     {
-        GetScreenWidth() * 0.5f,
-        GetScreenHeight() * 0.45f
-    };
+        energia = fmaxf(energia, brilloPanel[i]);
+    }
 
-    PulsoSecuenciaNeon pulsoEncendido = PULSO_NEON_ARRIBA;
     bool mostrarPulso =
         fase == FASE_SECUENCIA_MOSTRANDO &&
         pulsoVisible &&
         indiceMuestra < cantidadPulsos;
+    PulsoSecuenciaNeon pulsoEncendido = mostrarPulso
+        ? secuencia[indiceMuestra]
+        : PULSO_NEON_ARRIBA;
 
     if (mostrarPulso)
     {
-        pulsoEncendido = secuencia[indiceMuestra];
+        energia = 1.0f;
     }
 
-    DibujarPadNeon(
-        { centro.x, centro.y - 100.0f },
-        PULSO_NEON_ARRIBA,
-        mostrarPulso && pulsoEncendido == PULSO_NEON_ARRIBA,
-        tiempoAnimacion
-    );
+    Camera3D camara = ObtenerCamaraSecuencia();
+    BeginMode3D(camara);
 
-    DibujarPadNeon(
-        { centro.x + 100.0f, centro.y },
-        PULSO_NEON_DERECHA,
-        mostrarPulso && pulsoEncendido == PULSO_NEON_DERECHA,
-        tiempoAnimacion
-    );
+    DibujarEscenarioSecuencia(tiempoAnimacion, energia);
 
-    DibujarPadNeon(
-        { centro.x, centro.y + 100.0f },
-        PULSO_NEON_ABAJO,
-        mostrarPulso && pulsoEncendido == PULSO_NEON_ABAJO,
-        tiempoAnimacion
-    );
+    for (int d = 0; d < CANTIDAD_PULSOS_NEON; d++)
+    {
+        float luz = brilloPanel[d];
 
-    DibujarPadNeon(
-        { centro.x - 100.0f, centro.y },
-        PULSO_NEON_IZQUIERDA,
-        mostrarPulso && pulsoEncendido == PULSO_NEON_IZQUIERDA,
-        tiempoAnimacion
-    );
+        if (mostrarPulso && (int)pulsoEncendido == d)
+        {
+            luz = 1.0f;
+        }
 
-    DrawCircleLines((int)centro.x, (int)centro.y, 34.0f, Fade(RAYWHITE, 0.30f));
-    DrawText(
-        TextFormat("%d", cantidadPulsos),
-        (int)centro.x - 12,
-        (int)centro.y - 17,
-        30,
-        RAYWHITE
-    );
+        DibujarPanelNeon3D((PulsoSecuenciaNeon)d, luz, tiempoAnimacion);
+    }
+
+    // Nucleo central entre los paneles.
+    Vector3 hub = { 0.0f, 5.2f, Z_PANELES_SECUENCIA + 0.3f };
+    DrawSphereEx(hub, 0.55f + 0.08f * std::sin(tiempoAnimacion * 4.0f), 12, 12, Fade(Color{ 160, 120, 255, 255 }, 0.55f + 0.4f * energia));
+
+    // Jugadores, pedestales y consolas.
+    int cantidad = resultado.cantidadParticipantes > 0 ? resultado.cantidadParticipantes : 1;
+    int orden = 0;
+    Vector2 etiquetas[MAX_PARTICIPANTES]{};
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (!resultado.participantes[i].participo)
+        {
+            continue;
+        }
+
+        float x = (orden - (cantidad - 1) * 0.5f) * SEPARACION_JUGADORES_SECUENCIA;
+        orden++;
+
+        DibujarConsolaJugador3D(
+            jugadores[i],
+            participantes[i],
+            { x, 0.0f, Z_JUGADORES_SECUENCIA },
+            cantidadPulsos,
+            fase == FASE_SECUENCIA_RESPONDIENDO || fase == FASE_SECUENCIA_RESOLUCION
+        );
+
+        JugadorPrueba figura{};
+        figura.posicion = { x, 0.15f + figura.tamano.y * 0.5f, Z_JUGADORES_SECUENCIA };
+        figura.direccionMirada = { 0.0f, 0.0f, -1.0f };
+        figura.enSuelo = true;
+        figura.aplastado = jugadores[i].eliminado;
+
+        Participante visual = participantes[i];
+        visual.activo = true;
+        visual.conectado = true;
+        DibujarJugadorCuboPrueba(figura, visual);
+
+        etiquetas[i] = GetWorldToScreen({ x, 3.7f, Z_JUGADORES_SECUENCIA }, camara);
+    }
+
+    EndMode3D();
+
+    // Etiquetas flotantes de cada jugador.
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (!resultado.participantes[i].participo)
+        {
+            continue;
+        }
+
+        const char* texto = TextFormat("J%d", participantes[i].numeroJugador);
+        DrawText(
+            texto,
+            (int)etiquetas[i].x - MeasureText(texto, 22) / 2,
+            (int)etiquetas[i].y,
+            22,
+            jugadores[i].eliminado ? DARKGRAY : participantes[i].color
+        );
+    }
+
+    // Largo de la secuencia en el nucleo central.
+    Vector2 centroHub = GetWorldToScreen(hub, camara);
+    const char* largo = TextFormat("%d", cantidadPulsos);
+    DrawText(largo, (int)centroHub.x - MeasureText(largo, 30) / 2, (int)centroHub.y - 15, 30, RAYWHITE);
 
     DrawRectangle(18, 16, 540, 116, Fade(BLACK, 0.76f));
     DrawText("SECUENCIA NEON", 32, 28, 30, GOLD);
+
+    int ancho = GetScreenWidth();
+    int alto = GetScreenHeight();
 
     if (fase == FASE_SECUENCIA_PREPARACION)
     {
@@ -639,6 +937,9 @@ void MinijuegoSecuenciaNeon::Dibujar(
             18,
             LIGHTGRAY
         );
+
+        const char* numero = TextFormat("%d", (int)std::ceil(tiempoPreparacion));
+        DrawText(numero, ancho / 2 - MeasureText(numero, 120) / 2, alto / 2 - 40, 120, Fade(GOLD, 0.9f));
     }
     else if (fase == FASE_SECUENCIA_MOSTRANDO)
     {
@@ -653,13 +954,13 @@ void MinijuegoSecuenciaNeon::Dibujar(
     }
     else if (fase == FASE_SECUENCIA_RESPONDIENDO)
     {
-        DrawText("REPITE LA SECUENCIA", 32, 68, 21, LIME);
+        DrawText("REPITE LA SECUENCIA CON LAS DIRECCIONES", 32, 68, 19, LIME);
         DrawText(
             TextFormat("TIEMPO: %.1f", tiempoRespuesta),
             32,
             99,
             18,
-            LIGHTGRAY
+            tiempoRespuesta <= 3.0f ? ORANGE : LIGHTGRAY
         );
     }
     else if (fase == FASE_SECUENCIA_RESOLUCION)
@@ -669,16 +970,16 @@ void MinijuegoSecuenciaNeon::Dibujar(
     else
     {
         DrawText("SECUENCIA TERMINADA", 32, 68, 21, RAYWHITE);
-        DrawText("R PARA JUGAR DE NUEVO", 32, 99, 18, LIGHTGRAY);
+        DrawText(TextoReinicioMinijuego(), 32, 99, 18, LIGHTGRAY);
     }
 
     int anchoPanel = 240;
     int separacion = 14;
-    int cantidad = resultado.cantidadParticipantes;
     int anchoTotal = cantidad * anchoPanel + (cantidad - 1) * separacion;
-    int xInicial = (GetScreenWidth() - anchoTotal) / 2;
-    int y = GetScreenHeight() - 151;
-    int orden = 0;
+    int xInicial = (ancho - anchoTotal) / 2;
+    int altoPanel = 38;
+    int y = alto - altoPanel - 8;
+    orden = 0;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -693,9 +994,9 @@ void MinijuegoSecuenciaNeon::Dibujar(
             ? Fade(participantes[i].color, 0.30f)
             : participantes[i].color;
 
-        DrawRectangle(x, y, anchoPanel, 92, Fade(BLACK, 0.78f));
+        DrawRectangle(x, y, anchoPanel, altoPanel, Fade(BLACK, 0.78f));
         DrawRectangleLinesEx(
-            { (float)x, (float)y, (float)anchoPanel, 92.0f },
+            { (float)x, (float)y, (float)anchoPanel, (float)altoPanel },
             3.0f,
             color
         );
@@ -703,7 +1004,7 @@ void MinijuegoSecuenciaNeon::Dibujar(
         DrawText(
             TextFormat("J%d", participantes[i].numeroJugador),
             x + 12,
-            y + 10,
+            y + 9,
             20,
             color
         );
@@ -714,8 +1015,8 @@ void MinijuegoSecuenciaNeon::Dibujar(
                 resultado.participantes[i].posicionFinal == 1
                     ? "GANADOR"
                     : TextFormat("PUESTO %d", resultado.participantes[i].posicionFinal),
-                x + 12,
-                y + 43,
+                x + 64,
+                y + 10,
                 18,
                 resultado.participantes[i].posicionFinal == 1
                     ? GOLD
@@ -726,8 +1027,8 @@ void MinijuegoSecuenciaNeon::Dibujar(
         {
             DrawText(
                 jugador.falloEstaRonda ? "ERROR" : "ELIMINADO",
-                x + 12,
-                y + 43,
+                x + 64,
+                y + 10,
                 18,
                 RED
             );
@@ -736,8 +1037,8 @@ void MinijuegoSecuenciaNeon::Dibujar(
         {
             DrawText(
                 TextFormat("%d / %d", jugador.indiceRespuesta, cantidadPulsos),
-                x + 12,
-                y + 43,
+                x + 64,
+                y + 10,
                 18,
                 RAYWHITE
             );
@@ -746,8 +1047,8 @@ void MinijuegoSecuenciaNeon::Dibujar(
         {
             DrawText(
                 TextFormat("RONDAS: %d", jugador.rondasSuperadas),
-                x + 12,
-                y + 43,
+                x + 64,
+                y + 10,
                 18,
                 LIGHTGRAY
             );

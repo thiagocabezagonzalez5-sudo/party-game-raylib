@@ -25,6 +25,11 @@ struct EstadoJugadorBarraGiratoria
     // Tras recibir una barra el jugador conserva el impulso, pero durante
     // unas decimas no puede corregirlo con movimiento propio.
     float tiempoStunBarra = 0.0f;
+
+    // Estado de la IA cuando el participante es bot o esta desconectado.
+    float radioOrbitaBot = 0.0f;
+    float errorSaltoBot = 0.0f;
+    float enfriamientoSaltoBot = 0.0f;
 };
 
 

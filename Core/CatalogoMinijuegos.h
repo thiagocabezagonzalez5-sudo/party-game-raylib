@@ -27,6 +27,37 @@ enum IdMinijuego
     MINIJUEGO_TANQUES_PLASMA,
     MINIJUEGO_PASARELAS_VACIO,
     MINIJUEGO_CANTERA_FUGA,
+    MINIJUEGO_TERRITORIO_CONQUISTA,
+    MINIJUEGO_DEFENSA_NUCLEO,
+    MINIJUEGO_LLUVIA_APILADA,
+    MINIJUEGO_CUERDA_ACANTILADO,
+    MINIJUEGO_ULTIMO_ASIENTO,
+    MINIJUEGO_CAJAS_PUERTO,
+    MINIJUEGO_LABERINTO_INCLINADO,
+    MINIJUEGO_VETA_CRISTAL,
+    MINIJUEGO_CAPSULAS_BARAJADAS,
+    MINIJUEGO_BATEO_METEORICO,
+    MINIJUEGO_RACIMO_TOXICO,
+    MINIJUEGO_TESORERO_ACORRALADO,
+    MINIJUEGO_DESCENSO_NUBES,
+    MINIJUEGO_VOLEA_MAGMA,
+    MINIJUEGO_PAREJAS_GLACIAR,
+    MINIJUEGO_ESFERAS_CANON,
+    MINIJUEGO_PESCA_ISLA,
+    MINIJUEGO_RODILLOS_NEON,
+    MINIJUEGO_BOLAS_AZUCAR,
+    MINIJUEGO_GRUA_CHATARRA,
+    MINIJUEGO_PISOTON_PLAGAS,
+    MINIJUEGO_BALSAS_RAPIDO,
+    MINIJUEGO_AUTOS_GLOBO,
+    MINIJUEGO_SENDERO_INVISIBLE,
+    MINIJUEGO_BANQUETE_TURBO,
+    MINIJUEGO_TUBERIAS_DESIERTO,
+    MINIJUEGO_TREPA_MASTIL,
+    MINIJUEGO_GUARDIAN_RUINAS,
+
+    // Debe ser siempre el ultimo valor: el catalogo, el selector y la
+    // ruleta recorren los minijuegos desde 0 hasta CANTIDAD_MINIJUEGOS.
     CANTIDAD_MINIJUEGOS
 };
 
@@ -39,6 +70,9 @@ struct DatosMinijuegoCatalogo
     Color color{};
     const char* etiquetaZonaPruebas = "";
     bool disponibleEnTablero = false;
+
+    // Formatos 2 vs 2 estrictos: solo se juegan con 2 o 4 participantes.
+    bool requiereParDeJugadores = false;
 };
 
 
@@ -62,4 +96,11 @@ int ObtenerCantidadMinijuegosDisponiblesTablero();
 
 IdMinijuego ObtenerMinijuegoDisponibleTablero(
     int indiceDisponible
+);
+
+// Indica si el minijuego puede jugarse con esa cantidad de participantes
+// (el tablero no debe sortear uno que quedaria esperando jugadores).
+bool MinijuegoAdmiteCantidadJugadores(
+    IdMinijuego id,
+    int cantidadJugadores
 );

@@ -94,6 +94,9 @@ struct Minijuego67
     bool partidaValida = false;
     bool empate = false;
 
+    // Segundos restantes del aviso "SE RECONFIGURARON LOS EQUIPOS".
+    float avisoReconfiguracion = 0.0f;
+
     Camera3D camarasEquipo[2]{};
 
     RenderTexture2D vistasEquipo[2]{};

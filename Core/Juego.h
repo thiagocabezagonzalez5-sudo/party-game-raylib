@@ -16,6 +16,7 @@
 #include "UI/MenuModoJuego.h"
 #include "UI/PantallaLogo.h"
 #include "UI/RuletaMinijuegos.h"
+#include "UI/FlujoPartida.h"
 #include "UI/SeleccionMinijuegos.h"
 #include "UI/SeleccionPersonajes.h"
 
@@ -38,6 +39,13 @@ struct Juego
     SeleccionPersonajes seleccionPersonajes;
     SeleccionMinijuegos seleccionMinijuegos;
     RuletaMinijuegos ruletaMinijuegos;
+
+    // Pantallas de la partida de tablero (ver UI/FlujoPartida.h).
+    SeleccionTablero seleccionTablero;
+    ConfiguracionPartida configuracionPartida;
+    IntroTablero introTablero;
+    OrdenTurno ordenTurno;
+    ResultadosPartida resultadosPartida;
 
     ZonaPruebas zonaPruebas;
     PartidaTablero partidaTablero;
@@ -69,6 +77,22 @@ struct Juego
     // Se usa solo cuando el modo Tablero lanza el minijuego
     // que cierra cada ronda.
     float tiempoResultadoMinijuegoTablero = 0.0f;
+
+    // Red de seguridad: una ronda de tablero que nunca termina vuelve sola.
+    float tiempoRondaMinijuegoTablero = 0.0f;
+
+    // Tiempo que llevan todos listos en la seleccion de personajes: hace
+    // falta confirmar de nuevo para seguir (no se avanza solo).
+    float tiempoTodosListos = 0.0f;
+
+    // Fundido corto desde negro al cambiar de pantalla (1 = negro).
+    float fundidoEntrada = 0.0f;
+
+    // Confirmacion de salida de la partida (ESC en el tablero).
+    bool confirmandoSalida = false;
+    int opcionSalida = 0;
+    float tiempoSalida = 0.0f;
+    LectorEntradaFlujo lectorSalida;
 
     void Inicializar();
     void InicializarResoluciones();

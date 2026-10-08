@@ -1,4 +1,5 @@
 #include "Minigames/MinijuegoCapitanManda.h"
+#include "Minigames/AudioMinijuegos.h"
 #include "Minigames/ModeloJugadorCompartido.h"
 
 #define SOMBRAS_RETRO_AUTOMATICAS
@@ -9,6 +10,7 @@
 
 static const float DURACION_PREPARACION_CAPITAN = 3.0f;
 static const float DURACION_RESOLUCION = 0.85f;
+static const int MAX_RONDAS_CAPITAN = 40;
 static const float ESPERA_MINIMA_ENTRE_RONDAS_CAPITAN = 0.45f;
 static const float ESPERA_MAXIMA_ENTRE_RONDAS_CAPITAN = 1.45f;
 
@@ -128,6 +130,8 @@ static void PrepararNuevaRonda(
     minijuego.tiempoFase =
         minijuego.tiempoRespuesta;
 
+    ReproducirSonidoMinijuego(minijuego.audio, SONIDO_BOTON);
+
     minijuego.fase =
         FASE_CAPITAN_RESPONDIENDO;
 
@@ -141,6 +145,10 @@ static void PrepararNuevaRonda(
         minijuego.jugadores[i].respondio = false;
         minijuego.jugadores[i].acerto = false;
         minijuego.jugadores[i].tiempoFeedback = 0.0f;
+        minijuego.jugadores[i].tiempoBot =
+            GetRandomValue(30, (int)(minijuego.tiempoRespuesta * 85.0f)) / 100.0f;
+        minijuego.jugadores[i].botAcertara =
+            GetRandomValue(0, 99) >= 6 + minijuego.numeroRonda * 2;
     }
 }
 
@@ -192,6 +200,8 @@ static void FinalizarCapitan(
 
     minijuego.fase =
         FASE_CAPITAN_TERMINADO;
+
+    ReproducirSonidoMinijuego(minijuego.audio, SONIDO_RESULTADO);
 }
 
 
@@ -262,11 +272,16 @@ static void ResolverRonda(
 
     // Ya no existe un maximo de rondas. Solo termina cuando queda uno o
     // ninguno; si todos fallan la misma ronda se conserva el empate.
-    if (vivosDespues <= 1)
+    if (vivosDespues <= 1 || minijuego.numeroRonda >= MAX_RONDAS_CAPITAN)
     {
         FinalizarCapitan(minijuego);
         return;
     }
+
+    ReproducirSonidoMinijuego(
+        minijuego.audio,
+        eliminados > 0 ? SONIDO_ELIMINADO : SONIDO_ACIERTO
+    );
 
     minijuego.fase =
         FASE_CAPITAN_RESOLVIENDO;
@@ -348,7 +363,9 @@ void MinijuegoCapitanManda::Actualizar(
 
     if (fase == FASE_CAPITAN_PREPARACION)
     {
+        float preparacionAntes = tiempoPreparacion;
         tiempoPreparacion -= deltaTime;
+        ActualizarAudioCuentaRegresiva(audio, preparacionAntes, tiempoPreparacion);
 
         if (tiempoPreparacion <= 0.0f)
         {
@@ -379,10 +396,24 @@ void MinijuegoCapitanManda::Actualizar(
             if (
                 !resultado.participantes[i].participo ||
                 jugadores[i].eliminado ||
-                jugadores[i].respondio ||
-                !participantes[i].conectado
+                jugadores[i].respondio
             )
             {
+                continue;
+            }
+
+            // Bots y humanos desconectados reaccionan tras un retraso y a
+            // veces se equivocan (mas a medida que avanzan las rondas).
+            if (participantes[i].esBot || !participantes[i].conectado)
+            {
+                jugadores[i].tiempoBot -= deltaTime;
+
+                if (jugadores[i].tiempoBot <= 0.0f)
+                {
+                    jugadores[i].respondio = true;
+                    jugadores[i].acerto = jugadores[i].botAcertara;
+                }
+
                 continue;
             }
 
@@ -556,6 +587,19 @@ static void DibujarJugadoresCapitan3D(
             : Color{ 82, 88, 102, 255 }
         );
 
+        // Anillo del color del jugador en el borde de su pedestal: el
+        // modelo es oscuro y no basta para saber quien es quien.
+        for (int k = 0; k < 3; k++)
+        {
+            DrawCircle3D(
+                Vector3{ base.x, 0.23f + k * 0.01f, base.z },
+                0.62f + k * 0.07f,
+                Vector3{ 1.0f, 0.0f, 0.0f },
+                90.0f,
+                minijuego.jugadores[i].eliminado ? Fade(color, 0.6f) : color
+            );
+        }
+
         if (!minijuego.jugadores[i].eliminado)
         {
             DibujarModeloJugadorEnPosicion(
@@ -563,8 +607,88 @@ static void DibujarJugadoresCapitan3D(
                 180.0f,
                 color
             );
+
+            // Flecha sobre la cabeza.
+            // MODELO FUTURO: icono de jugador del GLB.
+            float rebote =
+                std::sin((float)GetTime() * 5.0f + base.x) * 0.06f;
+            DrawCylinderEx(
+                Vector3{ base.x, 2.55f + rebote, base.z },
+                Vector3{ base.x, 2.87f + rebote, base.z },
+                0.0f,
+                0.20f,
+                10,
+                color
+            );
         }
     }
+}
+
+
+//==================================================
+// ESCENARIO: cubierta de un barco pirata (solo visual)
+//==================================================
+//
+// MODELO FUTURO: reemplazar por GLB la cubierta, el mastil con velas,
+// las barandas, los barriles, el timon y el mar con olas.
+//==================================================
+static void DibujarCubiertaCapitan(float tiempo)
+{
+    // Mar con olas detras y a los lados.
+    DrawCube({ 0.0f, -1.2f, 0.0f }, 60.0f, 0.2f, 40.0f, Color{ 40, 110, 160, 255 });
+
+    for (int ola = 0; ola < 10; ola++)
+    {
+        float x = -22.0f + ola * 4.8f;
+        float z = -9.0f + std::fmod(ola * 3.7f, 14.0f);
+        DrawCube(
+            { x, -1.05f + std::sin(tiempo * 1.5f + ola) * 0.08f, z },
+            2.4f,
+            0.06f,
+            0.4f,
+            Fade(RAYWHITE, 0.6f)
+        );
+    }
+
+    // Tablones de la cubierta.
+    for (int t = 0; t < 8; t++)
+    {
+        DrawCube(
+            { -4.8f + t * 1.37f, 0.02f, 0.4f },
+            0.05f,
+            0.04f,
+            7.2f,
+            Fade(DARKBROWN, 0.55f)
+        );
+    }
+
+    // Barandas a ambos lados y al fondo.
+    for (int lado = -1; lado <= 1; lado += 2)
+    {
+        DrawCube({ lado * 5.4f, 0.8f, 0.4f }, 0.2f, 0.15f, 7.2f, Color{ 120, 80, 45, 255 });
+
+        for (int p = 0; p < 5; p++)
+        {
+            DrawCube({ lado * 5.4f, 0.4f, -2.8f + p * 1.6f }, 0.15f, 0.8f, 0.15f, Color{ 100, 66, 38, 255 });
+        }
+    }
+
+    DrawCube({ 0.0f, 0.8f, -3.2f }, 11.0f, 0.15f, 0.2f, Color{ 120, 80, 45, 255 });
+
+    // Mastil con vela y bandera.
+    DrawCylinder({ 0.0f, 0.0f, -3.0f }, 0.18f, 0.22f, 7.0f, 8, Color{ 105, 70, 40, 255 });
+    DrawCube({ 0.0f, 5.6f, -3.0f }, 5.0f, 0.15f, 0.15f, Color{ 105, 70, 40, 255 });
+    DrawCube({ 0.0f, 4.0f + std::sin(tiempo) * 0.05f, -2.9f }, 4.6f, 3.0f, 0.06f, Fade(Color{ 240, 232, 205, 255 }, 0.95f));
+    DrawCube({ 0.6f + std::sin(tiempo * 3.0f) * 0.1f, 7.1f, -3.0f }, 1.1f, 0.5f, 0.05f, RED);
+
+    // Barriles y timon.
+    for (int b = 0; b < 3; b++)
+    {
+        DrawCylinder({ -4.5f + b * 0.8f, 0.0f, -2.4f }, 0.35f, 0.35f, 0.8f, 10, Color{ 130, 90, 50, 255 });
+    }
+
+    DrawCylinder({ 4.2f, 0.0f, -2.4f }, 0.12f, 0.12f, 1.0f, 8, DARKBROWN);
+    DrawCircle3D({ 4.2f, 1.1f, -2.4f }, 0.5f, { 0.0f, 0.0f, 1.0f }, 0.0f, Color{ 150, 105, 60, 255 });
 }
 
 
@@ -582,6 +706,8 @@ void MinijuegoCapitanManda::Dibujar(
     camara.projection = CAMERA_PERSPECTIVE;
 
     BeginMode3D(camara);
+
+    DibujarCubiertaCapitan((float)GetTime());
 
     DrawCube(
         Vector3{ 0.0f, -0.30f, 0.4f },
@@ -604,19 +730,22 @@ void MinijuegoCapitanManda::Dibujar(
 
     EndMode3D();
 
-    DrawText("MINIJUEGO 9 - CAPITAN MANDA", 25, 20, 30, BLACK);
+    const int anchoPantalla = GetScreenWidth();
+
+    DrawRectangle(15, 12, 745, 66, Fade(BLACK, 0.55f));
+    DrawText("MINIJUEGO 9 - CAPITAN MANDA", 25, 20, 30, RAYWHITE);
     DrawText(
         "LA PAUSA ENTRE RONDAS ES ALEATORIA. CUANDO SUBE LA BANDERA, REACCIONA.",
         25,
-        57,
+        54,
         18,
-        DARKGRAY
+        LIGHTGRAY
     );
 
-    DrawRectangle(20, 84, 520, 54, Fade(RAYWHITE, 0.82f));
-    DrawRectangleLines(20, 84, 520, 54, Fade(DARKGRAY, 0.65f));
-    DrawText("TECLADO: A/D O FLECHA IZQ/DER", 30, 90, 17, DARKGRAY);
-    DrawText("MANDO: X = IZQUIERDA    B = DERECHA", 30, 113, 18, DARKBLUE);
+    DrawRectangle(20, 86, 390, 54, Fade(RAYWHITE, 0.82f));
+    DrawRectangleLines(20, 86, 390, 54, Fade(DARKGRAY, 0.65f));
+    DrawText("TECLADO: A/D O FLECHA IZQ/DER", 30, 92, 17, DARKGRAY);
+    DrawText("MANDO: X = IZQUIERDA    B = DERECHA", 30, 115, 18, DARKBLUE);
 
     if (fase == FASE_CAPITAN_PREPARACION)
     {
@@ -636,12 +765,13 @@ void MinijuegoCapitanManda::Dibujar(
     else if (fase == FASE_CAPITAN_MOSTRANDO)
     {
         const char* espera = "PREPARATE...";
+        DrawRectangle(anchoPantalla / 2 - 150, 154, 300, 52, Fade(BLACK, 0.55f));
         DrawText(
             espera,
-            GetScreenWidth() / 2 - MeasureText(espera, 34) / 2,
-            166,
+            anchoPantalla / 2 - MeasureText(espera, 34) / 2,
+            163,
             34,
-            DARKBLUE
+            RAYWHITE
         );
     }
     else if (fase == FASE_CAPITAN_RESPONDIENDO)
@@ -653,31 +783,41 @@ void MinijuegoCapitanManda::Dibujar(
 
         int tamano = 48;
 
+        // Panel central: orden, aviso y barra juntos, sobre el cielo y
+        // por encima de la cabeza del capitan.
+        DrawRectangle(
+            anchoPantalla / 2 - 210,
+            86,
+            420,
+            128,
+            Fade(BLACK, 0.62f)
+        );
+
         DrawText(
             direccion,
-            GetScreenWidth() / 2 - MeasureText(direccion, tamano) / 2,
-            150,
+            anchoPantalla / 2 - MeasureText(direccion, tamano) / 2,
+            94,
             tamano,
             ordenActual == CONTROL_DIRECCION_IZQUIERDA
-            ? Color{ 25, 155, 205, 255 }
+            ? Color{ 90, 205, 245, 255 }
             : ORANGE
         );
 
         const char* reaccion = "REACCIONA!";
         DrawText(
             reaccion,
-            GetScreenWidth() / 2 - MeasureText(reaccion, 28) / 2,
-            208,
-            28,
+            anchoPantalla / 2 - MeasureText(reaccion, 26) / 2,
+            150,
+            26,
             LIME
         );
 
         DrawRectangle(
-            GetScreenWidth() / 2 - 160,
-            243,
+            anchoPantalla / 2 - 160,
+            186,
             320,
             16,
-            Fade(BLACK, 0.35f)
+            Fade(WHITE, 0.30f)
         );
 
         float porcentaje =
@@ -688,34 +828,37 @@ void MinijuegoCapitanManda::Dibujar(
         if (porcentaje < 0.0f) porcentaje = 0.0f;
 
         DrawRectangle(
-            GetScreenWidth() / 2 - 160,
-            243,
+            anchoPantalla / 2 - 160,
+            186,
             (int)(320.0f * porcentaje),
             16,
             porcentaje < 0.30f ? RED : GOLD
         );
     }
 
+    DrawRectangle(anchoPantalla - 270, 12, 255, 66, Fade(BLACK, 0.55f));
+
     DrawText(
         fase == FASE_CAPITAN_PREPARACION
             ? "RONDA 0"
             : TextFormat("RONDA %d", numeroRonda),
-        GetScreenWidth() - 180,
-        25,
+        anchoPantalla - 180,
+        18,
         24,
-        DARKBLUE
+        RAYWHITE
     );
 
     DrawText(
-        "SIN MAXIMO DE RONDAS",
-        GetScreenWidth() - 245,
-        55,
+        "HASTA QUEDAR UNO",
+        anchoPantalla - 245,
+        50,
         17,
-        DARKGRAY
+        LIGHTGRAY
     );
 
-    int y = GetScreenHeight() - 305;
-    DrawRectangle(18, y - 10, 640, 120, Fade(BLACK, 0.46f));
+    // Estado por jugador en el cielo de la derecha, sin tapar la cubierta.
+    int y = 92;
+    DrawRectangle(anchoPantalla - 420, y - 6, 405, 4 * 24 + 8, Fade(BLACK, 0.55f));
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -760,13 +903,13 @@ void MinijuegoCapitanManda::Dibujar(
                 izquierda,
                 derecha
             ),
-            28,
+            anchoPantalla - 410,
             y,
-            18,
+            17,
             jugador.eliminado ? GRAY : participantes[i].color
         );
 
-        y += 27;
+        y += 24;
     }
 
     if (fase == FASE_CAPITAN_TERMINADO)
@@ -831,7 +974,7 @@ void MinijuegoCapitanManda::Dibujar(
             fila += 29;
         }
 
-        const char* reiniciar = "R PARA REINICIAR";
+        const char* reiniciar = TextoReinicioMinijuego();
         DrawText(
             reiniciar,
             GetScreenWidth() / 2 - MeasureText(reiniciar, 22) / 2,

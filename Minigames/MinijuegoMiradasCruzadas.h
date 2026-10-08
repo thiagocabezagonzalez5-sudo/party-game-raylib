@@ -2,6 +2,7 @@
 
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
+#include "Systems/Audio.h"
 #include "Minigames/BotsMinijuegos1v3.h"
 
 
@@ -37,6 +38,7 @@ struct EstadoJugadorMiradasCruzadas
 struct MinijuegoMiradasCruzadas
 {
     ResultadoMinijuego resultado{};
+    AudioJuego* audio = nullptr;
 
     EstadoJugadorMiradasCruzadas jugadores[MAX_PARTICIPANTES];
     EstadoBotMiradas bots[MAX_PARTICIPANTES];
@@ -48,6 +50,7 @@ struct MinijuegoMiradasCruzadas
 
     float tiempoPreparacion = 2.5f;
     float tiempoFase = 0.0f;
+    float tiempoAnimacion = 0.0f;
 
     void Inicializar();
 

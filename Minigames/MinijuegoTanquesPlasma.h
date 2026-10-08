@@ -2,10 +2,12 @@
 
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
+#include "Systems/Audio.h"
 #include "raylib.h"
 
 
 inline constexpr int MAX_PROYECTILES_TANQUES_PLASMA = 40;
+inline constexpr int MAX_EFECTOS_TANQUES_PLASMA = 16;
 
 
 enum FaseTanquesPlasma
@@ -16,6 +18,8 @@ enum FaseTanquesPlasma
 };
 
 
+// El espacio de juego es el plano del suelo de la arena 3D:
+// Vector2.x = eje X del mundo, Vector2.y = eje Z del mundo.
 struct EstadoTanquePlasma
 {
     Vector2 posicion{};
@@ -28,6 +32,10 @@ struct EstadoTanquePlasma
     float recarga = 0.0f;
     float invulnerabilidad = 0.0f;
     float faseBot = 0.0f;
+
+    // Solo visual: orientacion suavizada del casco (radianes sobre XZ).
+    float anguloCasco = 0.0f;
+    float tiempoMuerto = 0.0f;
 };
 
 
@@ -41,11 +49,24 @@ struct ProyectilTanquePlasma
 };
 
 
+// Destello breve en el punto de un impacto (solo visual).
+struct EfectoImpactoTanque
+{
+    bool activo = false;
+    Vector2 posicion{};
+    float tiempo = 0.0f;
+    float tamano = 1.0f;
+    int propietario = -1;
+};
+
+
 struct MinijuegoTanquesPlasma
 {
     ResultadoMinijuego resultado{};
+    AudioJuego* audio = nullptr;
     EstadoTanquePlasma tanques[MAX_PARTICIPANTES];
     ProyectilTanquePlasma proyectiles[MAX_PROYECTILES_TANQUES_PLASMA];
+    EfectoImpactoTanque efectos[MAX_EFECTOS_TANQUES_PLASMA];
 
     FaseTanquesPlasma fase = FASE_TANQUES_PREPARACION;
 

@@ -1,5 +1,7 @@
 #include "Core/WindowUtils.h"
 
+#include <cmath>
+
 
 //==================================================
 // NOMBRE DEL MODO
@@ -164,15 +166,40 @@ void AplicarModoVentana(
         MODO_VENTANA
     )
     {
+        // Una ventana del tamano del monitor queda tapada por la barra de
+        // titulo y la de tareas (se pierde la parte inferior del HUD): se
+        // limita al area util manteniendo la proporcion.
+        int monitor = GetCurrentMonitor();
+        int anchoMaximo = GetMonitorWidth(monitor) - 16;
+        int altoMaximo = GetMonitorHeight(monitor) - 96;
+
+        int ancho = resolucion.ancho;
+        int alto = resolucion.alto;
+
+        if (
+            anchoMaximo > 0 &&
+            altoMaximo > 0 &&
+            (ancho > anchoMaximo || alto > altoMaximo)
+        )
+        {
+            float escala = std::fmin(
+                (float)anchoMaximo / (float)ancho,
+                (float)altoMaximo / (float)alto
+            );
+
+            ancho = (int)((float)ancho * escala);
+            alto = (int)((float)alto * escala);
+        }
+
         SetWindowSize(
-            resolucion.ancho,
-            resolucion.alto
+            ancho,
+            alto
         );
 
 
         CentrarVentana(
-            resolucion.ancho,
-            resolucion.alto
+            ancho,
+            alto
         );
     }
 
@@ -223,4 +250,23 @@ void AplicarModoVentana(
 
     modoActual =
         nuevoModo;
+}
+
+
+//==================================================
+// VSYNC
+//==================================================
+
+void AplicarVSync(
+    bool activo
+)
+{
+    if (activo)
+    {
+        SetWindowState(FLAG_VSYNC_HINT);
+    }
+    else
+    {
+        ClearWindowState(FLAG_VSYNC_HINT);
+    }
 }

@@ -1,5 +1,7 @@
 #include "Minigames/MinijuegoTormentaMagnetica.h"
 
+#include "Minigames/BotsMinijuegos1v3.h"
+#include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
@@ -90,6 +92,8 @@ static Vector3 ElegirNuevaPosicionNucleoMagnetico(Vector3 anterior)
 static void CambiarCampoMagnetico(MinijuegoTormentaMagnetica& minijuego)
 {
     minijuego.cambiosCampo++;
+    minijuego.tiempoDesdeCambio = 0.0f;
+    ReproducirSonidoMinijuego(minijuego.audio, SONIDO_GROUND_POUND);
     minijuego.campoAtrae = !minijuego.campoAtrae;
     minijuego.posicionNucleo = ElegirNuevaPosicionNucleoMagnetico(
         minijuego.posicionNucleo
@@ -97,11 +101,10 @@ static void CambiarCampoMagnetico(MinijuegoTormentaMagnetica& minijuego)
 
     float progreso = ProgresoDificultadMagnetica(minijuego);
 
-    // Empieza bastante rapido y termina cambiando casi cuatro veces mas
-    // seguido. Ya no hay un techo de tiempo de partida.
-    minijuego.tiempoHastaCambioCampo = 3.05f - progreso * 2.25f;
-    if (minijuego.tiempoHastaCambioCampo < 0.80f)
-        minijuego.tiempoHastaCambioCampo = 0.80f;
+    // Cada cambio dura entre 3.6 s y 1.8 s (nunca menos, para poder reaccionar).
+    minijuego.tiempoHastaCambioCampo = 3.6f - progreso * 1.8f;
+    if (minijuego.tiempoHastaCambioCampo < 1.8f)
+        minijuego.tiempoHastaCambioCampo = 1.8f;
 }
 
 
@@ -171,7 +174,7 @@ static void CrearPinchoMagnetico(MinijuegoTormentaMagnetica& minijuego)
     pincho.posicion =
     {
         (float)GetRandomValue(-500, 500) / 100.0f,
-        (float)GetRandomValue(780, 980) / 100.0f,
+        5.6f,
         (float)GetRandomValue(-500, 500) / 100.0f
     };
     pincho.velocidad =
@@ -181,6 +184,8 @@ static void CrearPinchoMagnetico(MinijuegoTormentaMagnetica& minijuego)
         0.0f
     };
     pincho.tiempoVida = 3.0f;
+    pincho.aviso = pincho.avisoTotal;
+    ReproducirSonidoMinijuego(minijuego.audio, SONIDO_UI_MOVER);
 }
 
 
@@ -227,6 +232,13 @@ static void ActualizarPinchosMagneticos(
     {
         PinchoTormentaMagnetica& pincho = minijuego.pinchos[p];
         if (!pincho.activo) continue;
+
+        if (pincho.aviso > 0.0f)
+        {
+            // Solo la marca en el suelo: todavia no cae ni golpea.
+            pincho.aviso -= deltaTime;
+            continue;
+        }
 
         pincho.tiempoVida -= deltaTime;
         pincho.posicion.x += pincho.velocidad.x * deltaTime;
@@ -328,6 +340,7 @@ void MinijuegoTormentaMagnetica::Inicializar()
     resultado.formato = FORMATO_MINIJUEGO_INDIVIDUAL;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++) estadosJugadores[i] = {};
+    for (int i = 0; i < MAX_JUGADORES_PRUEBA; i++) bots[i] = {};
     for (int i = 0; i < MAX_PINCHOS_TORMENTA_MAGNETICA; i++) pinchos[i] = {};
 
     suelo = {};
@@ -343,7 +356,8 @@ void MinijuegoTormentaMagnetica::Inicializar()
     tiempoPreparacion = DURACION_PREPARACION_MAGNETICA;
     tiempoRestante = 0.0f;
     tiempoJugado = 0.0f;
-    tiempoHastaCambioCampo = 2.8f;
+    tiempoHastaCambioCampo = 3.5f;
+    tiempoDesdeCambio = 99.0f;
     tiempoHastaPincho = 1.05f;
     tiempoAnimacion = 0.0f;
     cambiosCampo = 0;
@@ -382,6 +396,125 @@ void MinijuegoTormentaMagnetica::Reiniciar(
 {
     Inicializar();
     ConfigurarJugadores(jugadores, cantidadMaxima);
+}
+
+
+static float AleatorioMagnetica(float minimo, float maximo)
+{
+    return minimo + (maximo - minimo) *
+        (float)GetRandomValue(0, 1000) / 1000.0f;
+}
+
+
+// El bot nota el cambio de campo ~0.3 s tarde y ubica el nucleo con error,
+// asi que durante el retardo empuja en la direccion equivocada. Se mantiene
+// cerca de un ancla central, se opone al campo y esquiva pinchos cuando esta
+// atento (70% de los chequeos).
+static InputMinijuegoParticipante CrearEntradaBotMagnetica(
+    MinijuegoTormentaMagnetica& minijuego,
+    int indice,
+    const JugadorPrueba& jugador,
+    float deltaTime
+)
+{
+    EstadoBotTormentaMagnetica& bot = minijuego.bots[indice];
+
+    if (bot.cambiosVistos != minijuego.cambiosCampo)
+    {
+        if (bot.retardo <= 0.0f) bot.retardo = AleatorioMagnetica(0.22f, 0.45f);
+        bot.retardo -= deltaTime;
+
+        if (bot.retardo <= 0.0f)
+        {
+            bot.cambiosVistos = minijuego.cambiosCampo;
+            bot.campoAtrae = minijuego.campoAtrae;
+            bot.nucleoPercibido = {
+                minijuego.posicionNucleo.x + AleatorioMagnetica(-0.9f, 0.9f),
+                0.0f,
+                minijuego.posicionNucleo.z + AleatorioMagnetica(-0.9f, 0.9f)
+            };
+        }
+    }
+
+    bot.tiempoAncla -= deltaTime;
+    if (bot.tiempoAncla <= 0.0f)
+    {
+        bot.tiempoAncla = AleatorioMagnetica(1.2f, 2.8f);
+        bot.ancla = {
+            AleatorioMagnetica(-1.8f, 1.8f), 0.0f,
+            AleatorioMagnetica(-1.8f, 1.8f)
+        };
+    }
+
+    bot.tiempoAtencion -= deltaTime;
+    if (bot.tiempoAtencion <= 0.0f)
+    {
+        bot.tiempoAtencion = AleatorioMagnetica(0.35f, 0.7f);
+        bot.atento = GetRandomValue(1, 100) <= 70;
+    }
+
+    // Esquivar pincho cercano que ya esta bajo.
+    if (bot.atento)
+    {
+        for (int p = 0; p < MAX_PINCHOS_TORMENTA_MAGNETICA; p++)
+        {
+            const PinchoTormentaMagnetica& pincho = minijuego.pinchos[p];
+            if (!pincho.activo) continue;
+
+            // La marca del suelo se ve desde que aparece; el bot solo reacciona
+            // cuando ya es peligrosa (mismo aviso que ve un humano).
+            if (pincho.aviso > 0.0f && pincho.aviso > pincho.avisoTotal - 0.30f) continue;
+
+            float dx = jugador.posicion.x - pincho.posicion.x;
+            float dz = jugador.posicion.z - pincho.posicion.z;
+            float radioEsquiva = pincho.aviso > 0.0f ? 1.3f : 1.1f;
+            if (dx * dx + dz * dz > radioEsquiva * radioEsquiva) continue;
+
+            InputMinijuegoParticipante entrada{};
+            if (dx >= 0.0f) entrada.derecha = true; else entrada.izquierda = true;
+            if (dz >= 0.0f) entrada.atras = true; else entrada.adelante = true;
+            return entrada;
+        }
+    }
+
+    float x = jugador.posicion.x;
+    float z = jugador.posicion.z;
+    float limiteBorde = MEDIO_LADO_ARENA_MAGNETICA - 1.5f;
+
+    if (std::fabs(x) > limiteBorde || std::fabs(z) > limiteBorde)
+    {
+        return CrearEntradaBotHaciaObjetivo1v3(
+            jugador.posicion, bot.ancla, 0.2f
+        );
+    }
+
+    // Oponerse al campo percibido.
+    float dx = bot.nucleoPercibido.x - x;
+    float dz = bot.nucleoPercibido.z - z;
+    float distancia = std::sqrt(dx * dx + dz * dz);
+    if (distancia < 0.3f) distancia = 0.3f;
+
+    float signo = bot.campoAtrae ? -1.0f : 1.0f;
+    float ox = signo * dx / distancia;
+    float oz = signo * dz / distancia;
+
+    // Si ya esta cerca del ancla, solo contrarresta; si no, mezcla.
+    float ax = bot.ancla.x - x;
+    float az = bot.ancla.z - z;
+    float da = std::sqrt(ax * ax + az * az);
+    if (da > 0.01f)
+    {
+        float peso = da > 2.5f ? 1.2f : 0.5f;
+        ox += ax / da * peso;
+        oz += az / da * peso;
+    }
+
+    InputMinijuegoParticipante entrada{};
+    if (ox < -0.4f) entrada.izquierda = true;
+    else if (ox > 0.4f) entrada.derecha = true;
+    if (oz < -0.4f) entrada.adelante = true;
+    else if (oz > 0.4f) entrada.atras = true;
+    return entrada;
 }
 
 
@@ -424,6 +557,7 @@ void MinijuegoTormentaMagnetica::Actualizar(
     }
 
     tiempoJugado += deltaTime;
+    tiempoDesdeCambio += deltaTime;
     tiempoHastaCambioCampo -= deltaTime;
     if (tiempoHastaCambioCampo <= 0.0f) CambiarCampoMagnetico(*this);
 
@@ -446,7 +580,9 @@ void MinijuegoTormentaMagnetica::Actualizar(
         AplicarCampoMagneticoAJugador(*this, jugador, deltaTime);
 
         InputMinijuegoParticipante entrada{};
-        if (participantes[i].conectado)
+        if (participantes[i].esBot)
+            entrada = CrearEntradaBotMagnetica(*this, i, jugador, deltaTime);
+        else if (participantes[i].conectado)
             entrada = LeerInputMinijuegoParticipante(participantes[i]);
 
         BloquePrueba sueloJugador = suelo;
@@ -554,6 +690,18 @@ static void DibujarNucleoMagnetico(Vector3 posicion, bool atrae, float tiempo)
 
 static void DibujarPinchoMagnetico(const PinchoTormentaMagnetica& pincho)
 {
+    if (pincho.aviso > 0.0f)
+    {
+        // Marca que crece durante el aviso: el pincho caera justo aqui.
+        float t = 1.0f - pincho.aviso / pincho.avisoTotal;
+        float radio = 0.25f + 0.65f * t;
+        Color marca = Color{ 255, 90, 70, 255 };
+        DrawCylinder({ pincho.posicion.x, 0.03f, pincho.posicion.z }, radio, radio, 0.02f, 20, Fade(marca, 0.18f + 0.30f * t));
+        DrawCircle3D({ pincho.posicion.x, 0.05f, pincho.posicion.z }, 0.92f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(marca, 0.55f));
+        DrawCircle3D({ pincho.posicion.x, 0.05f, pincho.posicion.z }, radio, { 1.0f, 0.0f, 0.0f }, 90.0f, marca);
+        return;
+    }
+
     DrawCylinderEx(
         { pincho.posicion.x, pincho.posicion.y + 0.55f, pincho.posicion.z },
         { pincho.posicion.x, pincho.posicion.y - 0.55f, pincho.posicion.z },
@@ -570,6 +718,42 @@ static void DibujarPinchoMagnetico(const PinchoTormentaMagnetica& pincho)
 }
 
 
+// Anillo de color bajo los pies y flecha sobre la cabeza: el modelo del
+// jugador es oscuro y sobre el suelo oscuro casi no se distingue.
+// MODELO FUTURO: la flecha puede pasar a ser un icono de jugador del GLB.
+static void DibujarIndicadorJugadorMagnetica(
+    const JugadorPrueba& jugador,
+    Color color
+)
+{
+    float pies = jugador.posicion.y - jugador.tamano.y * 0.5f;
+    if (jugador.cayendo || pies < -0.35f) return;
+
+    Vector3 centro = { jugador.posicion.x, 0.05f, jugador.posicion.z };
+    for (int k = 0; k < 3; k++)
+    {
+        DrawCircle3D(
+            centro,
+            0.52f + k * 0.045f,
+            { 1.0f, 0.0f, 0.0f },
+            90.0f,
+            color
+        );
+    }
+
+    float rebote = std::sin((float)GetTime() * 5.0f + jugador.posicion.x) * 0.06f;
+    float cabeza = pies + 2.15f + rebote;
+    DrawCylinderEx(
+        { jugador.posicion.x, cabeza, jugador.posicion.z },
+        { jugador.posicion.x, cabeza + 0.32f, jugador.posicion.z },
+        0.0f,
+        0.20f,
+        10,
+        color
+    );
+}
+
+
 void MinijuegoTormentaMagnetica::Dibujar(
     const JugadorPrueba jugadores[],
     int cantidadMaxima,
@@ -582,8 +766,34 @@ void MinijuegoTormentaMagnetica::Dibujar(
     ClearBackground(Color{ 19, 24, 36, 255 });
     BeginMode3D(camara);
 
+    Color colorCampo = campoAtrae
+        ? Color{ 69, 206, 239, 255 }
+        : Color{ 239, 82, 147, 255 };
+
     DrawCube(suelo.posicion, suelo.tamano.x, suelo.tamano.y, suelo.tamano.z, suelo.color);
     DrawCubeWires(suelo.posicion, suelo.tamano.x, suelo.tamano.y, suelo.tamano.z, Color{ 23, 30, 43, 255 });
+
+    // Borde neon del color del campo actual: anuncia atraccion/repulsion
+    // y marca el limite de la plataforma.
+    float mitad = suelo.tamano.x * 0.5f;
+    float cima = suelo.posicion.y + suelo.tamano.y * 0.5f;
+    float grosor = 0.14f;
+    float brillo = 0.80f + 0.20f * std::sin(tiempoAnimacion * 6.0f);
+    bool avisoCambio = fase == FASE_MAGNETICA_JUGANDO && tiempoHastaCambioCampo < 0.9f;
+    Color neon = Fade(colorCampo, brillo);
+    if (avisoCambio)
+    {
+        bool destello = std::fmod(tiempoAnimacion * 8.0f, 2.0f) < 1.0f;
+        neon = destello ? WHITE : Color{ 255, 210, 60, 255 };
+    }
+    else if (tiempoDesdeCambio < 0.35f)
+    {
+        neon = WHITE;
+    }
+    DrawCubeV({ 0.0f, cima + 0.012f, -mitad + grosor * 0.5f }, { suelo.tamano.x, 0.02f, grosor }, neon);
+    DrawCubeV({ 0.0f, cima + 0.012f, mitad - grosor * 0.5f }, { suelo.tamano.x, 0.02f, grosor }, neon);
+    DrawCubeV({ -mitad + grosor * 0.5f, cima + 0.012f, 0.0f }, { grosor, 0.02f, suelo.tamano.x - grosor * 2.0f }, neon);
+    DrawCubeV({ mitad - grosor * 0.5f, cima + 0.012f, 0.0f }, { grosor, 0.02f, suelo.tamano.x - grosor * 2.0f }, neon);
 
     for (int i = -4; i <= 4; i++)
     {
@@ -614,6 +824,7 @@ void MinijuegoTormentaMagnetica::Dibujar(
         if (!resultado.participantes[i].participo || estadosJugadores[i].eliminado)
             continue;
 
+        DibujarIndicadorJugadorMagnetica(jugadores[i], participantes[i].color);
         DibujarJugadorCuboPrueba(jugadores[i], participantes[i]);
         if (mostrarDebug && !jugadores[i].cayendo)
             DrawBoundingBox(CrearHitboxJugadorPrueba(jugadores[i]), LIME);
@@ -622,34 +833,95 @@ void MinijuegoTormentaMagnetica::Dibujar(
     if (mostrarDebug) DrawBoundingBox(CrearHitboxBloquePrueba(suelo), YELLOW);
     EndMode3D();
 
-    DrawText("TORMENTA MAGNETICA", 24, 22, 30, RAYWHITE);
+    const int ancho = GetScreenWidth();
+    const int alto = GetScreenHeight();
+    const float e = (float)alto / 720.0f;
+
+    DrawRectangle(0, 0, ancho, (int)(76 * e), Fade(BLACK, 0.55f));
+    DrawText("TORMENTA MAGNETICA", (int)(24 * e), (int)(10 * e), (int)(30 * e), RAYWHITE);
     DrawText(
         campoAtrae
             ? "CAMPO: ATRACCION - MUCHO MAS FUERTE"
             : "CAMPO: REPULSION - ALEJATE DEL BORDE",
-        24,
-        60,
-        19,
+        (int)(24 * e),
+        (int)(46 * e),
+        (int)(19 * e),
         campoAtrae ? Color{ 89, 220, 246, 255 } : Color{ 250, 105, 162, 255 }
     );
 
     if (fase == FASE_MAGNETICA_JUGANDO)
     {
         int dificultad = (int)std::lround(ProgresoDificultadMagnetica(*this) * 100.0f);
+        const char* textoDificultad = TextFormat("DIFICULTAD %d%%", dificultad);
+        const char* textoCambio = TextFormat("CAMBIO EN %.1f", tiempoHastaCambioCampo);
         DrawText(
-            TextFormat("DIFICULTAD: %d%%", dificultad),
-            GetScreenWidth() - 235,
-            24,
-            22,
+            textoDificultad,
+            ancho - MeasureText(textoDificultad, (int)(22 * e)) - (int)(30 * e),
+            (int)(12 * e),
+            (int)(22 * e),
             GOLD
         );
         DrawText(
-            TextFormat("CAMBIO EN: %.1f", tiempoHastaCambioCampo),
-            GetScreenWidth() - 205,
-            55,
-            18,
-            LIGHTGRAY
+            textoCambio,
+            ancho - MeasureText(textoCambio, (int)(20 * e)) - (int)(30 * e),
+            (int)(44 * e),
+            (int)(20 * e),
+            tiempoHastaCambioCampo < 0.9f ? Color{ 255, 210, 60, 255 } : LIGHTGRAY
         );
+
+        if (avisoCambio)
+        {
+            const char* aviso = "CAMBIO DE CAMPO!";
+            int tam = (int)(34 * e);
+            int x = ancho / 2 - MeasureText(aviso, tam) / 2;
+            DrawText(aviso, x + 3, (int)(96 * e) + 3, tam, Fade(BLACK, 0.7f));
+            DrawText(aviso, x, (int)(96 * e), tam, Color{ 255, 210, 60, 255 });
+        }
+        else if (tiempoDesdeCambio < 1.2f)
+        {
+            const char* aviso = campoAtrae ? "AHORA: ATRACCION" : "AHORA: REPULSION";
+            int tam = (int)(30 * e);
+            int x = ancho / 2 - MeasureText(aviso, tam) / 2;
+            DrawText(aviso, x + 3, (int)(96 * e) + 3, tam, Fade(BLACK, 0.7f));
+            DrawText(aviso, x, (int)(96 * e), tam, colorCampo);
+        }
+    }
+
+    int cantidadTarjetas = 0;
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (resultado.participantes[i].participo) cantidadTarjetas++;
+    }
+
+    int anchoTarjeta = (int)(170 * e);
+    int altoTarjeta = (int)(44 * e);
+    int separacion = (int)(14 * e);
+    int xTarjeta = ancho / 2 - (cantidadTarjetas * anchoTarjeta + (cantidadTarjetas - 1) * separacion) / 2;
+    int yTarjeta = alto - altoTarjeta - (int)(18 * e);
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (!resultado.participantes[i].participo) continue;
+
+        bool fuera = estadosJugadores[i].eliminado;
+        DrawRectangle(xTarjeta, yTarjeta, anchoTarjeta, altoTarjeta, Fade(BLACK, fuera ? 0.40f : 0.62f));
+        DrawRectangle(xTarjeta, yTarjeta, (int)(8 * e), altoTarjeta, fuera ? GRAY : participantes[i].color);
+        DrawText(
+            TextFormat("J%d", participantes[i].numeroJugador),
+            xTarjeta + (int)(18 * e),
+            yTarjeta + (int)(11 * e),
+            (int)(22 * e),
+            fuera ? GRAY : participantes[i].color
+        );
+        DrawText(
+            fuera ? "FUERA" : "EN JUEGO",
+            xTarjeta + (int)(70 * e),
+            yTarjeta + (int)(14 * e),
+            (int)(17 * e),
+            fuera ? GRAY : RAYWHITE
+        );
+
+        xTarjeta += anchoTarjeta + separacion;
     }
 
     if (fase == FASE_MAGNETICA_PREPARACION)
@@ -657,13 +929,11 @@ void MinijuegoTormentaMagnetica::Dibujar(
         int numero = (int)std::ceil(tiempoPreparacion);
         if (numero < 1) numero = 1;
         const char* texto = TextFormat("%d", numero);
-        DrawText(
-            texto,
-            GetScreenWidth() / 2 - MeasureText(texto, 84) / 2,
-            GetScreenHeight() / 2 - 60,
-            84,
-            GOLD
-        );
+        int tamano = (int)(96 * e);
+        int x = ancho / 2 - MeasureText(texto, tamano) / 2;
+        int y = alto / 2 - (int)(190 * e);
+        DrawText(texto, x + 4, y + 4, tamano, Fade(BLACK, 0.7f));
+        DrawText(texto, x, y, tamano, GOLD);
     }
     else if (fase == FASE_MAGNETICA_TERMINADO)
     {
@@ -680,25 +950,53 @@ void MinijuegoTormentaMagnetica::Dibujar(
                     : 0
             );
 
-        DrawRectangle(
-            GetScreenWidth() / 2 - 305,
-            GetScreenHeight() / 2 - 125,
-            610,
-            250,
-            Fade(BLACK, 0.90f)
-        );
+        int anchoPanel = (int)(520 * e);
+        int altoPanel = (int)(262 * e);
+        int xPanel = ancho / 2 - anchoPanel / 2;
+        int yPanel = (int)(92 * e);
+        DrawRectangle(xPanel, yPanel, anchoPanel, altoPanel, Fade(BLACK, 0.82f));
+
         DrawText(
             titulo,
-            GetScreenWidth() / 2 - MeasureText(titulo, 34) / 2,
-            GetScreenHeight() / 2 - 82,
-            34,
+            ancho / 2 - MeasureText(titulo, (int)(32 * e)) / 2,
+            yPanel + (int)(14 * e),
+            (int)(32 * e),
             GOLD
         );
+
+        const char* total = TextFormat("TIEMPO TOTAL: %.1f s", tiempoJugado);
         DrawText(
-            "R PARA REINICIAR",
-            GetScreenWidth() / 2 - MeasureText("R PARA REINICIAR", 21) / 2,
-            GetScreenHeight() / 2 + 72,
-            21,
+            total,
+            ancho / 2 - MeasureText(total, (int)(20 * e)) / 2,
+            yPanel + (int)(52 * e),
+            (int)(20 * e),
+            LIGHTGRAY
+        );
+
+        int fila = yPanel + (int)(88 * e);
+        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        {
+            if (!resultado.participantes[i].participo) continue;
+            DrawText(
+                TextFormat(
+                    "J%d  POSICION %d  SOBREVIVIO %.1f s",
+                    participantes[i].numeroJugador,
+                    resultado.participantes[i].posicionFinal,
+                    (float)estadosJugadores[i].tiempoSobrevividoMs / 1000.0f
+                ),
+                xPanel + (int)(50 * e),
+                fila,
+                (int)(21 * e),
+                participantes[i].color
+            );
+            fila += (int)(27 * e);
+        }
+
+        DrawText(
+            TextoReinicioMinijuego(),
+            ancho / 2 - MeasureText(TextoReinicioMinijuego(), (int)(18 * e)) / 2,
+            yPanel + altoPanel - (int)(30 * e),
+            (int)(18 * e),
             RAYWHITE
         );
     }

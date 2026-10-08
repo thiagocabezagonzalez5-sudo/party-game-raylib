@@ -1,6 +1,11 @@
 #include "UI/SeleccionPersonajes.h"
 
+#include "UI/SeleccionPersonajes3D.h"
 #include "Systems/Input.h"
+
+#include <cmath>
+#include <cstdio>
+#include <cstring>
 
 
 //==================================================
@@ -31,7 +36,7 @@ static Color ObtenerColorJugador(
 
 
 //==================================================
-// UTILIDAD CIRCULAR
+// UTILIDADES
 //==================================================
 
 static int LimitarCircular(
@@ -54,365 +59,60 @@ static int LimitarCircular(
 }
 
 
-//==================================================
-// CARGAR TEXTURA SEGURA
-//==================================================
-
-static bool CargarTexturaSegura(
-    const char* ruta,
-    Texture2D& textura
+static void MoverCursor(
+    JugadorSeleccion& jugador,
+    int delta
 )
 {
-    if (!FileExists(ruta))
-    {
-        TraceLog(
-            LOG_WARNING,
-            "No existe la textura: %s",
-            ruta
+    jugador.cursorPersonaje =
+        LimitarCircular(
+            jugador.cursorPersonaje + delta,
+            0,
+            MAX_PERSONAJES_SELECCION - 1
         );
-
-        return false;
-    }
-
-    textura =
-        LoadTexture(
-            ruta
-        );
-
-
-    /*
-        Usamos textura.id porque tu version
-        de raylib no tiene IsTextureReady().
-    */
-
-    if (textura.id <= 0)
-    {
-        TraceLog(
-            LOG_WARNING,
-            "No se pudo cargar: %s",
-            ruta
-        );
-
-        return false;
-    }
-
-
-    return true;
 }
 
 
-//==================================================
-// DIBUJAR TEXTURA AJUSTADA
-//==================================================
-
-static void DibujarTexturaAjustada(
-    Texture2D textura,
-    Rectangle destino,
-    Color tint
+static float Suavizar(
+    float actual,
+    float objetivo,
+    float velocidad,
+    float deltaTime
 )
 {
-    if (textura.id <= 0)
+    float paso = velocidad * deltaTime;
+
+    if (paso > 1.0f)
     {
-        return;
+        paso = 1.0f;
     }
 
-
-    float escalaX =
-        destino.width /
-        textura.width;
-
-    float escalaY =
-        destino.height /
-        textura.height;
-
-
-    /*
-        Usamos la escala MENOR.
-
-        Esto significa que la imagen entra
-        completa sin deformarse.
-    */
-
-    float escala =
-        escalaX < escalaY
-        ? escalaX
-        : escalaY;
-
-
-    float anchoFinal =
-        textura.width *
-        escala;
-
-    float altoFinal =
-        textura.height *
-        escala;
-
-
-    Rectangle origen =
-    {
-        0.0f,
-        0.0f,
-        (float)textura.width,
-        (float)textura.height
-    };
-
-
-    Rectangle destinoFinal =
-    {
-        destino.x +
-            (
-                destino.width -
-                anchoFinal
-            ) /
-            2.0f,
-
-        destino.y +
-            (
-                destino.height -
-                altoFinal
-            ) /
-            2.0f,
-
-        anchoFinal,
-        altoFinal
-    };
-
-
-    DrawTexturePro(
-        textura,
-        origen,
-        destinoFinal,
-        Vector2{
-            0.0f,
-            0.0f
-        },
-        0.0f,
-        tint
-    );
+    return actual + (objetivo - actual) * paso;
 }
 
 
-//==================================================
-// CUADRICULA
-//==================================================
-
-static Rectangle ObtenerRectCuadricula()
-{
-    float ancho =
-        440.0f;
-
-    float alto =
-        440.0f;
-
-
-    return Rectangle
-    {
-        GetScreenWidth() /
-            2.0f -
-            ancho /
-            2.0f,
-
-        GetScreenHeight() /
-            2.0f -
-            alto /
-            2.0f +
-            35.0f,
-
-        ancho,
-
-        alto
-    };
-}
-
-
-//==================================================
-// CELDA
-//==================================================
-
-static Rectangle ObtenerRectCelda(
-    int indice,
-    int columnas,
-    int filas
-)
-{
-    Rectangle grid =
-        ObtenerRectCuadricula();
-
-
-    float anchoCelda =
-        grid.width /
-        columnas;
-
-    float altoCelda =
-        grid.height /
-        filas;
-
-
-    int columna =
-        indice %
-        columnas;
-
-    int fila =
-        indice /
-        columnas;
-
-
-    return Rectangle
-    {
-        grid.x +
-            columna *
-            anchoCelda,
-
-        grid.y +
-            fila *
-            altoCelda,
-
-        anchoCelda,
-
-        altoCelda
-    };
-}
-
-
-//==================================================
-// PANEL DEL JUGADOR
-//==================================================
-
-static Rectangle ObtenerRectPanelJugador(
+// Retardo (segundos) antes de que un bot "elija" su personaje.
+static float RetardoBot(
     int indice
 )
 {
-    const float ancho =
-        285.0f;
-
-    const float alto =
-        245.0f;
-
-    const float margen =
-        24.0f;
-
-
-    switch (indice)
-    {
-        case 0:
-        {
-            return Rectangle
-            {
-                margen,
-                margen,
-                ancho,
-                alto
-            };
-        }
-
-
-        case 1:
-        {
-            return Rectangle
-            {
-                GetScreenWidth() -
-                    ancho -
-                    margen,
-
-                margen,
-
-                ancho,
-
-                alto
-            };
-        }
-
-
-        case 2:
-        {
-            return Rectangle
-            {
-                margen,
-
-                GetScreenHeight() -
-                    alto -
-                    margen,
-
-                ancho,
-
-                alto
-            };
-        }
-
-
-        case 3:
-        {
-            return Rectangle
-            {
-                GetScreenWidth() -
-                    ancho -
-                    margen,
-
-                GetScreenHeight() -
-                    alto -
-                    margen,
-
-                ancho,
-
-                alto
-            };
-        }
-    }
-
-
-    return Rectangle{
-        0,
-        0,
-        0,
-        0
-    };
+    return 0.45f + 0.32f * indice;
 }
 
 
-//==================================================
-// MOVER CURSOR
-//==================================================
-
-static void MoverCursor(
-    JugadorSeleccion& jugador,
-    int deltaX,
-    int deltaY,
-    int columnas,
-    int filas
+static float RevelacionBot(
+    float tiempoComoBot,
+    int indice
 )
 {
-    int columna =
-        jugador.cursorPersonaje %
-        columnas;
+    float t = (tiempoComoBot - RetardoBot(indice)) / 0.25f;
 
+    if (t < 0.0f)
+    {
+        return 0.0f;
+    }
 
-    int fila =
-        jugador.cursorPersonaje /
-        columnas;
-
-
-    columna =
-        LimitarCircular(
-            columna +
-            deltaX,
-            0,
-            columnas - 1
-        );
-
-
-    fila =
-        LimitarCircular(
-            fila +
-            deltaY,
-            0,
-            filas - 1
-        );
-
-
-    jugador.cursorPersonaje =
-        fila *
-        columnas +
-        columna;
+    return t > 1.0f ? 1.0f : t;
 }
 
 
@@ -458,12 +158,8 @@ static void ActualizarTodosListos(
         cantidadMaxima
     );
 
-    bool cantidadValida =
-        EsCantidadParticipantesValida(activos);
-
     bool activosPreparados =
-        cantidadValida;
-
+        EsCantidadParticipantesValida(activos);
 
     for (
         int i = 0;
@@ -489,524 +185,6 @@ static void ActualizarTodosListos(
 
 
 //==================================================
-// PLACEHOLDER
-//==================================================
-
-static void DibujarPlaceholder(
-    Rectangle rect,
-    Color color
-)
-{
-    DrawRectangle(
-        (int)rect.x,
-        (int)rect.y,
-        (int)rect.width,
-        (int)rect.height,
-        Fade(
-            color,
-            0.18f
-        )
-    );
-
-
-    float centroX =
-        rect.x +
-        rect.width /
-        2.0f;
-
-
-    float centroY =
-        rect.y +
-        rect.height /
-        2.0f;
-
-
-    DrawCircle(
-        (int)centroX,
-        (int)(
-            centroY -
-            25.0f
-        ),
-        22.0f,
-        Fade(
-            RAYWHITE,
-            0.75f
-        )
-    );
-
-
-    DrawRectangle(
-        (int)(
-            centroX -
-            24.0f
-        ),
-        (int)(
-            centroY +
-            2.0f
-        ),
-        48,
-        60,
-        Fade(
-            RAYWHITE,
-            0.75f
-        )
-    );
-}
-
-
-//==================================================
-// COLORES SOBRE LA CELDA
-//==================================================
-
-static void DibujarJugadoresEnCelda(
-    Rectangle rect,
-    const int jugadores[],
-    int cantidad
-)
-{
-    if (cantidad <= 0)
-    {
-        return;
-    }
-
-
-    //------------------------------
-    // UNO
-    //------------------------------
-
-    if (cantidad == 1)
-    {
-        DrawRectangle(
-            (int)rect.x,
-            (int)rect.y,
-            (int)rect.width,
-            (int)rect.height,
-            Fade(
-                ObtenerColorJugador(
-                    jugadores[0]
-                ),
-                0.34f
-            )
-        );
-
-        return;
-    }
-
-
-    //------------------------------
-    // DOS
-    //------------------------------
-
-    if (cantidad == 2)
-    {
-        DrawRectangle(
-            (int)rect.x,
-            (int)rect.y,
-            (int)(
-                rect.width /
-                2.0f
-            ),
-            (int)rect.height,
-            Fade(
-                ObtenerColorJugador(
-                    jugadores[0]
-                ),
-                0.34f
-            )
-        );
-
-
-        DrawRectangle(
-            (int)(
-                rect.x +
-                rect.width /
-                2.0f
-            ),
-            (int)rect.y,
-            (int)(
-                rect.width /
-                2.0f
-            ),
-            (int)rect.height,
-            Fade(
-                ObtenerColorJugador(
-                    jugadores[1]
-                ),
-                0.34f
-            )
-        );
-
-        return;
-    }
-
-
-    //------------------------------
-    // TRES
-    //------------------------------
-
-    if (cantidad == 3)
-    {
-        DrawRectangle(
-            (int)rect.x,
-            (int)rect.y,
-            (int)(
-                rect.width /
-                2.0f
-            ),
-            (int)(
-                rect.height /
-                2.0f
-            ),
-            Fade(
-                ObtenerColorJugador(
-                    jugadores[0]
-                ),
-                0.34f
-            )
-        );
-
-
-        DrawRectangle(
-            (int)(
-                rect.x +
-                rect.width /
-                2.0f
-            ),
-            (int)rect.y,
-            (int)(
-                rect.width /
-                2.0f
-            ),
-            (int)(
-                rect.height /
-                2.0f
-            ),
-            Fade(
-                ObtenerColorJugador(
-                    jugadores[1]
-                ),
-                0.34f
-            )
-        );
-
-
-        DrawRectangle(
-            (int)rect.x,
-            (int)(
-                rect.y +
-                rect.height /
-                2.0f
-            ),
-            (int)rect.width,
-            (int)(
-                rect.height /
-                2.0f
-            ),
-            Fade(
-                ObtenerColorJugador(
-                    jugadores[2]
-                ),
-                0.34f
-            )
-        );
-
-        return;
-    }
-
-
-    //------------------------------
-    // CUATRO
-    //------------------------------
-
-    for (
-        int i = 0;
-        i < 4;
-        i++
-    )
-    {
-        int columna =
-            i %
-            2;
-
-        int fila =
-            i /
-            2;
-
-
-        DrawRectangle(
-            (int)(
-                rect.x +
-                columna *
-                rect.width /
-                2.0f
-            ),
-
-            (int)(
-                rect.y +
-                fila *
-                rect.height /
-                2.0f
-            ),
-
-            (int)(
-                rect.width /
-                2.0f
-            ),
-
-            (int)(
-                rect.height /
-                2.0f
-            ),
-
-            Fade(
-                ObtenerColorJugador(
-                    jugadores[i]
-                ),
-                0.34f
-            )
-        );
-    }
-}
-
-
-//==================================================
-// TRIANGULOS CONFIRMADOS
-//==================================================
-
-static void DibujarMarcadoresConfirmados(
-    Rectangle rect,
-    const SeleccionPersonajes& seleccion,
-    const Participante participantes[],
-    int cantidadMaxima,
-    int indicePersonaje
-)
-{
-    for (
-        int i = 0;
-        i <
-        cantidadMaxima;
-        i++
-    )
-    {
-        const JugadorSeleccion& jugador =
-            seleccion.jugadores[i];
-
-
-        if (
-            !participantes[i].activo ||
-            !participantes[i].conectado ||
-            !jugador.listo ||
-            participantes[i].personajeSeleccionado !=
-                indicePersonaje
-        )
-        {
-            continue;
-        }
-
-
-        Color color =
-            ObtenerColorJugador(i);
-
-
-        float tamano =
-            34.0f;
-
-
-        //------------------------------
-        // JUGADOR 1
-        //------------------------------
-
-        if (i == 0)
-        {
-            DrawTriangle(
-                Vector2{
-                    rect.x,
-                    rect.y
-                },
-
-                Vector2{
-                    rect.x +
-                    tamano,
-                    rect.y
-                },
-
-                Vector2{
-                    rect.x,
-                    rect.y +
-                    tamano
-                },
-
-                color
-            );
-
-
-            DrawText(
-                "1",
-                (int)rect.x + 5,
-                (int)rect.y + 3,
-                18,
-                WHITE
-            );
-        }
-
-
-        //------------------------------
-        // JUGADOR 2
-        //------------------------------
-
-        else if (i == 1)
-        {
-            DrawTriangle(
-                Vector2{
-                    rect.x +
-                    rect.width,
-                    rect.y
-                },
-
-                Vector2{
-                    rect.x +
-                    rect.width -
-                    tamano,
-                    rect.y
-                },
-
-                Vector2{
-                    rect.x +
-                    rect.width,
-                    rect.y +
-                    tamano
-                },
-
-                color
-            );
-
-
-            DrawText(
-                "2",
-
-                (int)(
-                    rect.x +
-                    rect.width -
-                    20
-                ),
-
-                (int)rect.y + 3,
-
-                18,
-
-                WHITE
-            );
-        }
-
-
-        //------------------------------
-        // JUGADOR 3
-        //------------------------------
-
-        else if (i == 2)
-        {
-            DrawTriangle(
-                Vector2{
-                    rect.x,
-                    rect.y +
-                    rect.height
-                },
-
-                Vector2{
-                    rect.x +
-                    tamano,
-                    rect.y +
-                    rect.height
-                },
-
-                Vector2{
-                    rect.x,
-                    rect.y +
-                    rect.height -
-                    tamano
-                },
-
-                color
-            );
-
-
-            DrawText(
-                "3",
-
-                (int)rect.x + 5,
-
-                (int)(
-                    rect.y +
-                    rect.height -
-                    21
-                ),
-
-                18,
-
-                WHITE
-            );
-        }
-
-
-        //------------------------------
-        // JUGADOR 4
-        //------------------------------
-
-        else
-        {
-            DrawTriangle(
-                Vector2{
-                    rect.x +
-                    rect.width,
-                    rect.y +
-                    rect.height
-                },
-
-                Vector2{
-                    rect.x +
-                    rect.width -
-                    tamano,
-                    rect.y +
-                    rect.height
-                },
-
-                Vector2{
-                    rect.x +
-                    rect.width,
-                    rect.y +
-                    rect.height -
-                    tamano
-                },
-
-                color
-            );
-
-
-            DrawText(
-                "4",
-
-                (int)(
-                    rect.x +
-                    rect.width -
-                    20
-                ),
-
-                (int)(
-                    rect.y +
-                    rect.height -
-                    21
-                ),
-
-                18,
-
-                WHITE
-            );
-        }
-    }
-}
-
-
-//==================================================
 // INICIALIZAR
 //==================================================
 
@@ -1015,98 +193,30 @@ void SeleccionPersonajes::Inicializar(
     int cantidadMaxima
 )
 {
-    //==================================================
-    // DEFINIR PERSONAJES
-    //==================================================
+    //------------------------------
+    // PERSONAJES REALES DEL JUEGO
+    //------------------------------
 
-    personajes[0].nombre =
-        "TUNG TUNG";
+    personajes[0].nombre = "TUNG TUNG";
+    personajes[0].color = ORANGE;
 
-    personajes[0].color =
-        ORANGE;
+    personajes[1].nombre = "PERSONAJE 2";
+    personajes[1].color = SKYBLUE;
 
-    personajes[0].rutaIcono =
-        "Assets/Personajes/TungTung/Icono.png";
+    personajes[2].nombre = "PERSONAJE 3";
+    personajes[2].color = LIME;
 
-    personajes[0].rutaRetrato =
-        "Assets/Personajes/TungTung/Retrato.png";
+    personajes[3].nombre = "PERSONAJE 4";
+    personajes[3].color = VIOLET;
 
-
-    personajes[1].nombre =
-        "PERSONAJE 2";
-
-    personajes[1].color =
-        SKYBLUE;
-
-    personajes[1].rutaIcono =
-        "Assets/Personajes/Personaje2/Icono.png";
-
-    personajes[1].rutaRetrato =
-        "Assets/Personajes/Personaje2/Retrato.png";
+    // El modelo 3D es el compartido de main.cpp: no hay nada que cargar.
+    recursosCargados =
+        true;
 
 
-    personajes[2].nombre =
-        "PERSONAJE 3";
-
-    personajes[2].color =
-        LIME;
-
-    personajes[2].rutaIcono =
-        "Assets/Personajes/Personaje3/Icono.png";
-
-    personajes[2].rutaRetrato =
-        "Assets/Personajes/Personaje3/Retrato.png";
-
-
-    personajes[3].nombre =
-        "PERSONAJE 4";
-
-    personajes[3].color =
-        VIOLET;
-
-    personajes[3].rutaIcono =
-        "Assets/Personajes/Personaje4/Icono.png";
-
-    personajes[3].rutaRetrato =
-        "Assets/Personajes/Personaje4/Retrato.png";
-
-
-    //==================================================
-    // CARGAR RECURSOS UNA SOLA VEZ
-    //==================================================
-
-    if (!recursosCargados)
-    {
-        for (
-            int i = 0;
-            i <
-            MAX_PERSONAJES_SELECCION;
-            i++
-        )
-        {
-            personajes[i].iconoCargado =
-                CargarTexturaSegura(
-                    personajes[i].rutaIcono,
-                    personajes[i].icono
-                );
-
-
-            personajes[i].retratoCargado =
-                CargarTexturaSegura(
-                    personajes[i].rutaRetrato,
-                    personajes[i].retrato
-                );
-        }
-
-
-        recursosCargados =
-            true;
-    }
-
-
-    //==================================================
+    //------------------------------
     // REINICIAR JUGADORES
-    //==================================================
+    //------------------------------
 
     for (
         int i = 0;
@@ -1117,47 +227,71 @@ void SeleccionPersonajes::Inicializar(
         participantes[i].activo =
             false;
 
-
         participantes[i].personajeSeleccionado =
             -1;
 
-
         participantes[i].color =
             ObtenerColorJugador(i);
-
 
         jugadores[i].cursorPersonaje =
             i %
             MAX_PERSONAJES_SELECCION;
 
-
         jugadores[i].listo =
             false;
-
 
         jugadores[i].bloqueoHorizontal =
             false;
 
-
         jugadores[i].bloqueoVertical =
             false;
+
+        tiempoComoBot[i] =
+            0.0f;
+
+        avisoDesconexion[i] =
+            0.0f;
     }
 
+    for (
+        int i = 0;
+        i < MAX_PERSONAJES_SELECCION;
+        i++
+    )
+    {
+        foco[i] =
+            0.0f;
+
+        tiempoReaccion[i] =
+            DURACION_REACCION;
+    }
 
     volverAlMenu =
         false;
 
-
     todosListos =
         false;
-
 
     iniciarPartida =
         false;
 
-
     alphaEntrada =
         0.0f;
+
+    tiempoEscena =
+        0.0f;
+
+    tiempoTodosListos =
+        0.0f;
+
+    sonidoMover =
+        false;
+
+    sonidoConfirmar =
+        false;
+
+    sonidoCancelar =
+        false;
 }
 
 
@@ -1171,6 +305,19 @@ void SeleccionPersonajes::Actualizar(
     int cantidadMaxima
 )
 {
+    sonidoMover =
+        false;
+
+    sonidoConfirmar =
+        false;
+
+    sonidoCancelar =
+        false;
+
+    tiempoEscena +=
+        deltaTime;
+
+
     //------------------------------
     // FADE
     //------------------------------
@@ -1183,7 +330,6 @@ void SeleccionPersonajes::Actualizar(
         alphaEntrada +=
             deltaTime /
             DURACION_ENTRADA;
-
 
         if (
             alphaEntrada >
@@ -1207,6 +353,146 @@ void SeleccionPersonajes::Actualizar(
 
 
     //------------------------------
+    // ANIMACION (estado visual)
+    //------------------------------
+
+    for (
+        int c = 0;
+        c < MAX_PERSONAJES_SELECCION;
+        c++
+    )
+    {
+        bool apuntado = false;
+
+        for (
+            int i = 0;
+            i < cantidadMaxima;
+            i++
+        )
+        {
+            if (
+                participantes[i].activo &&
+                participantes[i].conectado &&
+                jugadores[i].cursorPersonaje == c
+            )
+            {
+                apuntado = true;
+            }
+        }
+
+        foco[c] =
+            Suavizar(
+                foco[c],
+                apuntado ? 1.0f : 0.0f,
+                9.0f,
+                deltaTime
+            );
+
+        if (tiempoReaccion[c] < DURACION_REACCION)
+        {
+            tiempoReaccion[c] +=
+                deltaTime;
+        }
+    }
+
+    for (
+        int i = 0;
+        i < cantidadMaxima;
+        i++
+    )
+    {
+        if (participantes[i].activo)
+        {
+            tiempoComoBot[i] =
+                0.0f;
+        }
+        else
+        {
+            tiempoComoBot[i] +=
+                deltaTime;
+        }
+
+        if (avisoDesconexion[i] > 0.0f)
+        {
+            avisoDesconexion[i] -=
+                deltaTime;
+        }
+    }
+
+    if (todosListos)
+    {
+        tiempoTodosListos +=
+            deltaTime;
+    }
+    else
+    {
+        tiempoTodosListos =
+            0.0f;
+    }
+
+
+    //------------------------------
+    // BLOQUEO DE ENTRADA AL ENTRAR
+    //------------------------------
+    //
+    // Mientras dura el fundido de entrada se ignora todo: la pulsacion
+    // que abrio esta pantalla (o un boton mantenido) no debe unir a un
+    // jugador ni saltar a la pantalla siguiente.
+
+    if (alphaEntrada < 1.0f)
+    {
+        return;
+    }
+
+
+    //------------------------------
+    // CONTROLES DESCONECTADOS
+    //------------------------------
+    //
+    // Un mando que se desconecta libera su puesto: no queda ningun
+    // jugador "listo" sin control que bloquee el inicio.
+
+    int cantidadActivos =
+        0;
+
+    for (
+        int i = 0;
+        i < cantidadMaxima;
+        i++
+    )
+    {
+        if (
+            participantes[i].activo &&
+            !participantes[i].conectado
+        )
+        {
+            participantes[i].activo =
+                false;
+
+            participantes[i].personajeSeleccionado =
+                -1;
+
+            jugadores[i].listo =
+                false;
+
+            jugadores[i].bloqueoHorizontal =
+                false;
+
+            jugadores[i].bloqueoVertical =
+                false;
+
+            avisoDesconexion[i] =
+                3.5f;
+        }
+
+        if (participantes[i].activo)
+        {
+            cantidadActivos++;
+        }
+    }
+
+
+    //------------------------------
     // VOLVER
     //------------------------------
 
@@ -1225,30 +511,29 @@ void SeleccionPersonajes::Actualizar(
 
     for (
         int i = 0;
-        i <
-        cantidadMaxima;
+        i < cantidadMaxima;
         i++
     )
     {
         JugadorSeleccion& jugador =
             jugadores[i];
 
-
         Participante& participante =
             participantes[i];
-
 
         if (!participante.conectado)
         {
             continue;
         }
 
-
         InputSeleccionParticipante entrada =
             LeerInputSeleccionParticipante(
                 participante
             );
 
+        //------------------------------
+        // UNIRSE / VOLVER
+        //------------------------------
 
         if (!participante.activo)
         {
@@ -1259,278 +544,140 @@ void SeleccionPersonajes::Actualizar(
 
                 jugador.listo =
                     false;
+
+                // El stick mantenido al unirse no mueve el cursor.
+                jugador.bloqueoHorizontal =
+                    true;
+
+                jugador.bloqueoVertical =
+                    true;
+
+                avisoDesconexion[i] =
+                    0.0f;
+
+                sonidoConfirmar =
+                    true;
+            }
+            else if (
+                entrada.cancelar &&
+                cantidadActivos == 0
+            )
+            {
+                // Nadie se unio: cancelar vuelve al HUB.
+                volverAlMenu =
+                    true;
+
+                return;
             }
 
             continue;
         }
 
 
-        //==================================================
-        // TECLADO
-        //==================================================
+        //------------------------------
+        // MOVER CURSOR
+        //------------------------------
+        //
+        // El teclado dispara una vez por pulsacion; el stick de un
+        // gamepad usa bloqueos para que un empuje sea un solo paso.
 
-        if (participante.control != CONTROL_GAMEPAD)
+        bool esGamepad =
+            participante.control == CONTROL_GAMEPAD;
+
+        if (!jugador.listo)
         {
-            if (!jugador.listo)
+            int paso = 0;
+
+            if (entrada.izquierda && (!esGamepad || !jugador.bloqueoHorizontal))
             {
-                if (
-                    entrada.izquierda
-                )
-                {
-                    MoverCursor(
-                        jugador,
-                        -1,
-                        0,
-                        columnas,
-                        filas
-                    );
-                }
-
-
-                if (
-                    entrada.derecha
-                )
-                {
-                    MoverCursor(
-                        jugador,
-                        1,
-                        0,
-                        columnas,
-                        filas
-                    );
-                }
-
-
-                if (
-                    entrada.arriba
-                )
-                {
-                    MoverCursor(
-                        jugador,
-                        0,
-                        -1,
-                        columnas,
-                        filas
-                    );
-                }
-
-
-                if (
-                    entrada.abajo
-                )
-                {
-                    MoverCursor(
-                        jugador,
-                        0,
-                        1,
-                        columnas,
-                        filas
-                    );
-                }
+                paso = -1;
+                jugador.bloqueoHorizontal = true;
+            }
+            else if (entrada.derecha && (!esGamepad || !jugador.bloqueoHorizontal))
+            {
+                paso = 1;
+                jugador.bloqueoHorizontal = true;
+            }
+            else if (entrada.arriba && (!esGamepad || !jugador.bloqueoVertical))
+            {
+                paso = -1;
+                jugador.bloqueoVertical = true;
+            }
+            else if (entrada.abajo && (!esGamepad || !jugador.bloqueoVertical))
+            {
+                paso = 1;
+                jugador.bloqueoVertical = true;
             }
 
-
-            //------------------------------
-            // CONFIRMAR
-            //------------------------------
-
-            if (
-                entrada.confirmar
-            )
+            if (paso != 0)
             {
-                jugador.listo =
+                MoverCursor(
+                    jugador,
+                    paso
+                );
+
+                sonidoMover =
                     true;
-
-
-                participante.personajeSeleccionado =
-                    jugador.cursorPersonaje;
-            }
-
-
-            //------------------------------
-            // CANCELAR
-            //------------------------------
-
-            if (
-                entrada.cancelar
-            )
-            {
-                if (jugador.listo)
-                {
-                    jugador.listo =
-                        false;
-                }
-                else
-                {
-                    participante.activo =
-                        false;
-
-                    participante.personajeSeleccionado =
-                        -1;
-                }
             }
         }
 
-
-        //==================================================
-        // GAMEPAD
-        //==================================================
-
-        else
+        if (!entrada.izquierda && !entrada.derecha)
         {
-            bool izquierda =
-                entrada.izquierda;
+            jugador.bloqueoHorizontal =
+                false;
+        }
+
+        if (!entrada.arriba && !entrada.abajo)
+        {
+            jugador.bloqueoVertical =
+                false;
+        }
 
 
-            bool derecha =
-                entrada.derecha;
+        //------------------------------
+        // CONFIRMAR
+        //------------------------------
 
-
-            bool arriba =
-                entrada.arriba;
-
-
-            bool abajo =
-                entrada.abajo;
-
-
+        if (entrada.confirmar)
+        {
             if (!jugador.listo)
             {
-                if (
-                    izquierda &&
-                    !jugador.bloqueoHorizontal
-                )
-                {
-                    MoverCursor(
-                        jugador,
-                        -1,
-                        0,
-                        columnas,
-                        filas
-                    );
+                tiempoReaccion[jugador.cursorPersonaje] =
+                    0.0f;
 
-
-                    jugador.bloqueoHorizontal =
-                        true;
-                }
-
-
-                if (
-                    derecha &&
-                    !jugador.bloqueoHorizontal
-                )
-                {
-                    MoverCursor(
-                        jugador,
-                        1,
-                        0,
-                        columnas,
-                        filas
-                    );
-
-
-                    jugador.bloqueoHorizontal =
-                        true;
-                }
-
-
-                if (
-                    arriba &&
-                    !jugador.bloqueoVertical
-                )
-                {
-                    MoverCursor(
-                        jugador,
-                        0,
-                        -1,
-                        columnas,
-                        filas
-                    );
-
-
-                    jugador.bloqueoVertical =
-                        true;
-                }
-
-
-                if (
-                    abajo &&
-                    !jugador.bloqueoVertical
-                )
-                {
-                    MoverCursor(
-                        jugador,
-                        0,
-                        1,
-                        columnas,
-                        filas
-                    );
-
-
-                    jugador.bloqueoVertical =
-                        true;
-                }
+                sonidoConfirmar =
+                    true;
             }
 
+            jugador.listo =
+                true;
 
-            if (
-                !izquierda &&
-                !derecha
-            )
-            {
-                jugador.bloqueoHorizontal =
-                    false;
-            }
+            participante.personajeSeleccionado =
+                jugador.cursorPersonaje;
+        }
 
 
-            if (
-                !arriba &&
-                !abajo
-            )
-            {
-                jugador.bloqueoVertical =
-                    false;
-            }
+        //------------------------------
+        // CANCELAR
+        //------------------------------
 
+        if (entrada.cancelar)
+        {
+            sonidoCancelar =
+                true;
 
-            //------------------------------
-            // CONFIRMAR
-            //------------------------------
-
-            if (
-                entrada.confirmar
-            )
+            if (jugador.listo)
             {
                 jugador.listo =
-                    true;
-
+                    false;
+            }
+            else
+            {
+                participante.activo =
+                    false;
 
                 participante.personajeSeleccionado =
-                    jugador.cursorPersonaje;
-            }
-
-
-            //------------------------------
-            // CANCELAR
-            //------------------------------
-
-            if (
-                entrada.cancelar
-            )
-            {
-                if (jugador.listo)
-                {
-                    jugador.listo =
-                        false;
-                }
-                else
-                {
-                    participante.activo =
-                        false;
-
-                    participante.personajeSeleccionado =
-                        -1;
-                }
+                    -1;
             }
         }
     }
@@ -1542,9 +689,664 @@ void SeleccionPersonajes::Actualizar(
         cantidadMaxima
     );
 
-
     iniciarPartida =
         todosListos;
+}
+
+
+//==================================================
+// DIBUJO 2D: AYUDAS
+//==================================================
+
+// Escala unica de la UI: sigue la ventana real (alto y ancho), de modo que
+// nada se sale de pantalla ni en ventanas bajas o estrechas.
+static float EscalaUI()
+{
+    float porAlto = GetScreenHeight() / 720.0f;
+    float porAncho = GetScreenWidth() / 1280.0f;
+
+    return porAlto < porAncho ? porAlto : porAncho;
+}
+
+
+static int Px(
+    float valor
+)
+{
+    return (int)(valor * EscalaUI() + 0.5f);
+}
+
+
+static void DibujarTextoSombra(
+    const char* texto,
+    int x,
+    int y,
+    int tamano,
+    Color color
+)
+{
+    int sombra = tamano / 14 + 1;
+
+    DrawText(
+        texto,
+        x + sombra,
+        y + sombra,
+        tamano,
+        Fade(BLACK, 0.55f * (color.a / 255.0f))
+    );
+
+    DrawText(
+        texto,
+        x,
+        y,
+        tamano,
+        color
+    );
+}
+
+
+static void DibujarTextoCentrado(
+    const char* texto,
+    int centroX,
+    int y,
+    int tamano,
+    Color color
+)
+{
+    DibujarTextoSombra(
+        texto,
+        centroX - MeasureText(texto, tamano) / 2,
+        y,
+        tamano,
+        color
+    );
+}
+
+
+// Etiqueta redondeada con texto centrado; devuelve su ancho.
+static int DibujarEtiqueta(
+    const char* texto,
+    int x,
+    int y,
+    int tamano,
+    Color fondo,
+    Color colorTexto
+)
+{
+    int margen = tamano / 2;
+    int ancho = MeasureText(texto, tamano) + margen * 2;
+    int alto = tamano + tamano / 2;
+
+    DrawRectangleRounded(
+        Rectangle{ (float)x, (float)y, (float)ancho, (float)alto },
+        0.45f,
+        8,
+        fondo
+    );
+
+    DrawText(
+        texto,
+        x + margen,
+        y + tamano / 4,
+        tamano,
+        colorTexto
+    );
+
+    return ancho;
+}
+
+
+//==================================================
+// DIBUJO 2D: ETIQUETAS SOBRE LA ESCENA
+//==================================================
+
+static void DibujarEtiquetasEscena(
+    const SeleccionPersonajes& seleccion,
+    const Participante participantes[],
+    int cantidadMaxima,
+    const PersonajeEscena3D escena[],
+    Camera3D camara
+)
+{
+    for (
+        int c = 0;
+        c < MAX_PERSONAJES_SELECCION;
+        c++
+    )
+    {
+        Vector3 pedestal =
+            ObtenerPosicionPedestalSeleccion(c);
+
+        float foco =
+            seleccion.foco[c];
+
+        //------------------------------
+        // NOMBRE (placa bajo el pedestal)
+        //------------------------------
+
+        Vector2 ancla =
+            GetWorldToScreen(
+                Vector3{ pedestal.x, 0.12f, 1.9f },
+                camara
+            );
+
+        int tamanoNombre =
+            Px(15.0f + 3.0f * foco);
+
+        const char* nombre =
+            seleccion.personajes[c].nombre;
+
+        int anchoNombre =
+            MeasureText(nombre, tamanoNombre);
+
+        int tamanoBot = Px(11.0f);
+
+        int anchoBot =
+            escena[c].bot
+            ? MeasureText("BOT", tamanoBot) + tamanoBot + Px(6.0f)
+            : 0;
+
+        int placaAncho =
+            anchoNombre + Px(24.0f) + anchoBot;
+
+        int placaAlto =
+            tamanoNombre + Px(10.0f);
+
+        Rectangle placa =
+        {
+            ancla.x - placaAncho * 0.5f,
+            ancla.y - placaAlto * 0.5f,
+            (float)placaAncho,
+            (float)placaAlto
+        };
+
+        DrawRectangleRounded(
+            placa,
+            0.4f,
+            8,
+            Fade(Color{ 22, 14, 40, 255 }, 0.60f + 0.25f * foco)
+        );
+
+        DrawRectangleRoundedLines(
+            placa,
+            0.4f,
+            8,
+            Fade(
+                seleccion.personajes[c].color,
+                0.55f + 0.45f * foco
+            )
+        );
+
+        DrawText(
+            nombre,
+            (int)placa.x + Px(12.0f),
+            (int)(placa.y + (placa.height - tamanoNombre) * 0.5f),
+            tamanoNombre,
+            Fade(RAYWHITE, 0.80f + 0.20f * foco)
+        );
+
+        if (escena[c].bot)
+        {
+            DibujarEtiqueta(
+                "BOT",
+                (int)placa.x + Px(12.0f) + anchoNombre + Px(6.0f),
+                (int)(placa.y + (placa.height - tamanoBot * 1.5f) * 0.5f),
+                tamanoBot,
+                Fade(Color{ 120, 122, 138, 255 }, 0.95f),
+                RAYWHITE
+            );
+        }
+
+        //------------------------------
+        // CHIPS J# SOBRE LA CABEZA
+        //------------------------------
+
+        int cursores[MAX_JUGADORES_SELECCION];
+        int cantidadCursores = 0;
+
+        for (
+            int i = 0;
+            i < cantidadMaxima;
+            i++
+        )
+        {
+            if (
+                participantes[i].activo &&
+                participantes[i].conectado &&
+                seleccion.jugadores[i].cursorPersonaje == c
+            )
+            {
+                cursores[cantidadCursores] = i;
+                cantidadCursores++;
+            }
+        }
+
+        if (cantidadCursores == 0)
+        {
+            continue;
+        }
+
+        float altura =
+            ObtenerAlturaCabezaSeleccion(escena[c]);
+
+        Vector2 cabeza =
+            GetWorldToScreen(
+                Vector3{ pedestal.x, altura + 0.35f, pedestal.z },
+                camara
+            );
+
+        int chipTamano = Px(15.0f);
+        int chipAlto = chipTamano + Px(8.0f);
+        int separacion = Px(4.0f);
+
+        int anchos[MAX_JUGADORES_SELECCION];
+        int total = 0;
+
+        for (
+            int k = 0;
+            k < cantidadCursores;
+            k++
+        )
+        {
+            anchos[k] =
+                seleccion.jugadores[cursores[k]].listo
+                ? Px(84.0f)
+                : Px(36.0f);
+
+            total += anchos[k] + (k > 0 ? separacion : 0);
+        }
+
+        int x0 =
+            (int)cabeza.x - total / 2;
+
+        int y0 =
+            (int)cabeza.y - chipAlto - Px(8.0f);
+
+        for (
+            int k = 0;
+            k < cantidadCursores;
+            k++
+        )
+        {
+            int jugadorIndice = cursores[k];
+
+            bool listo =
+                seleccion.jugadores[jugadorIndice].listo;
+
+            Color color =
+                ObtenerColorJugador(jugadorIndice);
+
+            int xChip = x0;
+
+            for (int previo = 0; previo < k; previo++)
+            {
+                xChip += anchos[previo] + separacion;
+            }
+
+            Rectangle chip =
+            {
+                (float)xChip,
+                (float)y0,
+                (float)anchos[k],
+                (float)chipAlto
+            };
+
+            DrawRectangleRounded(
+                chip,
+                0.5f,
+                8,
+                listo ? color : Fade(Color{ 20, 14, 36, 255 }, 0.88f)
+            );
+
+            DrawRectangleRoundedLines(
+                chip,
+                0.5f,
+                8,
+                listo ? WHITE : color
+            );
+
+            // Flechita hacia el personaje.
+            float centroChip = chip.x + chip.width * 0.5f;
+            float base = chip.y + chip.height - 1.0f;
+
+            DrawTriangle(
+                Vector2{ centroChip - Px(5.0f), base },
+                Vector2{ centroChip, base + Px(7.0f) },
+                Vector2{ centroChip + Px(5.0f), base },
+                color
+            );
+
+            const char* texto =
+                listo
+                ? TextFormat("J%d LISTO", jugadorIndice + 1)
+                : TextFormat("J%d", jugadorIndice + 1);
+
+            DrawText(
+                texto,
+                (int)centroChip - MeasureText(texto, chipTamano) / 2,
+                (int)(chip.y + (chip.height - chipTamano) * 0.5f),
+                chipTamano,
+                listo ? Color{ 255, 255, 255, 255 } : color
+            );
+        }
+    }
+}
+
+
+//==================================================
+// DIBUJO 2D: PANELES DE JUGADOR
+//==================================================
+
+static Color AclararColor(Color c, float t)
+{
+    return Color{
+        (unsigned char)(c.r + (255 - c.r) * t),
+        (unsigned char)(c.g + (255 - c.g) * t),
+        (unsigned char)(c.b + (255 - c.b) * t),
+        255
+    };
+}
+
+
+static void DibujarPanelJugador(
+    const SeleccionPersonajes& seleccion,
+    const Participante& participante,
+    int indice,
+    Rectangle panel
+)
+{
+    const JugadorSeleccion& jugador =
+        seleccion.jugadores[indice];
+
+    Color color =
+        ObtenerColorJugador(indice);
+
+    float t =
+        seleccion.tiempoEscena;
+
+    int xTexto = (int)panel.x + Px(14.0f);
+    int xDerecha = (int)(panel.x + panel.width) - Px(10.0f);
+
+    bool conectado = participante.conectado;
+    bool activo = participante.activo && conectado;
+
+    float opacidad =
+        conectado ? 1.0f : 0.60f;
+
+    DrawRectangleRounded(
+        panel,
+        0.14f,
+        8,
+        Fade(Color{ 20, 12, 38, 255 }, 0.84f * opacidad)
+    );
+
+    if (activo)
+    {
+        DrawRectangleRounded(
+            panel,
+            0.14f,
+            8,
+            Fade(color, 0.14f)
+        );
+    }
+
+    // Banda de color a la izquierda.
+    DrawRectangleRounded(
+        Rectangle{ panel.x, panel.y, (float)Px(7.0f), panel.height },
+        0.8f,
+        6,
+        Fade(color, opacidad)
+    );
+
+    DrawRectangleRoundedLines(
+        panel,
+        0.14f,
+        8,
+        Fade(
+            activo && jugador.listo ? GOLD : color,
+            (activo ? 1.0f : 0.45f) * opacidad
+        )
+    );
+
+    //------------------------------
+    // FILA 1: J# Y HUMANO / BOT
+    //------------------------------
+
+    DibujarTextoSombra(
+        TextFormat("J%d", indice + 1),
+        xTexto,
+        (int)panel.y + Px(7.0f),
+        Px(24.0f),
+        Fade(AclararColor(color, 0.35f), opacidad)
+    );
+
+    int tamanoTag = Px(12.0f);
+    const char* tag = activo ? "HUMANO" : "BOT";
+
+    int anchoTag =
+        MeasureText(tag, tamanoTag) + tamanoTag;
+
+    DibujarEtiqueta(
+        tag,
+        xDerecha - anchoTag,
+        (int)panel.y + Px(9.0f),
+        tamanoTag,
+        activo
+            ? Fade(color, 0.85f)
+            : Fade(Color{ 110, 112, 128, 255 }, 0.9f * opacidad),
+        activo && indice == 3 ? BLACK : RAYWHITE
+    );
+
+    // Dispositivo, junto al J#.
+    const char* dispositivo =
+        conectado
+        ? ObtenerNombreControlParticipante(participante)
+        : "SIN CONTROL";
+
+    DrawText(
+        dispositivo,
+        xTexto + Px(38.0f),
+        (int)panel.y + Px(14.0f),
+        Px(12.0f),
+        Fade(LIGHTGRAY, 0.9f * opacidad)
+    );
+
+    int yFila3 = (int)panel.y + Px(42.0f);
+
+    //------------------------------
+    // SIN CONTROL
+    //------------------------------
+
+    if (!conectado)
+    {
+        bool aviso =
+            seleccion.avisoDesconexion[indice] > 0.0f;
+
+        DrawText(
+            aviso ? "CONTROL DESCONECTADO" : "NO CONECTADO",
+            xTexto,
+            yFila3,
+            Px(15.0f),
+            aviso
+                ? Fade(Color{ 255, 120, 100, 255 }, 0.65f + 0.35f * std::sin(t * 9.0f))
+                : Fade(LIGHTGRAY, 0.75f)
+        );
+
+        float revelado =
+            RevelacionBot(seleccion.tiempoComoBot[indice], indice);
+
+        DrawText(
+            TextFormat("SERA BOT: %s", seleccion.personajes[indice].nombre),
+            xTexto,
+            yFila3 + Px(22.0f),
+            Px(12.0f),
+            Fade(GRAY, revelado)
+        );
+
+        return;
+    }
+
+    //------------------------------
+    // SIN UNIRSE: INVITACION
+    //------------------------------
+
+    if (!participante.activo)
+    {
+        float pulso =
+            0.5f + 0.5f * std::sin(t * 4.5f + indice);
+
+        DrawText(
+            TextFormat("%s PARA UNIRTE", ObtenerTextoBotonPrincipal(participante)),
+            xTexto,
+            yFila3 - Px(2.0f),
+            Px(16.0f),
+            Fade(RAYWHITE, 0.7f + 0.3f * pulso)
+        );
+
+        float revelado =
+            RevelacionBot(seleccion.tiempoComoBot[indice], indice);
+
+        DrawText(
+            TextFormat("MIENTRAS: BOT %s", seleccion.personajes[indice].nombre),
+            xTexto,
+            yFila3 + Px(22.0f),
+            Px(12.0f),
+            Fade(GRAY, revelado)
+        );
+
+        return;
+    }
+
+    //------------------------------
+    // UNIDO: PERSONAJE Y ESTADO
+    //------------------------------
+
+    int cursor =
+        jugador.cursorPersonaje;
+
+    DrawCircle(
+        xTexto + Px(6.0f),
+        yFila3 + Px(10.0f),
+        (float)Px(6.0f),
+        seleccion.personajes[cursor].color
+    );
+
+    DrawText(
+        seleccion.personajes[cursor].nombre,
+        xTexto + Px(20.0f),
+        yFila3,
+        Px(19.0f),
+        RAYWHITE
+    );
+
+    DrawText(
+        jugador.listo ? "LISTO!" : "ELIGIENDO...",
+        xTexto,
+        yFila3 + Px(27.0f),
+        Px(15.0f),
+        jugador.listo
+            ? GOLD
+            : Fade(LIGHTGRAY, 0.9f)
+    );
+}
+
+
+//==================================================
+// DIBUJO 2D: AYUDA SEGUN LOS CONTROLES EN USO
+//==================================================
+
+static void AgregarAyuda(
+    char* destino,
+    int capacidad,
+    const char* texto
+)
+{
+    int usado = (int)std::strlen(destino);
+
+    std::snprintf(
+        destino + usado,
+        (size_t)(capacidad - usado),
+        "%s%s",
+        usado > 0 ? "   |   " : "",
+        texto
+    );
+}
+
+
+static void ComponerAyuda(
+    const Participante participantes[],
+    int cantidadMaxima,
+    char* destino,
+    int capacidad
+)
+{
+    bool completo = false;
+    bool wasd = false;
+    bool flechas = false;
+    bool mando = false;
+
+    for (
+        int i = 0;
+        i < cantidadMaxima;
+        i++
+    )
+    {
+        if (!participantes[i].conectado)
+        {
+            continue;
+        }
+
+        switch (participantes[i].control)
+        {
+            case CONTROL_TECLADO_COMPLETO:
+                completo = true;
+                break;
+
+            case CONTROL_TECLADO_WASD:
+                wasd = true;
+                break;
+
+            case CONTROL_TECLADO_FLECHAS:
+                flechas = true;
+                break;
+
+            case CONTROL_GAMEPAD:
+                mando = true;
+                break;
+
+            case CONTROL_NINGUNO:
+                break;
+        }
+    }
+
+    destino[0] = '\0';
+
+    if (completo)
+    {
+        AgregarAyuda(destino, capacidad, "TECLADO: WASD o FLECHAS, ESPACIO o ENTER = OK, RETROCESO o SHIFT DER = ATRAS");
+    }
+
+    if (wasd)
+    {
+        AgregarAyuda(destino, capacidad, "WASD + ESPACIO (ATRAS: RETROCESO)");
+    }
+
+    if (flechas)
+    {
+        AgregarAyuda(destino, capacidad, "FLECHAS + ENTER (ATRAS: SHIFT DER)");
+    }
+
+    if (mando)
+    {
+        AgregarAyuda(destino, capacidad, "MANDO: STICK/CRUZ + A (ATRAS: B)");
+    }
+
+    if (destino[0] == '\0')
+    {
+        AgregarAyuda(destino, capacidad, "CONFIRMA CON TU TECLA O BOTON PARA UNIRTE");
+    }
+
+    AgregarAyuda(destino, capacidad, "ESC: HUB");
 }
 
 
@@ -1557,292 +1359,140 @@ void SeleccionPersonajes::Dibujar(
     int cantidadMaxima
 ) const
 {
-    float alpha =
-        alphaEntrada;
-
+    int ancho = GetScreenWidth();
+    int alto = GetScreenHeight();
 
     //------------------------------
-    // CRISTAL
+    // DATOS PARA LA ESCENA
     //------------------------------
 
-    DrawRectangle(
-        0,
-        0,
-        GetScreenWidth(),
-        GetScreenHeight(),
-
-        Fade(
-            Color{
-                15,
-                18,
-                25,
-                255
-            },
-
-            0.68f *
-            alpha
-        )
-    );
-
-
-    //==================================================
-    // TITULO
-    //==================================================
-
-    const char* titulo =
-        "ELEGI TU PERSONAJE";
-
-
-    int anchoTitulo =
-        MeasureText(
-            titulo,
-            44
-        );
-
-
-    DrawText(
-        titulo,
-
-        GetScreenWidth() /
-            2 -
-            anchoTitulo /
-            2,
-
-        38,
-
-        44,
-
-        Fade(
-            RAYWHITE,
-            alpha
-        )
-    );
-
-
-    //==================================================
-    // GRID
-    //==================================================
-
-    Rectangle grid =
-        ObtenerRectCuadricula();
-
-
-    DrawRectangle(
-        (int)grid.x - 10,
-        (int)grid.y - 10,
-        (int)grid.width + 20,
-        (int)grid.height + 20,
-
-        Fade(
-            BLACK,
-            0.50f *
-            alpha
-        )
-    );
-
+    PersonajeEscena3D escena[MAX_PERSONAJES_SELECCION];
 
     for (
-        int i = 0;
-        i <
-        MAX_PERSONAJES_SELECCION;
-        i++
+        int c = 0;
+        c < MAX_PERSONAJES_SELECCION;
+        c++
     )
     {
-        Rectangle celda =
-            ObtenerRectCelda(
-                i,
-                columnas,
-                filas
-            );
+        PersonajeEscena3D& visual = escena[c];
 
+        visual.color =
+            personajes[c].color;
 
-        //------------------------------
-        // FONDO
-        //------------------------------
+        visual.foco =
+            foco[c];
 
-        DrawRectangle(
-            (int)celda.x,
-            (int)celda.y,
-            (int)celda.width,
-            (int)celda.height,
+        float progreso =
+            tiempoReaccion[c] / DURACION_REACCION;
 
-            Fade(
-                DARKGRAY,
-                0.85f *
-                alpha
-            )
-        );
-
-
-        //------------------------------
-        // ICONO
-        //------------------------------
-
-        Rectangle areaImagen =
+        if (progreso < 1.0f)
         {
-            celda.x + 10.0f,
-            celda.y + 10.0f,
-            celda.width - 20.0f,
-            celda.height - 45.0f
-        };
+            visual.progresoSalto =
+                progreso;
 
+            float salida =
+                1.0f - (1.0f - progreso) * (1.0f - progreso);
 
-        if (
-            personajes[i]
-                .iconoCargado
-        )
-        {
-            DibujarTexturaAjustada(
-                personajes[i].icono,
-                areaImagen,
-                Fade(
-                    WHITE,
-                    alpha
-                )
-            );
+            visual.giroExtra =
+                360.0f * salida;
         }
-        else
-        {
-            DibujarPlaceholder(
-                areaImagen,
-                personajes[i].color
-            );
-        }
-
-
-        //------------------------------
-        // JUGADORES APUNTANDO
-        //------------------------------
-
-        int jugadoresHover[4];
-
-        int cantidadHover =
-            0;
-
 
         for (
-            int j = 0;
-            j < cantidadMaxima;
-            j++
+            int i = 0;
+            i < cantidadMaxima;
+            i++
         )
         {
             if (
-                participantes[j].activo &&
-                participantes[j].conectado &&
-                jugadores[j].cursorPersonaje ==
-                    i
+                participantes[i].activo &&
+                participantes[i].conectado &&
+                jugadores[i].cursorPersonaje == c &&
+                visual.cantidadAros < ESCENA_SELECCION_MAX_AROS
             )
             {
-                jugadoresHover[
-                    cantidadHover
-                ] =
-                    j;
+                visual.aros[visual.cantidadAros] =
+                    ObtenerColorJugador(i);
 
+                visual.cantidadAros++;
 
-                cantidadHover++;
+                if (jugadores[i].listo)
+                {
+                    visual.listo = true;
+                }
             }
         }
 
-
-        DibujarJugadoresEnCelda(
-            celda,
-            jugadoresHover,
-            cantidadHover
-        );
-
-
-        //------------------------------
-        // BORDE
-        //------------------------------
-
-        DrawRectangleLines(
-            (int)celda.x,
-            (int)celda.y,
-            (int)celda.width,
-            (int)celda.height,
-
-            Fade(
-                RAYWHITE,
-                0.9f *
-                alpha
-            )
-        );
-
-
-        //------------------------------
-        // NOMBRE
-        //------------------------------
-
-        DrawRectangle(
-            (int)celda.x,
-            (int)(
-                celda.y +
-                celda.height -
-                36
-            ),
-
-            (int)celda.width,
-
-            36,
-
-            Fade(
-                BLACK,
-                0.70f *
-                alpha
-            )
-        );
-
-
-        int anchoNombre =
-            MeasureText(
-                personajes[i].nombre,
-                20
-            );
-
-
-        DrawText(
-            personajes[i].nombre,
-
-            (int)(
-                celda.x +
-                celda.width /
-                2.0f -
-                anchoNombre /
-                2
-            ),
-
-            (int)(
-                celda.y +
-                celda.height -
-                28
-            ),
-
-            20,
-
-            Fade(
-                RAYWHITE,
-                alpha
-            )
-        );
-
-
-        //------------------------------
-        // TRIANGULOS
-        //------------------------------
-
-        DibujarMarcadoresConfirmados(
-            celda,
-            *this,
-            participantes,
-            cantidadMaxima,
-            i
-        );
+        // Un bot ocupa el personaje con el mismo numero que su puesto.
+        if (
+            c < cantidadMaxima &&
+            !participantes[c].activo &&
+            RevelacionBot(tiempoComoBot[c], c) >= 0.5f
+        )
+        {
+            visual.bot = true;
+        }
     }
 
+    float confeti =
+        todosListos
+        ? (tiempoTodosListos < 3.0f ? 1.0f : 0.5f)
+        : 0.0f;
 
-    //==================================================
-    // PANELES JUGADORES
-    //==================================================
+    DibujarEscenaSeleccion(
+        tiempoEscena,
+        escena,
+        MAX_PERSONAJES_SELECCION,
+        confeti
+    );
+
+    Camera3D camara =
+        ObtenerCamaraEscenaSeleccion(tiempoEscena);
+
+    DibujarEtiquetasEscena(
+        *this,
+        participantes,
+        cantidadMaxima,
+        escena,
+        camara
+    );
+
+
+    //------------------------------
+    // DEGRADADOS (contraste para texto, sin tapar la escena)
+    //------------------------------
+
+    DrawRectangleGradientV(
+        0,
+        0,
+        ancho,
+        Px(86.0f),
+        Fade(Color{ 18, 10, 40, 255 }, 0.55f),
+        Fade(Color{ 18, 10, 40, 255 }, 0.0f)
+    );
+
+    DrawRectangleGradientV(
+        0,
+        alto - Px(130.0f),
+        ancho,
+        Px(130.0f),
+        Fade(Color{ 18, 10, 40, 255 }, 0.0f),
+        Fade(Color{ 18, 10, 40, 255 }, 0.60f)
+    );
+
+
+    //------------------------------
+    // TITULO
+    //------------------------------
+
+    DibujarTextoCentrado(
+        "ELIGE TU PERSONAJE",
+        ancho / 2,
+        Px(12.0f),
+        Px(34.0f),
+        RAYWHITE
+    );
+
+    int humanos = 0;
 
     for (
         int i = 0;
@@ -1850,427 +1500,161 @@ void SeleccionPersonajes::Dibujar(
         i++
     )
     {
-        const JugadorSeleccion& jugador =
-            jugadores[i];
-
-
-        const Participante& participante =
-            participantes[i];
-
-
-        Rectangle panel =
-            ObtenerRectPanelJugador(i);
-
-
-        Color colorJugador =
-            participante.color;
-
-
-        //------------------------------
-        // NO CONECTADO
-        //------------------------------
-
-        if (!participante.conectado)
+        if (participantes[i].activo && participantes[i].conectado)
         {
-            DrawRectangle(
-                (int)panel.x,
-                (int)panel.y,
-                (int)panel.width,
-                (int)panel.height,
-
-                Fade(
-                    BLACK,
-                    0.42f *
-                    alpha
-                )
-            );
-
-
-            DrawRectangleLines(
-                (int)panel.x,
-                (int)panel.y,
-                (int)panel.width,
-                (int)panel.height,
-
-                Fade(
-                    GRAY,
-                    0.65f *
-                    alpha
-                )
-            );
-
-
-            DrawText(
-                TextFormat(
-                    "JUGADOR %d",
-                    i + 1
-                ),
-
-                (int)panel.x + 15,
-
-                (int)panel.y + 15,
-
-                28,
-
-                Fade(
-                    GRAY,
-                    alpha
-                )
-            );
-
-
-            DrawText(
-                participante.activo
-                ? "CONTROL DESCONECTADO"
-                : "NO CONECTADO",
-
-                (int)panel.x + 15,
-
-                (int)panel.y + 65,
-
-                20,
-
-                Fade(
-                    GRAY,
-                    alpha
-                )
-            );
-
-
-            continue;
+            humanos++;
         }
+    }
 
-
-        //------------------------------
-        // DISPONIBLE PARA INCORPORARSE
-        //------------------------------
-
-        if (!participante.activo)
-        {
-            DrawRectangle(
-                (int)panel.x,
-                (int)panel.y,
-                (int)panel.width,
-                (int)panel.height,
-                Fade(BLACK, 0.32f * alpha)
-            );
-
-            DrawRectangleLines(
-                (int)panel.x,
-                (int)panel.y,
-                (int)panel.width,
-                (int)panel.height,
-                Fade(colorJugador, 0.70f * alpha)
-            );
-
-            DrawText(
-                TextFormat("JUGADOR %d", i + 1),
-                (int)panel.x + 15,
-                (int)panel.y + 15,
-                28,
-                Fade(colorJugador, alpha)
-            );
-
-            DrawText(
-                ObtenerNombreControlParticipante(
-                    participante
-                ),
-                (int)panel.x + 15,
-                (int)panel.y + 58,
-                18,
-                Fade(RAYWHITE, alpha)
-            );
-
-            DrawText(
-                "CONFIRMAR PARA UNIRSE",
-                (int)panel.x + 15,
-                (int)panel.y + 95,
-                18,
-                Fade(LIGHTGRAY, alpha)
-            );
-
-            continue;
-        }
-
-
-        //==================================================
-        // PERSONAJE MOSTRADO
-        //==================================================
-
-        int indicePersonaje =
-            jugador.listo
-            ? participante.personajeSeleccionado
-            : jugador.cursorPersonaje;
-
-
-        if (indicePersonaje < 0)
-        {
-            indicePersonaje =
-                0;
-        }
-
-
-        //==================================================
-        // FONDO DEL PANEL
-        //==================================================
-
-        DrawRectangle(
-            (int)panel.x,
-            (int)panel.y,
-            (int)panel.width,
-            (int)panel.height,
-
-            Fade(
-                colorJugador,
-                0.20f *
-                alpha
-            )
+    const char* subtitulo =
+        humanos < 1
+        ? "UNETE PARA EMPEZAR (LOS PUESTOS LIBRES SERAN BOTS)"
+        : TextFormat(
+            "%d HUMANOS + %d BOTS",
+            humanos,
+            MAX_PARTICIPANTES - humanos
         );
 
-
-        //------------------------------
-        // RETRATO
-        //------------------------------
-
-        if (
-            personajes[
-                indicePersonaje
-            ].retratoCargado
-        )
-        {
-            DibujarTexturaAjustada(
-                personajes[
-                    indicePersonaje
-                ].retrato,
-
-                panel,
-
-                Fade(
-                    WHITE,
-                    0.72f *
-                    alpha
-                )
-            );
-        }
-        else
-        {
-            DibujarPlaceholder(
-                panel,
-                personajes[
-                    indicePersonaje
-                ].color
-            );
-        }
+    DibujarTextoCentrado(
+        subtitulo,
+        ancho / 2,
+        Px(52.0f),
+        Px(16.0f),
+        humanos < 2 ? Color{ 255, 190, 90, 255 } : Color{ 235, 225, 245, 255 }
+    );
 
 
-        //------------------------------
-        // OSCURECER ABAJO
-        //------------------------------
+    //------------------------------
+    // PANELES (calculados con el tamano real de la ventana)
+    //------------------------------
 
-        DrawRectangle(
-            (int)panel.x,
-            (int)(
-                panel.y +
-                panel.height -
-                72
-            ),
+    float margen = (float)Px(16.0f);
+    float hueco = (float)Px(10.0f);
+    float panelAncho = (ancho - margen * 2.0f - hueco * 3.0f) / 4.0f;
+    float panelAlto = (float)Px(92.0f);
+    float panelY = alto - panelAlto - (float)Px(32.0f);
 
-            (int)panel.width,
-
-            72,
-
-            Fade(
-                BLACK,
-                0.68f *
-                alpha
-            )
-        );
-
-
-        //------------------------------
-        // BORDE
-        //------------------------------
-
-        DrawRectangleLines(
-            (int)panel.x,
-            (int)panel.y,
-            (int)panel.width,
-            (int)panel.height,
-
-            Fade(
-                colorJugador,
-                alpha
-            )
-        );
-
-
-        //------------------------------
-        // JUGADOR
-        //------------------------------
-
-        DrawText(
-            TextFormat(
-                "JUGADOR %d",
-                i + 1
-            ),
-
-            (int)panel.x + 12,
-
-            (int)panel.y + 10,
-
-            26,
-
-            Fade(
-                colorJugador,
-                alpha
-            )
-        );
-
-
-        //------------------------------
-        // DISPOSITIVO
-        //------------------------------
-
-        DrawText(
-            ObtenerNombreControlParticipante(
-                participante
-            ),
-
-            (int)panel.x + 12,
-
-            (int)panel.y + 42,
-
-            18,
-
-            Fade(
-                RAYWHITE,
-                alpha
-            )
-        );
-
-
-        //------------------------------
-        // PERSONAJE
-        //------------------------------
-
-        DrawText(
-            personajes[
-                indicePersonaje
-            ].nombre,
-
-            (int)panel.x + 12,
-
-            (int)(
-                panel.y +
-                panel.height -
-                62
-            ),
-
-            22,
-
-            Fade(
-                RAYWHITE,
-                alpha
-            )
-        );
-
-
-        //------------------------------
-        // ESTADO
-        //------------------------------
-
-        DrawText(
-            jugador.listo
-            ? "LISTO"
-            : "ELIGIENDO",
-
-            (int)panel.x + 12,
-
-            (int)(
-                panel.y +
-                panel.height -
-                34
-            ),
-
-            20,
-
-            Fade(
-                jugador.listo
-                ? colorJugador
-                : LIGHTGRAY,
-
-                alpha
-            )
+    for (
+        int i = 0;
+        i < MAX_JUGADORES_SELECCION && i < cantidadMaxima;
+        i++
+    )
+    {
+        DibujarPanelJugador(
+            *this,
+            participantes[i],
+            i,
+            Rectangle{
+                margen + i * (panelAncho + hueco),
+                panelY,
+                panelAncho,
+                panelAlto
+            }
         );
     }
 
 
-    //==================================================
-    // ABAJO
-    //==================================================
+    //------------------------------
+    // TODOS LISTOS (bajo el titulo: no tapa personajes ni paneles)
+    //------------------------------
 
     if (todosListos)
     {
-        const char* texto =
-            "TODOS LISTOS";
+        float pulso =
+            0.5f + 0.5f * std::sin(tiempoEscena * 6.0f);
 
+        float entrada =
+            tiempoTodosListos < 0.25f ? tiempoTodosListos / 0.25f : 1.0f;
 
-        int ancho =
-            MeasureText(
-                texto,
-                28
-            );
+        int tamano =
+            Px((20.0f + 1.5f * pulso) * (0.6f + 0.4f * entrada));
 
+        const char* mensaje =
+            "TODOS LISTOS!  CONFIRMA PARA SEGUIR";
+
+        int anchoMensaje =
+            MeasureText(mensaje, tamano) + Px(40.0f);
+
+        int altoMensaje =
+            tamano + Px(12.0f);
+
+        Rectangle caja =
+        {
+            ancho * 0.5f - anchoMensaje * 0.5f,
+            (float)Px(74.0f),
+            (float)anchoMensaje,
+            (float)altoMensaje
+        };
+
+        DrawRectangleRounded(
+            caja,
+            0.5f,
+            10,
+            Fade(Color{ 20, 12, 38, 255 }, 0.85f * entrada)
+        );
+
+        DrawRectangleRoundedLines(
+            caja,
+            0.5f,
+            10,
+            Fade(GOLD, entrada)
+        );
 
         DrawText(
-            texto,
-
-            GetScreenWidth() /
-                2 -
-                ancho /
-                2,
-
-            GetScreenHeight() -
-                45,
-
-            28,
-
-            Fade(
-                GOLD,
-                alpha
-            )
+            mensaje,
+            (int)(caja.x + (caja.width - MeasureText(mensaje, tamano)) * 0.5f),
+            (int)(caja.y + (caja.height - tamano) * 0.5f),
+            tamano,
+            Fade(GOLD, entrada)
         );
     }
-    else
+
+
+    //------------------------------
+    // AYUDA INFERIOR
+    //------------------------------
+
+    char ayuda[256];
+
+    ComponerAyuda(
+        participantes,
+        cantidadMaxima,
+        ayuda,
+        (int)sizeof(ayuda)
+    );
+
+    int tamanoAyuda = Px(13.0f);
+
+    // Si la ayuda no cabe en el ancho, se reduce el texto (nunca se corta).
+    while (
+        tamanoAyuda > 9 &&
+        MeasureText(ayuda, tamanoAyuda) > ancho - Px(24.0f)
+    )
     {
-        const char* texto =
-            "WASD + ESPACIO | MANDO: STICK/DPAD + A | ESC: VOLVER";
+        tamanoAyuda--;
+    }
+
+    DibujarTextoCentrado(
+        ayuda,
+        ancho / 2,
+        alto - Px(24.0f),
+        tamanoAyuda,
+        Fade(Color{ 240, 232, 250, 255 }, 0.88f)
+    );
 
 
-        int ancho =
-            MeasureText(
-                texto,
-                18
-            );
+    //------------------------------
+    // FUNDIDO DE ENTRADA
+    //------------------------------
 
-
-        DrawText(
-            texto,
-
-            GetScreenWidth() /
-                2 -
-                ancho /
-                2,
-
-            GetScreenHeight() -
-                38,
-
-            18,
-
-            Fade(
-                LIGHTGRAY,
-                alpha
-            )
+    if (alphaEntrada < 1.0f)
+    {
+        DrawRectangle(
+            0,
+            0,
+            ancho,
+            alto,
+            Fade(Color{ 12, 8, 24, 255 }, 1.0f - alphaEntrada)
         );
     }
 }
@@ -2282,70 +1666,8 @@ void SeleccionPersonajes::Dibujar(
 
 void SeleccionPersonajes::Descargar()
 {
-    if (!recursosCargados)
-    {
-        return;
-    }
-
-
-    for (
-        int i = 0;
-        i <
-        MAX_PERSONAJES_SELECCION;
-        i++
-    )
-    {
-        if (
-            personajes[i]
-                .iconoCargado &&
-            personajes[i]
-                .icono.id >
-                0
-        )
-        {
-            UnloadTexture(
-                personajes[i]
-                    .icono
-            );
-
-
-            personajes[i]
-                .icono.id =
-                0;
-
-
-            personajes[i]
-                .iconoCargado =
-                false;
-        }
-
-
-        if (
-            personajes[i]
-                .retratoCargado &&
-            personajes[i]
-                .retrato.id >
-                0
-        )
-        {
-            UnloadTexture(
-                personajes[i]
-                    .retrato
-            );
-
-
-            personajes[i]
-                .retrato.id =
-                0;
-
-
-            personajes[i]
-                .retratoCargado =
-                false;
-        }
-    }
-
-
+    // No hay recursos propios: el modelo 3D es el compartido, que
+    // descarga main.cpp con DescargarModeloJugadorCompartido().
     recursosCargados =
         false;
 }
