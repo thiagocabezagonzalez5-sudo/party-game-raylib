@@ -10,7 +10,7 @@
                 "-ExecutionPolicy",
                 "Bypass",
                 "-Command",
-                "$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path '${workspaceFolder}/build' | Out-Null; $files = @(Get-ChildItem -Path '${workspaceFolder}' -Recurse -Filter '*.cpp' | Where-Object { $_.FullName -notmatch '[\\\\/]build[\\\\/]' -and $_.FullName -notmatch '[\\\\/]\\.vscode[\\\\/]' } | Select-Object -ExpandProperty FullName); Write-Host ('Compilando ' + $files.Count + ' archivos C++...'); & 'C:/msys64/ucrt64/bin/g++.exe' @files '-std=c++17' '-Wall' '-Wextra' '-g' '-I' '${workspaceFolder}' '-o' '${workspaceFolder}/build/Party.exe' '-lraylib' '-lopengl32' '-lgdi32' '-lwinmm'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Write-Host 'Compilacion completada.'"
+                "$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path '${workspaceFolder}/build' | Out-Null; $dirs = @('Core', 'UI', 'Gameplay', 'Minigames', 'Systems', 'Board', 'Entities') | ForEach-Object { Join-Path '${workspaceFolder}' $_ }; $files = @('${workspaceFolder}/main.cpp') + @(Get-ChildItem -Path $dirs -Recurse -Filter '*.cpp' | Where-Object { $_.FullName -notmatch '\\.bak\\.cpp$' -and $_.FullName -notmatch '\\.conflicto\\..*\\.cpp$' } | Select-Object -ExpandProperty FullName); Write-Host ('Compilando ' + $files.Count + ' archivos C++...'); & 'C:/msys64/ucrt64/bin/g++.exe' @files '-std=c++17' '-Wall' '-Wextra' '-g' '-I' '${workspaceFolder}' '-o' '${workspaceFolder}/build/Party.exe' '-lraylib' '-lopengl32' '-lgdi32' '-lwinmm'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; Write-Host 'Compilacion completada.'"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
