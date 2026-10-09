@@ -187,6 +187,55 @@ static_assert(sizeof(RUTAS_MODELOS_LABERINTO_JADE_3D) /
 
 
 //==================================================
+// Un solo recurso por pieza de la mina, compartido entre geodas y gemas.
+// Los IDs siguen el orden de manifest.json del paquete original.
+//==================================================
+
+enum ModeloVetaCristal3D
+{
+    MODELO_VETA_SUELO,
+    MODELO_VETA_PAREDES,
+    MODELO_VETA_MINERAL_PARED,
+    MODELO_VETA_PORTICO,
+    MODELO_VETA_POSTE,
+    MODELO_VETA_LAMPARA,
+    MODELO_VETA_RIEL,
+    MODELO_VETA_VAGONETA,
+    MODELO_VETA_GEODA_PEQUENA,
+    MODELO_VETA_GEODA_GRANDE,
+    MODELO_VETA_GEODA_AGOTADA,
+    MODELO_VETA_GEMA_AZUL,
+    MODELO_VETA_GEMA_DORADA,
+    MODELO_VETA_GEMA_VIOLETA,
+    MODELO_VETA_MARCA,
+    CANTIDAD_MODELOS_VETA_CRISTAL_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_VETA_CRISTAL_3D[] =
+{
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/suelo_mina.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/paredes_tunel.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/veta_pared.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/portico_madera.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/poste_lateral.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/lampara_colgante.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/riel_central.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/vagoneta.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/geoda_pequena.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/geoda_grande.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/geoda_agotada.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/gema_azul.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/gema_dorada.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/gema_violeta.glb",
+    "Assets/Modelos/Escenarios/Veta_de_Cristal/GLB/marca_geoda.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_VETA_CRISTAL_3D) /
+    sizeof(RUTAS_MODELOS_VETA_CRISTAL_3D[0]) == CANTIDAD_MODELOS_VETA_CRISTAL_3D,
+    "Las rutas deben coincidir con los IDs del paquete Veta de Cristal");
+
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 

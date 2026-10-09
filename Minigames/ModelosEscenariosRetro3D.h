@@ -59,6 +59,7 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D ultimoAsiento[CANTIDAD_MODELOS_ULTIMO_ASIENTO_3D];
     RecursoModeloEscenarioRetro3D cajasPuerto[CANTIDAD_MODELOS_CAJAS_PUERTO_3D];
     RecursoModeloEscenarioRetro3D laberintoJade[CANTIDAD_MODELOS_LABERINTO_JADE_3D];
+    RecursoModeloEscenarioRetro3D vetaCristal[CANTIDAD_MODELOS_VETA_CRISTAL_3D];
     bool inicializados = false;
 };
 
@@ -379,6 +380,37 @@ inline bool DibujarModeloUltimoAsientoRetro3D(
         posicion, ejeRotacion, anguloGrados, escala, colorEstado);
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteVetaCristalRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_VETA_CRISTAL_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_VETA_CRISTAL_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_VETA_CRISTAL_3D[i];
+        // Unica primitive COLOR_DINAMICO del paquete v1. Se resuelve con
+        // meshMaterial; el resto del paquete conserva sus materiales.
+        definiciones[MODELO_VETA_MARCA].mallaColor = 0;
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().vetaCristal,
+        definiciones, CANTIDAD_MODELOS_VETA_CRISTAL_3D };
+}
+
+inline bool DibujarModeloVetaCristalRetro3D(
+    ModeloVetaCristal3D pieza,
+    Vector3 posicion,
+    float anguloY = 0.0f,
+    Vector3 escala = { 1.0f, 1.0f, 1.0f },
+    Color colorEstado = WHITE
+)
+{
+    // Coordenadas del mundo; no se combinan con otra matriz de rlgl.
+    return DibujarModeloEscenarioRetro3D(
+        ObtenerModelosEscenariosRetro3D().vetaCristal[pieza],
+        posicion, { 0.0f, 1.0f, 0.0f }, anguloY, escala, colorEstado);
+}
+
 inline void InicializarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -466,6 +498,8 @@ inline void DescargarModelosEscenariosRetro3D()
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.cajasPuerto)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.laberintoJade)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.vetaCristal)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     recursos.inicializados = false;
 }

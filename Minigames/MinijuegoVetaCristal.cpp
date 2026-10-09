@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -1162,6 +1163,9 @@ void MinijuegoVetaCristal::Reiniciar(
 )
 {
     Inicializar();
+    // ZonaPruebas inicializa todos los minijuegos al arrancar. Solicitar el
+    // paquete solo al entrar a esta mina; reiniciar reutiliza las mallas.
+    CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteVetaCristalRetro3D());
     InicializarResultadoMinijuego(
         resultado,
         participantes,
@@ -1327,9 +1331,8 @@ static Color ColorGemaVeta(int valor)
 
 
 // Tunel de roca: suelo, paredes, vigas de madera, lamparas y vetas.
-// MODELO FUTURO: suelo y paredes de la mina, vigas y postes de madera,
-// lamparas colgantes y las vetas brillantes de las paredes (.glb); rieles
-// con travesanos; la vagoneta con ruedas y carga de cristales.
+// Cada pieza usa su pivote original. Los bloques fisicos se construyen
+// aparte: ningun limite ni colision se obtiene de estas mallas.
 static void DibujarTunelVeta(const MinijuegoVetaCristal& minijuego)
 {
     float t = minijuego.tiempoAnimacion;
@@ -1338,26 +1341,32 @@ static void DibujarTunelVeta(const MinijuegoVetaCristal& minijuego)
     const Color maderaOscura = Color{ 82, 56, 32, 255 };
 
     // Suelo con una tonalidad suave por equipo.
-    DrawCube({ 0.0f, -0.5f, 0.0f }, MITAD_SUELO_X_VETA * 2.0f, 1.0f, MITAD_SUELO_Z_VETA * 2.0f, Color{ 76, 66, 58, 255 });
-    DrawCube({ -6.6f, 0.01f, 0.0f }, 10.8f, 0.02f, MITAD_SUELO_Z_VETA * 2.0f, Fade(ObtenerColorEquipoVeta(0), 0.16f));
-    DrawCube({ 6.6f, 0.01f, 0.0f }, 10.8f, 0.02f, MITAD_SUELO_Z_VETA * 2.0f, Fade(ObtenerColorEquipoVeta(1), 0.16f));
-
-    for (int i = 0; i < 14; i++)
+    if (!DibujarModeloVetaCristalRetro3D(MODELO_VETA_SUELO, { 0.0f, 0.0f, 0.0f }))
     {
-        DrawCube(
-            { -10.0f + Ruido01Veta(i, 1) * 20.0f, 0.02f, -7.0f + Ruido01Veta(i, 2) * 14.0f },
-            0.6f + Ruido01Veta(i, 3) * 0.8f,
-            0.03f,
-            0.5f + Ruido01Veta(i, 4) * 0.7f,
-            Color{ 54, 46, 42, 255 }
-        );
+        DrawCube({ 0.0f, -0.5f, 0.0f }, MITAD_SUELO_X_VETA * 2.0f, 1.0f, MITAD_SUELO_Z_VETA * 2.0f, Color{ 76, 66, 58, 255 });
+        DrawCube({ -6.6f, 0.01f, 0.0f }, 10.8f, 0.02f, MITAD_SUELO_Z_VETA * 2.0f, Fade(ObtenerColorEquipoVeta(0), 0.16f));
+        DrawCube({ 6.6f, 0.01f, 0.0f }, 10.8f, 0.02f, MITAD_SUELO_Z_VETA * 2.0f, Fade(ObtenerColorEquipoVeta(1), 0.16f));
+
+        for (int i = 0; i < 14; i++)
+        {
+            DrawCube(
+                { -10.0f + Ruido01Veta(i, 1) * 20.0f, 0.02f, -7.0f + Ruido01Veta(i, 2) * 14.0f },
+                0.6f + Ruido01Veta(i, 3) * 0.8f,
+                0.03f,
+                0.5f + Ruido01Veta(i, 4) * 0.7f,
+                Color{ 54, 46, 42, 255 }
+            );
+        }
     }
 
     // Paredes: fondo, laterales y un borde bajo al frente.
-    DrawCube({ 0.0f, 2.8f, -8.6f }, 26.0f, 5.6f, 1.2f, roca);
-    DrawCube({ -12.6f, 2.2f, 0.0f }, 1.2f, 4.4f, 17.0f, roca);
-    DrawCube({ 12.6f, 2.2f, 0.0f }, 1.2f, 4.4f, 17.0f, roca);
-    DrawCube({ 0.0f, 0.25f, 8.5f }, 26.0f, 0.5f, 0.6f, Color{ 48, 42, 38, 255 });
+    if (!DibujarModeloVetaCristalRetro3D(MODELO_VETA_PAREDES, { 0.0f, 0.0f, 0.0f }))
+    {
+        DrawCube({ 0.0f, 2.8f, -8.6f }, 26.0f, 5.6f, 1.2f, roca);
+        DrawCube({ -12.6f, 2.2f, 0.0f }, 1.2f, 4.4f, 17.0f, roca);
+        DrawCube({ 12.6f, 2.2f, 0.0f }, 1.2f, 4.4f, 17.0f, roca);
+        DrawCube({ 0.0f, 0.25f, 8.5f }, 26.0f, 0.5f, 0.6f, Color{ 48, 42, 38, 255 });
+    }
 
     // Vetas brillantes en las paredes.
     for (int i = 0; i < 26; i++)
@@ -1370,7 +1379,13 @@ static void DibujarTunelVeta(const MinijuegoVetaCristal& minijuego)
             ? Color{ 90, 220, 255, 255 }
             : (tipo == 1 ? Color{ 255, 205, 60, 255 } : Color{ 200, 120, 255, 255 });
 
-        DrawSphereEx({ x, y, -7.95f }, 0.12f + Ruido01Veta(i, 13) * 0.14f, 4, 4, Fade(color, pulso));
+        Vector3 posicion = { x, y, -7.95f };
+        float radio = 0.12f + Ruido01Veta(i, 13) * 0.14f;
+        if (!DibujarModeloVetaCristalRetro3D(MODELO_VETA_MINERAL_PARED, posicion))
+            DrawSphereEx(posicion, radio, 4, 4, Fade(color, pulso));
+        else
+            // Conservar el pulso como halo, sin tenir roca ni minerales.
+            (DrawSphere)(posicion, radio * 1.6f, Fade(color, 0.12f * pulso));
     }
 
     for (int i = 0; i < 8; i++)
@@ -1380,41 +1395,57 @@ static void DibujarTunelVeta(const MinijuegoVetaCristal& minijuego)
         float y = 0.8f + Ruido01Veta(i, 22) * 3.0f;
         Color color = i % 3 == 0 ? Color{ 90, 220, 255, 255 } : Color{ 255, 205, 60, 255 };
 
-        DrawSphereEx({ lado * 11.95f, y, z }, 0.14f + Ruido01Veta(i, 23) * 0.12f, 4, 4, color);
+        // La cara mineral local mira a +Z. Girarla hacia el interior.
+        Vector3 posicion = { lado * 11.95f, y, z };
+        if (!DibujarModeloVetaCristalRetro3D(MODELO_VETA_MINERAL_PARED,
+            posicion, lado > 0.0f ? -90.0f : 90.0f))
+            DrawSphereEx(posicion, 0.14f + Ruido01Veta(i, 23) * 0.12f, 4, 4, color);
     }
 
     // Vigas de madera: portico del fondo y postes laterales.
-    for (int k = -1; k <= 1; k += 2)
+    if (!DibujarModeloVetaCristalRetro3D(MODELO_VETA_PORTICO, { 0.0f, 0.0f, 0.0f }))
     {
-        DrawCube({ k * 9.0f, 2.4f, -7.8f }, 0.5f, 4.8f, 0.5f, madera);
-        DrawCube({ k * 3.0f, 2.4f, -7.8f }, 0.5f, 4.8f, 0.5f, madera);
-    }
+        for (int k = -1; k <= 1; k += 2)
+        {
+            DrawCube({ k * 9.0f, 2.4f, -7.8f }, 0.5f, 4.8f, 0.5f, madera);
+            DrawCube({ k * 3.0f, 2.4f, -7.8f }, 0.5f, 4.8f, 0.5f, madera);
+        }
 
-    DrawCube({ 0.0f, 4.8f, -7.8f }, 19.0f, 0.5f, 0.5f, maderaOscura);
+        DrawCube({ 0.0f, 4.8f, -7.8f }, 19.0f, 0.5f, 0.5f, maderaOscura);
+    }
 
     for (int k = -1; k <= 1; k += 2)
     {
         for (int z = -5; z <= 5; z += 5)
         {
-            DrawCube({ k * 11.7f, 2.0f, (float)z }, 0.4f, 4.0f, 0.4f, madera);
-            DrawCube({ k * 11.7f, 4.1f, (float)z }, 0.5f, 0.3f, 1.4f, maderaOscura);
+            if (!DibujarModeloVetaCristalRetro3D(MODELO_VETA_POSTE,
+                { k * 11.7f, 0.0f, (float)z }))
+            {
+                DrawCube({ k * 11.7f, 2.0f, (float)z }, 0.4f, 4.0f, 0.4f, madera);
+                DrawCube({ k * 11.7f, 4.1f, (float)z }, 0.5f, 0.3f, 1.4f, maderaOscura);
+            }
 
             // Lampara colgante.
-            DrawSphere({ k * 11.0f, 3.7f, (float)z }, 0.2f, Color{ 255, 224, 130, 255 });
-            DrawSphere({ k * 11.0f, 3.7f, (float)z }, 0.55f, Fade(Color{ 255, 200, 90, 255 }, 0.18f));
+            if (!DibujarModeloVetaCristalRetro3D(MODELO_VETA_LAMPARA,
+                { k * 11.0f, 3.7f, (float)z }))
+                DrawSphere({ k * 11.0f, 3.7f, (float)z }, 0.2f, Color{ 255, 224, 130, 255 });
+            (DrawSphere)({ k * 11.0f, 3.7f, (float)z }, 0.55f, Fade(Color{ 255, 200, 90, 255 }, 0.18f));
         }
     }
 
     // Riel central: lecho, travesanos y rieles.
-    DrawCube({ 0.0f, 0.015f, 0.0f }, 2.4f, 0.03f, MITAD_SUELO_Z_VETA * 2.0f, Color{ 42, 36, 32, 255 });
-
-    for (int z = -7; z <= 7; z++)
+    if (!DibujarModeloVetaCristalRetro3D(MODELO_VETA_RIEL, { 0.0f, 0.0f, 0.0f }))
     {
-        DrawCube({ 0.0f, 0.07f, (float)z }, 1.9f, 0.08f, 0.28f, maderaOscura);
-    }
+        DrawCube({ 0.0f, 0.015f, 0.0f }, 2.4f, 0.03f, MITAD_SUELO_Z_VETA * 2.0f, Color{ 42, 36, 32, 255 });
 
-    DrawCube({ -0.55f, 0.14f, 0.0f }, 0.1f, 0.1f, MITAD_SUELO_Z_VETA * 2.0f, Color{ 150, 154, 162, 255 });
-    DrawCube({ 0.55f, 0.14f, 0.0f }, 0.1f, 0.1f, MITAD_SUELO_Z_VETA * 2.0f, Color{ 150, 154, 162, 255 });
+        for (int z = -7; z <= 7; z++)
+        {
+            DrawCube({ 0.0f, 0.07f, (float)z }, 1.9f, 0.08f, 0.28f, maderaOscura);
+        }
+
+        DrawCube({ -0.55f, 0.14f, 0.0f }, 0.1f, 0.1f, MITAD_SUELO_Z_VETA * 2.0f, Color{ 150, 154, 162, 255 });
+        DrawCube({ 0.55f, 0.14f, 0.0f }, 0.1f, 0.1f, MITAD_SUELO_Z_VETA * 2.0f, Color{ 150, 154, 162, 255 });
+    }
 
     // Aviso del carril peligroso.
     if (minijuego.avisoVagoneta || minijuego.vagonetaActiva)
@@ -1440,6 +1471,16 @@ static void DibujarVagonetaVeta(const MinijuegoVetaCristal& minijuego)
 
     float z = minijuego.vagonetaZ;
     float d = minijuego.direccionVagoneta;
+
+    // El GLB incluye cuerpo, ruedas, carga y faros. Su origen esta al suelo;
+    // el avance sigue siendo el de la vagoneta logica, sin clips inventados.
+    if (DibujarModeloVetaCristalRetro3D(MODELO_VETA_VAGONETA,
+        { 0.0f, 0.0f, z }, d < 0.0f ? 180.0f : 0.0f))
+    {
+        DibujarSombraRetroRectangular({ 0.0f, 0.75f, z }, 1.8f, 2.2f,
+            0.0f, 0.065f);
+        return;
+    }
 
     DrawCube({ 0.0f, 0.75f, z }, 1.7f, 0.8f, 2.2f, Color{ 128, 92, 56, 255 });
     DrawCubeWires({ 0.0f, 0.75f, z }, 1.7f, 0.8f, 2.2f, Color{ 40, 30, 22, 255 });
@@ -1476,29 +1517,57 @@ static void DibujarGeodaVeta(const GeodaVeta& geoda, float t, bool mostrarDebug)
     {
         float pulso = 0.5f + 0.5f * std::sin(t * 3.0f + geoda.x);
 
-        DrawCube(centro, mitad * 2.0f, mitad * 2.0f, mitad * 2.0f, Color{ 112, 88, 142, 255 });
-        DrawSphere(centro, mitad * 0.95f, Fade(cristal, 0.25f + 0.25f * pulso));
-        DrawCubeWires(centro, mitad * 2.04f, mitad * 2.04f, mitad * 2.04f, cristal);
-
-        for (int k = 0; k < 4; k++)
+        ModeloVetaCristal3D pieza = geoda.grande
+            ? MODELO_VETA_GEODA_GRANDE : MODELO_VETA_GEODA_PEQUENA;
+        if (DibujarModeloVetaCristalRetro3D(pieza, centro))
+            DibujarSombraRetroRectangular(centro, mitad * 1.84f,
+                mitad * 1.84f, 0.0f, 0.065f);
+        else
         {
-            float sx = (k % 2 == 0 ? -1.0f : 1.0f) * mitad;
-            float sz = (k < 2 ? -1.0f : 1.0f) * mitad;
-            DrawSphereEx({ centro.x + sx, centro.y + mitad * 0.55f, centro.z + sz }, mitad * 0.28f, 4, 4, cristal);
+            DrawCube(centro, mitad * 2.0f, mitad * 2.0f, mitad * 2.0f, Color{ 112, 88, 142, 255 });
+            DrawCubeWires(centro, mitad * 2.04f, mitad * 2.04f, mitad * 2.04f, cristal);
+
+            for (int k = 0; k < 4; k++)
+            {
+                float sx = (k % 2 == 0 ? -1.0f : 1.0f) * mitad;
+                float sz = (k < 2 ? -1.0f : 1.0f) * mitad;
+                DrawSphereEx({ centro.x + sx, centro.y + mitad * 0.55f, centro.z + sz }, mitad * 0.28f, 4, 4, cristal);
+            }
         }
 
+        // Halo de la geoda cargada: conserva el pulso procedural original.
+        (DrawSphere)(centro, mitad * 0.95f, Fade(cristal, 0.25f + 0.25f * pulso));
+
         // Marca en el suelo: aqui se salta.
-        DrawCircle3D({ geoda.x, 0.04f, geoda.z }, 0.55f + 0.08f * pulso, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(cristal, 0.8f));
+        float escalaMarca = (0.55f + 0.08f * pulso) / 0.55f;
+        if (!DibujarModeloVetaCristalRetro3D(MODELO_VETA_MARCA,
+            { geoda.x, 0.04f, geoda.z }, 0.0f,
+            { escalaMarca, 1.0f, escalaMarca }, Fade(cristal, 0.8f)))
+            DrawCircle3D({ geoda.x, 0.04f, geoda.z }, 0.55f + 0.08f * pulso, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(cristal, 0.8f));
 
         if (geoda.grande)
         {
-            DrawCircle3D({ geoda.x, 0.05f, geoda.z }, 0.85f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(cristal, 0.6f));
+            float escalaGrande = 0.85f / 0.55f;
+            if (!DibujarModeloVetaCristalRetro3D(MODELO_VETA_MARCA,
+                { geoda.x, 0.05f, geoda.z }, 0.0f,
+                { escalaGrande, 1.0f, escalaGrande }, Fade(cristal, 0.6f)))
+                DrawCircle3D({ geoda.x, 0.05f, geoda.z }, 0.85f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(cristal, 0.6f));
         }
     }
     else
     {
-        DrawCube(centro, mitad * 2.0f, mitad * 2.0f, mitad * 2.0f, Color{ 66, 62, 70, 255 });
-        DrawCubeWires(centro, mitad * 2.04f, mitad * 2.04f, mitad * 2.04f, Color{ 30, 28, 34, 255 });
+        // La geoda agotada fue hecha con mitad 0.65; la grande comparte la
+        // misma malla y se escala alrededor del centro del bloque original.
+        float escala = mitad / MITAD_GEODA_VETA;
+        if (DibujarModeloVetaCristalRetro3D(MODELO_VETA_GEODA_AGOTADA,
+            centro, 0.0f, { escala, escala, escala }))
+            DibujarSombraRetroRectangular(centro, mitad * 1.84f,
+                mitad * 1.84f, 0.0f, 0.065f);
+        else
+        {
+            DrawCube(centro, mitad * 2.0f, mitad * 2.0f, mitad * 2.0f, Color{ 66, 62, 70, 255 });
+            DrawCubeWires(centro, mitad * 2.04f, mitad * 2.04f, mitad * 2.04f, Color{ 30, 28, 34, 255 });
+        }
     }
 
     if (mostrarDebug)
@@ -1520,12 +1589,18 @@ static void DibujarGemaVeta(const GemaVeta& gema, float t)
     Color color = ColorGemaVeta(gema.valor);
     float flota = gema.y + 0.08f * std::sin(t * 5.0f + gema.x * 2.0f);
 
-    DrawCircle3D({ gema.x, 0.05f, gema.z }, radio, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(BLACK, 0.4f));
-    DrawSphereEx({ gema.x, flota, gema.z }, radio, 4, 4, color);
+    // La sombra ya es explicita; los halos no necesitan otra sombra automatica.
+    // Esta altura queda por encima de los detalles del nuevo suelo (0.0555).
+    DrawCircle3D({ gema.x, 0.065f, gema.z }, radio, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(BLACK, 0.4f));
+    ModeloVetaCristal3D pieza = gema.valor >= VALOR_TESORO_SOLITARIO_VETA
+        ? MODELO_VETA_GEMA_VIOLETA : (gema.valor >= VALOR_GEMA_DORADA_VETA
+            ? MODELO_VETA_GEMA_DORADA : MODELO_VETA_GEMA_AZUL);
+    if (!DibujarModeloVetaCristalRetro3D(pieza, { gema.x, flota, gema.z }))
+        DrawSphereEx({ gema.x, flota, gema.z }, radio, 4, 4, color);
 
     if (gema.valor >= VALOR_GEMA_DORADA_VETA)
     {
-        DrawSphere({ gema.x, flota, gema.z }, radio * 1.6f, Fade(color, 0.22f));
+        (DrawSphere)({ gema.x, flota, gema.z }, radio * 1.6f, Fade(color, 0.22f));
     }
 }
 
