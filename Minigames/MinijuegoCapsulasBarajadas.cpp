@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -552,6 +553,9 @@ void MinijuegoCapsulasBarajadas::Reiniciar(
 )
 {
     Inicializar();
+    // Inicializar se llama para todos los minijuegos al arrancar. Cargar
+    // solo al activar este laboratorio; la cache sobrevive a nuevas rondas.
+    CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteCapsulasBarajadasRetro3D());
     InicializarResultadoMinijuego(
         resultado,
         participantes,
@@ -725,9 +729,8 @@ void MinijuegoCapsulasBarajadas::Actualizar(
 // VISUAL: LABORATORIO (solo decoracion, la logica no depende de esto)
 //==================================================
 
-// MODELO FUTURO: mesa de acero, capsulas con tapa, nucleo brillante, brazo
-// robotico articulado, tubos de ensayo, monitores, balizas de alerta y la
-// pasarela del publico: reemplazar cada uno por GLB.
+// Piezas GLB del paquete original con fallback individual. Solo dibujo:
+// los slots, tiempos, seleccion y puntuacion no dependen de estas mallas.
 
 static Vector3 PosicionCapsulaCapsulas(const MinijuegoCapsulasBarajadas& m, int c)
 {
@@ -795,45 +798,58 @@ static float TapaAbiertaCapsulas(const MinijuegoCapsulasBarajadas& m)
 static void DibujarSalaCapsulas(const MinijuegoCapsulasBarajadas& m)
 {
     // Suelo y marcas.
-    DrawPlane({ 0.0f, 0.0f, 0.0f }, { 40.0f, 40.0f }, Color{ 188, 196, 204, 255 });
-
-    for (int k = -6; k <= 6; k++)
+    if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_SALA, { 0.0f, 0.0f, 0.0f }))
     {
-        DrawCube({ (float)k * 2.0f, 0.005f, 0.0f }, 0.05f, 0.01f, 30.0f, Color{ 150, 158, 168, 255 });
-    }
+        DrawPlane({ 0.0f, 0.0f, 0.0f }, { 40.0f, 40.0f }, Color{ 188, 196, 204, 255 });
 
-    for (int k = -4; k <= 6; k++)
-    {
-        DrawCube({ 0.0f, 0.005f, (float)k * 2.0f }, 26.0f, 0.01f, 0.05f, Color{ 150, 158, 168, 255 });
+        for (int k = -6; k <= 6; k++)
+            DrawCube({ (float)k * 2.0f, 0.005f, 0.0f }, 0.05f, 0.01f, 30.0f, Color{ 150, 158, 168, 255 });
+        for (int k = -4; k <= 6; k++)
+            DrawCube({ 0.0f, 0.005f, (float)k * 2.0f }, 26.0f, 0.01f, 0.05f, Color{ 150, 158, 168, 255 });
+        DrawCube({ 0.0f, 4.0f, -8.4f }, 26.0f, 8.0f, 0.4f, Color{ 66, 86, 98, 255 });
     }
 
     // Pared del fondo con monitores.
-    DrawCube({ 0.0f, 4.0f, -8.4f }, 26.0f, 8.0f, 0.4f, Color{ 66, 86, 98, 255 });
-
     for (int k = 0; k < 4; k++)
     {
         float x = -7.5f + (float)k * 5.0f;
-        DrawCube({ x, 4.6f, -8.1f }, 3.4f, 2.0f, 0.15f, Color{ 24, 28, 34, 255 });
-        DrawCube({ x, 4.6f, -8.0f }, 3.1f, 1.7f, 0.05f, Color{ 10, 40, 36, 255 });
+        // Primitive 2 (menta) contiene solo las seis barras fijas del GLB.
+        // Se conserva marco/pantalla; las barras siguen el seno original.
+        if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_MONITOR,
+            { x, 4.6f, -8.1f }, 0.0f, { 0.0f, 1.0f, 0.0f },
+            { 1.0f, 1.0f, 1.0f }, WHITE, 2))
+        {
+            DrawCube({ x, 4.6f, -8.1f }, 3.4f, 2.0f, 0.15f, Color{ 24, 28, 34, 255 });
+            DrawCube({ x, 4.6f, -8.0f }, 3.1f, 1.7f, 0.05f, Color{ 10, 40, 36, 255 });
+        }
 
         for (int b = 0; b < 6; b++)
         {
             float altura = 0.3f + 0.6f * (0.5f + 0.5f * std::sin(m.tiempoAnimacion * 2.0f + (float)(b + k * 3)));
-            DrawCube({ x - 1.2f + (float)b * 0.48f, 4.6f - 0.8f + altura * 0.5f, -7.96f }, 0.3f, altura, 0.04f, Color{ 80, 255, 170, 255 });
+            // Decoracion sobre la pared: no proyecta sombras en el suelo.
+            (DrawCube)({ x - 1.2f + (float)b * 0.48f, 4.6f - 0.8f + altura * 0.5f, -7.96f }, 0.3f, altura, 0.04f, Color{ 80, 255, 170, 255 });
         }
     }
 
     // Mostrador con tubos de ensayo burbujeantes.
-    DrawCube({ 0.0f, 0.5f, -6.4f }, 22.0f, 1.0f, 1.4f, Color{ 110, 122, 134, 255 });
+    if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_MOSTRADOR, { 0.0f, 0.0f, -6.4f }))
+        DrawCube({ 0.0f, 0.5f, -6.4f }, 22.0f, 1.0f, 1.4f, Color{ 110, 122, 134, 255 });
 
     for (int k = 0; k < 8; k++)
     {
         float x = -8.4f + (float)k * 2.4f;
         Color liquido = ColorFromHSV((float)k * 47.0f + 100.0f, 0.7f, 0.95f);
 
-        DrawCylinder({ x, 1.0f, -6.4f }, 0.3f, 0.3f, 1.5f, 10, Fade(WHITE, 0.3f));
-        DrawCylinder({ x, 1.0f, -6.4f }, 0.24f, 0.24f, 0.9f, 10, Fade(liquido, 0.85f));
-        DrawCylinderWires({ x, 1.0f, -6.4f }, 0.3f, 0.3f, 1.5f, 8, Color{ 220, 235, 245, 255 });
+        // Primitive 4 (BOMBILLAS) son burbujas fijas. Omitirlas y conservar
+        // las dos que suben con tiempoAnimacion, sin cargas adicionales.
+        if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_TUBO,
+            { x, 1.0f, -6.4f }, 0.0f, { 0.0f, 1.0f, 0.0f },
+            { 1.0f, 1.0f, 1.0f }, Fade(liquido, 0.85f), 4))
+        {
+            DrawCylinder({ x, 1.0f, -6.4f }, 0.3f, 0.3f, 1.5f, 10, Fade(WHITE, 0.3f));
+            DrawCylinder({ x, 1.0f, -6.4f }, 0.24f, 0.24f, 0.9f, 10, Fade(liquido, 0.85f));
+            DrawCylinderWires({ x, 1.0f, -6.4f }, 0.3f, 0.3f, 1.5f, 8, Color{ 220, 235, 245, 255 });
+        }
 
         for (int b = 0; b < 2; b++)
         {
@@ -858,33 +874,62 @@ static void DibujarSalaCapsulas(const MinijuegoCapsulasBarajadas& m)
 
     for (int lado = -1; lado <= 1; lado += 2)
     {
-        DrawCylinder({ (float)lado * 10.5f, 5.6f, -7.8f }, 0.3f, 0.3f, 0.5f, 8, Color{ 50, 54, 62, 255 });
-        DrawSphereEx({ (float)lado * 10.5f, 6.3f, -7.8f }, 0.35f, 8, 8, luz);
+        if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_BALIZA,
+            { (float)lado * 10.5f, 5.6f, -7.8f }, 0.0f,
+            { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, luz))
+        {
+            DrawCylinder({ (float)lado * 10.5f, 5.6f, -7.8f }, 0.3f, 0.3f, 0.5f, 8, Color{ 50, 54, 62, 255 });
+            DrawSphereEx({ (float)lado * 10.5f, 6.3f, -7.8f }, 0.35f, 8, 8, luz);
+        }
     }
+}
+
+
+static bool DibujarSegmentoBrazoCapsulas(Vector3 inicio, Vector3 fin)
+{
+    Vector3 direccion = Vector3Subtract(fin, inicio);
+    float longitud = Vector3Length(direccion);
+    if (longitud < 0.001f) return false;
+    Vector3 unidad = Vector3Scale(direccion, 1.0f / longitud);
+    Vector3 eje = Vector3CrossProduct({ 0.0f, 1.0f, 0.0f }, unidad);
+    float coseno = LimitarCapsulas(unidad.y, -1.0f, 1.0f);
+    float angulo = std::acos(coseno) * RAD2DEG;
+    // Incluye los casos paralelo y antiparalelo a +Y.
+    if (Vector3Length(eje) < 0.001f) eje = { 1.0f, 0.0f, 0.0f };
+    else eje = Vector3Normalize(eje);
+    return DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_BRAZO_SEGMENTO,
+        inicio, angulo, eje, { 1.0f, longitud, 1.0f });
 }
 
 
 static void DibujarMesaCapsulas(const MinijuegoCapsulasBarajadas& m)
 {
     // Mesa de acero.
-    DrawCube({ 0.0f, ALTURA_MESA_CAPSULAS - 0.06f, 0.0f }, 11.4f, 0.12f, 3.6f, Color{ 172, 182, 194, 255 });
-    DrawCubeWires({ 0.0f, ALTURA_MESA_CAPSULAS - 0.06f, 0.0f }, 11.4f, 0.12f, 3.6f, Color{ 90, 98, 110, 255 });
-
-    for (int sx = -1; sx <= 1; sx += 2)
+    if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_MESA, { 0.0f, 0.0f, 0.0f }))
     {
-        for (int sz = -1; sz <= 1; sz += 2)
+        DrawCube({ 0.0f, ALTURA_MESA_CAPSULAS - 0.06f, 0.0f }, 11.4f, 0.12f, 3.6f, Color{ 172, 182, 194, 255 });
+        DrawCubeWires({ 0.0f, ALTURA_MESA_CAPSULAS - 0.06f, 0.0f }, 11.4f, 0.12f, 3.6f, Color{ 90, 98, 110, 255 });
+
+        for (int sx = -1; sx <= 1; sx += 2)
         {
-            DrawCylinder({ (float)sx * 5.3f, 0.0f, (float)sz * 1.5f }, 0.14f, 0.14f, ALTURA_MESA_CAPSULAS - 0.12f, 8, Color{ 120, 128, 140, 255 });
+            for (int sz = -1; sz <= 1; sz += 2)
+            {
+                DrawCylinder({ (float)sx * 5.3f, 0.0f, (float)sz * 1.5f }, 0.14f, 0.14f, ALTURA_MESA_CAPSULAS - 0.12f, 8, Color{ 120, 128, 140, 255 });
+            }
         }
     }
 
     // Pasarela del publico con borde de precaucion.
-    DrawCube({ 0.0f, ALTURA_PASARELA_CAPSULAS * 0.5f, Z_PASARELA_CAPSULAS }, 11.0f, ALTURA_PASARELA_CAPSULAS, 2.6f, Color{ 96, 104, 116, 255 });
-
-    for (int k = 0; k < 22; k++)
+    if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_PASARELA,
+        { 0.0f, 0.0f, Z_PASARELA_CAPSULAS }))
     {
-        Color franja = (k % 2 == 0) ? Color{ 250, 210, 40, 255 } : Color{ 30, 30, 34, 255 };
-        DrawCube({ -5.25f + (float)k * 0.5f, ALTURA_PASARELA_CAPSULAS + 0.005f, Z_PASARELA_CAPSULAS - 1.2f }, 0.5f, 0.012f, 0.2f, franja);
+        DrawCube({ 0.0f, ALTURA_PASARELA_CAPSULAS * 0.5f, Z_PASARELA_CAPSULAS }, 11.0f, ALTURA_PASARELA_CAPSULAS, 2.6f, Color{ 96, 104, 116, 255 });
+
+        for (int k = 0; k < 22; k++)
+        {
+            Color franja = (k % 2 == 0) ? Color{ 250, 210, 40, 255 } : Color{ 30, 30, 34, 255 };
+            DrawCube({ -5.25f + (float)k * 0.5f, ALTURA_PASARELA_CAPSULAS + 0.005f, Z_PASARELA_CAPSULAS - 1.2f }, 0.5f, 0.012f, 0.2f, franja);
+        }
     }
 
     // Brazo robotico.
@@ -898,13 +943,22 @@ static void DibujarMesaCapsulas(const MinijuegoCapsulasBarajadas& m)
         (hombro.z + mano.z) * 0.5f - 0.3f
     };
 
-    DrawCylinder({ 0.0f, 0.0f, -3.4f }, 0.6f, 0.8f, 3.6f, 12, Color{ 80, 90, 104, 255 });
-    DrawSphereEx(hombro, 0.45f, 10, 10, Color{ 240, 140, 40, 255 });
-    DrawCylinderEx(hombro, codo, 0.24f, 0.2f, 8, Color{ 240, 140, 40, 255 });
-    DrawSphereEx(codo, 0.3f, 8, 8, Color{ 60, 66, 78, 255 });
-    DrawCylinderEx(codo, mano, 0.2f, 0.13f, 8, Color{ 240, 140, 40, 255 });
-    DrawCube({ mano.x - 0.2f, mano.y - 0.15f, mano.z }, 0.08f, 0.4f, 0.2f, Color{ 60, 66, 78, 255 });
-    DrawCube({ mano.x + 0.2f, mano.y - 0.15f, mano.z }, 0.08f, 0.4f, 0.2f, Color{ 60, 66, 78, 255 });
+    if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_BRAZO_BASE, { 0.0f, 0.0f, -3.4f }))
+    {
+        DrawCylinder({ 0.0f, 0.0f, -3.4f }, 0.6f, 0.8f, 3.6f, 12, Color{ 80, 90, 104, 255 });
+        DrawSphereEx(hombro, 0.45f, 10, 10, Color{ 240, 140, 40, 255 });
+    }
+    if (!DibujarSegmentoBrazoCapsulas(hombro, codo))
+        DrawCylinderEx(hombro, codo, 0.24f, 0.2f, 8, Color{ 240, 140, 40, 255 });
+    if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_BRAZO_ARTICULACION, codo))
+        DrawSphereEx(codo, 0.3f, 8, 8, Color{ 60, 66, 78, 255 });
+    if (!DibujarSegmentoBrazoCapsulas(codo, mano))
+        DrawCylinderEx(codo, mano, 0.2f, 0.13f, 8, Color{ 240, 140, 40, 255 });
+    if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_BRAZO_PINZA, mano))
+    {
+        DrawCube({ mano.x - 0.2f, mano.y - 0.15f, mano.z }, 0.08f, 0.4f, 0.2f, Color{ 60, 66, 78, 255 });
+        DrawCube({ mano.x + 0.2f, mano.y - 0.15f, mano.z }, 0.08f, 0.4f, 0.2f, Color{ 60, 66, 78, 255 });
+    }
 
     // Capsulas.
     float tapa = TapaAbiertaCapsulas(m);
@@ -916,11 +970,24 @@ static void DibujarMesaCapsulas(const MinijuegoCapsulasBarajadas& m)
         float y0 = p.y + elevacion * 1.7f;
         Color banda = ColorFromHSV((float)c * 68.0f, 0.75f, 0.95f);
 
-        DrawCylinder({ p.x, y0, p.z }, 0.8f, 0.8f, 1.5f, 18, Color{ 190, 198, 208, 255 });
-        DrawCylinder({ p.x, y0 + 0.45f, p.z }, 0.83f, 0.83f, 0.28f, 18, banda);
-        DrawCylinderWires({ p.x, y0, p.z }, 0.8f, 0.8f, 1.5f, 12, Color{ 80, 90, 104, 255 });
-        DrawCylinder({ p.x, y0 + 1.5f + tapa * 1.3f, p.z }, 0.62f, 0.82f, 0.22f, 18, Color{ 150, 160, 174, 255 });
-        DrawSphereEx({ p.x, y0 + 1.75f + tapa * 1.3f, p.z }, 0.14f, 6, 6, banda);
+        if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_CUERPO, { p.x, y0, p.z }))
+        {
+            (DrawCylinder)({ p.x, y0, p.z }, 0.8f, 0.8f, 1.5f, 18, Color{ 190, 198, 208, 255 });
+            DrawCylinderWires({ p.x, y0, p.z }, 0.8f, 0.8f, 1.5f, 12, Color{ 80, 90, 104, 255 });
+        }
+        if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_BANDA,
+            { p.x, y0, p.z }, 0.0f, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, banda))
+            (DrawCylinder)({ p.x, y0 + 0.45f, p.z }, 0.83f, 0.83f, 0.28f, 18, banda);
+        if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_TAPA,
+            { p.x, y0 + 1.5f + tapa * 1.3f, p.z }, 0.0f,
+            { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, banda))
+        {
+            (DrawCylinder)({ p.x, y0 + 1.5f + tapa * 1.3f, p.z }, 0.62f, 0.82f, 0.22f, 18, Color{ 150, 160, 174, 255 });
+            DrawSphereEx({ p.x, y0 + 1.75f + tapa * 1.3f, p.z }, 0.14f, 6, 6, banda);
+        }
+        // Una sombra sobre la mesa, tambien en fallback. No proyectar las
+        // tres piezas por separado sobre el suelo debajo de la mesa.
+        DibujarSombraRetroCircular({ p.x, y0, p.z }, 0.76f, 0.76f, 1.06f);
     }
 
     // Nucleo brillante: en la mano, o sobre la mesa bajo la capsula premiada.
@@ -938,8 +1005,12 @@ static void DibujarMesaCapsulas(const MinijuegoCapsulasBarajadas& m)
 
     float pulso = 1.0f + 0.12f * std::sin(m.tiempoAnimacion * 8.0f);
 
-    DrawSphereEx(nucleo, 0.32f * pulso, 10, 10, Color{ 120, 255, 170, 255 });
-    DrawSphereWires(nucleo, 0.46f * pulso, 6, 6, Fade(Color{ 160, 255, 210, 255 }, 0.8f));
+    if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_NUCLEO,
+        nucleo, 0.0f, { 0.0f, 1.0f, 0.0f }, { pulso, pulso, pulso }))
+    {
+        DrawSphereEx(nucleo, 0.32f * pulso, 10, 10, Color{ 120, 255, 170, 255 });
+        DrawSphereWires(nucleo, 0.46f * pulso, 6, 6, Fade(Color{ 160, 255, 210, 255 }, 0.8f));
+    }
 
     if (m.subfase == SUBFASE_CAPSULAS_MOSTRAR && m.fase == FASE_CAPSULAS_JUGANDO)
     {
@@ -994,8 +1065,13 @@ static void DibujarMarcadoresCapsulas(
             color = estado.acerto ? Color{ 90, 255, 130, 255 } : Color{ 255, 80, 80, 255 };
         }
 
-        DrawCylinder({ x, y, Z_MARCADOR_CAPSULAS }, 0.24f, 0.0f, 0.55f, 10, color);
-        DrawSphereEx({ x, y + 0.72f, Z_MARCADOR_CAPSULAS }, 0.2f, 8, 8, m.coloresJugadores[i]);
+        if (!DibujarModeloCapsulasBarajadasRetro3D(MODELO_CAPSULAS_MARCADOR,
+            { x, y, Z_MARCADOR_CAPSULAS }, 0.0f, { 0.0f, 1.0f, 0.0f },
+            { 1.0f, 1.0f, 1.0f }, color))
+        {
+            (DrawCylinder)({ x, y, Z_MARCADOR_CAPSULAS }, 0.24f, 0.0f, 0.55f, 10, color);
+            DrawSphereEx({ x, y + 0.72f, Z_MARCADOR_CAPSULAS }, 0.2f, 8, 8, m.coloresJugadores[i]);
+        }
 
         if (estado.confirmado)
         {

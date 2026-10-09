@@ -236,6 +236,57 @@ static_assert(sizeof(RUTAS_MODELOS_VETA_CRISTAL_3D) /
 
 
 //==================================================
+// PAQUETE DE CAPSULAS BARAJADAS
+//==================================================
+
+// Cada ID del laboratorio identifica una malla compartida, no una instancia.
+enum ModeloCapsulasBarajadas3D
+{
+    MODELO_CAPSULAS_SALA,
+    MODELO_CAPSULAS_MONITOR,
+    MODELO_CAPSULAS_MOSTRADOR,
+    MODELO_CAPSULAS_TUBO,
+    MODELO_CAPSULAS_BALIZA,
+    MODELO_CAPSULAS_MESA,
+    MODELO_CAPSULAS_PASARELA,
+    MODELO_CAPSULAS_BRAZO_BASE,
+    MODELO_CAPSULAS_BRAZO_SEGMENTO,
+    MODELO_CAPSULAS_BRAZO_ARTICULACION,
+    MODELO_CAPSULAS_BRAZO_PINZA,
+    MODELO_CAPSULAS_CUERPO,
+    MODELO_CAPSULAS_BANDA,
+    MODELO_CAPSULAS_TAPA,
+    MODELO_CAPSULAS_NUCLEO,
+    MODELO_CAPSULAS_MARCADOR,
+    CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_CAPSULAS_BARAJADAS_3D[] =
+{
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/sala_laboratorio.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/monitor.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/mostrador.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/tubo_ensayo.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/baliza.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/mesa_acero.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/pasarela.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/brazo_base.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/brazo_segmento.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/brazo_articulacion.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/brazo_pinza.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/capsula_cuerpo.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/capsula_banda.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/capsula_tapa.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/nucleo.glb",
+    "Assets/Modelos/Escenarios/Capsulas_Barajadas/GLB/marcador.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_CAPSULAS_BARAJADAS_3D) /
+    sizeof(RUTAS_MODELOS_CAPSULAS_BARAJADAS_3D[0]) == CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D,
+    "Las rutas deben coincidir con los IDs del paquete Capsulas Barajadas");
+
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 

@@ -60,6 +60,7 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D cajasPuerto[CANTIDAD_MODELOS_CAJAS_PUERTO_3D];
     RecursoModeloEscenarioRetro3D laberintoJade[CANTIDAD_MODELOS_LABERINTO_JADE_3D];
     RecursoModeloEscenarioRetro3D vetaCristal[CANTIDAD_MODELOS_VETA_CRISTAL_3D];
+    RecursoModeloEscenarioRetro3D capsulasBarajadas[CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D];
     bool inicializados = false;
 };
 
@@ -411,6 +412,60 @@ inline bool DibujarModeloVetaCristalRetro3D(
         posicion, { 0.0f, 1.0f, 0.0f }, anguloY, escala, colorEstado);
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteCapsulasBarajadasRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_CAPSULAS_BARAJADAS_3D[i];
+        // Primitivas COLOR_DINAMICO del GLB v1; NO indices de material.
+        definiciones[MODELO_CAPSULAS_TUBO].mallaColor = 1;
+        definiciones[MODELO_CAPSULAS_BALIZA].mallaColor = 2;
+        definiciones[MODELO_CAPSULAS_BANDA].mallaColor = 0;
+        definiciones[MODELO_CAPSULAS_TAPA].mallaColor = 3;
+        definiciones[MODELO_CAPSULAS_MARCADOR].mallaColor = 0;
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().capsulasBarajadas,
+        definiciones, CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D };
+}
+
+inline bool DibujarModeloCapsulasBarajadasRetro3D(
+    ModeloCapsulasBarajadas3D pieza,
+    Vector3 posicion,
+    float anguloGrados = 0.0f,
+    Vector3 ejeRotacion = { 0.0f, 1.0f, 0.0f },
+    Vector3 escala = { 1.0f, 1.0f, 1.0f },
+    Color colorEstado = WHITE,
+    int mallaOmitida = -1
+)
+{
+    RecursoModeloEscenarioRetro3D& recurso =
+        ObtenerModelosEscenariosRetro3D().capsulasBarajadas[pieza];
+    if (!recurso.cargado) return false;
+    if (mallaOmitida < 0)
+        return DibujarModeloEscenarioRetro3D(recurso, posicion, ejeRotacion,
+            anguloGrados, escala, colorEstado);
+
+    // Monitor y tubo incluyen barras/burbujas estaticas. Sus animaciones
+    // siguen dibujandose en C++: omitir solo esa malla del GLB evita duplicarlas.
+    // Esta vista no es propietaria: comparte meshes, VBO y materiales. No se
+    // carga, sube ni descarga memoria al dibujar, ni se modifica el Model real.
+    RecursoModeloEscenarioRetro3D vista = recurso;
+    vista.modelo.meshCount = 1;
+    for (int i = 0; i < recurso.modelo.meshCount; i++)
+    {
+        if (i == mallaOmitida) continue;
+        vista.modelo.meshes = &recurso.modelo.meshes[i];
+        vista.modelo.meshMaterial = &recurso.modelo.meshMaterial[i];
+        DibujarModeloEscenarioRetro3D(vista, posicion, ejeRotacion,
+            anguloGrados, escala, colorEstado);
+    }
+    return true;
+}
+
 inline void InicializarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -500,6 +555,8 @@ inline void DescargarModelosEscenariosRetro3D()
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.laberintoJade)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.vetaCristal)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.capsulasBarajadas)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     recursos.inicializados = false;
 }
