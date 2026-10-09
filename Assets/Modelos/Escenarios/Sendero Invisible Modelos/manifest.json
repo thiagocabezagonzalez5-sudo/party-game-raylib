@@ -1,0 +1,425 @@
+{
+  "minijuego": "Sendero Invisible",
+  "base": "claude/expansion-party 22af9d0",
+  "coordenadas": "Y arriba; paso de losas 1.5; unidades raylib",
+  "modelos": [
+    {
+      "archivo": "losa_normal.glb",
+      "triangulos": 192,
+      "materiales": [
+        "losa",
+        "losa_luz",
+        "losa_sombra"
+      ],
+      "bytes": 26988,
+      "min": [
+        -0.68,
+        -0.4,
+        -0.68
+      ],
+      "max": [
+        0.68,
+        0.034,
+        0.68
+      ],
+      "pivote": "centro de casilla",
+      "uso": "Cuadrícula 6×10, paso 1.5; centro Y=0, tamaño 1.36×.4×1.36."
+    },
+    {
+      "archivo": "losa_agrietada.glb",
+      "triangulos": 332,
+      "materiales": [
+        "losa",
+        "losa_sombra",
+        "grieta_sombra",
+        "grieta"
+      ],
+      "bytes": 45636,
+      "min": [
+        -0.68,
+        -0.4,
+        -0.68
+      ],
+      "max": [
+        0.68,
+        0.0465,
+        0.68
+      ],
+      "pivote": "centro de casilla",
+      "uso": "Solo al marcar m.grieta[indice]; no anticipar ruta segura."
+    },
+    {
+      "archivo": "losa_salida.glb",
+      "triangulos": 216,
+      "materiales": [
+        "salida",
+        "losa_sombra",
+        "COLOR_DINAMICO"
+      ],
+      "bytes": 29968,
+      "min": [
+        -0.68,
+        -0.4,
+        -0.68
+      ],
+      "max": [
+        0.68,
+        0.034,
+        0.68
+      ],
+      "pivote": "centro de casilla",
+      "uso": "Fila 0, tinte COLOR_DINAMICO del jugador."
+    },
+    {
+      "archivo": "losa_meta.glb",
+      "triangulos": 240,
+      "materiales": [
+        "meta",
+        "losa_sombra",
+        "verde_luz"
+      ],
+      "bytes": 33044,
+      "min": [
+        -0.68,
+        -0.4,
+        -0.68
+      ],
+      "max": [
+        0.68,
+        0.034,
+        0.68
+      ],
+      "pivote": "centro de casilla",
+      "uso": "Fila 9; extremo Z=-7.5."
+    },
+    {
+      "archivo": "fragmento_losa.glb",
+      "triangulos": 24,
+      "materiales": [
+        "losa",
+        "losa_luz"
+      ],
+      "bytes": 4960,
+      "min": [
+        -0.275,
+        -0.175,
+        -0.275
+      ],
+      "max": [
+        0.275,
+        0.187,
+        0.275
+      ],
+      "pivote": "centro de fragmento",
+      "uso": "Cuatro trozos temporales durante caída, seguir física visual existente."
+    },
+    {
+      "archivo": "brillo_losa.glb",
+      "triangulos": 204,
+      "materiales": [
+        "verde_sombra",
+        "verde"
+      ],
+      "bytes": 27672,
+      "min": [
+        -0.615,
+        0.0085,
+        -0.615
+      ],
+      "max": [
+        0.615,
+        0.067,
+        0.615
+      ],
+      "pivote": "centro de casilla",
+      "uso": "Solo al iluminar ruta durante memorización o farol."
+    },
+    {
+      "archivo": "terreno_cementerio.glb",
+      "triangulos": 1092,
+      "materiales": [
+        "terreno",
+        "noche",
+        "terreno_luz"
+      ],
+      "bytes": 140444,
+      "min": [
+        -60.0,
+        -1.5,
+        -18.0
+      ],
+      "max": [
+        60.0,
+        -0.481,
+        18.0
+      ],
+      "pivote": "centro de terraza",
+      "uso": "Centro (0,0,-28), suelo de fondo."
+    },
+    {
+      "archivo": "borde_cementerio.glb",
+      "triangulos": 24,
+      "materiales": [
+        "terreno_luz",
+        "piedra_sombra"
+      ],
+      "bytes": 5012,
+      "min": [
+        -60.0,
+        -1.5,
+        -0.4
+      ],
+      "max": [
+        60.0,
+        -0.455,
+        0.4
+      ],
+      "pivote": "centro",
+      "uso": "Centro (0,0,-9.6)."
+    },
+    {
+      "archivo": "lapida.glb",
+      "triangulos": 128,
+      "materiales": [
+        "piedra",
+        "piedra_luz",
+        "piedra_sombra"
+      ],
+      "bytes": 18948,
+      "min": [
+        -0.515,
+        0.0,
+        -0.125
+      ],
+      "max": [
+        0.515,
+        1.28,
+        0.42
+      ],
+      "pivote": "pie central",
+      "uso": "Varias detrás de verja; escalas/giros discretos."
+    },
+    {
+      "archivo": "lapida_cruz.glb",
+      "triangulos": 128,
+      "materiales": [
+        "piedra",
+        "piedra_luz",
+        "piedra_sombra"
+      ],
+      "bytes": 18964,
+      "min": [
+        -0.515,
+        0.0,
+        -0.125
+      ],
+      "max": [
+        0.515,
+        1.745,
+        0.42
+      ],
+      "pivote": "pie central",
+      "uso": "Variante de tumba con cruz."
+    },
+    {
+      "archivo": "mausoleo.glb",
+      "triangulos": 212,
+      "materiales": [
+        "piedra",
+        "piedra_sombra",
+        "hierro_luz",
+        "negro",
+        "piedra_luz",
+        "verde_sombra"
+      ],
+      "bytes": 32000,
+      "min": [
+        -2.15,
+        0.0,
+        -2.15
+      ],
+      "max": [
+        2.15,
+        4.7,
+        2.15
+      ],
+      "pivote": "pie central",
+      "uso": "Centros aprox (-14,-24),(12,-27),(30,-22); escala 1..1.3."
+    },
+    {
+      "archivo": "arbol_seco.glb",
+      "triangulos": 328,
+      "materiales": [
+        "tronco",
+        "tronco_luz"
+      ],
+      "bytes": 43408,
+      "min": [
+        -2.0978,
+        0,
+        -0.6187
+      ],
+      "max": [
+        1.6713,
+        7.4591,
+        0.5746
+      ],
+      "pivote": "pie central",
+      "uso": "Al fondo Z≈-19..-26."
+    },
+    {
+      "archivo": "verja_tramo.glb",
+      "triangulos": 288,
+      "materiales": [
+        "hierro",
+        "hierro_luz"
+      ],
+      "bytes": 38320,
+      "min": [
+        -5.7,
+        0.0,
+        -0.1046
+      ],
+      "max": [
+        5.71,
+        2.1,
+        0.1046
+      ],
+      "pivote": "centro al pie",
+      "uso": "Cinco segmentos en Z=-9.4, centros X=-22.4,-11.2,0,11.2,22.4."
+    },
+    {
+      "archivo": "farol_verde.glb",
+      "triangulos": 298,
+      "materiales": [
+        "hierro",
+        "hierro_luz",
+        "BOMBILLAS",
+        "verde"
+      ],
+      "bytes": 41256,
+      "min": [
+        -0.32,
+        0,
+        -0.32
+      ],
+      "max": [
+        0.32,
+        2.7,
+        0.32
+      ],
+      "pivote": "pie central",
+      "uso": "Siete faroles en X=-27+9*k,Z=-9."
+    },
+    {
+      "archivo": "farol_recogible.glb",
+      "triangulos": 256,
+      "materiales": [
+        "hierro_luz",
+        "hierro",
+        "BOMBILLAS"
+      ],
+      "bytes": 35068,
+      "min": [
+        -0.18,
+        -0.2,
+        -0.18
+      ],
+      "max": [
+        0.18,
+        0.655,
+        0.18
+      ],
+      "pivote": "centro",
+      "uso": "En losa del índice m.farolIndice, altura≈.55."
+    },
+    {
+      "archivo": "fuego_fatuo.glb",
+      "triangulos": 384,
+      "materiales": [
+        "BOMBILLAS",
+        "verde_sombra",
+        "verde"
+      ],
+      "bytes": 51328,
+      "min": [
+        -0.4096,
+        -0.36,
+        -0.4136
+      ],
+      "max": [
+        0.415,
+        0.27,
+        0.4136
+      ],
+      "pivote": "centro",
+      "uso": "Durante memorización, recorrer m.secuencia a Y≈.9."
+    },
+    {
+      "archivo": "arco_meta.glb",
+      "triangulos": 356,
+      "materiales": [
+        "hierro",
+        "BOMBILLAS",
+        "hierro_luz",
+        "verde"
+      ],
+      "bytes": 48528,
+      "min": [
+        -1.7522,
+        0.0,
+        -0.1447
+      ],
+      "max": [
+        1.7522,
+        3.265,
+        0.1447
+      ],
+      "pivote": "centro al pie",
+      "uso": "Uno por carril sobre la fila 9, centro Z=-7.9."
+    },
+    {
+      "archivo": "luna.glb",
+      "triangulos": 680,
+      "materiales": [
+        "luna",
+        "luna_sombra"
+      ],
+      "bytes": 87740,
+      "min": [
+        -16.827,
+        -17.0,
+        -16.6557
+      ],
+      "max": [
+        16.827,
+        17.0,
+        16.6557
+      ],
+      "pivote": "centro geométrico",
+      "uso": "Colocar relativa a cámara en dirección superior izquierda, a distancia≈150."
+    },
+    {
+      "archivo": "niebla_abismo.glb",
+      "triangulos": 1740,
+      "materiales": [
+        "noche",
+        "niebla_oscura",
+        "niebla"
+      ],
+      "bytes": 222112,
+      "min": [
+        -45.0,
+        -8.025,
+        -21.0
+      ],
+      "max": [
+        45.0,
+        -3.44,
+        19.0
+      ],
+      "pivote": "centro",
+      "uso": "Bajo la cuadrícula, niveles Y=-2.6,-5,-8; ajustar alpha en motor si procede."
+    }
+  ]
+}
