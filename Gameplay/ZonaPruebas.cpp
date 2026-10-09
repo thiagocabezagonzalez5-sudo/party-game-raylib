@@ -256,7 +256,8 @@ void ZonaPruebas::Inicializar(
 
     InicializarTexturasTematicasMinijuegos();
     EstablecerAudioJugadoresMinijuego(audio);
-    InicializarModelosEscenariosRetro3D();
+    // Los paquetes de modelos se solicitan al activar su escenario. La cache
+    // sobrevive a reinicios y regresos desde el selector o el tablero.
 
     for (int i = 0; i < MAX_PARTICULAS_TIERRA; i++)
     {

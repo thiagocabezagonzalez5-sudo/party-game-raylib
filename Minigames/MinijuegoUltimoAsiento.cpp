@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -817,6 +818,7 @@ void MinijuegoUltimoAsiento::Reiniciar(
 )
 {
     Inicializar();
+    CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteUltimoAsientoRetro3D());
     InicializarResultadoMinijuego(
         resultado,
         participantes,
@@ -1102,9 +1104,8 @@ void MinijuegoUltimoAsiento::Actualizar(
 // VISUAL: ESCENARIO (solo decoracion, la logica no depende de esto)
 //==================================================
 
-// MODELO FUTURO: carrusel central (base, techo, caballitos y postes), tazas
-// giratorias, vallas, globos, puestos de feria, montana rusa y noria de
-// fondo, gradas de espectadores y arcos de luces: reemplazar cada uno por GLB.
+// Cada GLB reemplaza solo su pieza visual. Las primitivas originales quedan
+// como respaldo y las hitboxes siguen independientes del arte.
 
 static void DibujarSueloAsiento(const MinijuegoUltimoAsiento& m)
 {
@@ -1113,10 +1114,13 @@ static void DibujarSueloAsiento(const MinijuegoUltimoAsiento& m)
     DrawPlane({ 0.0f, -0.12f, 0.0f }, { 90.0f, 90.0f }, Color{ 34, 28, 52, 255 });
 
     // Disco de la arena con anillos concentricos de feria.
-    DrawCylinder({ 0.0f, SUELO_ASIENTO - 0.45f, 0.0f }, RADIO_ARENA_ASIENTO + 0.5f, RADIO_ARENA_ASIENTO + 0.5f, 0.45f, 48, Color{ 70, 52, 96, 255 });
-    DrawCylinder({ 0.0f, SUELO_ASIENTO - 0.02f, 0.0f }, RADIO_ARENA_ASIENTO, RADIO_ARENA_ASIENTO, 0.02f, 48, luces ? Color{ 120, 84, 160, 255 } : Color{ 56, 44, 84, 255 });
-    DrawCylinder({ 0.0f, SUELO_ASIENTO - 0.01f, 0.0f }, RADIO_ARENA_ASIENTO * 0.78f, RADIO_ARENA_ASIENTO * 0.78f, 0.02f, 48, luces ? Color{ 98, 66, 140, 255 } : Color{ 46, 36, 70, 255 });
-    DrawCylinder({ 0.0f, SUELO_ASIENTO, 0.0f }, RADIO_ARENA_ASIENTO * 0.52f, RADIO_ARENA_ASIENTO * 0.52f, 0.02f, 48, luces ? Color{ 130, 92, 170, 255 } : Color{ 60, 48, 90, 255 });
+    if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_ARENA, { 0.0f, SUELO_ASIENTO, 0.0f }))
+    {
+        DrawCylinder({ 0.0f, SUELO_ASIENTO - 0.45f, 0.0f }, RADIO_ARENA_ASIENTO + 0.5f, RADIO_ARENA_ASIENTO + 0.5f, 0.45f, 48, Color{ 70, 52, 96, 255 });
+        DrawCylinder({ 0.0f, SUELO_ASIENTO - 0.02f, 0.0f }, RADIO_ARENA_ASIENTO, RADIO_ARENA_ASIENTO, 0.02f, 48, luces ? Color{ 120, 84, 160, 255 } : Color{ 56, 44, 84, 255 });
+        DrawCylinder({ 0.0f, SUELO_ASIENTO - 0.01f, 0.0f }, RADIO_ARENA_ASIENTO * 0.78f, RADIO_ARENA_ASIENTO * 0.78f, 0.02f, 48, luces ? Color{ 98, 66, 140, 255 } : Color{ 46, 36, 70, 255 });
+        DrawCylinder({ 0.0f, SUELO_ASIENTO, 0.0f }, RADIO_ARENA_ASIENTO * 0.52f, RADIO_ARENA_ASIENTO * 0.52f, 0.02f, 48, luces ? Color{ 130, 92, 170, 255 } : Color{ 60, 48, 90, 255 });
+    }
 
     // Valla con postes y bombillas en el borde.
     for (int k = 0; k < 32; k++)
@@ -1124,8 +1128,6 @@ static void DibujarSueloAsiento(const MinijuegoUltimoAsiento& m)
         float angulo = (float)k * 2.0f * PI / 32.0f;
         float x = std::cos(angulo) * (RADIO_ARENA_ASIENTO + 0.15f);
         float z = std::sin(angulo) * (RADIO_ARENA_ASIENTO + 0.15f);
-
-        DrawCylinder({ x, SUELO_ASIENTO, z }, 0.07f, 0.07f, 0.8f, 6, Color{ 235, 235, 240, 255 });
 
         Color bombilla = Color{ 50, 50, 64, 255 };
 
@@ -1135,7 +1137,17 @@ static void DibujarSueloAsiento(const MinijuegoUltimoAsiento& m)
             bombilla = ColorFromHSV(tono, 0.8f, 1.0f);
         }
 
-        DrawSphereEx({ x, SUELO_ASIENTO + 0.9f, z }, 0.13f, 6, 6, bombilla);
+        // El tramo esta centrado entre dos postes. Su primitive BOMBILLAS
+        // permite mantener las luces sin tenir la madera ni el dorado.
+        float anguloTramo = angulo + PI / 32.0f;
+        if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_VALLA,
+            { std::cos(anguloTramo) * (RADIO_ARENA_ASIENTO + 0.15f), SUELO_ASIENTO,
+              std::sin(anguloTramo) * (RADIO_ARENA_ASIENTO + 0.15f) },
+            -anguloTramo * RAD2DEG - 90.0f, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, bombilla))
+        {
+            DrawCylinder({ x, SUELO_ASIENTO, z }, 0.07f, 0.07f, 0.8f, 6, Color{ 235, 235, 240, 255 });
+            DrawSphereEx({ x, SUELO_ASIENTO + 0.9f, z }, 0.13f, 6, 6, bombilla);
+        }
     }
 }
 
@@ -1145,11 +1157,21 @@ static void DibujarCarruselAsiento(const MinijuegoUltimoAsiento& m)
     bool luces = m.subfase == SUBFASE_ULTIMO_ASIENTO_MUSICA || m.fase != FASE_ULTIMO_ASIENTO_JUGANDO;
     float giro = m.anguloCarrusel * DEG2RAD;
 
-    DrawCylinder({ 0.0f, SUELO_ASIENTO, 0.0f }, RADIO_CARRUSEL_VISUAL_ASIENTO, RADIO_CARRUSEL_VISUAL_ASIENTO, 0.45f, 24, Color{ 200, 60, 90, 255 });
-    DrawCylinder({ 0.0f, SUELO_ASIENTO + 0.45f, 0.0f }, RADIO_CARRUSEL_VISUAL_ASIENTO + 0.1f, RADIO_CARRUSEL_VISUAL_ASIENTO + 0.1f, 0.08f, 24, Color{ 240, 210, 90, 255 });
-    DrawCylinder({ 0.0f, SUELO_ASIENTO + 0.5f, 0.0f }, 0.35f, 0.35f, 2.9f, 10, Color{ 250, 240, 220, 255 });
-    DrawCylinder({ 0.0f, SUELO_ASIENTO + 3.2f, 0.0f }, 0.15f, RADIO_CARRUSEL_VISUAL_ASIENTO + 0.4f, 1.0f, 24, Color{ 70, 130, 230, 255 });
-    DrawSphereEx({ 0.0f, SUELO_ASIENTO + 4.35f, 0.0f }, 0.22f, 8, 8, GOLD);
+    const Vector3 origen = { 0.0f, SUELO_ASIENTO, 0.0f };
+    // Y positiva de raylib gira +X hacia -Z; las posiciones del juego usan
+    // cos/sin hacia +Z. El signo negativo mantiene las piezas sincronizadas.
+    if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_CARRUSEL_BASE, origen, -m.anguloCarrusel))
+    {
+        DrawCylinder(origen, RADIO_CARRUSEL_VISUAL_ASIENTO, RADIO_CARRUSEL_VISUAL_ASIENTO, 0.45f, 24, Color{ 200, 60, 90, 255 });
+        DrawCylinder({ 0.0f, SUELO_ASIENTO + 0.45f, 0.0f }, RADIO_CARRUSEL_VISUAL_ASIENTO + 0.1f, RADIO_CARRUSEL_VISUAL_ASIENTO + 0.1f, 0.08f, 24, Color{ 240, 210, 90, 255 });
+    }
+    if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_CARRUSEL_COLUMNA, origen))
+        DrawCylinder({ 0.0f, SUELO_ASIENTO + 0.5f, 0.0f }, 0.35f, 0.35f, 2.9f, 10, Color{ 250, 240, 220, 255 });
+    if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_CARRUSEL_TECHO, origen, -m.anguloCarrusel))
+    {
+        DrawCylinder({ 0.0f, SUELO_ASIENTO + 3.2f, 0.0f }, 0.15f, RADIO_CARRUSEL_VISUAL_ASIENTO + 0.4f, 1.0f, 24, Color{ 70, 130, 230, 255 });
+        DrawSphereEx({ 0.0f, SUELO_ASIENTO + 4.35f, 0.0f }, 0.22f, 8, 8, GOLD);
+    }
 
     for (int k = 0; k < 6; k++)
     {
@@ -1159,9 +1181,14 @@ static void DibujarCarruselAsiento(const MinijuegoUltimoAsiento& m)
         float vaiven = std::sin(m.tiempoAnimacion * 4.0f + (float)k) * 0.12f * m.velocidadCarrusel;
         Color colorCaballo = (k % 2 == 0) ? Color{ 250, 250, 250, 255 } : Color{ 255, 180, 60, 255 };
 
-        DrawCylinder({ x, SUELO_ASIENTO + 0.5f, z }, 0.05f, 0.05f, 2.7f, 6, GOLD);
-        DrawCube({ x, SUELO_ASIENTO + 1.2f + vaiven, z }, 0.5f, 0.45f, 0.5f, colorCaballo);
-        DrawCube({ x + std::cos(angulo + 1.57f) * 0.05f, SUELO_ASIENTO + 1.6f + vaiven, z }, 0.25f, 0.3f, 0.25f, colorCaballo);
+        if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_POSTE_CABALLITO, { x, SUELO_ASIENTO, z }))
+            DrawCylinder({ x, SUELO_ASIENTO + 0.5f, z }, 0.05f, 0.05f, 2.7f, 6, GOLD);
+        if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_CABALLITO,
+            { x, SUELO_ASIENTO + 1.2f + vaiven, z }, -angulo * RAD2DEG - 90.0f))
+        {
+            DrawCube({ x, SUELO_ASIENTO + 1.2f + vaiven, z }, 0.5f, 0.45f, 0.5f, colorCaballo);
+            DrawCube({ x + std::cos(angulo + 1.57f) * 0.05f, SUELO_ASIENTO + 1.6f + vaiven, z }, 0.25f, 0.3f, 0.25f, colorCaballo);
+        }
     }
 
     for (int k = 0; k < 12; k++)
@@ -1174,10 +1201,11 @@ static void DibujarCarruselAsiento(const MinijuegoUltimoAsiento& m)
             bombilla = ColorFromHSV(std::fmod((float)k * 30.0f + m.anguloCarrusel * 4.0f, 360.0f), 0.8f, 1.0f);
         }
 
-        DrawSphereEx(
-            { std::cos(angulo) * (RADIO_CARRUSEL_VISUAL_ASIENTO + 0.3f), SUELO_ASIENTO + 3.25f, std::sin(angulo) * (RADIO_CARRUSEL_VISUAL_ASIENTO + 0.3f) },
-            0.12f, 6, 6, bombilla
-        );
+        Vector3 posicion = { std::cos(angulo) * (RADIO_CARRUSEL_VISUAL_ASIENTO + 0.3f),
+            SUELO_ASIENTO + 3.25f, std::sin(angulo) * (RADIO_CARRUSEL_VISUAL_ASIENTO + 0.3f) };
+        if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_BOMBILLA, posicion,
+            0.0f, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, bombilla))
+            DrawSphereEx(posicion, 0.12f, 6, 6, bombilla);
     }
 }
 
@@ -1188,7 +1216,8 @@ static void DibujarFondoAsiento(const MinijuegoUltimoAsiento& m)
     const int puntos = 21;
     Vector3 anterior{};
 
-    for (int p = 0; p < puntos; p++)
+    bool viasGLB = DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_MONTANA_VIAS, { 0.0f, 0.0f, -17.0f });
+    for (int p = 0; !viasGLB && p < puntos; p++)
     {
         float t = (float)p / (float)(puntos - 1);
         float x = -21.0f + 42.0f * t;
@@ -1207,17 +1236,27 @@ static void DibujarFondoAsiento(const MinijuegoUltimoAsiento& m)
     }
 
     float tCarro = std::fmod(m.tiempoAnimacion * 0.08f, 1.0f);
-    DrawCube(
-        { -21.0f + 42.0f * tCarro, 5.0f + 3.2f * std::sin(tCarro * 9.0f) + 1.6f * std::sin(tCarro * 23.0f) + 0.35f, -17.0f },
-        1.1f, 0.5f, 0.8f, Color{ 255, 220, 60, 255 }
-    );
+    float alturaCarro = 5.0f + 3.2f * std::sin(tCarro * 9.0f) + 1.6f * std::sin(tCarro * 23.0f);
+    float pendiente = (28.8f * std::cos(tCarro * 9.0f) + 36.8f * std::cos(tCarro * 23.0f)) / 42.0f;
+    // El pivote del GLB es el contacto de las ruedas, no el centro del cubo.
+    if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_MONTANA_CARRO,
+        { -21.0f + 42.0f * tCarro, alturaCarro + 0.09f, -17.0f },
+        std::atan(pendiente) * RAD2DEG, { 0.0f, 0.0f, 1.0f }))
+        DrawCube({ -21.0f + 42.0f * tCarro, alturaCarro + 0.35f, -17.0f },
+            1.1f, 0.5f, 0.8f, Color{ 255, 220, 60, 255 });
 
     // Noria.
     const Vector3 centroNoria = { 15.0f, 6.4f, -12.5f };
     float giroNoria = m.tiempoAnimacion * 0.25f;
 
-    DrawCylinderEx({ centroNoria.x - 1.6f, 0.0f, centroNoria.z }, centroNoria, 0.16f, 0.16f, 6, Color{ 210, 210, 225, 255 });
-    DrawCylinderEx({ centroNoria.x + 1.6f, 0.0f, centroNoria.z }, centroNoria, 0.16f, 0.16f, 6, Color{ 210, 210, 225, 255 });
+    if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_NORIA_SOPORTE,
+        { centroNoria.x, 0.0f, centroNoria.z }))
+    {
+        DrawCylinderEx({ centroNoria.x - 1.6f, 0.0f, centroNoria.z }, centroNoria, 0.16f, 0.16f, 6, Color{ 210, 210, 225, 255 });
+        DrawCylinderEx({ centroNoria.x + 1.6f, 0.0f, centroNoria.z }, centroNoria, 0.16f, 0.16f, 6, Color{ 210, 210, 225, 255 });
+    }
+    bool ruedaGLB = DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_NORIA_RUEDA,
+        centroNoria, giroNoria * RAD2DEG, { 0.0f, 0.0f, 1.0f });
 
     for (int k = 0; k < 8; k++)
     {
@@ -1226,15 +1265,24 @@ static void DibujarFondoAsiento(const MinijuegoUltimoAsiento& m)
         Vector3 borde = { centroNoria.x + std::cos(angulo) * 5.0f, centroNoria.y + std::sin(angulo) * 5.0f, centroNoria.z };
         Vector3 bordeSiguiente = { centroNoria.x + std::cos(siguiente) * 5.0f, centroNoria.y + std::sin(siguiente) * 5.0f, centroNoria.z };
 
-        DrawCylinderEx(centroNoria, borde, 0.07f, 0.07f, 5, Color{ 240, 110, 190, 255 });
-        DrawCylinderEx(borde, bordeSiguiente, 0.09f, 0.09f, 5, Color{ 240, 110, 190, 255 });
-        DrawCube({ borde.x, borde.y - 0.45f, borde.z }, 0.8f, 0.7f, 0.7f, ColorFromHSV((float)k * 45.0f, 0.7f, 1.0f));
+        if (!ruedaGLB)
+        {
+            DrawCylinderEx(centroNoria, borde, 0.07f, 0.07f, 5, Color{ 240, 110, 190, 255 });
+            DrawCylinderEx(borde, bordeSiguiente, 0.09f, 0.09f, 5, Color{ 240, 110, 190, 255 });
+        }
+        // Solo se mueve la suspension; no se hereda el giro de la rueda.
+        Color colorCabina = ColorFromHSV((float)k * 45.0f, 0.7f, 1.0f);
+        if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_NORIA_CABINA, borde,
+            0.0f, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, colorCabina))
+            DrawCube({ borde.x, borde.y - 0.45f, borde.z }, 0.8f, 0.7f, 0.7f, colorCabina);
     }
 
     // Puestos de feria con techo a rayas.
     for (int k = 0; k < 3; k++)
     {
         float x = -15.0f + (float)k * 5.2f;
+        if (DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_PUESTO, { x, 0.0f, -11.0f }))
+            continue;
         DrawCube({ x, 0.9f, -11.0f }, 3.4f, 1.8f, 1.8f, Color{ 120, 80, 60, 255 });
 
         for (int franja = 0; franja < 6; franja++)
@@ -1253,13 +1301,27 @@ static void DibujarFondoAsiento(const MinijuegoUltimoAsiento& m)
         Vector3 base = { std::cos(angulo) * radio, 0.1f, std::sin(angulo) * radio };
         Vector3 globo = { base.x, 2.6f + (float)(k % 4) * 0.4f + vaiven, base.z };
 
-        DrawLine3D(base, globo, Color{ 230, 230, 235, 255 });
-        DrawSphereEx(globo, 0.4f, 8, 8, ColorFromHSV((float)k * 26.0f, 0.75f, 1.0f));
+        Color colorGlobo = ColorFromHSV((float)k * 26.0f, 0.75f, 1.0f);
+        if (DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_GLOBO, globo,
+            0.0f, { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, colorGlobo))
+        {
+            // El GLB incluye 1.7 unidades de hilo. Se completa hasta el
+            // anclaje original sin dibujar otra cuerda encima del modelo.
+            DrawLine3D(base, { globo.x, globo.y - 1.7006f, globo.z }, Color{ 230, 230, 235, 255 });
+        }
+        else
+        {
+            DrawLine3D(base, globo, Color{ 230, 230, 235, 255 });
+            DrawSphereEx(globo, 0.4f, 8, 8, colorGlobo);
+        }
     }
 
     // Gradas de espectadores.
     for (int lado = -1; lado <= 1; lado += 2)
     {
+        if (DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_GRADA,
+            { (float)lado * DISTANCIA_GRADA_ASIENTO, 0.0f, 0.3f }, lado < 0 ? 180.0f : 0.0f))
+            continue;
         DrawCube({ (float)lado * DISTANCIA_GRADA_ASIENTO, ALTURA_GRADA_ASIENTO * 0.5f - 0.05f, 0.3f }, 2.6f, ALTURA_GRADA_ASIENTO + 0.1f, 5.6f, Color{ 150, 100, 70, 255 });
         DrawCubeWires({ (float)lado * DISTANCIA_GRADA_ASIENTO, ALTURA_GRADA_ASIENTO * 0.5f - 0.05f, 0.3f }, 2.6f, ALTURA_GRADA_ASIENTO + 0.1f, 5.6f, Color{ 90, 60, 40, 255 });
     }
@@ -1314,8 +1376,14 @@ static void DibujarTazasAsiento(const MinijuegoUltimoAsiento& m)
         Vector3 centro = { taza.posicion.x, SUELO_ASIENTO + 0.03f, taza.posicion.z };
         float extra = taza.destello * 0.25f;
 
-        DrawCylinder(centro, RADIO_TAZA_ASIENTO, RADIO_TAZA_ASIENTO, 0.03f, 28, Fade(color, 0.55f));
-        DrawCylinder({ centro.x, centro.y + 0.03f, centro.z }, RADIO_TAZA_ASIENTO * 0.6f, RADIO_TAZA_ASIENTO * 0.6f, 0.03f, 24, Fade(WHITE, 0.35f));
+        if (!DibujarModeloUltimoAsientoRetro3D(MODELO_ASIENTO_TAZA,
+            { taza.posicion.x, SUELO_ASIENTO, taza.posicion.z }, 0.0f,
+            { 0.0f, 1.0f, 0.0f }, { 1.0f, 1.0f, 1.0f }, color))
+        {
+            DrawCylinder(centro, RADIO_TAZA_ASIENTO, RADIO_TAZA_ASIENTO, 0.03f, 28, Fade(color, 0.55f));
+            DrawCylinder({ centro.x, centro.y + 0.03f, centro.z }, RADIO_TAZA_ASIENTO * 0.6f, RADIO_TAZA_ASIENTO * 0.6f, 0.03f, 24, Fade(WHITE, 0.35f));
+        }
+        // Aros, destello y columna de ocupacion siguen indicando las reglas.
         DrawCircle3D({ centro.x, centro.y + 0.07f, centro.z }, RADIO_TAZA_ASIENTO + extra, { 1.0f, 0.0f, 0.0f }, 90.0f, color);
         DrawCircle3D({ centro.x, centro.y + 0.07f, centro.z }, RADIO_TAZA_ASIENTO - 0.12f, { 1.0f, 0.0f, 0.0f }, 90.0f, color);
         DrawCylinderWires({ centro.x, centro.y, centro.z }, RADIO_TAZA_ASIENTO, RADIO_TAZA_ASIENTO * 0.8f, 2.4f, 16, Fade(color, 0.7f));

@@ -24,12 +24,39 @@ struct RecursoModeloEscenarioRetro3D
     const char* ruta = nullptr;
     Vector3 dimensiones{};
     bool cargado = false;
+    bool cargaIntentada = false;
+    int materialColor = -1;
+};
+
+enum PivoteModeloEscenarioRetro3D
+{
+    PIVOTE_ESCENARIO_ORIGINAL,
+    PIVOTE_ESCENARIO_CENTRAR_BASE
+};
+
+struct DefinicionModeloEscenarioRetro3D
+{
+    const char* ruta = nullptr;
+    PivoteModeloEscenarioRetro3D pivote = PIVOTE_ESCENARIO_ORIGINAL;
+    float rotacionX = 0.0f;
+    // Indice de primitive/malla del GLB, NO indice interno de material.
+    // Puede señalar COLOR_DINAMICO o BOMBILLAS segun el paquete.
+    int mallaColor = -1;
+};
+
+// Vista del paquete: la memoria pertenece al almacen compartido.
+struct PaqueteModelosEscenarioRetro3D
+{
+    RecursoModeloEscenarioRetro3D* recursos = nullptr;
+    const DefinicionModeloEscenarioRetro3D* definiciones = nullptr;
+    int cantidad = 0;
 };
 
 
 struct ModelosEscenariosRetro3D
 {
     RecursoModeloEscenarioRetro3D montanaLava;
+    RecursoModeloEscenarioRetro3D ultimoAsiento[CANTIDAD_MODELOS_ULTIMO_ASIENTO_3D];
     bool inicializados = false;
 };
 
@@ -81,27 +108,81 @@ inline BoundingBox RotarLimitesModeloEscenarioRetro3D(
 inline void PrepararSlotModeloEscenarioRetro3D(
     RecursoModeloEscenarioRetro3D& recurso,
     const char* ruta,
-    float rotacionX
+    float rotacionX,
+    PivoteModeloEscenarioRetro3D pivote = PIVOTE_ESCENARIO_ORIGINAL,
+    int mallaColor = -1
 )
 {
-    recurso = {};
+    if (recurso.cargaIntentada) return;
+    recurso.cargaIntentada = true;
     recurso.ruta = ruta;
 
     if (ruta == nullptr || !FileExists(ruta))
     {
+        TraceLog(LOG_WARNING, "Modelo de escenario ausente; se usan primitivas: %s",
+            ruta != nullptr ? ruta : "(sin ruta)");
         return;
     }
 
     recurso.modelo = LoadModel(ruta);
 
-    if (recurso.modelo.meshCount <= 0)
+    if (recurso.modelo.meshCount <= 0 || recurso.modelo.meshes == nullptr ||
+        recurso.modelo.materialCount <= 0 || recurso.modelo.materials == nullptr ||
+        recurso.modelo.meshMaterial == nullptr)
     {
+        UnloadModel(recurso.modelo);
         recurso.modelo = {};
         TraceLog(
             LOG_WARNING,
             "No se pudo cargar el modelo de escenario: %s",
             ruta
         );
+        return;
+    }
+
+    for (int i = 0; i < recurso.modelo.meshCount; i++)
+    {
+        int material = recurso.modelo.meshMaterial[i];
+        if (recurso.modelo.meshes[i].vertexCount <= 0 ||
+            recurso.modelo.meshes[i].vertices == nullptr ||
+            material < 0 || material >= recurso.modelo.materialCount ||
+            recurso.modelo.materials[material].maps == nullptr)
+        {
+            UnloadModel(recurso.modelo);
+            recurso.modelo = {};
+            TraceLog(LOG_WARNING, "Malla/material de escenario invalido: %s", ruta);
+            return;
+        }
+    }
+
+    if (mallaColor >= 0)
+    {
+        if (mallaColor >= recurso.modelo.meshCount)
+        {
+            UnloadModel(recurso.modelo);
+            recurso.modelo = {};
+            TraceLog(LOG_WARNING, "Falta la malla del color de estado: %s", ruta);
+            return;
+        }
+        recurso.materialColor = recurso.modelo.meshMaterial[mallaColor];
+    }
+
+    // Las piezas modulares ya llevan su origen y alturas locales correctos.
+    // LoadModel conserva las transformaciones importadas y colores de vertice.
+    if (pivote == PIVOTE_ESCENARIO_ORIGINAL)
+    {
+        BoundingBox limites = GetModelBoundingBox(recurso.modelo);
+        recurso.dimensiones = Vector3Subtract(limites.max, limites.min);
+        if (!std::isfinite(recurso.dimensiones.x) || !std::isfinite(recurso.dimensiones.y) ||
+            !std::isfinite(recurso.dimensiones.z) || recurso.dimensiones.x <= 0.001f ||
+            recurso.dimensiones.y <= 0.001f || recurso.dimensiones.z <= 0.001f)
+        {
+            UnloadModel(recurso.modelo);
+            recurso.modelo = {};
+            TraceLog(LOG_WARNING, "El modelo de escenario no tiene dimensiones validas: %s", ruta);
+            return;
+        }
+        recurso.cargado = true;
         return;
     }
 
@@ -155,6 +236,79 @@ inline void PrepararSlotModeloEscenarioRetro3D(
     recurso.cargado = true;
 }
 
+inline void CargarPaqueteModelosEscenarioRetro3D(PaqueteModelosEscenarioRetro3D paquete)
+{
+    for (int i = 0; i < paquete.cantidad; i++)
+    {
+        const DefinicionModeloEscenarioRetro3D& d = paquete.definiciones[i];
+        PrepararSlotModeloEscenarioRetro3D(
+            paquete.recursos[i], d.ruta, d.rotacionX, d.pivote, d.mallaColor);
+    }
+}
+
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteUltimoAsientoRetro3D()
+{
+    // Los indices de color pertenecen a la version 1 del manifest del paquete.
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_ULTIMO_ASIENTO_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_ULTIMO_ASIENTO_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_ULTIMO_ASIENTO_3D[i];
+        definiciones[MODELO_ASIENTO_BOMBILLA].mallaColor = 0;
+        definiciones[MODELO_ASIENTO_TAZA].mallaColor = 2;
+        definiciones[MODELO_ASIENTO_VALLA].mallaColor = 2;
+        definiciones[MODELO_ASIENTO_NORIA_CABINA].mallaColor = 3;
+        definiciones[MODELO_ASIENTO_GLOBO].mallaColor = 0;
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().ultimoAsiento,
+        definiciones, CANTIDAD_MODELOS_ULTIMO_ASIENTO_3D };
+}
+
+inline bool DibujarModeloEscenarioRetro3D(
+    RecursoModeloEscenarioRetro3D& recurso,
+    Vector3 posicion,
+    Vector3 ejeRotacion,
+    float anguloGrados,
+    Vector3 escala,
+    Color colorEstado = WHITE
+)
+{
+    if (!recurso.cargado) return false;
+
+    Color anterior{};
+    if (recurso.materialColor >= 0)
+    {
+        MaterialMap& mapa = recurso.modelo.materials[recurso.materialColor].maps[MATERIAL_MAP_DIFFUSE];
+        anterior = mapa.color;
+        mapa.color = colorEstado;
+    }
+
+    // Los parentesis evitan la macro de SombrasRetro para personajes. Cada
+    // escenario decide sus sombras en coordenadas del mundo, sin heredar una
+    // mancha de tamano humano para arena, techo o rueda. DrawModelEx compone
+    // la transformacion importada y la instancia una sola vez.
+    (DrawModelEx)(recurso.modelo, posicion, ejeRotacion, anguloGrados, escala, WHITE);
+
+    if (recurso.materialColor >= 0)
+        recurso.modelo.materials[recurso.materialColor].maps[MATERIAL_MAP_DIFFUSE].color = anterior;
+    return true;
+}
+
+inline bool DibujarModeloUltimoAsientoRetro3D(
+    ModeloUltimoAsiento3D pieza,
+    Vector3 posicion,
+    float anguloGrados = 0.0f,
+    Vector3 ejeRotacion = { 0.0f, 1.0f, 0.0f },
+    Vector3 escala = { 1.0f, 1.0f, 1.0f },
+    Color colorEstado = WHITE
+)
+{
+    return DibujarModeloEscenarioRetro3D(
+        ObtenerModelosEscenariosRetro3D().ultimoAsiento[pieza],
+        posicion, ejeRotacion, anguloGrados, escala, colorEstado);
+}
 
 inline void InicializarModelosEscenariosRetro3D()
 {
@@ -169,7 +323,8 @@ inline void InicializarModelosEscenariosRetro3D()
     PrepararSlotModeloEscenarioRetro3D(
         recursos.montanaLava,
         RUTA_MODELO_MONTANA_LAVA_3D,
-        ROTACION_X_MODELO_MONTANA_LAVA_3D
+        ROTACION_X_MODELO_MONTANA_LAVA_3D,
+        PIVOTE_ESCENARIO_CENTRAR_BASE
     );
 
     recursos.inicializados = true;
@@ -183,6 +338,8 @@ inline bool DibujarModeloMontanaLavaEscenarioRetro3D(
     float anguloY
 )
 {
+    // El escenario opcional historico tambien se solicita cuando se dibuja.
+    InicializarModelosEscenariosRetro3D();
     RecursoModeloEscenarioRetro3D& recurso =
         ObtenerModelosEscenariosRetro3D().montanaLava;
 
@@ -234,11 +391,8 @@ inline void DescargarModelosEscenariosRetro3D()
     ModelosEscenariosRetro3D& recursos =
         ObtenerModelosEscenariosRetro3D();
 
-    if (!recursos.inicializados)
-    {
-        return;
-    }
-
     DescargarSlotModeloEscenarioRetro3D(recursos.montanaLava);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.ultimoAsiento)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
     recursos.inicializados = false;
 }

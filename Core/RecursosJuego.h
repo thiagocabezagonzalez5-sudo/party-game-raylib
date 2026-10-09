@@ -47,6 +47,55 @@ inline constexpr const char* RUTA_MODELO_MONTANA_LAVA_3D =
 inline constexpr float ROTACION_X_MODELO_MONTANA_LAVA_3D =
     0.0f;
 
+// Orden del paquete original (manifest.json). Cada ID identifica un recurso,
+// no una instancia: caballitos, cabinas y tazas comparten su respectivo GLB.
+enum ModeloUltimoAsiento3D
+{
+    MODELO_ASIENTO_CARRUSEL_BASE,
+    MODELO_ASIENTO_CARRUSEL_COLUMNA,
+    MODELO_ASIENTO_CARRUSEL_TECHO,
+    MODELO_ASIENTO_CABALLITO,
+    MODELO_ASIENTO_POSTE_CABALLITO,
+    MODELO_ASIENTO_BOMBILLA,
+    MODELO_ASIENTO_TAZA,
+    MODELO_ASIENTO_VALLA,
+    MODELO_ASIENTO_NORIA_SOPORTE,
+    MODELO_ASIENTO_NORIA_RUEDA,
+    MODELO_ASIENTO_NORIA_CABINA,
+    MODELO_ASIENTO_MONTANA_VIAS,
+    MODELO_ASIENTO_MONTANA_CARRO,
+    MODELO_ASIENTO_PUESTO,
+    MODELO_ASIENTO_GRADA,
+    MODELO_ASIENTO_GLOBO,
+    MODELO_ASIENTO_ARENA,
+    CANTIDAD_MODELOS_ULTIMO_ASIENTO_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_ULTIMO_ASIENTO_3D[] =
+{
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/carrusel_base.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/carrusel_columna.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/carrusel_techo.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/caballito.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/poste_caballito.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/bombilla.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/taza.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/valla_tramo.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/noria_soporte.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/noria_rueda.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/noria_cabina.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/montana_rusa_vias.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/montana_rusa_carro.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/puesto_feria.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/grada.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/globo.glb",
+    "Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/arena.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_ULTIMO_ASIENTO_3D) /
+    sizeof(RUTAS_MODELOS_ULTIMO_ASIENTO_3D[0]) == CANTIDAD_MODELOS_ULTIMO_ASIENTO_3D,
+    "Las rutas deben coincidir con los IDs del paquete Ultimo Asiento");
+
 
 //==================================================
 // TEXTURAS GENERALES

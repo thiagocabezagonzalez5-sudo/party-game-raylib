@@ -1,7 +1,7 @@
 # Último Asiento — paquete de modelos v1
 
 17 archivos GLB originales creados para la rama `claude/expansion-party`, referencia `ea5472c`.
-Este paquete contiene arte listo para cargar y un visor independiente. **Todavía no está integrado en el minijuego.**
+Este paquete contiene arte integrado en el minijuego real y un visor independiente para inspeccionar las piezas.
 
 ## Contenido
 
@@ -84,13 +84,44 @@ Usa la misma instalación de raylib que tu juego. Si el compilador está en otra
 Teclas 1 a 5 cambian la vista; flechas izquierda/derecha orbitan; Escape cierra. Todos los modelos se descargan al salir.
 El visor y los GLB se comprobaron en Linux con raylib 6.1-dev y SDL/OpenGL. No se ejecutó el binario Windows.
 
-## Integración posterior
+## Integración en el juego
 
-Copiar `GLB/` a `Assets/Modelos/Escenarios/UltimoAsiento/`. Sustituir únicamente el dibujo de las primitivas existentes.
-Cargar recursos una sola vez y descargar cada `Model` exactamente una vez. Evitar recargarlos al reiniciar una ronda.
-Conservar cámaras, tiempos, reglas, posiciones de espectadores, colores de trampa y condiciones de ocupación.
+Los 17 GLB permanecen en `Assets/Modelos/Escenarios/Ultimo_Asiento/GLB/`; sus rutas e IDs están centralizados en `Core/RecursosJuego.h`.
+`Minigames/ModelosEscenariosRetro3D.h` contiene el almacén compartido y una vista de paquete con definiciones de ruta, política de pivote y malla de color.
+El paquete se solicita desde `MinijuegoUltimoAsiento::Reiniciar`, al entrar o reiniciar el minijuego, y cada recurso se intenta cargar una sola vez durante la sesión.
+Los fallos también se recuerdan: se registra un aviso y solo esa pieza conserva sus primitivas originales.
+`Inicializar` reinicia únicamente el estado de la ronda; no carga ni descarga modelos.
+
+Cada instancia admite posición, eje/ángulo y escala explícitos. Este paquete usa sus pivotes originales, sin centrarlo en la base.
+Solo la montaña opcional histórica solicita expresamente la normalización en la base.
+El carrusel gira en el mismo sentido que las posiciones calculadas con coseno/seno; el carro conserva su recorrido e incorpora la inclinación según la pendiente.
+Las cabinas se trasladan desde su punto de suspensión sin heredar la rotación de la rueda.
+Los materiales y colores de vértice se conservan; únicamente `COLOR_DINAMICO` o `BOMBILLAS` reciben el color correspondiente, que se restaura después de cada dibujo.
+El dibujo de estos GLB evita la macro de sombras de personajes de `SombrasRetro.h`, para no proyectar manchas de tamaño humano desde los pivotes modulares.
+Los jugadores conservan sus sombras. Los indicadores de taza, destellos, partículas, cámaras, tiempos, reglas, hitboxes y posiciones de espectadores siguen siendo los del juego.
+
+El caché permanece al regresar al menú, al selector y al tablero, y se reutiliza al volver a entrar.
+`ZonaPruebas::Descargar` libera todos los modelos desde `Juego::Descargar`, antes de `CloseWindow`; la descarga es idempotente.
+Para integrar otro escenario, agregar sus rutas en `Core/RecursosJuego.h`, reservar sus slots en el almacén y describir su paquete; solicitarlo al activar ese minijuego y descargarlo en la función compartida de cierre.
+No se recorren ni cargan automáticamente las carpetas de los demás escenarios.
+
 La noria y buena parte de la montaña rusa quedan fuera del encuadre original durante la partida: la vista general incluida las muestra para inspeccionar el arte.
 Las capturas de escena son del visor de comprobación, no una integración ya aplicada al juego.
+
+### Verificación reproducible en Windows
+
+Desde la raíz del repositorio:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File Tests/VerificarUltimoAsiento.ps1
+```
+
+La prueba compila con el UCRT64 existente y ejecuta `ZonaPruebas`, el gestor y Último Asiento con una ventana OpenGL oculta.
+Comprueba 2, 3 y 4 jugadores, preparación, música (subfase), ocupación, trampa, eliminación, final, reinicio, reentrada desde selector/tablero, pivotes, colores de vértice, restauración de materiales, fallback por pieza y descarga.
+Las capturas `build/asiento-*.png` salen del dibujo integrado con la cámara original; los archivos de `Vistas/` siguen siendo las capturas históricas del visor.
+La prueba automatizada no comprueba audio audible ni mandos físicos, ni simula navegación humana por los menús.
+La integración se compiló con la tarea existente de Windows UCRT64 (C++17, `-Wall -Wextra`), y esta prueba terminó con **0 errores**.
+Las capturas de preparación, música, ocupación, trampa, animación, eliminación y final se revisaron usando el dibujo del minijuego integrado.
 
 ## Aspecto y licencia
 
