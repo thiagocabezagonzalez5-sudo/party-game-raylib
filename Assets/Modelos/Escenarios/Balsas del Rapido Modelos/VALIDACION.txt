@@ -1,0 +1,2 @@
+24/24 GLB 2.0 válidos: cabecera, chunks JSON/BIN, longitudes, primitivas y límites comprobados.
+24/24 cargados correctamente por raylib; 29 capturas PNG con OpenGL software y vista previa.

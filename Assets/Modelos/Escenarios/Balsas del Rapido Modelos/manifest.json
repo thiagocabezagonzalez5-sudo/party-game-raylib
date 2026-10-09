@@ -1,0 +1,537 @@
+{
+  "minijuego": "Balsas del Rápido",
+  "base": "claude/expansion-party ea5472c",
+  "coordenadas": "Y arriba; Z=−avance; unidades raylib",
+  "modelos": [
+    {
+      "archivo": "rio_tramo.glb",
+      "triangulos": 288,
+      "materiales": [
+        "agua",
+        "agua_luz",
+        "espuma"
+      ],
+      "bytes": 39072,
+      "min": [
+        -5.6,
+        -0.3,
+        -10.0
+      ],
+      "max": [
+        5.6,
+        0.0305,
+        10.0
+      ],
+      "pivote": "centro de tramo",
+      "uso": "Dos carriles X=±8; repetir cada 20 en Z=−10,−30,...,−130."
+    },
+    {
+      "archivo": "isla_tramo.glb",
+      "triangulos": 504,
+      "materiales": [
+        "musgo",
+        "musgo_luz",
+        "selva"
+      ],
+      "bytes": 66288,
+      "min": [
+        -2.4,
+        -0.2,
+        -10.0
+      ],
+      "max": [
+        2.4,
+        0.45,
+        10.0
+      ],
+      "pivote": "centro de tramo",
+      "uso": "Isla central X=0; repetir cada 20."
+    },
+    {
+      "archivo": "orilla_tramo.glb",
+      "triangulos": 468,
+      "materiales": [
+        "selva",
+        "selva_oscura",
+        "piedra_sombra",
+        "piedra"
+      ],
+      "bytes": 62572,
+      "min": [
+        -4.2,
+        -0.405,
+        -10.0
+      ],
+      "max": [
+        12.0,
+        6.0,
+        10.0
+      ],
+      "pivote": "centro de tramo",
+      "uso": "Copias en X=±17.6, Z=−10−20*i; reflejar con rotación Y=180° para orilla derecha."
+    },
+    {
+      "archivo": "arbol_selva.glb",
+      "triangulos": 1172,
+      "materiales": [
+        "madera",
+        "madera_sombra",
+        "hoja",
+        "hoja_luz",
+        "selva",
+        "liana"
+      ],
+      "bytes": 153204,
+      "min": [
+        -3.4426,
+        0,
+        -3.097
+      ],
+      "max": [
+        4.2,
+        13.6,
+        3.5
+      ],
+      "pivote": "pie central",
+      "uso": "Árboles exteriores X≈±18..22 cada 7 unidades de avance."
+    },
+    {
+      "archivo": "liana.glb",
+      "triangulos": 220,
+      "materiales": [
+        "liana",
+        "hoja_luz"
+      ],
+      "bytes": 29716,
+      "min": [
+        -0.06,
+        0.1976,
+        -0.0585
+      ],
+      "max": [
+        0.34,
+        5.3021,
+        0.29
+      ],
+      "pivote": "origen superior aproximado",
+      "uso": "Decoración animable de los árboles."
+    },
+    {
+      "archivo": "palmera_isla.glb",
+      "triangulos": 276,
+      "materiales": [
+        "madera",
+        "hoja",
+        "hoja_luz"
+      ],
+      "bytes": 37684,
+      "min": [
+        -0.953,
+        0,
+        -1.0277
+      ],
+      "max": [
+        1.0528,
+        2.95,
+        1.0277
+      ],
+      "pivote": "pie central",
+      "uso": "Isla central, alrededor de X=±0.9 cada 11 de avance."
+    },
+    {
+      "archivo": "ruina_musgosa.glb",
+      "triangulos": 108,
+      "materiales": [
+        "piedra",
+        "musgo",
+        "piedra_luz",
+        "piedra_sombra",
+        "liana"
+      ],
+      "bytes": 18116,
+      "min": [
+        -1.76,
+        0.3,
+        -1.65
+      ],
+      "max": [
+        1.66,
+        3.18,
+        1.36
+      ],
+      "pivote": "pie central",
+      "uso": "Copias en p=18,41,63,88,106 sobre isla."
+    },
+    {
+      "archivo": "cascada_orilla.glb",
+      "triangulos": 180,
+      "materiales": [
+        "agua_luz",
+        "espuma"
+      ],
+      "bytes": 24700,
+      "min": [
+        -1.2133,
+        -0.02,
+        -0.9511
+      ],
+      "max": [
+        0.236,
+        5.9,
+        0.9511
+      ],
+      "pivote": "pie central",
+      "uso": "Copias en X≈±13.8, p=30,95,113."
+    },
+    {
+      "archivo": "espuma_rapido.glb",
+      "triangulos": 348,
+      "materiales": [
+        "espuma",
+        "blanco"
+      ],
+      "bytes": 45876,
+      "min": [
+        -1.3,
+        0.01,
+        -0.26
+      ],
+      "max": [
+        1.3,
+        0.11,
+        0.327
+      ],
+      "pivote": "centro",
+      "uso": "Instanciar en cada carril: X=centroCarril−3.2; p≈56..80."
+    },
+    {
+      "archivo": "roca_obstaculo.glb",
+      "triangulos": 194,
+      "materiales": [
+        "piedra",
+        "piedra_luz",
+        "musgo"
+      ],
+      "bytes": 27348,
+      "min": [
+        -0.8635,
+        -0.38,
+        -0.7919
+      ],
+      "max": [
+        0.9,
+        1.0,
+        0.7919
+      ],
+      "pivote": "pie central",
+      "uso": "Centro (c+desvio,0,−p), escala según o.a; radio lógico independiente."
+    },
+    {
+      "archivo": "tronco_flotante.glb",
+      "triangulos": 488,
+      "materiales": [
+        "madera",
+        "madera_sombra",
+        "madera_luz"
+      ],
+      "bytes": 64420,
+      "min": [
+        -1.709,
+        -0.305,
+        -0.455
+      ],
+      "max": [
+        1.709,
+        0.605,
+        0.455
+      ],
+      "pivote": "centro",
+      "uso": "Centro (c+desvio,0,−p); longitud 2*o.a≈3.4."
+    },
+    {
+      "archivo": "divisor_rapido.glb",
+      "triangulos": 672,
+      "materiales": [
+        "piedra_sombra",
+        "musgo",
+        "piedra"
+      ],
+      "bytes": 87528,
+      "min": [
+        -0.75,
+        -0.18,
+        -15.0
+      ],
+      "max": [
+        0.75,
+        1.23,
+        15.0
+      ],
+      "pivote": "centro",
+      "uso": "En cada carril: centro X=±8, p=67; ancho 2*o.a=1.4, largo 30."
+    },
+    {
+      "archivo": "remolino.glb",
+      "triangulos": 1414,
+      "materiales": [
+        "espuma",
+        "agua_sombra"
+      ],
+      "bytes": 180236,
+      "min": [
+        -2.044,
+        0.0082,
+        -2.044
+      ],
+      "max": [
+        2.044,
+        0.1218,
+        2.044
+      ],
+      "pivote": "centro",
+      "uso": "Centro (c+desvio,0,−p), radio lógico 2; girar Y para animar."
+    },
+    {
+      "archivo": "banana_boost.glb",
+      "triangulos": 106,
+      "materiales": [
+        "banana",
+        "banana_sombra"
+      ],
+      "bytes": 15412,
+      "min": [
+        -0.3205,
+        0.1946,
+        -0.12
+      ],
+      "max": [
+        0.3341,
+        0.7066,
+        0.12
+      ],
+      "pivote": "pie central",
+      "uso": "Centro (c+desvio,0,−p); bob Y≈0.3 y ocultar al recoger."
+    },
+    {
+      "archivo": "loro_rojo.glb",
+      "triangulos": 268,
+      "materiales": [
+        "rojo",
+        "naranja",
+        "negro",
+        "azul"
+      ],
+      "bytes": 37548,
+      "min": [
+        -0.2687,
+        -0.32,
+        -0.49
+      ],
+      "max": [
+        0.28,
+        0.47,
+        0.7535
+      ],
+      "pivote": "centro de cuerpo",
+      "uso": "Pájaros junto a orillas, vuelo Y≈5."
+    },
+    {
+      "archivo": "loro_azul.glb",
+      "triangulos": 268,
+      "materiales": [
+        "azul",
+        "naranja",
+        "negro"
+      ],
+      "bytes": 36644,
+      "min": [
+        -0.2687,
+        -0.32,
+        -0.49
+      ],
+      "max": [
+        0.28,
+        0.47,
+        0.7535
+      ],
+      "pivote": "centro de cuerpo",
+      "uso": "Pájaros junto a orillas, vuelo Y≈5."
+    },
+    {
+      "archivo": "loro_amarillo.glb",
+      "triangulos": 268,
+      "materiales": [
+        "amarillo",
+        "naranja",
+        "negro",
+        "azul"
+      ],
+      "bytes": 37548,
+      "min": [
+        -0.2687,
+        -0.32,
+        -0.49
+      ],
+      "max": [
+        0.28,
+        0.47,
+        0.7535
+      ],
+      "pivote": "centro de cuerpo",
+      "uso": "Pájaros junto a orillas, vuelo Y≈5."
+    },
+    {
+      "archivo": "loro_ala_roja.glb",
+      "triangulos": 198,
+      "materiales": [
+        "rojo",
+        "azul"
+      ],
+      "bytes": 27008,
+      "min": [
+        -0.4469,
+        -0.055,
+        -0.2248
+      ],
+      "max": [
+        0.4755,
+        0.055,
+        0.3162
+      ],
+      "pivote": "unión lateral",
+      "uso": "Dos alas animadas ±X para loro rojo."
+    },
+    {
+      "archivo": "loro_ala_azul.glb",
+      "triangulos": 198,
+      "materiales": [
+        "azul"
+      ],
+      "bytes": 26136,
+      "min": [
+        -0.4469,
+        -0.055,
+        -0.2248
+      ],
+      "max": [
+        0.4755,
+        0.055,
+        0.3162
+      ],
+      "pivote": "unión lateral",
+      "uso": "Dos alas animadas ±X para loro azul."
+    },
+    {
+      "archivo": "loro_ala_amarilla.glb",
+      "triangulos": 198,
+      "materiales": [
+        "amarillo",
+        "azul"
+      ],
+      "bytes": 27008,
+      "min": [
+        -0.4469,
+        -0.055,
+        -0.2248
+      ],
+      "max": [
+        0.4755,
+        0.055,
+        0.3162
+      ],
+      "pivote": "unión lateral",
+      "uso": "Dos alas animadas ±X para loro amarillo."
+    },
+    {
+      "archivo": "balsa.glb",
+      "triangulos": 920,
+      "materiales": [
+        "madera",
+        "madera_sombra",
+        "madera_luz",
+        "soga",
+        "COLOR_DINAMICO"
+      ],
+      "bytes": 120360,
+      "min": [
+        -0.9,
+        -0.11,
+        -1.335
+      ],
+      "max": [
+        0.9,
+        1.5,
+        1.335
+      ],
+      "pivote": "centro",
+      "uso": "Instanciar en (b.x,0.12+oscilación,−b.p), girar −b.rumbo; teñir bandera."
+    },
+    {
+      "archivo": "remo.glb",
+      "triangulos": 88,
+      "materiales": [
+        "madera",
+        "soga",
+        "madera_sombra"
+      ],
+      "bytes": 13944,
+      "min": [
+        -0.075,
+        -0.3028,
+        -0.07
+      ],
+      "max": [
+        0.97,
+        0.07,
+        0.575
+      ],
+      "pivote": "eje de agarre",
+      "uso": "Dos por balsa; animar palada en cada lado, independiente del casco."
+    },
+    {
+      "archivo": "arco_meta.glb",
+      "triangulos": 324,
+      "materiales": [
+        "piedra",
+        "musgo",
+        "piedra_sombra",
+        "negro",
+        "blanco"
+      ],
+      "bytes": 45308,
+      "min": [
+        -14.2,
+        0.0,
+        -0.5
+      ],
+      "max": [
+        14.2,
+        5.75,
+        0.595
+      ],
+      "pivote": "base en centro",
+      "uso": "Situar en (0,0,−120), cruza los dos carriles."
+    },
+    {
+      "archivo": "linea_meta.glb",
+      "triangulos": 288,
+      "materiales": [
+        "negro",
+        "blanco"
+      ],
+      "bytes": 38240,
+      "min": [
+        -5.51,
+        0.025,
+        -0.9
+      ],
+      "max": [
+        5.53,
+        0.055,
+        0.9
+      ],
+      "pivote": "centro",
+      "uso": "Dos copias en X=±8, Z=−120."
+    }
+  ]
+}
