@@ -96,6 +96,52 @@ static_assert(sizeof(RUTAS_MODELOS_ULTIMO_ASIENTO_3D) /
     sizeof(RUTAS_MODELOS_ULTIMO_ASIENTO_3D[0]) == CANTIDAD_MODELOS_ULTIMO_ASIENTO_3D,
     "Las rutas deben coincidir con los IDs del paquete Ultimo Asiento");
 
+// Un recurso por pieza del puerto, compartido por las ocho instancias.
+enum ModeloCajasPuerto3D
+{
+    MODELO_CAJAS_MUELLE,
+    MODELO_CAJAS_GRUA_PORTICO,
+    MODELO_CAJAS_GRUA_CARRO,
+    MODELO_CAJAS_GRUA_CABINA,
+    MODELO_CAJAS_GRUA_BRAZO,
+    MODELO_CAJAS_GRUA_CABLE,
+    MODELO_CAJAS_GRUA_GANCHO,
+    MODELO_CAJAS_CONTENEDOR_CUERPO,
+    MODELO_CAJAS_PUERTA_IZQUIERDA,
+    MODELO_CAJAS_PUERTA_DERECHA,
+    MODELO_CAJAS_CONTENEDOR_DECORACION,
+    MODELO_CAJAS_FAROL,
+    MODELO_CAJAS_BOLARDO,
+    MODELO_CAJAS_ANCLA,
+    MODELO_CAJAS_BARCO,
+    MODELO_CAJAS_MARCA_GOLPE,
+    CANTIDAD_MODELOS_CAJAS_PUERTO_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_CAJAS_PUERTO_3D[] =
+{
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/muelle.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/grua_portico.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/grua_carro.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/grua_cabina.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/grua_brazo.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/grua_cable_unidad.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/grua_gancho.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/contenedor_cuerpo.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/contenedor_puerta_izquierda.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/contenedor_puerta_derecha.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/contenedor_decoracion.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/farol.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/bolardo.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/ancla_dorada.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/barco_fondo.glb",
+    "Assets/Modelos/Escenarios/Cajas_del_Puerto/GLB/marca_golpe.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_CAJAS_PUERTO_3D) /
+    sizeof(RUTAS_MODELOS_CAJAS_PUERTO_3D[0]) == CANTIDAD_MODELOS_CAJAS_PUERTO_3D,
+    "Las rutas deben coincidir con los IDs del paquete Cajas del Puerto");
+
 
 //==================================================
 // TEXTURAS GENERALES

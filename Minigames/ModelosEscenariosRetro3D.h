@@ -57,6 +57,7 @@ struct ModelosEscenariosRetro3D
 {
     RecursoModeloEscenarioRetro3D montanaLava;
     RecursoModeloEscenarioRetro3D ultimoAsiento[CANTIDAD_MODELOS_ULTIMO_ASIENTO_3D];
+    RecursoModeloEscenarioRetro3D cajasPuerto[CANTIDAD_MODELOS_CAJAS_PUERTO_3D];
     bool inicializados = false;
 };
 
@@ -296,6 +297,38 @@ inline bool DibujarModeloEscenarioRetro3D(
     return true;
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteCajasPuertoRetro3D()
+{
+    // Primitivas de COLOR_DINAMICO segun manifest/visor, resueltas mediante
+    // meshMaterial por el cargador. Todos los pivotes quedan originales.
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_CAJAS_PUERTO_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_CAJAS_PUERTO_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_CAJAS_PUERTO_3D[i];
+        definiciones[MODELO_CAJAS_CONTENEDOR_CUERPO].mallaColor = 1;
+        definiciones[MODELO_CAJAS_PUERTA_IZQUIERDA].mallaColor = 0;
+        definiciones[MODELO_CAJAS_PUERTA_DERECHA].mallaColor = 0;
+        definiciones[MODELO_CAJAS_CONTENEDOR_DECORACION].mallaColor = 1;
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().cajasPuerto,
+        definiciones, CANTIDAD_MODELOS_CAJAS_PUERTO_3D };
+}
+
+inline bool DibujarModeloCajasPuertoRetro3D(
+    ModeloCajasPuerto3D pieza,
+    Vector3 posicion,
+    Vector3 escala = { 1.0f, 1.0f, 1.0f },
+    Color colorEstado = WHITE
+)
+{
+    return DibujarModeloEscenarioRetro3D(
+        ObtenerModelosEscenariosRetro3D().cajasPuerto[pieza],
+        posicion, { 0.0f, 1.0f, 0.0f }, 0.0f, escala, colorEstado);
+}
+
 inline bool DibujarModeloUltimoAsientoRetro3D(
     ModeloUltimoAsiento3D pieza,
     Vector3 posicion,
@@ -393,6 +426,8 @@ inline void DescargarModelosEscenariosRetro3D()
 
     DescargarSlotModeloEscenarioRetro3D(recursos.montanaLava);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.ultimoAsiento)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.cajasPuerto)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     recursos.inicializados = false;
 }

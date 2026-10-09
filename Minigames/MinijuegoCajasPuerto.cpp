@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -933,6 +934,7 @@ void MinijuegoCajasPuerto::Reiniciar(
 )
 {
     Inicializar();
+    CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteCajasPuertoRetro3D());
     InicializarResultadoMinijuego(
         resultado,
         participantes,
@@ -1057,9 +1059,8 @@ void MinijuegoCajasPuerto::Actualizar(
 // VISUAL
 //==================================================
 //
-// MODELO FUTURO: reemplazar por GLB el muelle de madera, la grua portico
-// con cabina y gancho, los contenedores (con puertas animadas), el barco
-// del fondo, los faroles, bolardos y el ancla dorada del doble fondo.
+// El paquete compartido conserva pivotes y colores. Cada pieza que no pueda
+// dibujarse mantiene sus primitivas originales, sin cambiar las reglas.
 //==================================================
 
 
@@ -1094,8 +1095,12 @@ static Color ColorContenedorCajas(int indice)
 
 static void DibujarFarolCajas(float x, float z)
 {
-    DrawCylinder({ x, 1.6f, z }, 0.09f, 0.12f, 3.2f, 8, Color{ 52, 54, 60, 255 });
-    DrawSphere({ x, 3.3f, z }, 0.22f, Color{ 255, 226, 140, 255 });
+    if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_FAROL, { x, 0.0f, z }))
+    {
+        DrawCylinder({ x, 1.6f, z }, 0.09f, 0.12f, 3.2f, 8, Color{ 52, 54, 60, 255 });
+        DrawSphere({ x, 3.3f, z }, 0.22f, Color{ 255, 226, 140, 255 });
+    }
+    // El halo es un efecto: se conserva tambien con el GLB del farol.
     DrawSphere({ x, 3.3f, z }, 0.5f, Fade(Color{ 255, 220, 120, 255 }, 0.18f));
 }
 
@@ -1105,9 +1110,11 @@ static void DibujarMuelleCajas()
     DrawPlane({ 0.0f, -0.9f, -4.0f }, { 120.0f, 90.0f }, Color{ 9, 22, 42, 255 });
 
     // Muelle de madera.
-    DrawCube({ 0.0f, -0.3f, 0.75f }, 22.0f, 0.6f, 14.0f, Color{ 86, 62, 42, 255 });
+    bool muelleGLB = DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_MUELLE, { 0.0f, 0.0f, 0.75f });
+    if (!muelleGLB)
+        DrawCube({ 0.0f, -0.3f, 0.75f }, 22.0f, 0.6f, 14.0f, Color{ 86, 62, 42, 255 });
 
-    for (int i = 0; i <= 14; i++)
+    for (int i = 0; !muelleGLB && i <= 14; i++)
     {
         float z = -6.0f + (float)i;
         DrawLine3D(
@@ -1120,41 +1127,55 @@ static void DibujarMuelleCajas()
     for (int i = 0; i < 6; i++)
     {
         float x = -10.0f + 4.0f * (float)i;
-        DrawCylinder({ x, -0.2f, 7.8f }, 0.22f, 0.22f, 0.9f, 8, Color{ 52, 40, 30, 255 });
+        if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_BOLARDO, { x, 0.0f, 7.8f }))
+            DrawCylinder({ x, -0.2f, 7.8f }, 0.22f, 0.22f, 0.9f, 8, Color{ 52, 40, 30, 255 });
     }
 
     // Barco al fondo.
-    DrawCube({ 0.0f, 0.4f, -17.0f }, 34.0f, 3.4f, 6.0f, Color{ 52, 36, 44, 255 });
-    DrawCube({ 0.0f, -0.4f, -17.0f }, 34.5f, 1.2f, 6.2f, Color{ 120, 40, 40, 255 });
-    DrawCube({ 9.0f, 3.6f, -17.0f }, 6.0f, 3.0f, 4.2f, Color{ 150, 154, 160, 255 });
-    DrawCylinder({ 10.5f, 6.4f, -17.0f }, 0.6f, 0.8f, 2.6f, 10, Color{ 190, 70, 50, 255 });
-
-    for (int i = 0; i < 6; i++)
+    if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_BARCO, { 0.0f, -0.9f, -17.0f }))
     {
-        float x = -11.0f + 3.2f * (float)i;
-        DrawCube(
-            { x, 2.6f, -16.5f },
-            2.4f,
-            1.6f,
-            1.8f,
-            OscurecerCajas(ColorContenedorCajas(i), 0.55f)
-        );
+        DrawCube({ 0.0f, 0.4f, -17.0f }, 34.0f, 3.4f, 6.0f, Color{ 52, 36, 44, 255 });
+        DrawCube({ 0.0f, -0.4f, -17.0f }, 34.5f, 1.2f, 6.2f, Color{ 120, 40, 40, 255 });
+        DrawCube({ 9.0f, 3.6f, -17.0f }, 6.0f, 3.0f, 4.2f, Color{ 150, 154, 160, 255 });
+        DrawCylinder({ 10.5f, 6.4f, -17.0f }, 0.6f, 0.8f, 2.6f, 10, Color{ 190, 70, 50, 255 });
+
+        for (int i = 0; i < 6; i++)
+        {
+            float x = -11.0f + 3.2f * (float)i;
+            DrawCube(
+                { x, 2.6f, -16.5f },
+                2.4f,
+                1.6f,
+                1.8f,
+                OscurecerCajas(ColorContenedorCajas(i), 0.55f)
+            );
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            DrawSphere(
+                { 6.2f + 1.2f * (float)i, 4.3f, -14.9f },
+                0.12f,
+                Color{ 255, 232, 150, 255 }
+            );
+        }
     }
 
+    // Misma pila y colores del dibujo original; una sola malla decorativa.
+    const Vector3 posicionesDecoracion[] =
+    {
+        { -12.5f, 0.0f, -5.0f }, { -12.5f, 2.2f, -5.0f },
+        { 12.5f, 0.0f, -5.0f }, { 12.5f, 2.2f, -5.0f }
+    };
+    const int coloresDecoracion[] = { 2, 0, 1, 3 };
     for (int i = 0; i < 4; i++)
     {
-        DrawSphere(
-            { 6.2f + 1.2f * (float)i, 4.3f, -14.9f },
-            0.12f,
-            Color{ 255, 232, 150, 255 }
-        );
+        Vector3 p = posicionesDecoracion[i];
+        Color color = OscurecerCajas(ColorContenedorCajas(coloresDecoracion[i]), 0.5f);
+        if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_CONTENEDOR_DECORACION,
+            p, { 1.0f, 1.0f, 1.0f }, color))
+            DrawCube({ p.x, p.y + 1.1f, p.z }, 1.9f, 2.2f, 4.0f, color);
     }
-
-    // Contenedores apilados de decoracion.
-    DrawCube({ -12.5f, 1.1f, -5.0f }, 1.9f, 2.2f, 4.0f, OscurecerCajas(ColorContenedorCajas(2), 0.5f));
-    DrawCube({ -12.5f, 3.3f, -5.0f }, 1.9f, 2.2f, 4.0f, OscurecerCajas(ColorContenedorCajas(0), 0.5f));
-    DrawCube({ 12.5f, 1.1f, -5.0f }, 1.9f, 2.2f, 4.0f, OscurecerCajas(ColorContenedorCajas(1), 0.5f));
-    DrawCube({ 12.5f, 3.3f, -5.0f }, 1.9f, 2.2f, 4.0f, OscurecerCajas(ColorContenedorCajas(3), 0.5f));
 
     DibujarFarolCajas(-10.5f, 1.0f);
     DibujarFarolCajas(10.5f, 1.0f);
@@ -1169,23 +1190,37 @@ static void DibujarContenedorCajas(const ContenedorCajasPuerto& contenedor, int 
     Vector3 p = contenedor.posicion;
     float frente = p.z + 1.0f;
 
-    DrawCube(p, 1.9f, 2.2f, 2.0f, color);
-    DrawCubeWires(p, 1.9f, 2.2f, 2.0f, Fade(BLACK, 0.55f));
-    DrawCube({ p.x, p.y + 1.12f, p.z }, 1.96f, 0.08f, 2.06f, OscurecerCajas(color, 0.7f));
+    // El estado guarda el centro Y=1.1; el cuerpo GLB guarda el suelo Y=0.
+    if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_CONTENEDOR_CUERPO,
+        { p.x, p.y - 1.1f, p.z }, { 1.0f, 1.0f, 1.0f }, color))
+    {
+        DrawCube(p, 1.9f, 2.2f, 2.0f, color);
+        DrawCubeWires(p, 1.9f, 2.2f, 2.0f, Fade(BLACK, 0.55f));
+        DrawCube({ p.x, p.y + 1.12f, p.z }, 1.96f, 0.08f, 2.06f, OscurecerCajas(color, 0.7f));
+        DrawCube({ p.x, p.y, frente + 0.01f }, 1.7f, 2.0f, 0.02f, Color{ 6, 6, 10, 255 });
+    }
 
-    DrawCube({ p.x, p.y, frente + 0.01f }, 1.7f, 2.0f, 0.02f, Color{ 6, 6, 10, 255 });
-
-    float ancho = 0.85f * (1.0f - 0.88f * contenedor.apertura);
+    float escalaPuerta = 1.0f - 0.88f * contenedor.apertura;
+    float ancho = 0.85f * escalaPuerta;
     Color puerta = OscurecerCajas(color, 0.82f);
-    DrawCube({ p.x - 0.85f + ancho * 0.5f, p.y, frente + 0.06f }, ancho, 2.0f, 0.08f, puerta);
-    DrawCube({ p.x + 0.85f - ancho * 0.5f, p.y, frente + 0.06f }, ancho, 2.0f, 0.08f, puerta);
+    // Los GLB v1 crecen hacia el lado de su nombre. Se usa el que crece +X
+    // en la bisagra izquierda y el que crece -X en la derecha, para cerrar
+    // hacia el centro. No se recentran ni se reflejan vertices/herrajes.
+    if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_PUERTA_DERECHA,
+        { p.x - 0.85f, p.y, frente + 0.08f }, { escalaPuerta, 1.0f, 1.0f }, puerta))
+        DrawCube({ p.x - 0.85f + ancho * 0.5f, p.y, frente + 0.06f }, ancho, 2.0f, 0.08f, puerta);
+    if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_PUERTA_IZQUIERDA,
+        { p.x + 0.85f, p.y, frente + 0.08f }, { escalaPuerta, 1.0f, 1.0f }, puerta))
+        DrawCube({ p.x + 0.85f - ancho * 0.5f, p.y, frente + 0.06f }, ancho, 2.0f, 0.08f, puerta);
 
     if (contenedor.marcas > 0)
     {
-        DrawCube({ p.x, p.y + 1.17f, p.z }, 1.3f, 0.03f, 1.3f, Color{ 18, 16, 16, 255 });
+        if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_MARCA_GOLPE, { p.x, p.y + 1.22f, p.z }))
+            DrawCube({ p.x, p.y + 1.17f, p.z }, 1.3f, 0.03f, 1.3f, Color{ 18, 16, 16, 255 });
     }
 
-    if (contenedor.reforzado)
+    if (contenedor.reforzado && !DibujarModeloCajasPuertoRetro3D(
+        MODELO_CAJAS_ANCLA, { p.x, p.y + 1.16f, p.z }))
     {
         Vector3 ancla = { p.x, p.y + 1.15f, p.z };
         DrawCube({ ancla.x, ancla.y + 0.3f, ancla.z }, 0.12f, 0.6f, 0.12f, GOLD);
@@ -1231,7 +1266,8 @@ static void DibujarGruaCajas(const MinijuegoCajasPuerto& minijuego)
     Color acero = Color{ 224, 164, 40, 255 };
     float gx = minijuego.ganchoX;
 
-    for (int lado = -1; lado <= 1; lado += 2)
+    bool porticoGLB = DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_GRUA_PORTICO, { 0.0f, 0.0f, -5.0f });
+    for (int lado = -1; !porticoGLB && lado <= 1; lado += 2)
     {
         for (int fondo = 0; fondo < 2; fondo++)
         {
@@ -1245,17 +1281,26 @@ static void DibujarGruaCajas(const MinijuegoCajasPuerto& minijuego)
         }
     }
 
-    DrawCube({ 0.0f, 5.35f, -5.0f }, 21.0f, 0.5f, 0.8f, acero);
-    DrawCube({ gx, 5.7f, -5.0f }, 2.4f, 0.2f, 1.8f, Color{ 70, 74, 82, 255 });
-    DrawCubeWires({ gx, 7.2f, -5.0f }, 2.4f, 2.8f, 1.8f, Fade(acero, 0.6f));
+    if (!porticoGLB)
+        DrawCube({ 0.0f, 5.35f, -5.0f }, 21.0f, 0.5f, 0.8f, acero);
+    if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_GRUA_CARRO, { gx, 5.7f, -5.0f }))
+        DrawCube({ gx, 5.7f, -5.0f }, 2.4f, 0.2f, 1.8f, Color{ 70, 74, 82, 255 });
+    if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_GRUA_CABINA, { gx, 5.7f, -5.0f }))
+        DrawCubeWires({ gx, 7.2f, -5.0f }, 2.4f, 2.8f, 1.8f, Fade(acero, 0.6f));
 
     // Brazo hacia los contenedores, cable y gancho.
     float bob = std::sin(minijuego.tiempoAnimacion * 3.0f) * 0.06f;
     float yGancho = ALTURA_GANCHO_CAJAS + bob;
 
-    DrawCube({ gx, 5.55f, -3.75f }, 0.3f, 0.2f, 2.6f, acero);
-    DrawCylinderEx({ gx, 5.55f, -2.5f }, { gx, yGancho, -2.5f }, 0.04f, 0.04f, 6, LIGHTGRAY);
-    DrawCube({ gx, yGancho - 0.15f, -2.5f }, 0.4f, 0.3f, 0.4f, Color{ 90, 94, 100, 255 });
+    if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_GRUA_BRAZO, { gx, 5.55f, -5.0f }))
+        DrawCube({ gx, 5.55f, -3.75f }, 0.3f, 0.2f, 2.6f, acero);
+    // Cable unitario hacia -Y: mantener su diametro y mover solo el extremo
+    // inferior mediante escala Y. Su origen sigue unido a la punta del brazo.
+    if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_GRUA_CABLE,
+        { gx, 5.55f, -2.5f }, { 1.0f, 5.55f - yGancho, 1.0f }))
+        DrawCylinderEx({ gx, 5.55f, -2.5f }, { gx, yGancho, -2.5f }, 0.04f, 0.04f, 6, LIGHTGRAY);
+    if (!DibujarModeloCajasPuertoRetro3D(MODELO_CAJAS_GRUA_GANCHO, { gx, yGancho, -2.5f }))
+        DrawCube({ gx, yGancho - 0.15f, -2.5f }, 0.4f, 0.3f, 0.4f, Color{ 90, 94, 100, 255 });
 
     bool seleccionando =
         minijuego.fase == FASE_CAJAS_ELEGIR ||
