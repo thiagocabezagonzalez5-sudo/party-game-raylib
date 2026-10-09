@@ -1,0 +1,8 @@
+Tuberías Desierto — revisión del paquete
+20 de 20 GLB 2.0 cargados con raylib SDL; 23 capturas PNG.
+Vista de escena: Vistas/Primera_ronda.png; copia Vista_previa.png.
+Generador Python: 20 modelos, 15626 triángulos antes de instanciar tramos dinámicos.
+El juego se comprobó con las fuentes de producción en Linux con raylib SDL.
+La tarea recursiva de VS Code incluye visores .cpp previos en Assets,
+con funciones main duplicadas; limitación previa ajena a este paquete.
+Los modelos no reemplazan aún las primitivas de MinijuegoTuberiasDesierto.cpp.

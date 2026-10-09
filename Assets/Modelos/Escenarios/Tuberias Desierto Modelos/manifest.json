@@ -1,0 +1,445 @@
+{
+  "minijuego": "Tuberías Desierto",
+  "base": "claude/expansion-party e167c89",
+  "coordenadas": "Y arriba; unidades raylib; tubería Z=-2.3; entradas y=12.8; cántaros y=1.8",
+  "modelos": [
+    {
+      "archivo": "suelo_desierto.glb",
+      "triangulos": 2700,
+      "materiales": [
+        "arena",
+        "arena_sombra",
+        "arena_clara"
+      ],
+      "bytes": 343084,
+      "min": [
+        -110.0,
+        -1.1,
+        -110.0
+      ],
+      "max": [
+        110.0,
+        -0.01,
+        50.0
+      ],
+      "pivote": "centro del suelo",
+      "uso": "Origen: suelo y=0; extiende la arena alrededor del muro."
+    },
+    {
+      "archivo": "pared_arenisca.glb",
+      "triangulos": 1060,
+      "materiales": [
+        "piedra",
+        "piedra_sombra",
+        "arena_sombra",
+        "piedra_luz"
+      ],
+      "bytes": 137264,
+      "min": [
+        -15.5,
+        0.0,
+        -0.9
+      ],
+      "max": [
+        15.5,
+        15.5,
+        0.9
+      ],
+      "pivote": "pie centro",
+      "uso": "Centro (0,0,-3.2), pared 30×15; cara frontal z≈-2.6."
+    },
+    {
+      "archivo": "cisterna_oasis.glb",
+      "triangulos": 1128,
+      "materiales": [
+        "piedra_sombra",
+        "piedra_luz",
+        "agua",
+        "arena_sombra",
+        "piedra"
+      ],
+      "bytes": 146700,
+      "min": [
+        -4.35,
+        0,
+        -4.35
+      ],
+      "max": [
+        4.35,
+        1.55,
+        4.35
+      ],
+      "pivote": "base centro",
+      "uso": "Centro (0,15.2,-3.2); borde y≈16.7."
+    },
+    {
+      "archivo": "agua_cisterna.glb",
+      "triangulos": 864,
+      "materiales": [
+        "agua_luz",
+        "agua_sombra"
+      ],
+      "bytes": 110880,
+      "min": [
+        -3.1,
+        0,
+        -3.1
+      ],
+      "max": [
+        3.1,
+        0.06,
+        3.1
+      ],
+      "pivote": "centro superficie",
+      "uso": "Centro (0,16.74,-3.2), movimiento suave en Y."
+    },
+    {
+      "archivo": "colector.glb",
+      "triangulos": 1208,
+      "materiales": [
+        "piedra_sombra",
+        "piedra",
+        "piedra_luz"
+      ],
+      "bytes": 155160,
+      "min": [
+        -8.3,
+        -0.405,
+        -1.0433
+      ],
+      "max": [
+        8.3,
+        1.4849,
+        0.405
+      ],
+      "pivote": "centro colector",
+      "uso": "Centro (0,13.7,-2.3); escala X para cubrir entradas 4..6."
+    },
+    {
+      "archivo": "tubo_piedra.glb",
+      "triangulos": 464,
+      "materiales": [
+        "barro",
+        "barro_sombra",
+        "ceramica"
+      ],
+      "bytes": 61268,
+      "min": [
+        -0.41,
+        0,
+        -0.41
+      ],
+      "max": [
+        0.41,
+        1.015,
+        0.41
+      ],
+      "pivote": "extremo inferior local",
+      "uso": "Tramo unitario +Y entre dos puntos de PuntoTuberia; escala longitudinal."
+    },
+    {
+      "archivo": "tubo_agua.glb",
+      "triangulos": 84,
+      "materiales": [
+        "agua",
+        "agua_luz"
+      ],
+      "bytes": 12548,
+      "min": [
+        -0.24,
+        0,
+        -0.24
+      ],
+      "max": [
+        0.24,
+        1,
+        0.24
+      ],
+      "pivote": "extremo inferior local",
+      "uso": "Tubo interior +Y; mostrar solo donde progresoAgua lo permite."
+    },
+    {
+      "archivo": "codo_tuberia.glb",
+      "triangulos": 328,
+      "materiales": [
+        "barro",
+        "ceramica"
+      ],
+      "bytes": 43372,
+      "min": [
+        -0.44,
+        -0.44,
+        -0.3517
+      ],
+      "max": [
+        0.44,
+        0.44,
+        0.3517
+      ],
+      "pivote": "centro",
+      "uso": "Uniones de tramos al seguir una curva; no cambia carriles."
+    },
+    {
+      "archivo": "columna_ruina.glb",
+      "triangulos": 808,
+      "materiales": [
+        "piedra",
+        "piedra_sombra",
+        "piedra_luz",
+        "arena_sombra"
+      ],
+      "bytes": 105496,
+      "min": [
+        -1.05,
+        0,
+        -1.05
+      ],
+      "max": [
+        1.05,
+        6.25,
+        1.05
+      ],
+      "pivote": "pie centro",
+      "uso": "Varias en x≈±18 y ±21, delante o a los lados de la pared."
+    },
+    {
+      "archivo": "repisa_cantaros.glb",
+      "triangulos": 108,
+      "materiales": [
+        "piedra_sombra",
+        "piedra_luz",
+        "arena_sombra"
+      ],
+      "bytes": 16404,
+      "min": [
+        -14.25,
+        0.0,
+        -1.2
+      ],
+      "max": [
+        14.25,
+        1.82,
+        1.4
+      ],
+      "pivote": "pie centro",
+      "uso": "Centro (0,0,-1.9); tapa y=1.8."
+    },
+    {
+      "archivo": "plataforma_jugadores.glb",
+      "triangulos": 84,
+      "materiales": [
+        "arena",
+        "piedra_sombra",
+        "arena_sombra"
+      ],
+      "bytes": 13384,
+      "min": [
+        -13.0,
+        -0.5,
+        -3.25
+      ],
+      "max": [
+        13.0,
+        0.02,
+        3.4
+      ],
+      "pivote": "centro",
+      "uso": "Centro (0,0,3), jugador en z=2.8."
+    },
+    {
+      "archivo": "compuerta_base.glb",
+      "triangulos": 232,
+      "materiales": [
+        "piedra_sombra",
+        "piedra_luz",
+        "hierro"
+      ],
+      "bytes": 32056,
+      "min": [
+        -0.675,
+        -0.3,
+        -0.57
+      ],
+      "max": [
+        0.675,
+        0.55,
+        0.57
+      ],
+      "pivote": "centro del eje",
+      "uso": "Una por entrada en (XCarril,12.8,-2.3)."
+    },
+    {
+      "archivo": "compuerta_hoja.glb",
+      "triangulos": 72,
+      "materiales": [
+        "madera",
+        "hierro"
+      ],
+      "bytes": 11020,
+      "min": [
+        -0.5,
+        -0.25,
+        -0.075
+      ],
+      "max": [
+        0.5,
+        0.25,
+        0.105
+      ],
+      "pivote": "centro hoja",
+      "uso": "Centro (XCarril,13.0+0.9*compuerta,-1.8)."
+    },
+    {
+      "archivo": "cantaro_barro.glb",
+      "triangulos": 928,
+      "materiales": [
+        "barro",
+        "barro_sombra",
+        "agua_sombra",
+        "ceramica"
+      ],
+      "bytes": 120652,
+      "min": [
+        -0.93,
+        0.0,
+        -0.795
+      ],
+      "max": [
+        0.93,
+        1.818,
+        0.795
+      ],
+      "pivote": "base centro",
+      "uso": "En cada salida salvo oro o miraje, (XCarril,1.8,-1.9)."
+    },
+    {
+      "archivo": "cantaro_oro.glb",
+      "triangulos": 928,
+      "materiales": [
+        "oro",
+        "oro_sombra"
+      ],
+      "bytes": 118964,
+      "min": [
+        -0.93,
+        0.0,
+        -0.795
+      ],
+      "max": [
+        0.93,
+        1.818,
+        0.795
+      ],
+      "pivote": "base centro",
+      "uso": "Salida oro; +3 puntos, identidad oculta hasta revelación según reglas."
+    },
+    {
+      "archivo": "cantaro_miraje.glb",
+      "triangulos": 928,
+      "materiales": [
+        "miraje",
+        "agua_luz"
+      ],
+      "bytes": 118968,
+      "min": [
+        -0.93,
+        0.0,
+        -0.795
+      ],
+      "max": [
+        0.93,
+        1.818,
+        0.795
+      ],
+      "pivote": "base centro",
+      "uso": "Salida espejismo; ocultar o sustituir durante disipación al revelar."
+    },
+    {
+      "archivo": "palmera_oasis.glb",
+      "triangulos": 1954,
+      "materiales": [
+        "palma",
+        "arena_sombra",
+        "verde_sombra",
+        "verde",
+        "verde_luz"
+      ],
+      "bytes": 250924,
+      "min": [
+        -2.0397,
+        0,
+        -2.2055
+      ],
+      "max": [
+        2.2606,
+        4.45,
+        2.2055
+      ],
+      "pivote": "pie centro",
+      "uso": "Tres sobre el borde superior, escala .8..1.1."
+    },
+    {
+      "archivo": "cactus.glb",
+      "triangulos": 472,
+      "materiales": [
+        "verde",
+        "verde_luz"
+      ],
+      "bytes": 61532,
+      "min": [
+        -0.98,
+        0,
+        -0.3525
+      ],
+      "max": [
+        0.98,
+        2.93,
+        0.3525
+      ],
+      "pivote": "pie centro",
+      "uso": "Decoración a ambos lados x≈±11.5,z≈4.5."
+    },
+    {
+      "archivo": "duna.glb",
+      "triangulos": 472,
+      "materiales": [
+        "arena",
+        "arena_clara"
+      ],
+      "bytes": 61496,
+      "min": [
+        -12.0,
+        -4.9,
+        -6.4
+      ],
+      "max": [
+        12.0,
+        0.7,
+        6.4
+      ],
+      "pivote": "centro bajo arena",
+      "uso": "Fondo detrás de la pared, centrar por ejemplo (-34,0,-14)."
+    },
+    {
+      "archivo": "sol.glb",
+      "triangulos": 804,
+      "materiales": [
+        "sol",
+        "sol_sombra"
+      ],
+      "bytes": 103280,
+      "min": [
+        -12.35,
+        -12.35,
+        -10.888
+      ],
+      "max": [
+        12.35,
+        12.35,
+        10.888
+      ],
+      "pivote": "centro",
+      "uso": "Fondo (-26,22,-60), diámetro 22."
+    }
+  ]
+}
