@@ -2,12 +2,14 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/UtilidadesMinijuegos.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Systems/Input.h"
 
 #include "raylib.h"
 #include "rlgl.h"
 
 #include <cmath>
+#include <initializer_list>
 
 
 //==================================================
@@ -255,6 +257,7 @@ void MinijuegoBateoMeteorico::Reiniciar(
     }
 
     cantidadCarriles = total;
+    CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteBateoMeteoricoRetro3D());
     ConfigurarCamaraBateo(*this);
 
     int carril = 0;
@@ -830,13 +833,10 @@ void MinijuegoBateoMeteorico::Actualizar(
 
 
 //==================================================
-// VISUAL (MODELO FUTURO)
+// VISUAL: GLB COMPARTIDOS Y FALLBACK POR PIEZA
 //==================================================
-// MODELO FUTURO: reemplazar por GLB la cupula del observatorio con su
-// telescopio gigante, el planeta con anillos, los carriles/plataformas de
-// roca, los cañones lanzadores, los meteoritos (normal, dorado, rojo) y el
-// bate. La logica (tiempos, ventana de golpe, puntaje por distancia) no
-// depende de ninguna de estas decoraciones.
+// Los pivotes y la escala del paquete se conservan. La logica de tiempos,
+// trayectorias y puntaje no depende de las mallas del escenario.
 //==================================================
 
 static float Hash01(int n)
@@ -857,7 +857,7 @@ static void DibujarCieloNocturno(float t)
         float brillo = 0.55f + 0.45f * std::sin(t * (1.5f + Hash01(i) * 2.5f) + (float)i);
         float lado = 0.25f + 0.25f * Hash01(i * 3 + 3);
 
-        DrawCube(
+        (DrawCube)(
             { x, y, -125.0f },
             lado, lado, lado,
             Color{ 255, 255, (unsigned char)(190 + 60 * brillo), (unsigned char)(130 + 120 * brillo) }
@@ -880,7 +880,7 @@ static void DibujarCieloNocturno(float t)
                 -124.0f
             };
 
-            DrawSphere(punto, 0.55f, Color{ 190, 215, 255, 255 });
+            (DrawSphere)(punto, 0.55f, Color{ 190, 215, 255, 255 });
 
             if (k > 0)
             {
@@ -893,17 +893,20 @@ static void DibujarCieloNocturno(float t)
 
     // Planeta con anillos al fondo.
     Vector3 planeta = { 34.0f, 34.0f, -112.0f };
-    DrawSphere(planeta, 13.0f, Color{ 214, 150, 96, 255 });
-    DrawSphere({ planeta.x - 3.0f, planeta.y + 3.0f, planeta.z + 8.0f }, 9.0f, Color{ 232, 178, 120, 255 });
-
-    for (int i = 0; i < 4; i++)
+    if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_PLANETA, planeta))
     {
-        float radio = 18.0f + 2.2f * (float)i;
-        DrawCircle3D(planeta, radio, { 1.0f, 0.2f, 0.0f }, 72.0f, Color{ 190, 170, 140, 255 });
+        (DrawSphere)(planeta, 13.0f, Color{ 214, 150, 96, 255 });
+        (DrawSphere)({ planeta.x - 3.0f, planeta.y + 3.0f, planeta.z + 8.0f }, 9.0f, Color{ 232, 178, 120, 255 });
+
+        for (int i = 0; i < 4; i++)
+        {
+            float radio = 18.0f + 2.2f * (float)i;
+            DrawCircle3D(planeta, radio, { 1.0f, 0.2f, 0.0f }, 72.0f, Color{ 190, 170, 140, 255 });
+        }
     }
 
     // Luna.
-    DrawSphere({ -62.0f, 52.0f, -118.0f }, 5.0f, Color{ 225, 228, 240, 255 });
+    (DrawSphere)({ -62.0f, 52.0f, -118.0f }, 5.0f, Color{ 225, 228, 240, 255 });
 }
 
 
@@ -911,32 +914,44 @@ static void DibujarObservatorio()
 {
     // Cupula principal con ranura y telescopio gigante.
     Vector3 cupula = { -36.0f, -3.0f, -64.0f };
-    DrawCylinder({ cupula.x, -4.0f, cupula.z }, 15.0f, 15.0f, 11.0f, 20, Color{ 70, 78, 104, 255 });
-    DrawSphere({ cupula.x, 7.0f, cupula.z }, 15.0f, Color{ 86, 96, 128, 255 });
-    DrawCube({ cupula.x + 4.0f, 15.0f, cupula.z + 9.0f }, 4.0f, 14.0f, 8.0f, Color{ 20, 24, 44, 255 });
-    DrawCylinderEx(
-        { cupula.x + 4.0f, 12.0f, cupula.z + 9.0f },
-        { cupula.x + 16.0f, 34.0f, cupula.z - 6.0f },
-        2.2f, 3.2f, 14, Color{ 150, 158, 178, 255 }
-    );
-    DrawCylinderEx(
-        { cupula.x + 14.5f, 31.0f, cupula.z - 3.5f },
-        { cupula.x + 17.0f, 35.5f, cupula.z - 7.0f },
-        3.4f, 3.6f, 14, Color{ 236, 190, 80, 255 }
-    );
+    if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_OBSERVATORIO, {-36,0,-64}))
+    {
+        DrawCylinder({ cupula.x, -4.0f, cupula.z }, 15.0f, 15.0f, 11.0f, 20, Color{ 70, 78, 104, 255 });
+        DrawSphere({ cupula.x, 7.0f, cupula.z }, 15.0f, Color{ 86, 96, 128, 255 });
+        DrawCube({ cupula.x + 4.0f, 15.0f, cupula.z + 9.0f }, 4.0f, 14.0f, 8.0f, Color{ 20, 24, 44, 255 });
+    }
+    if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_TELESCOPIO, {-36,0,-64}))
+    {
+        DrawCylinderEx(
+            { cupula.x + 4.0f, 12.0f, cupula.z + 9.0f },
+            { cupula.x + 16.0f, 34.0f, cupula.z - 6.0f },
+            2.2f, 3.2f, 14, Color{ 150, 158, 178, 255 }
+        );
+        DrawCylinderEx(
+            { cupula.x + 14.5f, 31.0f, cupula.z - 3.5f },
+            { cupula.x + 17.0f, 35.5f, cupula.z - 7.0f },
+            3.4f, 3.6f, 14, Color{ 236, 190, 80, 255 }
+        );
+    }
 
     // Segunda cupula pequena.
-    DrawCylinder({ 44.0f, -4.0f, -76.0f }, 10.0f, 10.0f, 9.0f, 18, Color{ 66, 74, 98, 255 });
-    DrawSphere({ 44.0f, 5.0f, -76.0f }, 10.0f, Color{ 82, 92, 122, 255 });
-    DrawCube({ 44.0f, 8.0f, -66.5f }, 2.5f, 10.0f, 2.0f, Color{ 20, 24, 44, 255 });
+    if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_OBSERVATORIO_SECUNDARIO, {44,0,-76}))
+    {
+        DrawCylinder({ 44.0f, -4.0f, -76.0f }, 10.0f, 10.0f, 9.0f, 18, Color{ 66, 74, 98, 255 });
+        DrawSphere({ 44.0f, 5.0f, -76.0f }, 10.0f, Color{ 82, 92, 122, 255 });
+        DrawCube({ 44.0f, 8.0f, -66.5f }, 2.5f, 10.0f, 2.0f, Color{ 20, 24, 44, 255 });
+    }
 }
 
 
 static void DibujarCumbre(float t)
 {
     // Roca de la cumbre.
-    DrawCube({ 0.0f, -1.2f, -25.0f }, 90.0f, 2.0f, 90.0f, Color{ 38, 42, 58, 255 });
-    DrawCube({ 0.0f, -1.0f, -70.0f }, 160.0f, 1.0f, 40.0f, Color{ 30, 34, 50, 255 });
+    if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_CUMBRE, {0,0,0}))
+    {
+        DrawCube({ 0.0f, -1.2f, -25.0f }, 90.0f, 2.0f, 90.0f, Color{ 38, 42, 58, 255 });
+        DrawCube({ 0.0f, -1.0f, -70.0f }, 160.0f, 1.0f, 40.0f, Color{ 30, 34, 50, 255 });
+    }
 
     // Faroles de luz tenue entre carriles (decorativos).
     for (int i = -2; i <= 2; i++)
@@ -944,12 +959,15 @@ static void DibujarCumbre(float t)
         float x = (float)i * SEPARACION_CARRILES - SEPARACION_CARRILES * 0.5f + 0.0f;
         float parpadeo = 0.5f + 0.5f * std::sin(t * 3.0f + (float)i);
 
-        DrawCylinder({ x, 0.0f, 3.2f }, 0.08f, 0.1f, 1.8f, 8, Color{ 90, 94, 110, 255 });
-        DrawSphere(
-            { x, 1.95f, 3.2f },
-            0.18f + 0.03f * parpadeo,
-            Color{ 255, 230, (unsigned char)(150 + 60 * parpadeo), 255 }
-        );
+        if (!DibujarFarolBateoMeteoricoRetro3D({x,0,3.2f}, parpadeo))
+        {
+            DrawCylinder({ x, 0.0f, 3.2f }, 0.08f, 0.1f, 1.8f, 8, Color{ 90, 94, 110, 255 });
+            DrawSphere(
+                { x, 1.95f, 3.2f },
+                0.18f + 0.03f * parpadeo,
+                Color{ 255, 230, (unsigned char)(150 + 60 * parpadeo), 255 }
+            );
+        }
     }
 }
 
@@ -962,21 +980,37 @@ static void DibujarMeteorito(
 )
 {
     float pulso = 0.5f + 0.5f * std::sin(t * 14.0f);
+    // Una sombra para la superficie, nunca para cada halo o detalle. El
+    // helper GLB evita la sombra automatica de tamano humano de DrawModelEx.
+    float radio = (tipo == METEORITO_NORMAL ? 0.45f : 0.5f) * escala;
+    if (radio >= 0.10f * EscalaUmbralSombraPropRetro())
+        DibujarSombraRetroCircular(posicion,radio*0.92f,radio*0.72f,
+            0.018f,0.27f,LadosSombraPropRetro());
 
     if (tipo == METEORITO_DORADO)
     {
-        DrawSphere(posicion, 0.5f * escala, Color{ 255, 205, 60, 255 });
-        DrawSphere(posicion, 0.72f * escala, Color{ 255, 220, 100, (unsigned char)(50 + 60 * pulso) });
+        if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_METEORITO_DORADO,
+            posicion, 0, {0,1,0}, {escala,escala,escala}))
+            (DrawSphere)(posicion, 0.5f * escala, Color{ 255, 205, 60, 255 });
+        // El halo es un efecto, no una segunda superficie del meteorito.
+        (DrawSphere)(posicion, 0.72f * escala, Color{ 255, 220, 100, (unsigned char)(50 + 60 * pulso) });
     }
     else if (tipo == METEORITO_ROJO)
     {
-        DrawSphere(posicion, (0.5f + 0.06f * pulso) * escala, Color{ 220, 40, 40, 255 });
+        float tamano = (1.0f + 0.12f * pulso) * escala;
+        if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_METEORITO_ROJO,
+            posicion, 0, {0,1,0}, {tamano,tamano,tamano}))
+            (DrawSphere)(posicion, (0.5f + 0.06f * pulso) * escala, Color{ 220, 40, 40, 255 });
         DrawSphereWires(posicion, (0.72f + 0.08f * pulso) * escala, 6, 6, Color{ 255, 120, 90, 255 });
     }
     else
     {
-        DrawSphere(posicion, 0.45f * escala, Color{ 176, 110, 72, 255 });
-        DrawSphere({ posicion.x + 0.1f, posicion.y + 0.1f, posicion.z }, 0.2f * escala, Color{ 222, 150, 100, 255 });
+        if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_METEORITO_NORMAL,
+            posicion, 0, {0,1,0}, {escala,escala,escala}))
+        {
+            (DrawSphere)(posicion, 0.45f * escala, Color{ 176, 110, 72, 255 });
+            (DrawSphere)({ posicion.x + 0.1f, posicion.y + 0.1f, posicion.z }, 0.2f * escala, Color{ 222, 150, 100, 255 });
+        }
     }
 }
 
@@ -1004,16 +1038,28 @@ static void DibujarCarril(
     float t = m.tiempoAnimacion;
 
     // Plataforma del bateador y campo de aterrizaje.
-    DrawCube({ x, -0.2f, -5.0f }, ANCHO_CARRIL + 0.4f, 0.4f, 20.0f, Color{ 62, 68, 92, 255 });
-    DrawCube({ x, -0.25f, -22.0f }, ANCHO_CARRIL + 0.4f, 0.3f, 16.0f, Color{ 44, 50, 74, 255 });
-    DrawCube({ x - ANCHO_CARRIL * 0.5f - 0.1f, 0.02f, -13.0f }, 0.16f, 0.06f, 36.0f, colorJugador);
-    DrawCube({ x + ANCHO_CARRIL * 0.5f + 0.1f, 0.02f, -13.0f }, 0.16f, 0.06f, 36.0f, colorJugador);
+    if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_CARRIL,
+        {x,0,0}, 0, {0,1,0}, {1,1,1}, colorJugador))
+    {
+        DrawCube({ x, -0.2f, -5.0f }, ANCHO_CARRIL + 0.4f, 0.4f, 20.0f, Color{ 62, 68, 92, 255 });
+        for (float lado : {-1.0f, 1.0f})
+            DrawCube({x + lado * (ANCHO_CARRIL * 0.5f + 0.1f),0.02f,-5},
+                0.16f,0.06f,20.0f,colorJugador);
+    }
+    if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_CAMPO,
+        {x,0,0}, 0, {0,1,0}, {1,1,1}, colorJugador))
+    {
+        DrawCube({ x, -0.25f, -22.0f }, ANCHO_CARRIL + 0.4f, 0.3f, 16.0f, Color{ 44, 50, 74, 255 });
+        for (float lado : {-1.0f, 1.0f})
+            DrawCube({x + lado * (ANCHO_CARRIL * 0.5f + 0.1f),0.02f,-23},
+                0.16f,0.06f,16.0f,colorJugador);
 
-    // Anillos puntuados (100 / 60 / 30) sobre el campo.
-    float zc = -DISTANCIA_CENTRO_ANILLOS;
-    DrawCube({ x, 0.03f, zc }, ANCHO_CARRIL, 0.02f, 16.0f, Color{ 52, 96, 170, 255 });
-    DrawCube({ x, 0.045f, zc }, ANCHO_CARRIL, 0.02f, 8.4f, Color{ 150, 90, 210, 255 });
-    DrawCube({ x, 0.06f, zc }, ANCHO_CARRIL, 0.02f, 3.6f, Color{ 255, 210, 80, 255 });
+        // Anillos puntuados (100 / 60 / 30) sobre el campo.
+        float zc = -DISTANCIA_CENTRO_ANILLOS;
+        DrawCube({ x, 0.03f, zc }, ANCHO_CARRIL, 0.02f, 16.0f, Color{ 52, 96, 170, 255 });
+        DrawCube({ x, 0.045f, zc }, ANCHO_CARRIL, 0.02f, 8.4f, Color{ 150, 90, 210, 255 });
+        DrawCube({ x, 0.06f, zc }, ANCHO_CARRIL, 0.02f, 3.6f, Color{ 255, 210, 80, 255 });
+    }
 
     // Resplandor del anillo en que cayo el ultimo meteorito.
     if (e.estado == LANZAMIENTO_ATERRIZADO && e.tiempoPostEvento < 0.9f)
@@ -1039,21 +1085,33 @@ static void DibujarCarril(
     float longitud = std::sqrt(direccion.x * direccion.x + direccion.y * direccion.y + direccion.z * direccion.z);
     direccion = { direccion.x / longitud, direccion.y / longitud, direccion.z / longitud };
 
-    DrawCube({ x, 2.0f, Z_CANON - 0.8f }, 2.0f, 4.0f, 2.0f, Color{ 78, 84, 110, 255 });
-    DrawCube({ x, 0.2f, Z_CANON - 0.8f }, 2.8f, 0.4f, 2.8f, Color{ 58, 64, 88, 255 });
-    DrawSphere({ x, Y_CANON - 0.3f, Z_CANON - 0.4f }, 0.95f, Color{ 120, 128, 154, 255 });
-    DrawCylinderEx(
-        { boca.x, boca.y - 0.3f, boca.z - 0.4f },
-        { boca.x + direccion.x * 2.2f, boca.y - 0.3f + direccion.y * 2.2f, boca.z - 0.4f + direccion.z * 2.2f },
-        0.55f, 0.7f, 12, Color{ 150, 158, 184, 255 }
-    );
+    if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_CANON_BASE, {x,0,Z_CANON-0.8f}))
+    {
+        DrawCube({ x, 2.0f, Z_CANON - 0.8f }, 2.0f, 4.0f, 2.0f, Color{ 78, 84, 110, 255 });
+        DrawCube({ x, 0.2f, Z_CANON - 0.8f }, 2.8f, 0.4f, 2.8f, Color{ 58, 64, 88, 255 });
+        DrawSphere({ x, Y_CANON - 0.3f, Z_CANON - 0.4f }, 0.95f, Color{ 120, 128, 154, 255 });
+    }
+    // +Y local hacia la direccion original del canon, sin matriz rlgl adicional.
+    Vector3 eje = Vector3CrossProduct({0,1,0}, direccion);
+    if (Vector3Length(eje) < 0.001f) eje = {1,0,0};
+    float anguloCanon = std::acos(Acotar(direccion.y,-1,1)) * RAD2DEG;
+    if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_CANON_TUBO,
+        {x,Y_CANON-0.3f,Z_CANON-0.4f}, anguloCanon, eje))
+    {
+        DrawCylinderEx(
+            { boca.x, boca.y - 0.3f, boca.z - 0.4f },
+            { boca.x + direccion.x * 2.2f, boca.y - 0.3f + direccion.y * 2.2f, boca.z - 0.4f + direccion.z * 2.2f },
+            0.55f, 0.7f, 12, Color{ 150, 158, 184, 255 }
+        );
+    }
 
+    // Aviso, estelas e impactos emiten luz: no proyectan sombras de esfera.
     // La boca del canon anticipa el tipo de meteorito de la ronda.
     if (m.fase == FASE_BATEO_JUGANDO && m.etapa == ETAPA_BATEO_AVISO && m.ronda < LANZAMIENTOS_BATEO)
     {
         float carga = Acotar(m.tiempoEtapa / DURACION_AVISO_BATEO, 0.0f, 1.0f);
         Color brillo = ColorEstela(e.tipos[m.ronda]);
-        DrawSphere(
+        (DrawSphere)(
             { boca.x + direccion.x * 2.4f, boca.y - 0.3f + direccion.y * 2.4f, boca.z - 0.4f + direccion.z * 2.4f },
             0.15f + 0.4f * carga,
             brillo
@@ -1062,11 +1120,16 @@ static void DibujarCarril(
 
     // Punto dulce: aro brillante donde debe estar el meteorito al golpear.
     float pulso = 0.5f + 0.5f * std::sin(t * 8.0f);
-    DrawCircle3D(
-        { x, Y_PUNTO_DULCE, Z_PUNTO_DULCE },
-        0.55f + 0.06f * pulso, { 0.0f, 0.0f, 1.0f }, 0.0f,
-        Color{ 120, 255, 220, 255 }
-    );
+    float escalaAro = (0.55f + 0.06f * pulso) / 0.55f;
+    if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_ARO,
+        {x,Y_PUNTO_DULCE,Z_PUNTO_DULCE}, 0, {0,1,0}, {escalaAro,escalaAro,1}))
+    {
+        DrawCircle3D(
+            { x, Y_PUNTO_DULCE, Z_PUNTO_DULCE },
+            0.55f + 0.06f * pulso, { 0.0f, 0.0f, 1.0f }, 0.0f,
+            Color{ 120, 255, 220, 255 }
+        );
+    }
 
     if (mostrarDebug)
     {
@@ -1093,7 +1156,7 @@ static void DibujarCarril(
                 if (anterior < 0.0f) break;
 
                 Vector3 punto = PosicionMeteoritoEntrante(x, lanzamiento, anterior);
-                DrawSphere(punto, 0.34f - 0.06f * (float)k, Fade(estela, 0.6f - 0.12f * (float)k));
+                (DrawSphere)(punto, 0.34f - 0.06f * (float)k, Fade(estela, 0.6f - 0.12f * (float)k));
             }
 
             DibujarMeteorito(posicion, e.tipoActual, t, 1.0f);
@@ -1109,7 +1172,7 @@ static void DibujarCarril(
 
                 if (anterior < 0.0f) break;
 
-                DrawSphere(
+                (DrawSphere)(
                     PosicionMeteoritoGolpeado(e, anterior),
                     0.38f - 0.05f * (float)k,
                     Fade(estela, 0.7f - 0.12f * (float)k)
@@ -1121,7 +1184,7 @@ static void DibujarCarril(
         else if (e.estado == LANZAMIENTO_EXPLOTADO && e.tiempoPostEvento < 0.7f)
         {
             float k = e.tiempoPostEvento / 0.7f;
-            DrawSphere(e.puntoAterrizaje, 0.6f + 2.4f * k, Fade(Color{ 255, 70, 40, 255 }, 0.7f * (1.0f - k)));
+            (DrawSphere)(e.puntoAterrizaje, 0.6f + 2.4f * k, Fade(Color{ 255, 70, 40, 255 }, 0.7f * (1.0f - k)));
         }
     }
 
@@ -1129,7 +1192,7 @@ static void DibujarCarril(
     if (e.tiempoImpacto > 0.0f && e.estado != LANZAMIENTO_EXPLOTADO)
     {
         float k = 1.0f - e.tiempoImpacto / 0.5f;
-        DrawSphere(e.puntoGolpe, 0.3f + 0.9f * k, Fade(WHITE, 0.8f * (1.0f - k)));
+        (DrawSphere)(e.puntoGolpe, 0.3f + 0.9f * k, Fade(WHITE, 0.8f * (1.0f - k)));
     }
 
     // Jugador y bate.
@@ -1155,12 +1218,16 @@ static void DibujarCarril(
         angulo = -60.0f + Acotar(avance / 0.12f, 0.0f, 1.0f) * 140.0f;
     }
 
-    rlPushMatrix();
-    rlTranslatef(x + 0.4f, 1.05f, Z_JUGADOR);
-    rlRotatef(angulo, 0.0f, 1.0f, 0.0f);
-    DrawCylinderEx({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -0.5f }, 0.06f, 0.07f, 8, Color{ 120, 80, 50, 255 });
-    DrawCylinderEx({ 0.0f, 0.0f, -0.5f }, { 0.0f, 0.0f, -1.45f }, 0.1f, 0.16f, 10, colorJugador);
-    rlPopMatrix();
+    if (!DibujarModeloBateoMeteoricoRetro3D(MODELO_BATEO_BATE,
+        {x+0.4f,1.05f,Z_JUGADOR}, angulo, {0,1,0}, {1,1,1}, colorJugador))
+    {
+        rlPushMatrix();
+        rlTranslatef(x + 0.4f, 1.05f, Z_JUGADOR);
+        rlRotatef(angulo, 0.0f, 1.0f, 0.0f);
+        DrawCylinderEx({ 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, -0.5f }, 0.06f, 0.07f, 8, Color{ 120, 80, 50, 255 });
+        DrawCylinderEx({ 0.0f, 0.0f, -0.5f }, { 0.0f, 0.0f, -1.45f }, 0.1f, 0.16f, 10, colorJugador);
+        rlPopMatrix();
+    }
 }
 
 

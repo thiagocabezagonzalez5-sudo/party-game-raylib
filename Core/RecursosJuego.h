@@ -287,6 +287,54 @@ static_assert(sizeof(RUTAS_MODELOS_CAPSULAS_BARAJADAS_3D) /
 
 
 //==================================================
+// PAQUETE DE BATEO METEORICO
+//==================================================
+
+enum ModeloBateoMeteorico3D
+{
+    MODELO_BATEO_CUMBRE,
+    MODELO_BATEO_OBSERVATORIO,
+    MODELO_BATEO_TELESCOPIO,
+    MODELO_BATEO_OBSERVATORIO_SECUNDARIO,
+    MODELO_BATEO_PLANETA,
+    MODELO_BATEO_FAROL,
+    MODELO_BATEO_CARRIL,
+    MODELO_BATEO_CAMPO,
+    MODELO_BATEO_CANON_BASE,
+    MODELO_BATEO_CANON_TUBO,
+    MODELO_BATEO_METEORITO_NORMAL,
+    MODELO_BATEO_METEORITO_DORADO,
+    MODELO_BATEO_METEORITO_ROJO,
+    MODELO_BATEO_BATE,
+    MODELO_BATEO_ARO,
+    CANTIDAD_MODELOS_BATEO_METEORICO_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_BATEO_METEORICO_3D[] =
+{
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/cumbre.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/observatorio_cupula.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/telescopio.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/observatorio_secundario.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/planeta_anillado.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/farol.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/carril_plataforma.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/campo_puntaje.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/canon_base.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/canon_tubo.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/meteorito_normal.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/meteorito_dorado.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/meteorito_rojo.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/bate.glb",
+    "Assets/Modelos/Escenarios/Bateo_Meteorico/GLB/aro_punto_dulce.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_BATEO_METEORICO_3D) /
+    sizeof(RUTAS_MODELOS_BATEO_METEORICO_3D[0]) == CANTIDAD_MODELOS_BATEO_METEORICO_3D,
+    "Las rutas deben coincidir con los IDs del paquete Bateo Meteorico");
+
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 

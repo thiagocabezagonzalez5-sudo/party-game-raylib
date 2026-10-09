@@ -61,6 +61,7 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D laberintoJade[CANTIDAD_MODELOS_LABERINTO_JADE_3D];
     RecursoModeloEscenarioRetro3D vetaCristal[CANTIDAD_MODELOS_VETA_CRISTAL_3D];
     RecursoModeloEscenarioRetro3D capsulasBarajadas[CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D];
+    RecursoModeloEscenarioRetro3D bateoMeteorico[CANTIDAD_MODELOS_BATEO_METEORICO_3D];
     bool inicializados = false;
 };
 
@@ -466,6 +467,64 @@ inline bool DibujarModeloCapsulasBarajadasRetro3D(
     return true;
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteBateoMeteoricoRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_BATEO_METEORICO_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_BATEO_METEORICO_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_BATEO_METEORICO_3D[i];
+        // Primitivas del GLB v1, resueltas con meshMaterial al cargar.
+        definiciones[MODELO_BATEO_CARRIL].mallaColor = 3;
+        definiciones[MODELO_BATEO_CAMPO].mallaColor = 4;
+        definiciones[MODELO_BATEO_BATE].mallaColor = 1;
+        definiciones[MODELO_BATEO_FAROL].mallaColor = 2; // BOMBILLAS
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().bateoMeteorico,
+        definiciones, CANTIDAD_MODELOS_BATEO_METEORICO_3D };
+}
+
+inline bool DibujarModeloBateoMeteoricoRetro3D(
+    ModeloBateoMeteorico3D pieza,
+    Vector3 posicion,
+    float anguloGrados = 0.0f,
+    Vector3 ejeRotacion = { 0.0f, 1.0f, 0.0f },
+    Vector3 escala = { 1.0f, 1.0f, 1.0f },
+    Color colorEstado = WHITE
+)
+{
+    return DibujarModeloEscenarioRetro3D(
+        ObtenerModelosEscenariosRetro3D().bateoMeteorico[pieza],
+        posicion, ejeRotacion, anguloGrados, escala, colorEstado);
+}
+
+inline bool DibujarFarolBateoMeteoricoRetro3D(Vector3 posicion, float parpadeo)
+{
+    RecursoModeloEscenarioRetro3D& recurso =
+        ObtenerModelosEscenariosRetro3D().bateoMeteorico[MODELO_BATEO_FAROL];
+    if (!recurso.cargado) return false;
+
+    // Vista sin propiedad: comparte VBO/materiales y conserva el Model real.
+    // Solo la bombilla pulsa alrededor de su centro local; poste/herrajes fijos.
+    RecursoModeloEscenarioRetro3D vista = recurso;
+    vista.modelo.meshCount = 1;
+    for (int i = 0; i < recurso.modelo.meshCount; i++)
+    {
+        vista.modelo.meshes = &recurso.modelo.meshes[i];
+        vista.modelo.meshMaterial = &recurso.modelo.meshMaterial[i];
+        bool bombilla = i == 2;
+        float escala = bombilla ? 1.0f + (0.03f / 0.18f) * parpadeo : 1.0f;
+        Vector3 origen = posicion;
+        if (bombilla) origen.y += 1.97f * (1.0f - escala);
+        Color brillo = { 255, 230, (unsigned char)(150 + 60 * parpadeo), 255 };
+        DibujarModeloEscenarioRetro3D(vista, origen, {0,1,0}, 0,
+            {escala,escala,escala}, brillo);
+    }
+    return true;
+}
+
 inline void InicializarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -557,6 +616,8 @@ inline void DescargarModelosEscenariosRetro3D()
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.vetaCristal)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.capsulasBarajadas)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.bateoMeteorico)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     recursos.inicializados = false;
 }
