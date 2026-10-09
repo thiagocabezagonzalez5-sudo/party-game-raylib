@@ -1,0 +1,554 @@
+{
+  "minijuego": "Trepa el Mástil",
+  "base": "claude/expansion-party 27f2519",
+  "coordenadas": "Y arriba; cubierta y=0; separación mástiles 4.4; cofa y=10",
+  "modelos": [
+    {
+      "archivo": "casco_barco.glb",
+      "triangulos": 628,
+      "materiales": [
+        "madera_oscura",
+        "madera",
+        "madera_dorada",
+        "oro",
+        "madera_clara"
+      ],
+      "bytes": 83700,
+      "min": [
+        -9.0721,
+        -3.15,
+        -2.378
+      ],
+      "max": [
+        9.0721,
+        0.08,
+        3.1276
+      ],
+      "pivote": "centro en cubierta",
+      "uso": "Colocar origen del barco; casco de Y=0 a -3.15."
+    },
+    {
+      "archivo": "cubierta.glb",
+      "triangulos": 528,
+      "materiales": [
+        "madera_clara",
+        "madera_oscura",
+        "oro",
+        "hierro"
+      ],
+      "bytes": 70200,
+      "min": [
+        -9.0,
+        -0.1,
+        -2.3
+      ],
+      "max": [
+        9.0,
+        0.065,
+        2.3
+      ],
+      "pivote": "centro en cubierta",
+      "uso": "Origen del barco, ancho 18, largo 4.6, superficie Y≈0."
+    },
+    {
+      "archivo": "barandilla.glb",
+      "triangulos": 1050,
+      "materiales": [
+        "madera",
+        "oro",
+        "madera_clara",
+        "madera_oscura"
+      ],
+      "bytes": 135976,
+      "min": [
+        -9.0811,
+        0.0,
+        -0.0877
+      ],
+      "max": [
+        9.09,
+        1.03,
+        0.0877
+      ],
+      "pivote": "centro en base",
+      "uso": "En borde delantero Z=2.25; duplicar atrás con orientación."
+    },
+    {
+      "archivo": "mastil.glb",
+      "triangulos": 1056,
+      "materiales": [
+        "madera",
+        "madera_oscura",
+        "cuerda",
+        "oro"
+      ],
+      "bytes": 136668,
+      "min": [
+        -1.525,
+        0,
+        -0.28
+      ],
+      "max": [
+        1.525,
+        11.87,
+        0.28
+      ],
+      "pivote": "pie centro",
+      "uso": "Una instancia por jugador, X=posicionX[i], z=0; meta a Y=10."
+    },
+    {
+      "archivo": "vela.glb",
+      "triangulos": 332,
+      "materiales": [
+        "crema_sombra",
+        "crema",
+        "madera"
+      ],
+      "bytes": 44656,
+      "min": [
+        -1.7,
+        3.135,
+        -0.755
+      ],
+      "max": [
+        1.7,
+        8.865,
+        -0.503
+      ],
+      "pivote": "pie centro del mástil",
+      "uso": "Una por mástil; situada entre Y=3.2 y 8.8, z≈-.7."
+    },
+    {
+      "archivo": "franja_roja.glb",
+      "triangulos": 12,
+      "materiales": [
+        "rojo"
+      ],
+      "bytes": 2648,
+      "min": [
+        -1.565,
+        5.765,
+        -0.5095
+      ],
+      "max": [
+        1.565,
+        6.235,
+        -0.4645
+      ],
+      "pivote": "pie centro del mástil",
+      "uso": "Superponer a vela para jugador rojo."
+    },
+    {
+      "archivo": "franja_azul.glb",
+      "triangulos": 12,
+      "materiales": [
+        "azul"
+      ],
+      "bytes": 2632,
+      "min": [
+        -1.565,
+        5.765,
+        -0.5095
+      ],
+      "max": [
+        1.565,
+        6.235,
+        -0.4645
+      ],
+      "pivote": "pie centro del mástil",
+      "uso": "Superponer a vela para jugador azul."
+    },
+    {
+      "archivo": "franja_verde.glb",
+      "triangulos": 12,
+      "materiales": [
+        "verde_jugador"
+      ],
+      "bytes": 2656,
+      "min": [
+        -1.565,
+        5.765,
+        -0.5095
+      ],
+      "max": [
+        1.565,
+        6.235,
+        -0.4645
+      ],
+      "pivote": "pie centro del mástil",
+      "uso": "Superponer a vela para jugador verde."
+    },
+    {
+      "archivo": "franja_amarilla.glb",
+      "triangulos": 12,
+      "materiales": [
+        "amarillo"
+      ],
+      "bytes": 2660,
+      "min": [
+        -1.565,
+        5.765,
+        -0.5095
+      ],
+      "max": [
+        1.565,
+        6.235,
+        -0.4645
+      ],
+      "pivote": "pie centro del mástil",
+      "uso": "Superponer a vela para jugador amarillo."
+    },
+    {
+      "archivo": "cofa.glb",
+      "triangulos": 832,
+      "materiales": [
+        "madera_clara",
+        "oro",
+        "madera_oscura",
+        "cuerda"
+      ],
+      "bytes": 108520,
+      "min": [
+        -0.935,
+        10,
+        -0.935
+      ],
+      "max": [
+        0.935,
+        10.708,
+        0.935
+      ],
+      "pivote": "pie centro del mástil",
+      "uso": "Una por mástil, plato en Y=10."
+    },
+    {
+      "archivo": "jarcias.glb",
+      "triangulos": 448,
+      "materiales": [
+        "cuerda",
+        "hierro",
+        "cuerda_sombra"
+      ],
+      "bytes": 59380,
+      "min": [
+        -1.98,
+        0.04,
+        -1.28
+      ],
+      "max": [
+        1.98,
+        9.406,
+        1.48
+      ],
+      "pivote": "pie centro del mástil",
+      "uso": "Una por mástil, tensores a bordes de cubierta."
+    },
+    {
+      "archivo": "bandera_roja.glb",
+      "triangulos": 88,
+      "materiales": [
+        "madera_oscura",
+        "rojo",
+        "oro"
+      ],
+      "bytes": 13964,
+      "min": [
+        -0.0405,
+        10.2,
+        -0.0439
+      ],
+      "max": [
+        1.32,
+        11.7,
+        0.0975
+      ],
+      "pivote": "pie centro del mástil",
+      "uso": "Elegir bandera según color de jugador; asta Y=10.2..11.7."
+    },
+    {
+      "archivo": "bandera_azul.glb",
+      "triangulos": 88,
+      "materiales": [
+        "madera_oscura",
+        "azul",
+        "oro"
+      ],
+      "bytes": 13948,
+      "min": [
+        -0.0405,
+        10.2,
+        -0.0439
+      ],
+      "max": [
+        1.32,
+        11.7,
+        0.0975
+      ],
+      "pivote": "pie centro del mástil",
+      "uso": "Alternativa azul."
+    },
+    {
+      "archivo": "bandera_verde.glb",
+      "triangulos": 88,
+      "materiales": [
+        "madera_oscura",
+        "verde_jugador",
+        "oro"
+      ],
+      "bytes": 13972,
+      "min": [
+        -0.0405,
+        10.2,
+        -0.0439
+      ],
+      "max": [
+        1.32,
+        11.7,
+        0.0975
+      ],
+      "pivote": "pie centro del mástil",
+      "uso": "Alternativa verde."
+    },
+    {
+      "archivo": "bandera_amarilla.glb",
+      "triangulos": 88,
+      "materiales": [
+        "madera_oscura",
+        "amarillo",
+        "oro"
+      ],
+      "bytes": 13976,
+      "min": [
+        -0.0405,
+        10.2,
+        -0.0439
+      ],
+      "max": [
+        1.32,
+        11.7,
+        0.0975
+      ],
+      "pivote": "pie centro del mástil",
+      "uso": "Alternativa amarilla."
+    },
+    {
+      "archivo": "cofre.glb",
+      "triangulos": 148,
+      "materiales": [
+        "madera_oscura",
+        "madera_clara",
+        "hierro",
+        "oro"
+      ],
+      "bytes": 22284,
+      "min": [
+        -0.64,
+        0.0,
+        -0.44
+      ],
+      "max": [
+        0.64,
+        0.87,
+        0.5052
+      ],
+      "pivote": "pie centro",
+      "uso": "Dos en X≈±8.2, Z=.6."
+    },
+    {
+      "archivo": "barril.glb",
+      "triangulos": 504,
+      "materiales": [
+        "madera",
+        "madera_clara",
+        "hierro",
+        "madera_oscura"
+      ],
+      "bytes": 67176,
+      "min": [
+        -0.449,
+        0,
+        -0.4422
+      ],
+      "max": [
+        0.449,
+        0.89,
+        0.4422
+      ],
+      "pivote": "pie centro",
+      "uso": "Varios en los extremos de cubierta."
+    },
+    {
+      "archivo": "cuervo.glb",
+      "triangulos": 440,
+      "materiales": [
+        "cuervo",
+        "pico",
+        "ojo",
+        "ala"
+      ],
+      "bytes": 59276,
+      "min": [
+        -0.69,
+        -0.25,
+        -0.5427
+      ],
+      "max": [
+        0.7,
+        0.29,
+        0.5427
+      ],
+      "pivote": "centro del cuerpo",
+      "uso": "Dinámico: X=posicionX[i]+c.x, Y=c.altura, Z=.75."
+    },
+    {
+      "archivo": "ala_cuervo.glb",
+      "triangulos": 240,
+      "materiales": [
+        "ala"
+      ],
+      "bytes": 31456,
+      "min": [
+        -0.3519,
+        -0.0648,
+        -0.5574
+      ],
+      "max": [
+        0.068,
+        0.2613,
+        0.5574
+      ],
+      "pivote": "centro del cuerpo",
+      "uso": "Pieza opcional para animar aleteo sin mover el cuerpo."
+    },
+    {
+      "archivo": "gaviota.glb",
+      "triangulos": 222,
+      "materiales": [
+        "gaviota",
+        "pico",
+        "crema_sombra"
+      ],
+      "bytes": 30876,
+      "min": [
+        -0.55,
+        -0.13,
+        -1.02
+      ],
+      "max": [
+        0.45,
+        0.3,
+        1.02
+      ],
+      "pivote": "centro del cuerpo",
+      "uso": "Decoración móvil al fondo."
+    },
+    {
+      "archivo": "isla_lejana.glb",
+      "triangulos": 512,
+      "materiales": [
+        "arena",
+        "palma",
+        "verde",
+        "verde_luz"
+      ],
+      "bytes": 68264,
+      "min": [
+        -8.5,
+        -0.15,
+        -8.5
+      ],
+      "max": [
+        8.5,
+        4.08,
+        8.5
+      ],
+      "pivote": "centro en superficie del mar",
+      "uso": "Colocar (-22,-4.5,-42)."
+    },
+    {
+      "archivo": "mar.glb",
+      "triangulos": 2508,
+      "materiales": [
+        "azul_mar",
+        "espuma",
+        "mar_claro"
+      ],
+      "bytes": 318804,
+      "min": [
+        -60.0,
+        -4.7,
+        -65.0
+      ],
+      "max": [
+        60.0,
+        -4.415,
+        25.0
+      ],
+      "pivote": "centro global",
+      "uso": "Origen del mundo; agua a Y≈-4.5, no rota con barco."
+    },
+    {
+      "archivo": "espuma_ola.glb",
+      "triangulos": 432,
+      "materiales": [
+        "espuma"
+      ],
+      "bytes": 55600,
+      "min": [
+        -2.16,
+        -0.045,
+        -0.2926
+      ],
+      "max": [
+        2.16,
+        0.045,
+        0.2981
+      ],
+      "pivote": "centro superficial",
+      "uso": "Instancias de espuma móviles alrededor del barco."
+    },
+    {
+      "archivo": "ancla.glb",
+      "triangulos": 260,
+      "materiales": [
+        "hierro"
+      ],
+      "bytes": 33904,
+      "min": [
+        -0.73,
+        0.0,
+        -0.1
+      ],
+      "max": [
+        0.7221,
+        1.695,
+        0.1
+      ],
+      "pivote": "extremo inferior",
+      "uso": "Decoración de costados, fuera de rutas de escalada."
+    },
+    {
+      "archivo": "timon.glb",
+      "triangulos": 824,
+      "materiales": [
+        "madera_clara",
+        "madera",
+        "oro",
+        "hierro"
+      ],
+      "bytes": 107536,
+      "min": [
+        -0.865,
+        0.135,
+        -0.14
+      ],
+      "max": [
+        0.865,
+        1.865,
+        0.14
+      ],
+      "pivote": "pie centro",
+      "uso": "Decoración en popa detrás de los mástiles."
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+Trepa el Mástil — revisión del paquete
+25 de 25 GLB 2.0 cargados con raylib SDL; 28 capturas PNG.
+Escena principal: Vistas/Cuatro_mastiles.png; copia Vista_previa.png.
+El barco, los mástiles y los pájaros conservan pivotes separados para la animación.
+El juego se comprobó con sus fuentes de producción en Linux con raylib SDL.
+La tarea recursiva de VS Code incluye visores .cpp antiguos en Assets
+que aportan funciones main duplicadas; limitación previa ajena al paquete.
+Los GLB todavía no sustituyen las primitivas de MinijuegoTrepaMastil.cpp.
