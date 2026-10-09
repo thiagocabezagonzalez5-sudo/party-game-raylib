@@ -1,0 +1,496 @@
+{
+  "minijuego": "Pisotón de Plagas",
+  "base": "claude/expansion-party ea5472c",
+  "coordenadas": "Y arriba; 1 unidad GLB = 1 unidad raylib",
+  "modelos": [
+    {
+      "archivo": "suelo_jardin.glb",
+      "triangulos": 816,
+      "materiales": [
+        "verde_fondo",
+        "tierra",
+        "verde_suelo",
+        "verde_oscuro",
+        "verde_luz"
+      ],
+      "bytes": 107388,
+      "min": [
+        -45.0,
+        -1.05,
+        -45.0
+      ],
+      "max": [
+        45.0,
+        0.204,
+        45.0
+      ],
+      "pivote": "origen global",
+      "uso": "Arena jugable X=±9, Z=±5.6; plano exterior 90×90."
+    },
+    {
+      "archivo": "brizna_gigante.glb",
+      "triangulos": 60,
+      "materiales": [
+        "verde_tallo",
+        "verde_oscuro"
+      ],
+      "bytes": 9668,
+      "min": [
+        -0.1723,
+        -0.0021,
+        -0.1311
+      ],
+      "max": [
+        0.145,
+        4.5001,
+        0.1831
+      ],
+      "pivote": "pie central",
+      "uso": "34 instancias tras la cerca y los laterales; altura 3.4 a 4.2; escala Y si se desea."
+    },
+    {
+      "archivo": "flor_fondo_rosa.glb",
+      "triangulos": 1236,
+      "materiales": [
+        "verde_tallo",
+        "verde_luz",
+        "rosa",
+        "amarillo",
+        "tierra_luz"
+      ],
+      "bytes": 160412,
+      "min": [
+        -1.3106,
+        0.0,
+        -1.3236
+      ],
+      "max": [
+        1.328,
+        5.47,
+        1.3236
+      ],
+      "pivote": "pie central",
+      "uso": "Centro (-7,0,-9.4)."
+    },
+    {
+      "archivo": "flor_fondo_amarilla.glb",
+      "triangulos": 1236,
+      "materiales": [
+        "verde_tallo",
+        "verde_luz",
+        "amarillo",
+        "tierra_luz"
+      ],
+      "bytes": 159604,
+      "min": [
+        -1.3106,
+        0.0,
+        -1.3236
+      ],
+      "max": [
+        1.328,
+        6.07,
+        1.3236
+      ],
+      "pivote": "pie central",
+      "uso": "Centro (1.5,0,-10.6)."
+    },
+    {
+      "archivo": "flor_fondo_violeta.glb",
+      "triangulos": 1236,
+      "materiales": [
+        "verde_tallo",
+        "verde_luz",
+        "violeta",
+        "amarillo",
+        "tierra_luz"
+      ],
+      "bytes": 160408,
+      "min": [
+        -1.3106,
+        0.0,
+        -1.3236
+      ],
+      "max": [
+        1.328,
+        6.67,
+        1.3236
+      ],
+      "pivote": "pie central",
+      "uso": "Centro (8,0,-9.4)."
+    },
+    {
+      "archivo": "flor_brote.glb",
+      "triangulos": 460,
+      "materiales": [
+        "verde_tallo",
+        "verde_luz"
+      ],
+      "bytes": 60008,
+      "min": [
+        -0.3687,
+        0.0,
+        -0.3519
+      ],
+      "max": [
+        0.3802,
+        2.97,
+        0.3519
+      ],
+      "pivote": "pie central",
+      "uso": "Flor activa, aviso previo: escalar tallo según crecimiento."
+    },
+    {
+      "archivo": "flor_abierta.glb",
+      "triangulos": 916,
+      "materiales": [
+        "verde_tallo",
+        "rosa_claro",
+        "rosa",
+        "amarillo"
+      ],
+      "bytes": 119176,
+      "min": [
+        -1.159,
+        0.0,
+        -1.159
+      ],
+      "max": [
+        1.159,
+        3.02,
+        1.159
+      ],
+      "pivote": "pie central",
+      "uso": "Flor activa completamente abierta; instanciar en (florX,0,florZ)."
+    },
+    {
+      "archivo": "aro_flor.glb",
+      "triangulos": 684,
+      "materiales": [
+        "rosa",
+        "rosa_claro"
+      ],
+      "bytes": 88204,
+      "min": [
+        -1.775,
+        -0.0199,
+        -1.775
+      ],
+      "max": [
+        1.775,
+        0.08,
+        1.775
+      ],
+      "pivote": "centro",
+      "uso": "Radio lógico 1.7; en (florX,0,florZ), sólo durante floración."
+    },
+    {
+      "archivo": "seta.glb",
+      "triangulos": 300,
+      "materiales": [
+        "crema",
+        "rojo_seta",
+        "blanco"
+      ],
+      "bytes": 40528,
+      "min": [
+        -0.73,
+        0,
+        -0.73
+      ],
+      "max": [
+        0.73,
+        1.29,
+        0.73
+      ],
+      "pivote": "pie central",
+      "uso": "Tres posiciones exteriores: (-10.8,3.8), (10.9,2.6), (10.6,-1.2)."
+    },
+    {
+      "archivo": "regadera.glb",
+      "triangulos": 400,
+      "materiales": [
+        "azul_regadera",
+        "azul_luz",
+        "negro"
+      ],
+      "bytes": 53292,
+      "min": [
+        -1.012,
+        0,
+        -0.6155
+      ],
+      "max": [
+        1.38,
+        1.3362,
+        0.6155
+      ],
+      "pivote": "pie central",
+      "uso": "Posición (-11.2,0,-3)."
+    },
+    {
+      "archivo": "piedra.glb",
+      "triangulos": 100,
+      "materiales": [
+        "gris",
+        "gris_luz"
+      ],
+      "bytes": 14672,
+      "min": [
+        -0.5005,
+        -0.14,
+        -0.4496
+      ],
+      "max": [
+        0.5326,
+        0.56,
+        0.4496
+      ],
+      "pivote": "pie central",
+      "uso": "Cinco posiciones exteriores; rotar y variar escala para diversidad."
+    },
+    {
+      "archivo": "cerca_fondo.glb",
+      "triangulos": 696,
+      "materiales": [
+        "madera",
+        "madera_luz",
+        "madera_sombra"
+      ],
+      "bytes": 90536,
+      "min": [
+        -11.14,
+        0.0,
+        -0.14
+      ],
+      "max": [
+        11.14,
+        1.69,
+        0.14
+      ],
+      "pivote": "pie central",
+      "uso": "Posición (0,0,-6.9)."
+    },
+    {
+      "archivo": "cerca_lateral.glb",
+      "triangulos": 376,
+      "materiales": [
+        "madera",
+        "madera_luz",
+        "madera_sombra"
+      ],
+      "bytes": 50208,
+      "min": [
+        -5.89,
+        0.0,
+        -0.14
+      ],
+      "max": [
+        5.89,
+        1.69,
+        0.14
+      ],
+      "pivote": "pie central",
+      "uso": "Dos copias X=±10.4, rotar Y=90°."
+    },
+    {
+      "archivo": "madriguera.glb",
+      "triangulos": 592,
+      "materiales": [
+        "tierra_luz",
+        "tierra_oscura",
+        "tierra"
+      ],
+      "bytes": 77536,
+      "min": [
+        -0.7171,
+        -0.045,
+        -0.7072
+      ],
+      "max": [
+        0.73,
+        0.138,
+        0.7072
+      ],
+      "pivote": "pie central",
+      "uso": "Seis centros X=(-7.2,0,7.2), Z=(-4.3/-4.7,4.3/4.7)."
+    },
+    {
+      "archivo": "aro_aviso.glb",
+      "triangulos": 224,
+      "materiales": [
+        "COLOR_DINAMICO"
+      ],
+      "bytes": 29332,
+      "min": [
+        -0.876,
+        0.004,
+        -0.876
+      ],
+      "max": [
+        0.876,
+        0.056,
+        0.876
+      ],
+      "pivote": "centro",
+      "uso": "Durante aviso de madriguera, radio .85 y tinte naranja."
+    },
+    {
+      "archivo": "escarabajo.glb",
+      "triangulos": 652,
+      "materiales": [
+        "beetle",
+        "beetle_luz",
+        "tierra_oscura",
+        "negro",
+        "blanco"
+      ],
+      "bytes": 86840,
+      "min": [
+        -0.4115,
+        -0.01,
+        -0.446
+      ],
+      "max": [
+        0.6409,
+        0.59,
+        0.446
+      ],
+      "pivote": "pie central",
+      "uso": "Orientar +X a dirección de marcha; escala según aparición y aturdimiento."
+    },
+    {
+      "archivo": "oruga_cabeza.glb",
+      "triangulos": 648,
+      "materiales": [
+        "verde_oruga",
+        "verde_oscuro",
+        "blanco",
+        "negro",
+        "verde_luz"
+      ],
+      "bytes": 86328,
+      "min": [
+        -0.29,
+        -0.02,
+        -0.3172
+      ],
+      "max": [
+        0.308,
+        0.81,
+        0.3172
+      ],
+      "pivote": "pie central",
+      "uso": "Primer segmento vivo; orientar +X a dirección; valor 2 por segmento."
+    },
+    {
+      "archivo": "oruga_segmento.glb",
+      "triangulos": 288,
+      "materiales": [
+        "verde_oruga_sombra",
+        "verde_oscuro"
+      ],
+      "bytes": 38352,
+      "min": [
+        -0.29,
+        -0.02,
+        -0.3172
+      ],
+      "max": [
+        0.29,
+        0.56,
+        0.3172
+      ],
+      "pivote": "pie central",
+      "uso": "Instanciar por cada segmento vivo en segX[s],segZ[s]; separación lógica .55."
+    },
+    {
+      "archivo": "babosa_dorada.glb",
+      "triangulos": 628,
+      "materiales": [
+        "oro_sombra",
+        "oro",
+        "amarillo",
+        "negro",
+        "BOMBILLAS"
+      ],
+      "bytes": 83784,
+      "min": [
+        -0.806,
+        -0.01,
+        -0.2984
+      ],
+      "max": [
+        0.515,
+        0.835,
+        0.2984
+      ],
+      "pivote": "pie central",
+      "uso": "Orientar +X al avance; valor 5; brillo estático de referencia."
+    },
+    {
+      "archivo": "avispa_cuerpo.glb",
+      "triangulos": 764,
+      "materiales": [
+        "negro",
+        "miel",
+        "blanco"
+      ],
+      "bytes": 99148,
+      "min": [
+        -0.7613,
+        -0.194,
+        -0.194
+      ],
+      "max": [
+        0.4908,
+        0.2157,
+        0.194
+      ],
+      "pivote": "centro de cuerpo",
+      "uso": "Instanciar en (x,altura,z), altura≈.95; orientar +X a dirección."
+    },
+    {
+      "archivo": "avispa_ala.glb",
+      "triangulos": 116,
+      "materiales": [
+        "ala",
+        "azul_luz"
+      ],
+      "bytes": 16672,
+      "min": [
+        -0.2948,
+        0.002,
+        -0.0207
+      ],
+      "max": [
+        0.2948,
+        0.0545,
+        0.3407
+      ],
+      "pivote": "unión al tórax",
+      "uso": "Dos instancias ±Z=.22 respecto a cuerpo, animar Y con sin(t*55)*.12."
+    },
+    {
+      "archivo": "gota_rocio.glb",
+      "triangulos": 142,
+      "materiales": [
+        "agua",
+        "blanco"
+      ],
+      "bytes": 19888,
+      "min": [
+        -0.1,
+        -0.04,
+        -0.0951
+      ],
+      "max": [
+        0.1,
+        0.22,
+        0.0951
+      ],
+      "pivote": "pie central",
+      "uso": "Diez instancias en arena, decorativas."
+    }
+  ]
+}
