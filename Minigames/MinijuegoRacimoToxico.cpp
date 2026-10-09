@@ -3,11 +3,13 @@
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Systems/Input.h"
 
 #include "raylib.h"
 
 #include <cmath>
+#include <initializer_list>
 
 
 //==================================================
@@ -526,6 +528,8 @@ void MinijuegoRacimoToxico::Reiniciar(
         return;
     }
 
+    CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteRacimoToxicoRetro3D());
+
     int limite = cantidadMaxima < MAX_PARTICIPANTES
         ? cantidadMaxima
         : MAX_PARTICIPANTES;
@@ -617,9 +621,8 @@ void MinijuegoRacimoToxico::Actualizar(
 // VISUAL
 //==================================================
 //
-// MODELO FUTURO: reemplazar por GLB el arbol podrido con su rama, la
-// enredadera y los frutos (normal, baya toxica, dorado), las balsas, los
-// troncos flotantes, las cabanas sobre pilotes y las luciernagas.
+// GLB compartidos con pivotes originales y fallback independiente. Las
+// animaciones, posiciones y visibilidad siguen usando el estado del juego.
 //==================================================
 
 
@@ -633,22 +636,39 @@ static Color ColorFrutaRacimo(int tipo)
 
 static void DibujarFrutaRacimo(Vector3 posicion, int tipo, float tiempo)
 {
-    DrawSphere(posicion, 0.2f, ColorFrutaRacimo(tipo));
+    ModeloRacimoToxico3D pieza = tipo == FRUTA_RACIMO_TOXICA
+        ? MODELO_RACIMO_FRUTO_TOXICO : tipo == FRUTA_RACIMO_DORADA
+        ? MODELO_RACIMO_FRUTO_DORADO : MODELO_RACIMO_FRUTO_NORMAL;
+    if (!DibujarModeloRacimoToxicoRetro3D(pieza, posicion))
+        (DrawSphere)(posicion, 0.2f, ColorFrutaRacimo(tipo));
 
+    // Halos procedurales: conservarlos sin sombras sobre el agua.
     if (tipo == FRUTA_RACIMO_TOXICA)
     {
         float pulso = 0.3f + 0.2f * std::sin(tiempo * 6.0f + posicion.y);
-        DrawSphere(posicion, 0.3f, Fade(Color{ 230, 60, 150, 255 }, pulso));
+        (DrawSphere)(posicion, 0.3f, Fade(Color{ 230, 60, 150, 255 }, pulso));
     }
     else if (tipo == FRUTA_RACIMO_DORADA)
     {
-        DrawSphere(posicion, 0.34f, Fade(Color{ 255, 230, 100, 255 }, 0.32f));
+        (DrawSphere)(posicion, 0.34f, Fade(Color{ 255, 230, 100, 255 }, 0.32f));
     }
 }
 
 
 static void DibujarTroncoFlotanteRacimo(Vector3 a, Vector3 b)
 {
+    Vector3 direccion = Vector3Subtract(b, a);
+    float largo = Vector3Length(direccion);
+    if (largo <= 0.001f) return;
+    Vector3 unidad = Vector3Scale(direccion, 1.0f / largo);
+    Vector3 eje = Vector3CrossProduct({0,0,1}, unidad);
+    if (Vector3Length(eje) <= 0.001f) eje = {0,1,0};
+    float angulo = std::acos(Clamp(unidad.z, -1.0f, 1.0f)) * RAD2DEG;
+    // Eje local +Z desde a: escala solo la longitud, sin centrar el GLB
+    // ni repetir una transformacion de rlgl.
+    if (DibujarModeloRacimoToxicoRetro3D(MODELO_RACIMO_TRONCO,
+        a, angulo, eje, {1,1,largo})) return;
+
     DrawCylinderEx(a, b, 0.32f, 0.3f, 8, Color{ 70, 56, 40, 255 });
     DrawCylinderEx(
         { a.x, a.y + 0.28f, a.z },
@@ -663,6 +683,7 @@ static void DibujarTroncoFlotanteRacimo(Vector3 a, Vector3 b)
 
 static void DibujarCabanaRacimo(float x, float z)
 {
+    if (DibujarModeloRacimoToxicoRetro3D(MODELO_RACIMO_CABANA, {x,0,z})) return;
     for (int i = 0; i < 4; i++)
     {
         float dx = (i % 2 == 0 ? -1.2f : 1.2f);
@@ -679,13 +700,19 @@ static void DibujarCabanaRacimo(float x, float z)
 
 static void DibujarPantanoRacimo(float tiempo)
 {
-    DrawPlane({ 0.0f, -0.1f, -4.0f }, { 90.0f, 70.0f }, Color{ 28, 58, 40, 255 });
-    DrawPlane({ 0.0f, -0.05f, -4.0f }, { 90.0f, 70.0f }, Fade(Color{ 70, 100, 50, 255 }, 0.35f));
+    if (!DibujarModeloRacimoToxicoRetro3D(MODELO_RACIMO_AGUA, {0,0,0}))
+    {
+        DrawPlane({ 0.0f, -0.1f, -4.0f }, { 90.0f, 70.0f }, Color{ 28, 58, 40, 255 });
+        DrawPlane({ 0.0f, -0.05f, -4.0f }, { 90.0f, 70.0f }, Fade(Color{ 70, 100, 50, 255 }, 0.35f));
+    }
 
     // Arbol podrido y rama de la que cuelga el racimo.
-    DrawCylinder({ -4.8f, 5.5f, -1.0f }, 0.5f, 0.8f, 11.0f, 8, Color{ 58, 46, 36, 255 });
-    DrawCylinderEx({ -4.6f, 10.4f, -1.0f }, { 0.0f, 11.3f, 0.0f }, 0.28f, 0.2f, 8, Color{ 62, 50, 38, 255 });
-    DrawCylinderEx({ -4.8f, 8.5f, -1.0f }, { -7.5f, 10.5f, -1.5f }, 0.2f, 0.12f, 6, Color{ 62, 50, 38, 255 });
+    if (!DibujarModeloRacimoToxicoRetro3D(MODELO_RACIMO_ARBOL_PODRIDO, {-4.8f,0,-1}))
+    {
+        DrawCylinder({ -4.8f, 5.5f, -1.0f }, 0.5f, 0.8f, 11.0f, 8, Color{ 58, 46, 36, 255 });
+        DrawCylinderEx({ -4.6f, 10.4f, -1.0f }, { 0.0f, 11.3f, 0.0f }, 0.28f, 0.2f, 8, Color{ 62, 50, 38, 255 });
+        DrawCylinderEx({ -4.8f, 8.5f, -1.0f }, { -7.5f, 10.5f, -1.5f }, 0.2f, 0.12f, 6, Color{ 62, 50, 38, 255 });
+    }
 
     // Lianas colgantes.
     for (int i = 0; i < 6; i++)
@@ -712,8 +739,26 @@ static void DibujarPantanoRacimo(float tiempo)
     for (int i = 0; i < 7; i++)
     {
         float x = -16.0f + 5.5f * (float)i;
-        DrawCylinder({ x, 4.0f, -15.0f }, 0.5f, 0.9f, 8.0f, 7, Color{ 38, 48, 38, 255 });
-        DrawSphere({ x, 8.5f, -15.0f }, 2.0f, Color{ 30, 62, 40, 255 });
+        if (!DibujarModeloRacimoToxicoRetro3D(MODELO_RACIMO_ARBOL_FONDO, {x,0,-15}))
+        {
+            DrawCylinder({ x, 4.0f, -15.0f }, 0.5f, 0.9f, 8.0f, 7, Color{ 38, 48, 38, 255 });
+            DrawSphere({ x, 8.5f, -15.0f }, 2.0f, Color{ 30, 62, 40, 255 });
+        }
+    }
+
+    // Decoracion del paquete, en las posiciones del visor fuera de las
+    // balsas. No participa en colisiones ni agrega espacio jugable.
+    for (int x : {-14,-6,6,14})
+    {
+        Vector3 nenufar = {(float)x,-0.08f,-4.0f + (float)(x % 3)};
+        if (!DibujarModeloRacimoToxicoRetro3D(MODELO_RACIMO_NENUFAR, nenufar))
+        {
+            (DrawCylinder)(nenufar,0.48f,0.48f,0.04f,18,Color{76,129,82,255});
+            (DrawSphere)({nenufar.x,nenufar.y+0.13f,nenufar.z},0.15f,Color{241,207,96,255});
+        }
+        Vector3 roca = {(float)x,-0.15f,-10.0f + (float)(x % 4)};
+        if (!DibujarModeloRacimoToxicoRetro3D(MODELO_RACIMO_ROCA, roca))
+            (DrawCube)({roca.x,roca.y+0.09f,roca.z},1.4f,0.64f,1.1f,Color{101,114,105,255});
     }
 }
 
@@ -731,8 +776,10 @@ static void DibujarLuciernagasRacimo(float tiempo)
         };
         float brillo = 0.5f + 0.5f * std::sin(tiempo * 2.5f + fi * 1.7f);
 
-        DrawSphere(p, 0.07f, Fade(Color{ 220, 255, 120, 255 }, 0.4f + 0.6f * brillo));
-        DrawSphere(p, 0.18f, Fade(Color{ 210, 255, 110, 255 }, 0.12f * brillo));
+        if (!DibujarModeloRacimoToxicoRetro3D(MODELO_RACIMO_LUCIERNAGA,
+            p, 0, {0,1,0}, {1,1,1}, Fade(WHITE,0.4f+0.6f*brillo)))
+            (DrawSphere)(p, 0.07f, Fade(Color{ 220, 255, 120, 255 }, 0.4f + 0.6f * brillo));
+        (DrawSphere)(p, 0.18f, Fade(Color{ 210, 255, 110, 255 }, 0.12f * brillo));
     }
 }
 
@@ -746,21 +793,28 @@ static void DibujarBalsaRacimo(float x, bool activa, bool viva, float sacudida, 
 
     Color madera = viva ? Color{ 110, 80, 52, 255 } : Color{ 54, 44, 36, 255 };
 
-    for (int i = 0; i < 4; i++)
+    // La madera del GLB es estatica: no se tine para simular muerte. El
+    // estado se expresa con su hundimiento, manteniendo los materiales.
+    if (!DibujarModeloRacimoToxicoRetro3D(MODELO_RACIMO_BALSA, {x+temblor,y,Z_BALSAS_RACIMO}))
     {
-        DrawCube(
-            { x + temblor, y, Z_BALSAS_RACIMO - 0.8f + 0.55f * (float)i },
-            3.2f,
-            0.24f,
-            0.5f,
-            i % 2 == 0 ? madera : Color{ (unsigned char)(madera.r * 0.85f), (unsigned char)(madera.g * 0.85f), (unsigned char)(madera.b * 0.85f), 255 }
-        );
+        for (int i = 0; i < 4; i++)
+        {
+            (DrawCube)(
+                { x + temblor, y, Z_BALSAS_RACIMO - 0.8f + 0.55f * (float)i },
+                3.2f,
+                0.24f,
+                0.5f,
+                i % 2 == 0 ? madera : Color{ (unsigned char)(madera.r * 0.85f), (unsigned char)(madera.g * 0.85f), (unsigned char)(madera.b * 0.85f), 255 }
+            );
+        }
     }
 
     if (activa)
     {
         float pulso = 0.5f + 0.3f * std::sin(tiempo * 6.0f);
-        DrawCylinder({ x, 0.02f, Z_BALSAS_RACIMO }, 2.3f, 2.3f, 0.06f, 20, Fade(YELLOW, pulso));
+        if (!DibujarModeloRacimoToxicoRetro3D(MODELO_RACIMO_ARO,
+            {x,0.02f,Z_BALSAS_RACIMO},0,{0,1,0},{1,1,1},Fade(WHITE,pulso)))
+            (DrawCylinder)({ x, 0.02f, Z_BALSAS_RACIMO }, 2.3f, 2.3f, 0.06f, 20, Fade(YELLOW, pulso));
     }
 }
 
@@ -780,15 +834,18 @@ void MinijuegoRacimoToxico::Dibujar(
     DibujarPantanoRacimo(tiempoAnimacion);
 
     // Enredadera.
-    DrawCylinder({ 0.0f, 6.0f, 0.0f }, 0.09f, 0.09f, 10.6f, 6, Color{ 52, 110, 56, 255 });
+    bool enredaderaGLB = DibujarModeloRacimoToxicoRetro3D(MODELO_RACIMO_ENREDADERA, {0,0,0});
+    if (!enredaderaGLB)
+        DrawCylinder({ 0.0f, 6.0f, 0.0f }, 0.09f, 0.09f, 10.6f, 6, Color{ 52, 110, 56, 255 });
 
     for (int i = frente; i < TOTAL_FRUTAS_RACIMO; i++)
     {
         Vector3 p = PosicionFrutaRacimo(i, tiempoAnimacion);
-        DrawLine3D({ 0.0f, p.y, 0.0f }, p, Color{ 52, 110, 56, 255 });
+        if (!enredaderaGLB)
+            DrawLine3D({ 0.0f, p.y, 0.0f }, p, Color{ 52, 110, 56, 255 });
         DibujarFrutaRacimo(p, tipoFruta[i], tiempoAnimacion);
 
-        if (i % 3 == 0)
+        if (!enredaderaGLB && i % 3 == 0)
         {
             DrawSphere({ p.x * 0.5f, p.y + 0.12f, -0.1f }, 0.14f, Color{ 38, 96, 46, 255 });
         }
@@ -848,7 +905,7 @@ void MinijuegoRacimoToxico::Dibujar(
 
         if (fase == FASE_RACIMO_TURNO && i == turno)
         {
-            DrawSphere(
+            (DrawSphere)(
                 { posicionBalsaX[i], 2.6f + std::sin(tiempoAnimacion * 5.0f) * 0.15f, Z_BALSAS_RACIMO },
                 0.22f,
                 YELLOW
@@ -880,8 +937,8 @@ void MinijuegoRacimoToxico::Dibujar(
     DibujarLuciernagasRacimo(tiempoAnimacion);
 
     // Niebla baja sobre el agua (translucida, al final).
-    DrawCube({ -6.0f, 0.5f, -3.0f }, 16.0f, 1.0f, 5.0f, Fade(Color{ 150, 190, 170, 255 }, 0.1f));
-    DrawCube({ 7.0f, 0.4f, -5.0f }, 16.0f, 0.8f, 5.0f, Fade(Color{ 150, 190, 170, 255 }, 0.1f));
+    (DrawCube)({ -6.0f, 0.5f, -3.0f }, 16.0f, 1.0f, 5.0f, Fade(Color{ 150, 190, 170, 255 }, 0.1f));
+    (DrawCube)({ 7.0f, 0.4f, -5.0f }, 16.0f, 0.8f, 5.0f, Fade(Color{ 150, 190, 170, 255 }, 0.1f));
 
     EndMode3D();
 

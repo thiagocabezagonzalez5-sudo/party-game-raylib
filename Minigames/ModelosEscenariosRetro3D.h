@@ -62,6 +62,7 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D vetaCristal[CANTIDAD_MODELOS_VETA_CRISTAL_3D];
     RecursoModeloEscenarioRetro3D capsulasBarajadas[CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D];
     RecursoModeloEscenarioRetro3D bateoMeteorico[CANTIDAD_MODELOS_BATEO_METEORICO_3D];
+    RecursoModeloEscenarioRetro3D racimoToxico[CANTIDAD_MODELOS_RACIMO_TOXICO_3D];
     bool inicializados = false;
 };
 
@@ -525,6 +526,38 @@ inline bool DibujarFarolBateoMeteoricoRetro3D(Vector3 posicion, float parpadeo)
     return true;
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteRacimoToxicoRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_RACIMO_TOXICO_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_RACIMO_TOXICO_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_RACIMO_TOXICO_3D[i];
+        // No hay COLOR_DINAMICO en este paquete. Solo BOMBILLAS cambia
+        // con el brillo del insecto y el pulso del turno, via meshMaterial.
+        definiciones[MODELO_RACIMO_LUCIERNAGA].mallaColor = 1;
+        definiciones[MODELO_RACIMO_ARO].mallaColor = 1;
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().racimoToxico,
+        definiciones, CANTIDAD_MODELOS_RACIMO_TOXICO_3D };
+}
+
+inline bool DibujarModeloRacimoToxicoRetro3D(
+    ModeloRacimoToxico3D pieza,
+    Vector3 posicion,
+    float anguloGrados = 0.0f,
+    Vector3 ejeRotacion = { 0.0f, 1.0f, 0.0f },
+    Vector3 escala = { 1.0f, 1.0f, 1.0f },
+    Color colorEstado = WHITE
+)
+{
+    return DibujarModeloEscenarioRetro3D(
+        ObtenerModelosEscenariosRetro3D().racimoToxico[pieza],
+        posicion, ejeRotacion, anguloGrados, escala, colorEstado);
+}
+
 inline void InicializarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -618,6 +651,8 @@ inline void DescargarModelosEscenariosRetro3D()
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.capsulasBarajadas)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.bateoMeteorico)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.racimoToxico)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     recursos.inicializados = false;
 }

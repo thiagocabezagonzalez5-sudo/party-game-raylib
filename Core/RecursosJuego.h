@@ -335,6 +335,52 @@ static_assert(sizeof(RUTAS_MODELOS_BATEO_METEORICO_3D) /
 
 
 //==================================================
+// PAQUETE DE RACIMO TOXICO
+//==================================================
+
+enum ModeloRacimoToxico3D
+{
+    MODELO_RACIMO_AGUA,
+    MODELO_RACIMO_ARBOL_PODRIDO,
+    MODELO_RACIMO_ENREDADERA,
+    MODELO_RACIMO_FRUTO_NORMAL,
+    MODELO_RACIMO_FRUTO_TOXICO,
+    MODELO_RACIMO_FRUTO_DORADO,
+    MODELO_RACIMO_BALSA,
+    MODELO_RACIMO_TRONCO,
+    MODELO_RACIMO_CABANA,
+    MODELO_RACIMO_ARBOL_FONDO,
+    MODELO_RACIMO_LUCIERNAGA,
+    MODELO_RACIMO_NENUFAR,
+    MODELO_RACIMO_ROCA,
+    MODELO_RACIMO_ARO,
+    CANTIDAD_MODELOS_RACIMO_TOXICO_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_RACIMO_TOXICO_3D[] =
+{
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/agua_pantano.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/arbol_podrido.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/enredadera_central.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/fruto_normal.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/fruto_toxico.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/fruto_dorado.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/balsa.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/tronco_flotante.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/cabana_pilotes.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/arbol_fondo.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/luciernaga.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/nenufar.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/roca_pantano.glb",
+    "Assets/Modelos/Escenarios/Racimo_Toxico/GLB/aro_turno.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_RACIMO_TOXICO_3D) /
+    sizeof(RUTAS_MODELOS_RACIMO_TOXICO_3D[0]) == CANTIDAD_MODELOS_RACIMO_TOXICO_3D,
+    "Las rutas deben coincidir con los IDs del paquete Racimo Toxico");
+
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 
