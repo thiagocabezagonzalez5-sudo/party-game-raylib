@@ -3,6 +3,7 @@
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Systems/Input.h"
 
 #include "raylib.h"
@@ -1337,6 +1338,7 @@ void MinijuegoTesoreroAcorralado::Reiniciar(
         return;
     }
 
+    CargarPaqueteTesoreroCercadoRetro3D();
     partidaValida = true;
     indiceTesorero = indices[GetRandomValue(0, cantidad - 1)];
 
@@ -1465,9 +1467,8 @@ void MinijuegoTesoreroAcorralado::Actualizar(
 
 // Patio de armas: foso, muros con almenas, torres de esquina, estandartes,
 // antorchas, puerta del fondo y torre del homenaje.
-// MODELO FUTURO: muros y almenas, torres de esquina con techo conico,
-// torre del homenaje, estandartes de tela, antorchas, foso con agua, y las
-// rejas levadizas (reja + poleas) como GLB animables; suelo de losas.
+// GLB compartidos con fallback independiente y pivotes originales. Las
+// animaciones siguen en C++; ninguna malla define colisiones del patio.
 static void DibujarPatioTesorero(const MinijuegoTesoreroAcorralado& minijuego)
 {
     float t = minijuego.tiempoAnimacion;
@@ -1476,7 +1477,8 @@ static void DibujarPatioTesorero(const MinijuegoTesoreroAcorralado& minijuego)
     const Color madera = Color{ 110, 74, 42, 255 };
 
     // Foso de agua alrededor del castillo.
-    DrawCube({ 0.0f, -0.9f, 0.0f }, 36.0f, 1.6f, 28.0f, Color{ 38, 92, 140, 255 });
+    if (!DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_FOSO, {0,0,0}))
+        DrawCube({ 0.0f, -0.9f, 0.0f }, 36.0f, 1.6f, 28.0f, Color{ 38, 92, 140, 255 });
 
     for (int i = 0; i < 12; i++)
     {
@@ -1488,51 +1490,62 @@ static void DibujarPatioTesorero(const MinijuegoTesoreroAcorralado& minijuego)
             continue;
         }
 
-        DrawCube({ x + std::sin(t + (float)i) * 0.4f, -0.08f, z }, 1.6f, 0.02f, 0.25f, Fade(RAYWHITE, 0.35f));
+        (DrawCube)({ x + std::sin(t + (float)i) * 0.4f, -0.08f, z }, 1.6f, 0.02f, 0.25f, Fade(RAYWHITE, 0.35f));
     }
 
     // Suelo de losas.
-    DrawCube({ 0.0f, -0.5f, 0.0f }, MITAD_SUELO_X_TESORERO * 2.0f, 1.0f, MITAD_SUELO_Z_TESORERO * 2.0f, Color{ 118, 114, 108, 255 });
-
-    for (int ix = 0; ix < 9; ix++)
+    if (!DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_SUELO, {0,0,0}))
     {
-        for (int iz = 0; iz < 7; iz++)
+        DrawCube({ 0.0f, -0.5f, 0.0f }, MITAD_SUELO_X_TESORERO * 2.0f, 1.0f, MITAD_SUELO_Z_TESORERO * 2.0f, Color{ 118, 114, 108, 255 });
+
+        for (int ix = 0; ix < 9; ix++)
         {
-            if ((ix + iz) % 2 == 0)
+            for (int iz = 0; iz < 7; iz++)
             {
-                DrawCube(
-                    { -8.0f + (float)ix * 2.0f, 0.01f, -6.0f + (float)iz * 2.0f },
-                    1.96f, 0.02f, 1.96f,
-                    Color{ 134, 130, 124, 255 }
-                );
+                if ((ix + iz) % 2 == 0)
+                {
+                    DrawCube(
+                        { -8.0f + (float)ix * 2.0f, 0.01f, -6.0f + (float)iz * 2.0f },
+                        1.96f, 0.02f, 1.96f,
+                        Color{ 134, 130, 124, 255 }
+                    );
+                }
             }
+        }
+
+    }
+
+    // Cada muro incluye sus almenas; un fallo no duplica las otras piezas.
+    if (!DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_MURO_FONDO, {0,0,-7.6f}))
+    {
+        DrawCube({ 0.0f, 1.3f, -7.6f }, 20.4f, 2.6f, 1.2f, piedra);
+
+        // Almenas.
+        for (int i = 0; i < 17; i++)
+        {
+            DrawCube({ -9.6f + (float)i * 1.2f, 2.85f, -7.6f }, 0.7f, 0.5f, 1.2f, piedraOscura);
         }
     }
 
-    // Muros: fondo alto, laterales medios y frente bajo para ver la arena.
-    DrawCube({ 0.0f, 1.3f, -7.6f }, 20.4f, 2.6f, 1.2f, piedra);
-    DrawCube({ -9.6f, 1.1f, 0.0f }, 1.2f, 2.2f, 15.2f, piedra);
-    DrawCube({ 9.6f, 1.1f, 0.0f }, 1.2f, 2.2f, 15.2f, piedra);
-    DrawCube({ 0.0f, 0.25f, 7.6f }, 20.4f, 0.5f, 1.2f, piedra);
-
-    // Almenas.
-    for (int i = 0; i < 17; i++)
+    for (int lado = -1; lado <= 1; lado += 2)
     {
-        DrawCube({ -9.6f + (float)i * 1.2f, 2.85f, -7.6f }, 0.7f, 0.5f, 1.2f, piedraOscura);
+        float x = (float)lado * 9.6f;
+        if (DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_MURO_LATERAL, {x,0,0})) continue;
+        DrawCube({ x, 1.1f, 0.0f }, 1.2f, 2.2f, 15.2f, piedra);
+        for (int i = 0; i < 12; i++)
+            DrawCube({ x, 2.45f, -6.6f + (float)i * 1.2f }, 1.2f, 0.5f, 0.7f, piedraOscura);
     }
-
-    for (int i = 0; i < 12; i++)
-    {
-        float z = -6.6f + (float)i * 1.2f;
-        DrawCube({ -9.6f, 2.45f, z }, 1.2f, 0.5f, 0.7f, piedraOscura);
-        DrawCube({ 9.6f, 2.45f, z }, 1.2f, 0.5f, 0.7f, piedraOscura);
-    }
+    if (!DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_PARAPETO, {0,0,7.6f}))
+        DrawCube({ 0.0f, 0.25f, 7.6f }, 20.4f, 0.5f, 1.2f, piedra);
 
     // Puerta del fondo.
-    DrawCube({ 0.0f, 1.1f, -6.95f }, 2.4f, 2.2f, 0.2f, Color{ 40, 30, 24, 255 });
-    DrawCube({ -1.4f, 1.3f, -6.95f }, 0.4f, 2.6f, 0.4f, piedraOscura);
-    DrawCube({ 1.4f, 1.3f, -6.95f }, 0.4f, 2.6f, 0.4f, piedraOscura);
-    DrawCube({ 0.0f, 2.6f, -6.95f }, 3.2f, 0.4f, 0.4f, piedraOscura);
+    if (!DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_PORTAL, {0,0,-6.95f}))
+    {
+        DrawCube({ 0.0f, 1.1f, -6.95f }, 2.4f, 2.2f, 0.2f, Color{ 40, 30, 24, 255 });
+        DrawCube({ -1.4f, 1.3f, -6.95f }, 0.4f, 2.6f, 0.4f, piedraOscura);
+        DrawCube({ 1.4f, 1.3f, -6.95f }, 0.4f, 2.6f, 0.4f, piedraOscura);
+        DrawCube({ 0.0f, 2.6f, -6.95f }, 3.2f, 0.4f, 0.4f, piedraOscura);
+    }
 
     // Torres de esquina con techo conico.
     for (int sx = -1; sx <= 1; sx += 2)
@@ -1541,6 +1554,8 @@ static void DibujarPatioTesorero(const MinijuegoTesoreroAcorralado& minijuego)
         {
             float altura = sz < 0 ? 4.4f : 2.4f;
             Vector3 base = { sx * 10.4f, 0.0f, sz * 8.2f };
+            ModeloTesoreroCercado3D pieza = sz < 0 ? MODELO_TESORERO_TORRE_ALTA : MODELO_TESORERO_TORRE_BAJA;
+            if (DibujarModeloTesoreroCercadoRetro3D(pieza, base)) continue;
 
             DrawCylinder(base, 1.5f, 1.5f, altura, 12, piedra);
             DrawCylinder({ base.x, altura, base.z }, 0.0f, 1.8f, 1.6f, 12, Color{ 150, 52, 48, 255 });
@@ -1554,6 +1569,22 @@ static void DibujarPatioTesorero(const MinijuegoTesoreroAcorralado& minijuego)
         float vaiven = std::sin(t * 2.0f + (float)k) * 0.12f;
         Color tela = k % 2 == 0 ? Color{ 200, 40, 50, 255 } : Color{ 240, 190, 50, 255 };
 
+        ModeloTesoreroCercado3D pieza = k % 2 == 0
+            ? MODELO_TESORERO_ESTANDARTE_ROJO : MODELO_TESORERO_ESTANDARTE_DORADO;
+        const auto& recurso = ObtenerModelosEscenariosRetro3D().tesoreroCercado[pieza];
+        if (recurso.cargado)
+        {
+            for (int i = 0; i < recurso.modelo.meshCount; i++)
+            {
+                // Asta y travesano fijos. En el dorado la malla oro tambien
+                // incluye el remate: comparte el vaiven de su tela.
+                bool movil = i >= 3 || (pieza == MODELO_TESORERO_ESTANDARTE_DORADO && i == 1);
+                DibujarModeloTesoreroCercadoRetro3D(pieza,
+                    {x + (movil ? vaiven : 0),2.8f,-7.2f},0,{1,1,1},i);
+            }
+            continue;
+        }
+
         DrawCube({ x, 3.6f, -7.2f }, 0.1f, 1.6f, 0.1f, madera);
         DrawCube({ x + vaiven, 3.35f, -7.0f }, 0.8f, 1.0f, 0.06f, tela);
     }
@@ -1565,26 +1596,45 @@ static void DibujarPatioTesorero(const MinijuegoTesoreroAcorralado& minijuego)
         float z = -4.5f + (float)(k / 2) * 4.5f;
         float llama = 0.17f + 0.04f * std::sin(t * 12.0f + (float)k * 2.0f);
 
-        DrawCube({ lado * 8.8f, 1.0f, z }, 0.2f, 1.2f, 0.2f, madera);
-        DrawSphere({ lado * 8.8f, 1.8f, z }, llama, Color{ 255, 170, 50, 255 });
-        DrawSphere({ lado * 8.8f, 1.8f, z }, llama * 3.0f, Fade(Color{ 255, 150, 40, 255 }, 0.16f));
+        const auto& recurso = ObtenerModelosEscenariosRetro3D().tesoreroCercado[MODELO_TESORERO_ANTORCHA];
+        if (recurso.cargado)
+        {
+            for (int i = 0; i < recurso.modelo.meshCount; i++)
+            {
+                float escala = i >= 3 ? llama / 0.17f : 1.0f;
+                // Escalar el fuego alrededor de su centro, dejando fijo el
+                // soporte. No aplicar ademas una matriz de rlgl.
+                Vector3 p = {lado*8.8f,1.84f*(1.0f-escala),z};
+                DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_ANTORCHA,
+                    p,0,{escala,escala,escala},i);
+            }
+        }
+        else
+        {
+            DrawCube({ lado * 8.8f, 1.0f, z }, 0.2f, 1.2f, 0.2f, madera);
+            (DrawSphere)({ lado * 8.8f, 1.8f, z }, llama, Color{ 255, 170, 50, 255 });
+        }
+        (DrawSphere)({ lado * 8.8f, 1.8f, z }, llama * 3.0f, Fade(Color{ 255, 150, 40, 255 }, 0.16f));
     }
 
     // Torre del homenaje: cuerpo, almenas y estandarte.
-    DrawCube({ 0.0f, ALTO_TORRE_TESORERO * 0.5f, 0.0f }, MITAD_TORRE_TESORERO * 2.0f, ALTO_TORRE_TESORERO, MITAD_TORRE_TESORERO * 2.0f, Color{ 148, 142, 134, 255 });
-    DrawCubeWires({ 0.0f, ALTO_TORRE_TESORERO * 0.5f, 0.0f }, MITAD_TORRE_TESORERO * 2.0f, ALTO_TORRE_TESORERO, MITAD_TORRE_TESORERO * 2.0f, Color{ 70, 66, 62, 255 });
-
-    for (int k = 0; k < 8; k++)
+    if (!DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_HOMENAJE, {0,0,0}))
     {
-        float a = (float)k * 0.7853982f;
-        DrawCube(
-            { std::cos(a) * 1.15f, ALTO_TORRE_TESORERO + 0.2f, std::sin(a) * 1.15f },
-            0.4f, 0.4f, 0.4f, piedraOscura
-        );
-    }
+        DrawCube({ 0.0f, ALTO_TORRE_TESORERO * 0.5f, 0.0f }, MITAD_TORRE_TESORERO * 2.0f, ALTO_TORRE_TESORERO, MITAD_TORRE_TESORERO * 2.0f, Color{ 148, 142, 134, 255 });
+        DrawCubeWires({ 0.0f, ALTO_TORRE_TESORERO * 0.5f, 0.0f }, MITAD_TORRE_TESORERO * 2.0f, ALTO_TORRE_TESORERO, MITAD_TORRE_TESORERO * 2.0f, Color{ 70, 66, 62, 255 });
 
-    DrawCube({ 0.0f, ALTO_TORRE_TESORERO + 0.9f, 0.0f }, 0.08f, 1.4f, 0.08f, madera);
-    DrawCube({ 0.35f, ALTO_TORRE_TESORERO + 1.3f, 0.0f }, 0.7f, 0.45f, 0.05f, Color{ 255, 205, 60, 255 });
+        for (int k = 0; k < 8; k++)
+        {
+            float a = (float)k * 0.7853982f;
+            DrawCube(
+                { std::cos(a) * 1.15f, ALTO_TORRE_TESORERO + 0.2f, std::sin(a) * 1.15f },
+                0.4f, 0.4f, 0.4f, piedraOscura
+            );
+        }
+
+        DrawCube({ 0.0f, ALTO_TORRE_TESORERO + 0.9f, 0.0f }, 0.08f, 1.4f, 0.08f, madera);
+        DrawCube({ 0.35f, ALTO_TORRE_TESORERO + 1.3f, 0.0f }, 0.7f, 0.45f, 0.05f, Color{ 255, 205, 60, 255 });
+    }
 }
 
 
@@ -1599,33 +1649,63 @@ static void DibujarRejaTesorero(const RejaTesorero& reja, float t)
     Color hierro = parpadeo ? Color{ 230, 60, 50, 255 } : Color{ 62, 62, 70, 255 };
 
     // Postes de piedra en los extremos.
-    for (int k = -1; k <= 1; k += 2)
+    float rotacion = alLargoDeZ ? 90.0f : 0.0f;
+    if (!DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_MARCO_REJA, {reja.x,0,reja.z},rotacion))
     {
-        float px = reja.x + (alLargoDeZ ? 0.0f : (float)k * (reja.mitadX + 0.15f));
-        float pz = reja.z + (alLargoDeZ ? (float)k * (reja.mitadZ + 0.15f) : 0.0f);
-        DrawCube({ px, 2.7f, pz }, 0.5f, 5.4f, 0.5f, Color{ 112, 108, 102, 255 });
+        for (int k = -1; k <= 1; k += 2)
+        {
+            float px = reja.x + (alLargoDeZ ? 0.0f : (float)k * (reja.mitadX + 0.15f));
+            float pz = reja.z + (alLargoDeZ ? (float)k * (reja.mitadZ + 0.15f) : 0.0f);
+            DrawCube({ px, 2.7f, pz }, 0.5f, 5.4f, 0.5f, Color{ 112, 108, 102, 255 });
+        }
     }
 
     // Barras y travesanos de la reja.
-    int barras = 6;
-
-    for (int b = 0; b < barras; b++)
+    const auto& recursoReja = ObtenerModelosEscenariosRetro3D().tesoreroCercado[MODELO_TESORERO_REJA];
+    if (recursoReja.cargado)
     {
-        float f = ((float)b + 0.5f) / (float)barras - 0.5f;
-        float bx = reja.x + (alLargoDeZ ? 0.0f : f * largoX);
-        float bz = reja.z + (alLargoDeZ ? f * largoZ : 0.0f);
-
-        DrawCube({ bx, baseY + ALTO_REJA_TESORERO * 0.5f, bz }, 0.12f, ALTO_REJA_TESORERO, 0.12f, hierro);
+        for (int i = 0; i < recursoReja.modelo.meshCount; i++)
+        {
+            // Solo hierro e hierro_oscuro de barras/travesanos parpadean;
+            // puntas y herrajes conservan su material. El helper lo restaura.
+            bool dinamico = parpadeo && (i == 0 || i == 2);
+            DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_REJA,
+                {reja.x,baseY,reja.z},rotacion,{1,1,1},i,dinamico,hierro);
+        }
     }
+    else
+    {
+        int barras = 6;
 
-    DrawCube({ reja.x, baseY + ALTO_REJA_TESORERO * 0.8f, reja.z }, alLargoDeZ ? 0.14f : largoX, 0.12f, alLargoDeZ ? largoZ : 0.14f, hierro);
-    DrawCube({ reja.x, baseY + ALTO_REJA_TESORERO * 0.25f, reja.z }, alLargoDeZ ? 0.14f : largoX, 0.12f, alLargoDeZ ? largoZ : 0.14f, hierro);
+        for (int b = 0; b < barras; b++)
+        {
+            float f = ((float)b + 0.5f) / (float)barras - 0.5f;
+            float bx = reja.x + (alLargoDeZ ? 0.0f : f * largoX);
+            float bz = reja.z + (alLargoDeZ ? f * largoZ : 0.0f);
+
+            DrawCube({ bx, baseY + ALTO_REJA_TESORERO * 0.5f, bz }, 0.12f, ALTO_REJA_TESORERO, 0.12f, hierro);
+        }
+
+        DrawCube({ reja.x, baseY + ALTO_REJA_TESORERO * 0.8f, reja.z }, alLargoDeZ ? 0.14f : largoX, 0.12f, alLargoDeZ ? largoZ : 0.14f, hierro);
+        DrawCube({ reja.x, baseY + ALTO_REJA_TESORERO * 0.25f, reja.z }, alLargoDeZ ? 0.14f : largoX, 0.12f, alLargoDeZ ? largoZ : 0.14f, hierro);
+    }
 
     // Aviso en el suelo: la reja esta por bajar.
     if (aviso)
     {
         float pulso = 0.5f + 0.5f * std::sin(t * 18.0f);
-        DrawCube(
+        const auto& recursoAviso = ObtenerModelosEscenariosRetro3D().tesoreroCercado[MODELO_TESORERO_AVISO];
+        if (recursoAviso.cargado)
+        {
+            for (int i = 0; i < recursoAviso.modelo.meshCount; i++)
+            {
+                int material = recursoAviso.modelo.meshMaterial[i];
+                Color color = recursoAviso.modelo.materials[material].maps[MATERIAL_MAP_DIFFUSE].color;
+                DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_AVISO,
+                    {reja.x,0.03f,reja.z},rotacion,{1,1,1},i,true,Fade(color,0.25f+0.3f*pulso));
+            }
+        }
+        else (DrawCube)(
             { reja.x, 0.05f, reja.z },
             largoX + 0.6f, 0.05f, largoZ + 0.6f,
             Fade(Color{ 255, 50, 40, 255 }, 0.25f + 0.3f * pulso)
@@ -1646,6 +1726,10 @@ static void DibujarMonedaTesorero(const MonedaTesorero& moneda, float t)
     Vector3 centro = { moneda.x, moneda.y + 0.12f, moneda.z };
 
     DrawCircle3D({ moneda.x, 0.04f, moneda.z }, 0.2f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(BLACK, 0.4f));
+    // La cara del GLB mira +Z; el cilindro original tenia su normal en
+    // (cos(angulo),0,sin(angulo)). Conservar esa orientacion y velocidad.
+    if (DibujarModeloTesoreroCercadoRetro3D(MODELO_TESORERO_MONEDA,
+        centro,90.0f-angulo*RAD2DEG)) return;
     DrawCylinderEx(
         { centro.x - eje.x, centro.y, centro.z - eje.z },
         { centro.x + eje.x, centro.y, centro.z + eje.z },
@@ -1714,8 +1798,8 @@ void MinijuegoTesoreroAcorralado::Dibujar(
         {
             // Bolsa de oro sobre el tesorero.
             float flota = 1.35f + 0.1f * std::sin(tiempoAnimacion * 4.0f);
-            DrawSphere({ jugador.posicion.x, jugador.posicion.y + flota, jugador.posicion.z }, 0.22f, Color{ 255, 210, 50, 255 });
-            DrawSphere({ jugador.posicion.x, jugador.posicion.y + flota, jugador.posicion.z }, 0.4f, Fade(Color{ 255, 210, 50, 255 }, 0.25f));
+            (DrawSphere)({ jugador.posicion.x, jugador.posicion.y + flota, jugador.posicion.z }, 0.22f, Color{ 255, 210, 50, 255 });
+            (DrawSphere)({ jugador.posicion.x, jugador.posicion.y + flota, jugador.posicion.z }, 0.4f, Fade(Color{ 255, 210, 50, 255 }, 0.25f));
         }
 
         if (mostrarDebug)

@@ -381,6 +381,56 @@ static_assert(sizeof(RUTAS_MODELOS_RACIMO_TOXICO_3D) /
 
 
 //==================================================
+// PAQUETE DE TESORERO CERCADO (minijuego Tesorero Acorralado)
+//==================================================
+
+enum ModeloTesoreroCercado3D
+{
+    MODELO_TESORERO_FOSO,
+    MODELO_TESORERO_SUELO,
+    MODELO_TESORERO_MURO_FONDO,
+    MODELO_TESORERO_MURO_LATERAL,
+    MODELO_TESORERO_PARAPETO,
+    MODELO_TESORERO_TORRE_ALTA,
+    MODELO_TESORERO_TORRE_BAJA,
+    MODELO_TESORERO_HOMENAJE,
+    MODELO_TESORERO_PORTAL,
+    MODELO_TESORERO_ESTANDARTE_ROJO,
+    MODELO_TESORERO_ESTANDARTE_DORADO,
+    MODELO_TESORERO_ANTORCHA,
+    MODELO_TESORERO_MARCO_REJA,
+    MODELO_TESORERO_REJA,
+    MODELO_TESORERO_AVISO,
+    MODELO_TESORERO_MONEDA,
+    CANTIDAD_MODELOS_TESORERO_CERCADO_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_TESORERO_CERCADO_3D[] =
+{
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/foso_agua.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/suelo_losas.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/muro_fondo.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/muro_lateral.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/parapeto_frontal.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/torre_esquina_alta.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/torre_esquina_baja.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/torre_homenaje.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/portal_fondo.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/estandarte_rojo.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/estandarte_dorado.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/antorcha.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/marco_reja.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/reja_levadiza.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/aviso_reja.glb",
+    "Assets/Modelos/Escenarios/Tesorero_Cercado/GLB/moneda_tesoro.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_TESORERO_CERCADO_3D) /
+    sizeof(RUTAS_MODELOS_TESORERO_CERCADO_3D[0]) == CANTIDAD_MODELOS_TESORERO_CERCADO_3D,
+    "Las rutas deben coincidir con los IDs del paquete Tesorero Cercado");
+
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 

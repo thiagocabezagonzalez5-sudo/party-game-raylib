@@ -63,6 +63,7 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D capsulasBarajadas[CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D];
     RecursoModeloEscenarioRetro3D bateoMeteorico[CANTIDAD_MODELOS_BATEO_METEORICO_3D];
     RecursoModeloEscenarioRetro3D racimoToxico[CANTIDAD_MODELOS_RACIMO_TOXICO_3D];
+    RecursoModeloEscenarioRetro3D tesoreroCercado[CANTIDAD_MODELOS_TESORERO_CERCADO_3D];
     bool inicializados = false;
 };
 
@@ -558,6 +559,62 @@ inline bool DibujarModeloRacimoToxicoRetro3D(
         posicion, ejeRotacion, anguloGrados, escala, colorEstado);
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteTesoreroCercadoRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_TESORERO_CERCADO_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_TESORERO_CERCADO_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_TESORERO_CERCADO_3D[i];
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().tesoreroCercado,
+        definiciones, CANTIDAD_MODELOS_TESORERO_CERCADO_3D };
+}
+
+inline void CargarPaqueteTesoreroCercadoRetro3D()
+{
+    PaqueteModelosEscenarioRetro3D paquete = ObtenerPaqueteTesoreroCercadoRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    // Las piezas animadas necesitan estas primitives del GLB v1. Validar
+    // antes de dibujar evita mezclar vistas parciales con su fallback.
+    const int mallasEsperadas[] = {4,5,4,4,4,7,7,7,6,6,5,5,5,4,3,3};
+    for (int i = 0; i < paquete.cantidad; i++)
+    {
+        RecursoModeloEscenarioRetro3D& recurso = paquete.recursos[i];
+        if (!recurso.cargado || recurso.modelo.meshCount == mallasEsperadas[i]) continue;
+        UnloadModel(recurso.modelo);
+        recurso.modelo = {};
+        recurso.cargado = false;
+        TraceLog(LOG_WARNING, "Primitives inesperadas en escenario; se usan primitivas: %s", recurso.ruta);
+    }
+}
+
+inline bool DibujarModeloTesoreroCercadoRetro3D(
+    ModeloTesoreroCercado3D pieza, Vector3 posicion, float anguloY = 0.0f,
+    Vector3 escala = {1,1,1}, int malla = -1, bool colorDinamico = false,
+    Color colorEstado = WHITE
+)
+{
+    RecursoModeloEscenarioRetro3D& recurso =
+        ObtenerModelosEscenariosRetro3D().tesoreroCercado[pieza];
+    if (!recurso.cargado) return false;
+    RecursoModeloEscenarioRetro3D vista = recurso;
+    if (malla >= 0)
+    {
+        if (malla >= recurso.modelo.meshCount) return false;
+        // Vista sin propiedad: comparte VBO, materiales y pivote importado.
+        vista.modelo.meshCount = 1;
+        vista.modelo.meshes = &recurso.modelo.meshes[malla];
+        vista.modelo.meshMaterial = &recurso.modelo.meshMaterial[malla];
+        // No hay COLOR_DINAMICO en el paquete. Solo las barras/travesanos
+        // del aviso y la opacidad de la marca reciben el estado del juego.
+        if (colorDinamico) vista.materialColor = recurso.modelo.meshMaterial[malla];
+    }
+    return DibujarModeloEscenarioRetro3D(vista, posicion, {0,1,0}, anguloY, escala, colorEstado);
+}
+
 inline void InicializarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -653,6 +710,8 @@ inline void DescargarModelosEscenariosRetro3D()
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.bateoMeteorico)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.racimoToxico)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.tesoreroCercado)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     recursos.inicializados = false;
 }
