@@ -58,6 +58,7 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D montanaLava;
     RecursoModeloEscenarioRetro3D ultimoAsiento[CANTIDAD_MODELOS_ULTIMO_ASIENTO_3D];
     RecursoModeloEscenarioRetro3D cajasPuerto[CANTIDAD_MODELOS_CAJAS_PUERTO_3D];
+    RecursoModeloEscenarioRetro3D laberintoJade[CANTIDAD_MODELOS_LABERINTO_JADE_3D];
     bool inicializados = false;
 };
 
@@ -329,6 +330,41 @@ inline bool DibujarModeloCajasPuertoRetro3D(
         posicion, { 0.0f, 1.0f, 0.0f }, 0.0f, escala, colorEstado);
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteLaberintoJadeRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_LABERINTO_JADE_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_LABERINTO_JADE_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_LABERINTO_JADE_3D[i];
+        // Primitivas de COLOR_DINAMICO del paquete v1. El cargador obtiene
+        // el indice real del material con meshMaterial, sin tenir la pieza.
+        definiciones[MODELO_JADE_BANDA].mallaColor = 0;
+        definiciones[MODELO_JADE_CHECKPOINT].mallaColor = 0;
+        definiciones[MODELO_JADE_FLECHA].mallaColor = 0;
+        definiciones[MODELO_JADE_BOQUILLA].mallaColor = 2;
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().laberintoJade,
+        definiciones, CANTIDAD_MODELOS_LABERINTO_JADE_3D };
+}
+
+inline bool DibujarModeloLaberintoJadeRetro3D(
+    ModeloLaberintoJade3D pieza,
+    Vector3 posicion,
+    float anguloY = 0.0f,
+    Vector3 escala = { 1.0f, 1.0f, 1.0f },
+    Color colorEstado = WHITE
+)
+{
+    // Dentro de rlPushMatrix recibe coordenadas LOCALES: DrawModelEx hereda
+    // la matriz del tablero. No sumar su centro ni repetir su inclinacion.
+    return DibujarModeloEscenarioRetro3D(
+        ObtenerModelosEscenariosRetro3D().laberintoJade[pieza],
+        posicion, { 0.0f, 1.0f, 0.0f }, anguloY, escala, colorEstado);
+}
+
 inline bool DibujarModeloUltimoAsientoRetro3D(
     ModeloUltimoAsiento3D pieza,
     Vector3 posicion,
@@ -428,6 +464,8 @@ inline void DescargarModelosEscenariosRetro3D()
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.ultimoAsiento)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.cajasPuerto)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.laberintoJade)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     recursos.inicializados = false;
 }

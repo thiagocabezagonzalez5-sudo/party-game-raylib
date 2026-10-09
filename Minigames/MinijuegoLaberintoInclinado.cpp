@@ -1,6 +1,7 @@
 #include "Minigames/MinijuegoLaberintoInclinado.h"
 
 #include "Minigames/AudioMinijuegos.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Systems/Input.h"
 
 #include "raylib.h"
@@ -964,6 +965,7 @@ void MinijuegoLaberintoInclinado::Reiniciar(
 )
 {
     Inicializar();
+    CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteLaberintoJadeRetro3D());
     InicializarResultadoMinijuego(
         resultado,
         participantes,
@@ -1284,28 +1286,30 @@ void MinijuegoLaberintoInclinado::Actualizar(
 
 
 //==================================================
-// VISUAL (MODELO FUTURO)
+// VISUAL
 //==================================================
-// MODELO FUTURO: reemplazar por GLB la losa/marco de piedra, los bloques de
-// muro, el altar de la meta, los discos de checkpoint, la esfera de jade,
-// las columnas y las antorchas del templo. La logica (celdas, muros,
-// agujeros, trampas) no depende de esta decoracion.
+// Piezas compartidas con pivotes originales y alternativa por pieza.
+// La logica (celdas, muros, agujeros, trampas) no depende de estos modelos.
 //==================================================
 
 static void DibujarEscenaTemplo(float t)
 {
-    // Suelo del templo y muro del fondo.
-    DrawCube({ 0.0f, -1.2f, 0.0f }, 54.0f, 0.4f, 46.0f, Color{ 52, 46, 40, 255 });
-    DrawCube({ 0.0f, 5.0f, -22.0f }, 54.0f, 12.0f, 1.2f, Color{ 66, 58, 48, 255 });
-
-    // Friso dorado con glifos en el muro del fondo.
-    DrawCube({ 0.0f, 8.4f, -21.3f }, 54.0f, 0.5f, 0.3f, Color{ 190, 150, 60, 255 });
-
-    for (int i = -6; i <= 6; i++)
+    // Entorno fijo en mundo, fuera de la matriz inclinada de las losas.
+    if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_TEMPLO, { 0.0f, 0.0f, 0.0f }))
     {
-        float x = (float)i * 4.0f;
-        DrawCube({ x, 6.6f, -21.3f }, 1.4f, 0.35f, 0.2f, Color{ 190, 150, 60, 255 });
-        DrawCube({ x, 6.0f, -21.3f }, 0.35f, 1.2f, 0.2f, Color{ 52, 150, 110, 255 });
+        // Suelo del templo y muro del fondo.
+        DrawCube({ 0.0f, -1.2f, 0.0f }, 54.0f, 0.4f, 46.0f, Color{ 52, 46, 40, 255 });
+        DrawCube({ 0.0f, 5.0f, -22.0f }, 54.0f, 12.0f, 1.2f, Color{ 66, 58, 48, 255 });
+
+        // Friso dorado con glifos en el muro del fondo.
+        DrawCube({ 0.0f, 8.4f, -21.3f }, 54.0f, 0.5f, 0.3f, Color{ 190, 150, 60, 255 });
+
+        for (int i = -6; i <= 6; i++)
+        {
+            float x = (float)i * 4.0f;
+            DrawCube({ x, 6.6f, -21.3f }, 1.4f, 0.35f, 0.2f, Color{ 190, 150, 60, 255 });
+            DrawCube({ x, 6.0f, -21.3f }, 0.35f, 1.2f, 0.2f, Color{ 52, 150, 110, 255 });
+        }
     }
 
     // Columnas laterales y antorchas.
@@ -1317,10 +1321,13 @@ static void DibujarEscenaTemplo(float t)
         float x = columnasX[i];
         float z = columnasZ[i];
 
-        DrawCylinder({ x, 0.0f, z }, 1.5f, 1.5f, 0.6f, 12, Color{ 110, 100, 84, 255 });
-        DrawCylinder({ x, 0.6f, z }, 1.0f, 1.0f, 9.0f, 12, Color{ 150, 138, 112, 255 });
-        DrawCylinder({ x, 9.6f, z }, 1.4f, 1.4f, 0.6f, 12, Color{ 110, 100, 84, 255 });
-        DrawCube({ x, 4.6f, z }, 2.1f, 0.18f, 2.1f, Color{ 52, 150, 110, 255 });
+        if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_COLUMNA, { x, 0.0f, z }))
+        {
+            DrawCylinder({ x, 0.0f, z }, 1.5f, 1.5f, 0.6f, 12, Color{ 110, 100, 84, 255 });
+            DrawCylinder({ x, 0.6f, z }, 1.0f, 1.0f, 9.0f, 12, Color{ 150, 138, 112, 255 });
+            DrawCylinder({ x, 9.6f, z }, 1.4f, 1.4f, 0.6f, 12, Color{ 110, 100, 84, 255 });
+            DrawCube({ x, 4.6f, z }, 2.1f, 0.18f, 2.1f, Color{ 52, 150, 110, 255 });
+        }
     }
 
     // Antorchas junto al fondo: soporte, llama parpadeante y brillo.
@@ -1329,12 +1336,17 @@ static void DibujarEscenaTemplo(float t)
         float x = -15.0f + (float)i * 6.0f;
         float parpadeo = 0.5f + 0.5f * std::sin(t * 11.0f + (float)i * 1.9f);
 
-        DrawCylinder({ x, 2.4f, -21.0f }, 0.12f, 0.2f, 1.6f, 8, Color{ 70, 52, 36, 255 });
-        DrawSphere(
-            { x, 4.3f + 0.08f * parpadeo, -20.9f },
-            0.34f + 0.08f * parpadeo,
-            Color{ 255, (unsigned char)(130 + 60 * parpadeo), 30, 255 }
-        );
+        if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_ANTORCHA, { x, 2.4f, -21.0f }))
+            DrawCylinder({ x, 2.4f, -21.0f }, 0.12f, 0.2f, 1.6f, 8, Color{ 70, 52, 36, 255 });
+        float escalaLlama = (0.34f + 0.08f * parpadeo) / 0.34f;
+        if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_LLAMA,
+            { x, 4.3f + 0.08f * parpadeo, -20.9f }, 0.0f,
+            { escalaLlama, escalaLlama, escalaLlama }))
+            DrawSphere(
+                { x, 4.3f + 0.08f * parpadeo, -20.9f },
+                0.34f + 0.08f * parpadeo,
+                Color{ 255, (unsigned char)(130 + 60 * parpadeo), 30, 255 }
+            );
         DrawSphere({ x, 4.3f, -20.9f }, 0.2f, Color{ 255, 230, 140, 255 });
     }
 }
@@ -1355,6 +1367,9 @@ static void DibujarTrampaVisual(
     float avance = 0.0f;
     int estado = EstadoTrampa(trampa, m.tiempoJuego, avance);
     bool horizontal = std::fabs(trampa.direccionX) > 0.5f;
+    // La flecha GLB apunta a +X. La direccion ya esta transformada por el
+    // diseno logico (base, transpuesto o girado); no rotar el mapa otra vez.
+    float anguloFlecha = std::atan2(-trampa.direccionZ, trampa.direccionX) * RAD2DEG;
 
     // Chevrones grabados en el suelo; se encienden de rojo en el aviso.
     for (int r = trampa.filaInicio; r <= trampa.filaFin; r++)
@@ -1374,13 +1389,15 @@ static void DibujarTrampaVisual(
             }
 
             Vector3 centro = PosicionLocal((float)c + 0.5f, (float)r + 0.5f, 0.05f);
-            DrawCube(
-                centro,
-                horizontal ? 0.55f : 0.14f,
-                0.03f,
-                horizontal ? 0.14f : 0.55f,
-                color
-            );
+            if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_FLECHA,
+                centro, anguloFlecha, { 1.0f, 1.0f, 1.0f }, color))
+                DrawCube(
+                    centro,
+                    horizontal ? 0.55f : 0.14f,
+                    0.03f,
+                    horizontal ? 0.14f : 0.55f,
+                    color
+                );
         }
     }
 
@@ -1391,13 +1408,26 @@ static void DibujarTrampaVisual(
 
     if (horizontal)
     {
-        DrawCube(PosicionLocal((float)medioC + 0.5f, (float)trampa.filaInicio - 0.02f, 0.35f), 0.4f, 0.22f, 0.08f, boquilla);
-        DrawCube(PosicionLocal((float)medioC + 0.5f, (float)trampa.filaFin + 1.02f, 0.35f), 0.4f, 0.22f, 0.08f, boquilla);
+        // Frente GLB +Z: ambas boquillas miran hacia el interior del pasillo.
+        if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_BOQUILLA,
+            PosicionLocal((float)medioC + 0.5f, (float)trampa.filaInicio - 0.02f, 0.02f),
+            0.0f, { 1.0f, 1.0f, 1.0f }, boquilla))
+            DrawCube(PosicionLocal((float)medioC + 0.5f, (float)trampa.filaInicio - 0.02f, 0.35f), 0.4f, 0.22f, 0.08f, boquilla);
+        if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_BOQUILLA,
+            PosicionLocal((float)medioC + 0.5f, (float)trampa.filaFin + 1.02f, 0.02f),
+            180.0f, { 1.0f, 1.0f, 1.0f }, boquilla))
+            DrawCube(PosicionLocal((float)medioC + 0.5f, (float)trampa.filaFin + 1.02f, 0.35f), 0.4f, 0.22f, 0.08f, boquilla);
     }
     else
     {
-        DrawCube(PosicionLocal((float)trampa.columnaInicio - 0.02f, (float)medioR + 0.5f, 0.35f), 0.08f, 0.22f, 0.4f, boquilla);
-        DrawCube(PosicionLocal((float)trampa.columnaFin + 1.02f, (float)medioR + 0.5f, 0.35f), 0.08f, 0.22f, 0.4f, boquilla);
+        if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_BOQUILLA,
+            PosicionLocal((float)trampa.columnaInicio - 0.02f, (float)medioR + 0.5f, 0.02f),
+            90.0f, { 1.0f, 1.0f, 1.0f }, boquilla))
+            DrawCube(PosicionLocal((float)trampa.columnaInicio - 0.02f, (float)medioR + 0.5f, 0.35f), 0.08f, 0.22f, 0.4f, boquilla);
+        if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_BOQUILLA,
+            PosicionLocal((float)trampa.columnaFin + 1.02f, (float)medioR + 0.5f, 0.02f),
+            -90.0f, { 1.0f, 1.0f, 1.0f }, boquilla))
+            DrawCube(PosicionLocal((float)trampa.columnaFin + 1.02f, (float)medioR + 0.5f, 0.35f), 0.08f, 0.22f, 0.4f, boquilla);
     }
 
     // Dardo en vuelo durante el disparo.
@@ -1448,17 +1478,24 @@ static void DibujarTableroVisual(
     (void)participante;
 
     // Base de piedra con borde de jade.
-    DrawCube({ 0.0f, -0.3f, 0.0f }, 12.0f, 0.6f, 12.0f, COLOR_PIEDRA_OSCURA);
-    DrawCube({ 0.0f, 0.01f, -5.8f }, 12.0f, 0.04f, 0.4f, COLOR_JADE);
-    DrawCube({ 0.0f, 0.01f, 5.8f }, 12.0f, 0.04f, 0.4f, COLOR_JADE);
-    DrawCube({ -5.8f, 0.01f, 0.0f }, 0.4f, 0.04f, 12.0f, COLOR_JADE);
-    DrawCube({ 5.8f, 0.01f, 0.0f }, 0.4f, 0.04f, 12.0f, COLOR_JADE);
+    bool losaGLB = DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_LOSA, { 0.0f, 0.0f, 0.0f });
+    if (!losaGLB)
+    {
+        DrawCube({ 0.0f, -0.3f, 0.0f }, 12.0f, 0.6f, 12.0f, COLOR_PIEDRA_OSCURA);
+        DrawCube({ 0.0f, 0.01f, -5.8f }, 12.0f, 0.04f, 0.4f, COLOR_JADE);
+        DrawCube({ 0.0f, 0.01f, 5.8f }, 12.0f, 0.04f, 0.4f, COLOR_JADE);
+        DrawCube({ -5.8f, 0.01f, 0.0f }, 0.4f, 0.04f, 12.0f, COLOR_JADE);
+        DrawCube({ 5.8f, 0.01f, 0.0f }, 0.4f, 0.04f, 12.0f, COLOR_JADE);
+    }
 
     // Banda del color del jugador en el frente de la losa.
-    DrawCube({ 0.0f, -0.3f, 6.02f }, 12.0f, 0.3f, 0.06f, colorJugador);
+    if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_BANDA,
+        { 0.0f, -0.3f, 6.02f }, 0.0f, { 1.0f, 1.0f, 1.0f }, colorJugador))
+        DrawCube({ 0.0f, -0.3f, 6.02f }, 12.0f, 0.3f, 0.06f, colorJugador);
 
     // Suelo del laberinto con baldosas alternadas.
-    DrawCube({ 0.0f, 0.0f, 0.0f }, 11.0f, 0.05f, 11.0f, COLOR_LOSA);
+    if (!losaGLB)
+        DrawCube({ 0.0f, 0.0f, 0.0f }, 11.0f, 0.05f, 11.0f, COLOR_LOSA);
 
     for (int r = 0; r < FILAS_LABERINTO; r++)
     {
@@ -1469,14 +1506,20 @@ static void DibujarTableroVisual(
 
             if (tipo == CELDA_LABERINTO_MURO)
             {
-                DrawCube({ centro.x, ALTO_MURO * 0.5f, centro.z }, 1.0f, ALTO_MURO, 1.0f, COLOR_PIEDRA);
-                DrawCubeWires({ centro.x, ALTO_MURO * 0.5f, centro.z }, 1.0f, ALTO_MURO, 1.0f, COLOR_PIEDRA_OSCURA);
+                if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_MURO, centro))
+                {
+                    DrawCube({ centro.x, ALTO_MURO * 0.5f, centro.z }, 1.0f, ALTO_MURO, 1.0f, COLOR_PIEDRA);
+                    DrawCubeWires({ centro.x, ALTO_MURO * 0.5f, centro.z }, 1.0f, ALTO_MURO, 1.0f, COLOR_PIEDRA_OSCURA);
+                }
 
                 // Glifos dorados sobre algunos bloques.
                 if ((c * 7 + r * 3) % 5 == 0)
                 {
-                    DrawCube({ centro.x, ALTO_MURO + 0.015f, centro.z }, 0.36f, 0.03f, 0.36f, COLOR_ORO);
-                    DrawCube({ centro.x, ALTO_MURO + 0.03f, centro.z }, 0.12f, 0.03f, 0.12f, COLOR_PIEDRA_OSCURA);
+                    if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_GLIFO, { centro.x, 0.61f, centro.z }))
+                    {
+                        DrawCube({ centro.x, ALTO_MURO + 0.015f, centro.z }, 0.36f, 0.03f, 0.36f, COLOR_ORO);
+                        DrawCube({ centro.x, ALTO_MURO + 0.03f, centro.z }, 0.12f, 0.03f, 0.12f, COLOR_PIEDRA_OSCURA);
+                    }
                 }
                 else if ((c + r * 5) % 7 == 0)
                 {
@@ -1485,10 +1528,13 @@ static void DibujarTableroVisual(
             }
             else if (tipo == CELDA_LABERINTO_AGUJERO)
             {
-                DrawCylinder({ centro.x, 0.03f, centro.z }, 0.44f, 0.44f, 0.02f, 12, Color{ 170, 70, 40, 255 });
-                DrawCylinder({ centro.x, 0.045f, centro.z }, RADIO_AGUJERO + 0.02f, RADIO_AGUJERO + 0.02f, 0.02f, 12, Color{ 8, 6, 12, 255 });
+                if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_AGUJERO, centro))
+                {
+                    DrawCylinder({ centro.x, 0.03f, centro.z }, 0.44f, 0.44f, 0.02f, 12, Color{ 170, 70, 40, 255 });
+                    DrawCylinder({ centro.x, 0.045f, centro.z }, RADIO_AGUJERO + 0.02f, RADIO_AGUJERO + 0.02f, 0.02f, 12, Color{ 8, 6, 12, 255 });
+                }
             }
-            else if ((c + r) % 2 == 0)
+            else if (!losaGLB && (c + r) % 2 == 0)
             {
                 DrawCube({ centro.x, 0.03f, centro.z }, 0.94f, 0.03f, 0.94f, COLOR_LOSA_CLARA);
             }
@@ -1497,7 +1543,8 @@ static void DibujarTableroVisual(
 
     // Salida.
     Vector3 salida = PosicionLocal((float)m.inicioColumna + 0.5f, (float)m.inicioFila + 0.5f, 0.05f);
-    DrawCylinder(salida, 0.4f, 0.4f, 0.02f, 20, Color{ 40, 120, 90, 255 });
+    if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_SALIDA, salida))
+        DrawCylinder(salida, 0.4f, 0.4f, 0.02f, 20, Color{ 40, 120, 90, 255 });
 
     // Checkpoints: disco dorado que se vuelve jade al activarse.
     for (int k = 0; k < MAX_PUNTOS_CONTROL_LABERINTO; k++)
@@ -1506,27 +1553,33 @@ static void DibujarTableroVisual(
         Color color = activo ? COLOR_JADE : COLOR_ORO;
         Vector3 centro = PosicionLocal((float)m.controlColumna[k] + 0.5f, (float)m.controlFila[k] + 0.5f, 0.05f);
 
-        DrawCylinder(centro, 0.42f, 0.42f, 0.03f, 20, color);
-        DrawCylinder({ centro.x, 0.06f, centro.z }, 0.26f, 0.26f, 0.03f, 20, COLOR_PIEDRA_OSCURA);
-        DrawCylinder({ centro.x, 0.3f, centro.z }, 0.05f, 0.05f, 0.5f, 8, COLOR_PIEDRA_CLARA);
-        DrawSphere(
-            { centro.x, 0.6f + (activo ? 0.04f * std::sin(t * 6.0f) : 0.0f), centro.z },
-            0.11f,
-            color
-        );
+        if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_CHECKPOINT,
+            centro, 0.0f, { 1.0f, 1.0f, 1.0f }, color))
+        {
+            DrawCylinder(centro, 0.42f, 0.42f, 0.03f, 20, color);
+            DrawCylinder({ centro.x, 0.06f, centro.z }, 0.26f, 0.26f, 0.03f, 20, COLOR_PIEDRA_OSCURA);
+            DrawCylinder({ centro.x, 0.3f, centro.z }, 0.05f, 0.05f, 0.5f, 8, COLOR_PIEDRA_CLARA);
+            DrawSphere(
+                { centro.x, 0.6f + (activo ? 0.04f * std::sin(t * 6.0f) : 0.0f), centro.z },
+                0.11f,
+                color
+            );
+        }
     }
 
     // Altar de la meta.
     Vector3 meta = PosicionLocal((float)m.metaColumna + 0.5f, (float)m.metaFila + 0.5f, 0.0f);
-    float brillo = 0.5f + 0.5f * std::sin(t * 4.0f);
-
-    DrawCube({ meta.x, 0.1f, meta.z }, 0.85f, 0.2f, 0.85f, COLOR_PIEDRA_CLARA);
-    DrawCube({ meta.x, 0.3f, meta.z }, 0.55f, 0.2f, 0.55f, COLOR_ORO);
-    DrawSphere(
-        { meta.x, 0.62f + 0.05f * brillo, meta.z },
-        0.16f + 0.04f * brillo,
-        Color{ 255, (unsigned char)(210 + 40 * brillo), 120, 255 }
-    );
+    if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_ALTAR, meta))
+    {
+        float brillo = 0.5f + 0.5f * std::sin(t * 4.0f);
+        DrawCube({ meta.x, 0.1f, meta.z }, 0.85f, 0.2f, 0.85f, COLOR_PIEDRA_CLARA);
+        DrawCube({ meta.x, 0.3f, meta.z }, 0.55f, 0.2f, 0.55f, COLOR_ORO);
+        DrawSphere(
+            { meta.x, 0.62f + 0.05f * brillo, meta.z },
+            0.16f + 0.04f * brillo,
+            Color{ 255, (unsigned char)(210 + 40 * brillo), 120, 255 }
+        );
+    }
 
     // Trampas de dardos.
     for (int i = 0; i < m.cantidadTrampas; i++)
@@ -1546,12 +1599,18 @@ static void DibujarTableroVisual(
 
     Vector3 esfera = PosicionLocal(px, pz, RADIO_ESFERA * escala + 0.03f);
     DrawCylinder({ esfera.x, 0.045f, esfera.z }, 0.34f * escala, 0.34f * escala, 0.012f, 16, colorJugador);
-    DrawSphere(esfera, RADIO_ESFERA * escala, e.llego ? COLOR_ORO : COLOR_JADE);
-    DrawSphere(
-        { esfera.x - 0.08f, esfera.y + 0.1f, esfera.z - 0.08f },
-        0.07f * escala,
-        Color{ 200, 255, 225, 255 }
-    );
+    // La esfera GLB ya mide radio .28 y tiene origen central. Su escala
+    // uniforme sigue la caida; la sombra/indicador y el debug permanecen.
+    if (!DibujarModeloLaberintoJadeRetro3D(MODELO_JADE_ESFERA,
+        esfera, 0.0f, { escala, escala, escala }))
+    {
+        DrawSphere(esfera, RADIO_ESFERA * escala, e.llego ? COLOR_ORO : COLOR_JADE);
+        DrawSphere(
+            { esfera.x - 0.08f, esfera.y + 0.1f, esfera.z - 0.08f },
+            0.07f * escala,
+            Color{ 200, 255, 225, 255 }
+        );
+    }
 
     if (mostrarDebug)
     {

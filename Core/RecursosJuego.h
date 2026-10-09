@@ -142,6 +142,49 @@ static_assert(sizeof(RUTAS_MODELOS_CAJAS_PUERTO_3D) /
     sizeof(RUTAS_MODELOS_CAJAS_PUERTO_3D[0]) == CANTIDAD_MODELOS_CAJAS_PUERTO_3D,
     "Las rutas deben coincidir con los IDs del paquete Cajas del Puerto");
 
+enum ModeloLaberintoJade3D
+{
+    MODELO_JADE_LOSA,
+    MODELO_JADE_BANDA,
+    MODELO_JADE_MURO,
+    MODELO_JADE_GLIFO,
+    MODELO_JADE_AGUJERO,
+    MODELO_JADE_SALIDA,
+    MODELO_JADE_CHECKPOINT,
+    MODELO_JADE_ALTAR,
+    MODELO_JADE_ESFERA,
+    MODELO_JADE_FLECHA,
+    MODELO_JADE_BOQUILLA,
+    MODELO_JADE_TEMPLO,
+    MODELO_JADE_COLUMNA,
+    MODELO_JADE_ANTORCHA,
+    MODELO_JADE_LLAMA,
+    CANTIDAD_MODELOS_LABERINTO_JADE_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_LABERINTO_JADE_3D[] =
+{
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/losa_marco.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/banda_jugador.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/muro_bloque.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/glifo_muro.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/agujero.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/marca_salida.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/checkpoint.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/altar.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/esfera_jade.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/flecha_trampa.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/boquilla_trampa.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/templo_fondo.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/columna_templo.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/antorcha.glb",
+    "Assets/Modelos/Escenarios/Laberinto_Jade/GLB/llama.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_LABERINTO_JADE_3D) /
+    sizeof(RUTAS_MODELOS_LABERINTO_JADE_3D[0]) == CANTIDAD_MODELOS_LABERINTO_JADE_3D,
+    "Las rutas deben coincidir con los IDs del paquete Laberinto Jade");
+
 
 //==================================================
 // TEXTURAS GENERALES

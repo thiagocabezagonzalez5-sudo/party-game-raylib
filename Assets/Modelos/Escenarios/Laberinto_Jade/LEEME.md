@@ -1,6 +1,6 @@
 # Laberinto Jade · modelos GLB v1
 
-Quince modelos GLB 2.0 originales para `Minigames/MinijuegoLaberintoInclinado.cpp` en la rama `claude/expansion-party`, referencia `ea5472c`. Los modelos se comprobaron en raylib mediante el visor incluido. **Todavía no se incorporaron al juego.**
+Quince modelos GLB 2.0 originales para `Minigames/MinijuegoLaberintoInclinado.cpp` en la rama `claude/expansion-party`, referencia artística `ea5472c`. **Los 15 modelos están integrados en el minijuego real.** El visor incluido sigue siendo independiente del juego.
 
 ## Contenido
 
@@ -32,4 +32,20 @@ Teclas: 1 cuatro tableros, 2 dos tableros, 3 un tablero, flechas izquierda/derec
 
 ## Archivos del juego
 
-Para integrar más adelante, copiar `GLB/` a `Assets/Modelos/Escenarios/LaberintoJade/` y sustituir únicamente el dibujo de primitivas en las funciones visuales. La física, IA, celdas y trampas siguen en `MinijuegoLaberintoInclinado.cpp`. Esta entrega no cambia los archivos del repositorio.
+`Core/RecursosJuego.h` centraliza las rutas reales `Assets/Modelos/Escenarios/Laberinto_Jade/GLB/`. No mover ni regenerar los recursos. `ModelosEscenariosRetro3D.h` carga el paquete al activar el minijuego y comparte un modelo por recurso entre todos los tableros. Reiniciar o reentrar desde el selector/tablero reutiliza esas mallas; la descarga compartida ocurre antes de `CloseWindow`.
+
+`DibujarEscenaTemplo`, `DibujarTrampaVisual` y `DibujarTableroVisual` conservan las primitivas originales como alternativa por pieza. Una carga fallida se registra una sola vez. Los muros, agujeros, salida, checkpoints, altar y trampas se colocan según las celdas del mapa lógico actual, incluidos los diseños transpuesto y girado. Las flechas apuntan hacia la dirección lógica de los dardos; las boquillas miran hacia el interior del pasillo.
+
+Los modelos del tablero reciben posiciones locales y heredan las dos rotaciones existentes de `rlgl`. No se vuelve a sumar `centrosTableros` ni a componer la inclinación en `DrawModelEx`. La esfera conserva el radio 0,28, el pivote central y la escala uniforme de caída. Permanecen su sombra de color, los indicadores y los dardos en vuelo. Los modelos mantienen sus colores de vértice y materiales; únicamente se cambia y restaura `COLOR_DINAMICO` en banda (primitiva 0), checkpoint (0), flecha (0) y boquilla (2), resolviendo el material con `meshMaterial`. No se aplican las sombras automáticas de personajes a estas piezas del escenario.
+
+La física, colisión por celdas, IA, cámara, controles, trampas y reglas permanecen en `MinijuegoLaberintoInclinado.cpp`, independientes de las mallas. El encabezado conserva sus firmas actuales.
+
+Prueba reproducible desde la raíz con MSYS2 UCRT64:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File Tests/VerificarLaberintoJade.ps1
+```
+
+La prueba ejecuta `ZonaPruebas` y el minijuego real con OpenGL en ventana oculta, para los tres diseños y 2/3/4 participantes. Comprueba las matrices enviadas a GPU, inclinación con entrada de teclado simulada, materiales, trampas, checkpoints, caída/respawn, meta/final, IA, R, ESC, carga compartida, alternativas por pieza y descarga. Las posiciones de esfera para alcanzar estados específicos se preparan en la prueba; sus transiciones usan la actualización real. Las capturas `build/jade-*.png` son del juego integrado. `Vistas/` y `Vista_previa.png` siguen siendo imágenes del visor. Falta una partida manual con mandos y audio.
+
+Para observar los envíos de matrices internos, el script extrae `rmodels.c.obj` de la biblioteca raylib ya instalada y lo enlaza solamente en la prueba, junto con la DLL habitual. El objeto queda en `build/`; no cambia la instalación, las dependencias del juego ni `.vscode/tasks.json`.
