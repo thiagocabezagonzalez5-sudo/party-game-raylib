@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -576,6 +577,7 @@ void MinijuegoDescensoNubes::Reiniciar(
         return;
     }
 
+    CargarPaqueteDescensoNubesRetro3D();
     int limite = LimiteNubes(cantidadMaxima);
 
     for (int k = 0; k < cantidad; k++)
@@ -881,6 +883,8 @@ void MinijuegoDescensoNubes::Actualizar(
 
 static void DibujarNubeNubes(Vector3 p, float escala)
 {
+    if (DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_NUBE_BLANCA,
+        p, 0, {0,1,0}, {escala,escala,escala})) return;
     DrawSphereEx(p, 1.1f * escala, 8, 8, Color{ 250, 250, 255, 255 });
     DrawSphereEx({ p.x + 1.0f * escala, p.y - 0.15f * escala, p.z }, 0.85f * escala, 8, 8, Color{ 240, 244, 252, 255 });
     DrawSphereEx({ p.x - 0.95f * escala, p.y - 0.2f * escala, p.z + 0.2f * escala }, 0.8f * escala, 8, 8, Color{ 238, 242, 250, 255 });
@@ -920,10 +924,13 @@ static void DibujarDecoracionNubes(const MinijuegoDescensoNubes& m)
         float lado = (k % 2 == 0) ? -1.0f : 1.0f;
         Vector3 c = { lado * (10.5f + HashNubes(k, 5) * 3.0f), altura, -4.0f + HashNubes(k, 6) * 8.0f };
 
-        DrawCylinder({ c.x, c.y - 0.4f, c.z }, 2.4f, 2.4f, 0.4f, 12, Color{ 90, 190, 100, 255 });
-        DrawCylinder({ c.x, c.y - 3.0f, c.z }, 0.5f, 2.4f, 2.6f, 12, Color{ 130, 100, 80, 255 });
-        DrawCylinder({ c.x, c.y, c.z }, 0.1f, 0.1f, 1.0f, 6, Color{ 110, 76, 50, 255 });
-        DrawSphereEx({ c.x, c.y + 1.3f, c.z }, 0.7f, 8, 8, Color{ 50, 150, 70, 255 });
+        if (!DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_ISLA_FLOTANTE, c))
+        {
+            DrawCylinder({ c.x, c.y - 0.4f, c.z }, 2.4f, 2.4f, 0.4f, 12, Color{ 90, 190, 100, 255 });
+            DrawCylinder({ c.x, c.y - 3.0f, c.z }, 0.5f, 2.4f, 2.6f, 12, Color{ 130, 100, 80, 255 });
+            DrawCylinder({ c.x, c.y, c.z }, 0.1f, 0.1f, 1.0f, 6, Color{ 110, 76, 50, 255 });
+            DrawSphereEx({ c.x, c.y + 1.3f, c.z }, 0.7f, 8, 8, Color{ 50, 150, 70, 255 });
+        }
     }
 
     // Globos aerostaticos.
@@ -939,10 +946,15 @@ static void DibujarDecoracionNubes(const MinijuegoDescensoNubes& m)
         float lado = (k % 2 == 0) ? 1.0f : -1.0f;
         Vector3 c = { lado * 9.5f, altura, 3.0f - (float)k };
 
-        DrawSphereEx({ c.x, c.y + 1.8f, c.z }, 1.6f, 10, 10, ColorFromHSV((float)k * 70.0f, 0.75f, 1.0f));
-        DrawCube({ c.x, c.y - 0.3f, c.z }, 0.7f, 0.5f, 0.7f, Color{ 150, 100, 60, 255 });
-        DrawLine3D({ c.x - 0.3f, c.y - 0.1f, c.z }, { c.x - 0.9f, c.y + 1.2f, c.z }, Color{ 80, 60, 40, 255 });
-        DrawLine3D({ c.x + 0.3f, c.y - 0.1f, c.z }, { c.x + 0.9f, c.y + 1.2f, c.z }, Color{ 80, 60, 40, 255 });
+        // El pivote del GLB esta en el centro de la envolvente, no la cesta.
+        if (!DibujarModeloDescensoNubesRetro3D(k % 2 == 0 ? MODELO_NUBES_GLOBO_AZUL : MODELO_NUBES_GLOBO_ROJO,
+            {c.x,c.y + 1.8f,c.z}))
+        {
+            DrawSphereEx({ c.x, c.y + 1.8f, c.z }, 1.6f, 10, 10, ColorFromHSV((float)k * 70.0f, 0.75f, 1.0f));
+            DrawCube({ c.x, c.y - 0.3f, c.z }, 0.7f, 0.5f, 0.7f, Color{ 150, 100, 60, 255 });
+            DrawLine3D({ c.x - 0.3f, c.y - 0.1f, c.z }, { c.x - 0.9f, c.y + 1.2f, c.z }, Color{ 80, 60, 40, 255 });
+            DrawLine3D({ c.x + 0.3f, c.y - 0.1f, c.z }, { c.x + 0.9f, c.y + 1.2f, c.z }, Color{ 80, 60, 40, 255 });
+        }
     }
 
     // Molinos de viento sobre nubes.
@@ -960,13 +972,24 @@ static void DibujarDecoracionNubes(const MinijuegoDescensoNubes& m)
         Vector3 eje = { base.x, base.y + 2.6f, base.z + 0.5f };
 
         DibujarNubeNubes({ base.x, base.y - 0.3f, base.z }, 1.6f);
-        DrawCylinder(base, 0.5f, 0.8f, 2.6f, 8, Color{ 220, 190, 150, 255 });
-        DrawCylinder({ base.x, base.y + 2.6f, base.z }, 0.0f, 0.7f, 0.8f, 8, Color{ 200, 70, 60, 255 });
-
-        for (int a = 0; a < 4; a++)
+        const float escalaMolino = 0.65f;
+        Vector3 escala = {escalaMolino,escalaMolino,escalaMolino};
+        if (!DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_MOLINO, base, 0, {0,1,0}, escala))
         {
-            float angulo = t * 1.2f + (float)a * PI * 0.5f;
-            DrawCylinderEx(eje, { eje.x + std::cos(angulo) * 2.2f, eje.y + std::sin(angulo) * 2.2f, eje.z }, 0.1f, 0.18f, 5, Color{ 250, 250, 245, 255 });
+            DrawCylinder(base, 0.5f, 0.8f, 2.6f, 8, Color{ 220, 190, 150, 255 });
+            DrawCylinder({ base.x, base.y + 2.6f, base.z }, 0.0f, 0.7f, 0.8f, 8, Color{ 200, 70, 60, 255 });
+        }
+
+        // El eje documentado pertenece a la torre: escalar tambien su offset.
+        if (!DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_ASPAS,
+            {base.x,base.y + 4.15f * escalaMolino,base.z + 0.88f * escalaMolino},
+            t * 1.2f * RAD2DEG, {0,0,1}, escala))
+        {
+            for (int a = 0; a < 4; a++)
+            {
+                float angulo = t * 1.2f + (float)a * PI * 0.5f;
+                DrawCylinderEx(eje, { eje.x + std::cos(angulo) * 2.2f, eje.y + std::sin(angulo) * 2.2f, eje.z }, 0.1f, 0.18f, 5, Color{ 250, 250, 245, 255 });
+            }
         }
     }
 
@@ -984,8 +1007,11 @@ static void DibujarDecoracionNubes(const MinijuegoDescensoNubes& m)
         Vector3 p = { std::cos(angulo) * 8.0f, altura, std::sin(angulo) * 8.0f };
         float aleteo = std::sin(t * 9.0f + (float)k) * 0.35f;
 
-        DrawLine3D({ p.x - 0.5f, p.y + aleteo, p.z }, p, Color{ 60, 60, 70, 255 });
-        DrawLine3D(p, { p.x + 0.5f, p.y + aleteo, p.z }, Color{ 60, 60, 70, 255 });
+        if (!DibujarAveDescensoNubesRetro3D(p, aleteo))
+        {
+            DrawLine3D({ p.x - 0.5f, p.y + aleteo, p.z }, p, Color{ 60, 60, 70, 255 });
+            DrawLine3D(p, { p.x + 0.5f, p.y + aleteo, p.z }, Color{ 60, 60, 70, 255 });
+        }
     }
 
     // Arcoiris al fondo.
@@ -993,20 +1019,23 @@ static void DibujarDecoracionNubes(const MinijuegoDescensoNubes& m)
 
     if (alturaArcoiris > ca - 20.0f && alturaArcoiris < ca + 24.0f)
     {
-        for (int banda = 0; banda < 7; banda++)
+        if (!DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_ARCOIRIS, {0,alturaArcoiris,-16}))
         {
-            Color color = ColorFromHSV((float)banda * 40.0f, 0.8f, 1.0f);
-            float radio = 13.0f + (float)banda * 0.5f;
-
-            for (int s = 0; s < 10; s++)
+            for (int banda = 0; banda < 7; banda++)
             {
-                float a1 = PI * (float)s / 10.0f;
-                float a2 = PI * (float)(s + 1) / 10.0f;
-                DrawCylinderEx(
-                    { std::cos(a1) * radio, alturaArcoiris - 10.0f + std::sin(a1) * radio * 0.8f, -16.0f },
-                    { std::cos(a2) * radio, alturaArcoiris - 10.0f + std::sin(a2) * radio * 0.8f, -16.0f },
-                    0.25f, 0.25f, 4, color
-                );
+                Color color = ColorFromHSV((float)banda * 40.0f, 0.8f, 1.0f);
+                float radio = 13.0f + (float)banda * 0.5f;
+
+                for (int s = 0; s < 10; s++)
+                {
+                    float a1 = PI * (float)s / 10.0f;
+                    float a2 = PI * (float)(s + 1) / 10.0f;
+                    DrawCylinderEx(
+                        { std::cos(a1) * radio, alturaArcoiris - 10.0f + std::sin(a1) * radio * 0.8f, -16.0f },
+                        { std::cos(a2) * radio, alturaArcoiris - 10.0f + std::sin(a2) * radio * 0.8f, -16.0f },
+                        0.25f, 0.25f, 4, color
+                    );
+                }
             }
         }
     }
@@ -1021,24 +1050,38 @@ static void DibujarIslaNubes(const MinijuegoDescensoNubes& m)
     }
 
     // Mar de nubes y base de la isla.
-    DrawPlane({ 0.0f, -2.5f, 0.0f }, { 80.0f, 80.0f }, Color{ 236, 242, 252, 255 });
-    DrawCylinder({ 0.0f, -5.5f, 0.0f }, 1.0f, RADIO_ISLA_NUBES, 5.5f, 20, Color{ 130, 100, 80, 255 });
-    DrawCylinder({ 0.0f, -0.3f, 0.0f }, RADIO_ISLA_NUBES, RADIO_ISLA_NUBES, 0.3f, 28, Color{ 90, 190, 100, 255 });
+    if (!DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_MAR, {0,0,0}))
+        DrawPlane({ 0.0f, -2.5f, 0.0f }, { 80.0f, 80.0f }, Color{ 236, 242, 252, 255 });
+    if (!DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_ISLA, {0,0,0}))
+    {
+        DrawCylinder({ 0.0f, -5.5f, 0.0f }, 1.0f, RADIO_ISLA_NUBES, 5.5f, 20, Color{ 130, 100, 80, 255 });
+        DrawCylinder({ 0.0f, -0.3f, 0.0f }, RADIO_ISLA_NUBES, RADIO_ISLA_NUBES, 0.3f, 28, Color{ 90, 190, 100, 255 });
+    }
 
     // Diana de aterrizaje.
-    DrawCylinder({ 0.0f, 0.0f, 0.0f }, RADIO_CENTRO_NUBES, RADIO_CENTRO_NUBES, 0.02f, 24, Color{ 235, 60, 60, 255 });
-    DrawCylinder({ 0.0f, 0.01f, 0.0f }, RADIO_CENTRO_NUBES * 0.66f, RADIO_CENTRO_NUBES * 0.66f, 0.02f, 24, WHITE);
-    DrawCylinder({ 0.0f, 0.02f, 0.0f }, RADIO_CENTRO_NUBES * 0.33f, RADIO_CENTRO_NUBES * 0.33f, 0.02f, 24, Color{ 235, 60, 60, 255 });
+    if (!DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_DIANA, {0,0,0}))
+    {
+        DrawCylinder({ 0.0f, 0.0f, 0.0f }, RADIO_CENTRO_NUBES, RADIO_CENTRO_NUBES, 0.02f, 24, Color{ 235, 60, 60, 255 });
+        DrawCylinder({ 0.0f, 0.01f, 0.0f }, RADIO_CENTRO_NUBES * 0.66f, RADIO_CENTRO_NUBES * 0.66f, 0.02f, 24, WHITE);
+        DrawCylinder({ 0.0f, 0.02f, 0.0f }, RADIO_CENTRO_NUBES * 0.33f, RADIO_CENTRO_NUBES * 0.33f, 0.02f, 24, Color{ 235, 60, 60, 255 });
+    }
 
     // Molino de la isla.
     Vector3 eje = { -5.2f, 4.2f, -3.0f };
-    DrawCylinder({ -5.2f, 0.0f, -3.0f }, 0.5f, 0.8f, 4.0f, 8, Color{ 220, 190, 150, 255 });
-    DrawCylinder({ -5.2f, 4.0f, -3.0f }, 0.0f, 0.7f, 0.8f, 8, Color{ 200, 70, 60, 255 });
-
-    for (int a = 0; a < 4; a++)
+    if (!DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_MOLINO, {-5.2f,0,-3}))
     {
-        float angulo = m.tiempoAnimacion * 1.2f + (float)a * PI * 0.5f;
-        DrawCylinderEx(eje, { eje.x + std::cos(angulo) * 2.2f, eje.y + std::sin(angulo) * 2.2f, eje.z + 0.5f }, 0.1f, 0.18f, 5, Color{ 250, 250, 245, 255 });
+        DrawCylinder({ -5.2f, 0.0f, -3.0f }, 0.5f, 0.8f, 4.0f, 8, Color{ 220, 190, 150, 255 });
+        DrawCylinder({ -5.2f, 4.0f, -3.0f }, 0.0f, 0.7f, 0.8f, 8, Color{ 200, 70, 60, 255 });
+    }
+
+    if (!DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_ASPAS, {-5.2f,4.15f,-2.12f},
+        m.tiempoAnimacion * 1.2f * RAD2DEG, {0,0,1}))
+    {
+        for (int a = 0; a < 4; a++)
+        {
+            float angulo = m.tiempoAnimacion * 1.2f + (float)a * PI * 0.5f;
+            DrawCylinderEx(eje, { eje.x + std::cos(angulo) * 2.2f, eje.y + std::sin(angulo) * 2.2f, eje.z + 0.5f }, 0.1f, 0.18f, 5, Color{ 250, 250, 245, 255 });
+        }
     }
 }
 
@@ -1076,18 +1119,32 @@ static void DibujarObjetosNubes(const MinijuegoDescensoNubes& m, int limite)
         float radio = dorado ? 1.0f : 0.85f;
         Vector3 p = anillo.posicion;
 
-        for (int g = 0; g < 6; g++)
+        bool modelo = DibujarModeloDescensoNubesRetro3D(
+            dorado ? MODELO_NUBES_ANILLO_DORADO : MODELO_NUBES_ANILLO_BLANCO, p,
+            0, {0,1,0}, {1,1,1}, WHITE, dorado ? 0 : -1);
+        if (modelo && dorado)
         {
-            DrawCircle3D({ p.x, p.y, p.z }, radio - (float)g * 0.05f, { 1.0f, 0.0f, 0.0f }, 90.0f, color);
+            DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_ANILLO_DORADO, p, 0, {0,1,0}, {1,1,1}, WHITE, 1);
+            // BOMBILLAS conserva su material y pulsa alrededor del centro local.
+            float pulso = (0.28f + 0.05f * std::sin(t * 6.0f)) / 0.252f;
+            DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_ANILLO_DORADO,
+                {p.x,p.y + 0.12f * (1.0f - pulso),p.z}, 0, {0,1,0}, {pulso,pulso,pulso}, WHITE, 2);
         }
-
-        DrawCircle3D({ p.x, p.y + 0.06f, p.z }, radio, { 1.0f, 0.0f, 0.0f }, 90.0f, color);
-        // Contorno oscuro para que el anillo se lea sobre el cielo claro.
-        DrawCircle3D({ p.x, p.y, p.z }, radio + 0.06f, { 1.0f, 0.0f, 0.0f }, 90.0f, Color{ 20, 50, 140, 255 });
-
-        if (dorado)
+        if (!modelo)
         {
-            DrawSphereEx({ p.x, p.y, p.z }, 0.28f + 0.05f * std::sin(t * 6.0f), 8, 8, Color{ 255, 230, 90, 255 });
+            for (int g = 0; g < 6; g++)
+            {
+                DrawCircle3D({ p.x, p.y, p.z }, radio - (float)g * 0.05f, { 1.0f, 0.0f, 0.0f }, 90.0f, color);
+            }
+
+            DrawCircle3D({ p.x, p.y + 0.06f, p.z }, radio, { 1.0f, 0.0f, 0.0f }, 90.0f, color);
+            // Contorno oscuro para que el anillo se lea sobre el cielo claro.
+            DrawCircle3D({ p.x, p.y, p.z }, radio + 0.06f, { 1.0f, 0.0f, 0.0f }, 90.0f, Color{ 20, 50, 140, 255 });
+
+            if (dorado)
+            {
+                DrawSphereEx({ p.x, p.y, p.z }, 0.28f + 0.05f * std::sin(t * 6.0f), 8, 8, Color{ 255, 230, 90, 255 });
+            }
         }
     }
 
@@ -1101,16 +1158,29 @@ static void DibujarObjetosNubes(const MinijuegoDescensoNubes& m, int limite)
         }
 
         Vector3 p = tormenta.posicion;
-        DrawSphereEx(p, tormenta.radio * 0.8f, 10, 10, Color{ 66, 68, 92, 255 });
-        DrawSphereEx({ p.x + tormenta.radio * 0.7f, p.y - 0.1f, p.z }, tormenta.radio * 0.6f, 8, 8, Color{ 80, 82, 108, 255 });
-        DrawSphereEx({ p.x - tormenta.radio * 0.7f, p.y - 0.15f, p.z + 0.2f }, tormenta.radio * 0.55f, 8, 8, Color{ 76, 78, 100, 255 });
-
-        if (std::fmod(t * 3.0f + (float)j, 1.0f) < 0.3f)
+        bool rayo = std::fmod(t * 3.0f + (float)j, 1.0f) < 0.3f;
+        float escalaTormenta = tormenta.radio / 1.6f;
+        Vector3 escala = {escalaTormenta,escalaTormenta,escalaTormenta};
+        bool modelo = DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_TORMENTA, p, 0, {0,1,0}, escala, WHITE, 0);
+        if (modelo)
         {
-            DrawLine3D({ p.x, p.y, p.z }, { p.x + 0.3f, p.y - 0.8f, p.z }, YELLOW);
-            DrawLine3D({ p.x + 0.3f, p.y - 0.8f, p.z }, { p.x - 0.1f, p.y - 1.3f, p.z }, YELLOW);
+            for (int malla = 1; malla < (rayo ? 4 : 3); malla++)
+                DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_TORMENTA, p, 0, {0,1,0}, escala, WHITE, malla);
+        }
+        else
+        {
+            DrawSphereEx(p, tormenta.radio * 0.8f, 10, 10, Color{ 66, 68, 92, 255 });
+            DrawSphereEx({ p.x + tormenta.radio * 0.7f, p.y - 0.1f, p.z }, tormenta.radio * 0.6f, 8, 8, Color{ 80, 82, 108, 255 });
+            DrawSphereEx({ p.x - tormenta.radio * 0.7f, p.y - 0.15f, p.z + 0.2f }, tormenta.radio * 0.55f, 8, 8, Color{ 76, 78, 100, 255 });
+
+            if (rayo)
+            {
+                DrawLine3D({ p.x, p.y, p.z }, { p.x + 0.3f, p.y - 0.8f, p.z }, YELLOW);
+                DrawLine3D({ p.x + 0.3f, p.y - 0.8f, p.z }, { p.x - 0.1f, p.y - 1.3f, p.z }, YELLOW);
+            }
         }
 
+        // Mantener el indicador exacto de riesgo; omitir el aro rojo del GLB.
         DrawCircle3D({ p.x, p.y, p.z }, tormenta.radio + 0.35f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(RED, 0.6f));
     }
 
@@ -1123,7 +1193,10 @@ static void DibujarObjetosNubes(const MinijuegoDescensoNubes& m, int limite)
             continue;
         }
 
-        DrawCylinderWires({ 0.0f, viento.altura - MITAD_BANDA_VIENTO_NUBES, 0.0f }, RADIO_CILINDRO_NUBES, RADIO_CILINDRO_NUBES, MITAD_BANDA_VIENTO_NUBES * 2.0f, 12, Fade(SKYBLUE, 0.22f));
+        if (DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_BANDA, {0,viento.altura,0}, 0, {0,1,0}, {1,1,1}, WHITE, 0, true))
+            DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_BANDA, {0,viento.altura,0}, 0, {0,1,0}, {1,1,1}, WHITE, 1, true);
+        else
+            DrawCylinderWires({ 0.0f, viento.altura - MITAD_BANDA_VIENTO_NUBES, 0.0f }, RADIO_CILINDRO_NUBES, RADIO_CILINDRO_NUBES, MITAD_BANDA_VIENTO_NUBES * 2.0f, 12, Fade(SKYBLUE, 0.22f));
 
         for (int a = 0; a < 5; a++)
         {
@@ -1140,8 +1213,13 @@ static void DibujarObjetosNubes(const MinijuegoDescensoNubes& m, int limite)
             Vector3 punta = { centro.x + viento.dirX * 0.4f, centro.y, centro.z + viento.dirZ * 0.4f };
             Vector3 fin = { centro.x + viento.dirX * 1.2f, centro.y, centro.z + viento.dirZ * 1.2f };
 
-            DrawCylinderEx(inicio, punta, 0.08f, 0.08f, 5, Color{ 255, 255, 255, 255 });
-            DrawCylinderEx(punta, fin, 0.3f, 0.0f, 6, Color{ 90, 210, 255, 255 });
+            // +X local gira hacia el viento. En raylib Y positivo lleva +X a -Z.
+            if (!DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_FLECHA, centro,
+                -std::atan2(viento.dirZ,viento.dirX) * RAD2DEG))
+            {
+                DrawCylinderEx(inicio, punta, 0.08f, 0.08f, 5, Color{ 255, 255, 255, 255 });
+                DrawCylinderEx(punta, fin, 0.3f, 0.0f, 6, Color{ 90, 210, 255, 255 });
+            }
         }
     }
 
@@ -1160,20 +1238,25 @@ static void DibujarPlaneadorNubes(
     float ancho = estado.frenando > 0.0f ? 3.4f : 2.2f;
     float arriba = jugador.posicion.y + 1.3f;
 
-    DrawCube({ jugador.posicion.x, arriba, jugador.posicion.z }, ancho, 0.06f, 1.1f, color);
-    DrawCube({ jugador.posicion.x, arriba + 0.04f, jugador.posicion.z }, ancho * 0.5f, 0.04f, 1.12f, WHITE);
-    DrawLine3D({ jugador.posicion.x, jugador.posicion.y + 0.5f, jugador.posicion.z }, { jugador.posicion.x - ancho * 0.45f, arriba, jugador.posicion.z }, LIGHTGRAY);
-    DrawLine3D({ jugador.posicion.x, jugador.posicion.y + 0.5f, jugador.posicion.z }, { jugador.posicion.x + ancho * 0.45f, arriba, jugador.posicion.z }, LIGHTGRAY);
+    if (!DibujarModeloDescensoNubesRetro3D(estado.frenando > 0 ? MODELO_NUBES_PLANEADOR_FRENADO : MODELO_NUBES_PLANEADOR,
+        jugador.posicion, 0, {0,1,0}, {1,1,1}, color))
+    {
+        DrawCube({ jugador.posicion.x, arriba, jugador.posicion.z }, ancho, 0.06f, 1.1f, color);
+        DrawCube({ jugador.posicion.x, arriba + 0.04f, jugador.posicion.z }, ancho * 0.5f, 0.04f, 1.12f, WHITE);
+        DrawLine3D({ jugador.posicion.x, jugador.posicion.y + 0.5f, jugador.posicion.z }, { jugador.posicion.x - ancho * 0.45f, arriba, jugador.posicion.z }, LIGHTGRAY);
+        DrawLine3D({ jugador.posicion.x, jugador.posicion.y + 0.5f, jugador.posicion.z }, { jugador.posicion.x + ancho * 0.45f, arriba, jugador.posicion.z }, LIGHTGRAY);
+    }
 
     if (estado.aturdido > 0.0f)
     {
         for (int s = 0; s < 3; s++)
         {
             float angulo = m.tiempoAnimacion * 10.0f + (float)s * 2.1f;
-            DrawSphereEx(
-                { jugador.posicion.x + std::cos(angulo) * 0.7f, jugador.posicion.y + 1.0f, jugador.posicion.z + std::sin(angulo) * 0.7f },
-                0.1f, 4, 4, YELLOW
-            );
+            Vector3 p = { jugador.posicion.x + std::cos(angulo) * 0.7f, jugador.posicion.y + 1.0f, jugador.posicion.z + std::sin(angulo) * 0.7f };
+            float escalaEstrella = 0.1f / 0.29f;
+            if (!DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_ESTRELLA, p, -65, {1,0,0},
+                {escalaEstrella,escalaEstrella,escalaEstrella}))
+                DrawSphereEx(p, 0.1f, 4, 4, YELLOW);
         }
     }
 }

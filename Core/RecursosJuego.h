@@ -431,6 +431,61 @@ static_assert(sizeof(RUTAS_MODELOS_TESORERO_CERCADO_3D) /
 
 
 //==================================================
+// PAQUETE DE DESCENSO EN NUBES
+//==================================================
+
+enum ModeloDescensoNubes3D
+{
+    MODELO_NUBES_PLANEADOR,
+    MODELO_NUBES_PLANEADOR_FRENADO,
+    MODELO_NUBES_ANILLO_BLANCO,
+    MODELO_NUBES_ANILLO_DORADO,
+    MODELO_NUBES_ESTRELLA,
+    MODELO_NUBES_NUBE_BLANCA,
+    MODELO_NUBES_TORMENTA,
+    MODELO_NUBES_FLECHA,
+    MODELO_NUBES_BANDA,
+    MODELO_NUBES_MAR,
+    MODELO_NUBES_ISLA,
+    MODELO_NUBES_DIANA,
+    MODELO_NUBES_ISLA_FLOTANTE,
+    MODELO_NUBES_GLOBO_AZUL,
+    MODELO_NUBES_GLOBO_ROJO,
+    MODELO_NUBES_MOLINO,
+    MODELO_NUBES_ASPAS,
+    MODELO_NUBES_AVE,
+    MODELO_NUBES_ARCOIRIS,
+    CANTIDAD_MODELOS_DESCENSO_NUBES_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_DESCENSO_NUBES_3D[] =
+{
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/planeador.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/planeador_frenado.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/anillo_blanco.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/anillo_dorado.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/estrella.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/nube_blanca.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/nube_tormenta.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/flecha_viento.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/banda_viento.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/mar_de_nubes.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/isla_principal.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/diana_aterrizaje.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/isla_flotante.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/globo_azul.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/globo_rojo.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/molino_torre.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/aspas_molino.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/ave.glb",
+    "Assets/Modelos/Escenarios/Descenso_en_Nubes/GLB/arcoiris.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_DESCENSO_NUBES_3D) /
+    sizeof(RUTAS_MODELOS_DESCENSO_NUBES_3D[0]) == CANTIDAD_MODELOS_DESCENSO_NUBES_3D,
+    "Las rutas deben coincidir con los IDs del paquete Descenso en Nubes");
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 

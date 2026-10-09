@@ -6,6 +6,7 @@
 #include "raymath.h"
 
 #include <cmath>
+#include <cstring>
 
 
 //==================================================
@@ -53,6 +54,15 @@ struct PaqueteModelosEscenarioRetro3D
 };
 
 
+// Copias CPU de reposo; comparten las dos mallas/VBO del unico modelo ave.
+struct AlasDescensoNubesRetro3D
+{
+    float* vertices[2]{};
+    float* normales[2]{};
+    int inicioAlas = -1;
+    bool intentada = false;
+};
+
 struct ModelosEscenariosRetro3D
 {
     RecursoModeloEscenarioRetro3D montanaLava;
@@ -64,6 +74,8 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D bateoMeteorico[CANTIDAD_MODELOS_BATEO_METEORICO_3D];
     RecursoModeloEscenarioRetro3D racimoToxico[CANTIDAD_MODELOS_RACIMO_TOXICO_3D];
     RecursoModeloEscenarioRetro3D tesoreroCercado[CANTIDAD_MODELOS_TESORERO_CERCADO_3D];
+    RecursoModeloEscenarioRetro3D descensoNubes[CANTIDAD_MODELOS_DESCENSO_NUBES_3D];
+    AlasDescensoNubesRetro3D alasNubes;
     bool inicializados = false;
 };
 
@@ -615,6 +627,156 @@ inline bool DibujarModeloTesoreroCercadoRetro3D(
     return DibujarModeloEscenarioRetro3D(vista, posicion, {0,1,0}, anguloY, escala, colorEstado);
 }
 
+inline void DescargarAlasDescensoNubesRetro3D()
+{
+    AlasDescensoNubesRetro3D& alas = ObtenerModelosEscenariosRetro3D().alasNubes;
+    for (int i = 0; i < 2; i++)
+    {
+        MemFree(alas.vertices[i]);
+        MemFree(alas.normales[i]);
+    }
+    alas = {};
+}
+
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteDescensoNubesRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_DESCENSO_NUBES_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_DESCENSO_NUBES_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_DESCENSO_NUBES_3D[i];
+        // En ambos planeadores solo la primitive 0 es COLOR_DINAMICO.
+        definiciones[MODELO_NUBES_PLANEADOR].mallaColor = 0;
+        definiciones[MODELO_NUBES_PLANEADOR_FRENADO].mallaColor = 0;
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().descensoNubes,
+        definiciones, CANTIDAD_MODELOS_DESCENSO_NUBES_3D };
+}
+
+inline void CargarPaqueteDescensoNubesRetro3D()
+{
+    PaqueteModelosEscenarioRetro3D paquete = ObtenerPaqueteDescensoNubesRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    const int mallasEsperadas[] = {6,6,3,3,2,3,5,3,2,2,4,3,4,5,4,4,4,4,7};
+    for (int i = 0; i < paquete.cantidad; i++)
+    {
+        RecursoModeloEscenarioRetro3D& recurso = paquete.recursos[i];
+        if (!recurso.cargado || recurso.modelo.meshCount == mallasEsperadas[i]) continue;
+        UnloadModel(recurso.modelo);
+        recurso.modelo = {};
+        recurso.cargado = false;
+        TraceLog(LOG_WARNING, "Primitives inesperadas en escenario; se usan primitivas: %s", recurso.ruta);
+    }
+
+    AlasDescensoNubesRetro3D& alas = ObtenerModelosEscenariosRetro3D().alasNubes;
+    RecursoModeloEscenarioRetro3D& ave = paquete.recursos[MODELO_NUBES_AVE];
+    if (alas.intentada || !ave.cargado) return;
+    alas.intentada = true;
+    // GLB v1: primitive 0 comienza con el cuerpo (|X|<=.22), seguido
+    // de las alas interiores. Primitive 1 contiene las alas exteriores.
+    Mesh& cuerpo = ave.modelo.meshes[0];
+    for (int v = 0; v < cuerpo.vertexCount; v++)
+    {
+        if (std::fabs(cuerpo.vertices[v * 3]) <= 0.30f) continue;
+        alas.inicioAlas = v / 3 * 3;
+        break;
+    }
+    bool valida = alas.inicioAlas > 0;
+    for (int i = 0; i < 2 && valida; i++)
+    {
+        Mesh& malla = ave.modelo.meshes[i];
+        if (!malla.normals || !malla.vboId || !malla.vboId[0] || !malla.vboId[2])
+        { valida = false; break; }
+        unsigned int bytes = (unsigned int)malla.vertexCount * 3 * sizeof(float);
+        alas.vertices[i] = (float*)MemAlloc(bytes);
+        alas.normales[i] = (float*)MemAlloc(bytes);
+        valida = alas.vertices[i] && alas.normales[i];
+        if (valida)
+        {
+            std::memcpy(alas.vertices[i], malla.vertices, bytes);
+            std::memcpy(alas.normales[i], malla.normals, bytes);
+        }
+    }
+    if (!valida)
+    {
+        DescargarAlasDescensoNubesRetro3D();
+        alas.intentada = true;
+        UnloadModel(ave.modelo);
+        ave.modelo = {};
+        ave.cargado = false;
+        TraceLog(LOG_WARNING, "No se pudo preparar el aleteo; se usan primitivas: %s", ave.ruta);
+    }
+}
+
+inline bool DibujarModeloDescensoNubesRetro3D(
+    ModeloDescensoNubes3D pieza, Vector3 posicion, float angulo = 0.0f,
+    Vector3 eje = {0,1,0}, Vector3 escala = {1,1,1}, Color color = WHITE,
+    int malla = -1, bool opacidadViento = false)
+{
+    RecursoModeloEscenarioRetro3D& recurso =
+        ObtenerModelosEscenariosRetro3D().descensoNubes[pieza];
+    if (!recurso.cargado) return false;
+    RecursoModeloEscenarioRetro3D vista = recurso;
+    if (malla >= 0)
+    {
+        if (malla >= recurso.modelo.meshCount) return false;
+        vista.modelo.meshCount = 1;
+        vista.modelo.meshes = &recurso.modelo.meshes[malla];
+        vista.modelo.meshMaterial = &recurso.modelo.meshMaterial[malla];
+        // La banda conserva su RGB original; solo reduce la opacidad.
+        if (opacidadViento && pieza == MODELO_NUBES_BANDA)
+        {
+            vista.materialColor = recurso.modelo.meshMaterial[malla];
+            color = recurso.modelo.materials[vista.materialColor].maps[MATERIAL_MAP_DIFFUSE].color;
+            color.a = (unsigned char)(255 * 0.22f);
+        }
+    }
+    return DibujarModeloEscenarioRetro3D(vista, posicion, eje, angulo, escala, color);
+}
+
+inline bool DibujarAveDescensoNubesRetro3D(Vector3 posicion, float aleteo)
+{
+    RecursoModeloEscenarioRetro3D& ave =
+        ObtenerModelosEscenariosRetro3D().descensoNubes[MODELO_NUBES_AVE];
+    AlasDescensoNubesRetro3D& alas = ObtenerModelosEscenariosRetro3D().alasNubes;
+    if (!ave.cargado || !alas.vertices[0] || !alas.vertices[1]) return false;
+    const float pendiente = aleteo / 0.95f;
+    for (int i = 0; i < 2; i++)
+    {
+        Mesh& malla = ave.modelo.meshes[i];
+        for (int v = i == 0 ? alas.inicioAlas : 0; v < malla.vertexCount; v++)
+        {
+            int p = v * 3;
+            float x = alas.vertices[i][p];
+            malla.vertices[p + 1] = alas.vertices[i][p + 1] + std::fabs(x) * pendiente;
+            // Normal del cizallamiento: inversa transpuesta, sin mover cuerpo.
+            Vector3 normal = {alas.normales[i][p] - (x < 0 ? -pendiente : pendiente) * alas.normales[i][p + 1],
+                alas.normales[i][p + 1], alas.normales[i][p + 2]};
+            normal = Vector3Normalize(normal);
+            malla.normals[p] = normal.x;
+            malla.normals[p + 1] = normal.y;
+            malla.normals[p + 2] = normal.z;
+        }
+        int bytes = malla.vertexCount * 3 * (int)sizeof(float);
+        UpdateMeshBuffer(malla, 0, malla.vertices, bytes, 0);
+        UpdateMeshBuffer(malla, 2, malla.normals, bytes, 0);
+    }
+    DibujarModeloDescensoNubesRetro3D(MODELO_NUBES_AVE, posicion);
+    // Una instancia nunca deja su aleteo aplicado a la siguiente.
+    for (int i = 0; i < 2; i++)
+    {
+        Mesh& malla = ave.modelo.meshes[i];
+        int bytes = malla.vertexCount * 3 * (int)sizeof(float);
+        std::memcpy(malla.vertices, alas.vertices[i], bytes);
+        std::memcpy(malla.normals, alas.normales[i], bytes);
+        UpdateMeshBuffer(malla, 0, malla.vertices, bytes, 0);
+        UpdateMeshBuffer(malla, 2, malla.normals, bytes, 0);
+    }
+    return true;
+}
+
 inline void InicializarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -697,6 +859,9 @@ inline void DescargarModelosEscenariosRetro3D()
         ObtenerModelosEscenariosRetro3D();
 
     DescargarSlotModeloEscenarioRetro3D(recursos.montanaLava);
+    DescargarAlasDescensoNubesRetro3D();
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.descensoNubes)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.ultimoAsiento)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.cajasPuerto)
