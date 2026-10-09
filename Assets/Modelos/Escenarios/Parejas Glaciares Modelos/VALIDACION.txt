@@ -1,0 +1,9 @@
+Parejas Glaciares — revisión del paquete
+24 de 24 GLB 2.0 cargados con raylib SDL; 27 capturas PNG.
+Vista de escena: Vistas/Pareja_aurora.png; copia Vista_previa.png.
+Los ocho símbolos son piezas separadas para conservar el orden aleatorio
+de bloques y revelar cada identidad solo según el estado del minijuego.
+El juego se comprobó con sus fuentes de producción en Linux con raylib SDL.
+La tarea recursiva de VS Code incluye visores .cpp antiguos en Assets,
+con funciones main duplicadas; limitación previa ajena al paquete.
+Los GLB aún no sustituyen las primitivas de MinijuegoParejasGlaciar.cpp.
