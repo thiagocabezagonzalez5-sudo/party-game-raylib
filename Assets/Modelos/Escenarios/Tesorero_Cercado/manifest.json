@@ -1,0 +1,394 @@
+{
+  "version": 1,
+  "rama_referencia": "claude/expansion-party",
+  "commit_referencia": "ea5472c",
+  "unidades": "1 unidad GLB = 1 unidad raylib",
+  "ejes": "Y arriba, cámara hacia Z negativo",
+  "licencia": "Arte original procedural sin recursos externos",
+  "nota": "La altura/estado de las rejas, colisiones, monedas y puntaje siguen en C++.",
+  "modelos": [
+    {
+      "archivo": "foso_agua.glb",
+      "triangulos": 3148,
+      "materiales": [
+        "agua",
+        "agua_clara",
+        "espuma",
+        "piedra_oscura"
+      ],
+      "bytes": 400396,
+      "min": [
+        -18.0,
+        -1.69,
+        -14.0
+      ],
+      "max": [
+        18.0,
+        0.02,
+        14.0
+      ],
+      "pivote": "centro del patio",
+      "uso": "(0,0,0); agua alrededor del suelo jugable."
+    },
+    {
+      "archivo": "suelo_losas.glb",
+      "triangulos": 956,
+      "materiales": [
+        "piedra_oscura",
+        "piedra_clara",
+        "junta",
+        "piedra",
+        "arena"
+      ],
+      "bytes": 125028,
+      "min": [
+        -9.0,
+        -1.0,
+        -7.0
+      ],
+      "max": [
+        9.0,
+        0.13,
+        7.0
+      ],
+      "pivote": "centro del patio",
+      "uso": "(0,0,0); huella 18 x 14, superficie Y=0."
+    },
+    {
+      "archivo": "muro_fondo.glb",
+      "triangulos": 1044,
+      "materiales": [
+        "piedra",
+        "piedra_clara",
+        "junta",
+        "piedra_oscura"
+      ],
+      "bytes": 135208,
+      "min": [
+        -10.3,
+        0.0,
+        -0.69
+      ],
+      "max": [
+        10.3,
+        3.29,
+        0.7
+      ],
+      "pivote": "base central",
+      "uso": "(0,0,-7.6); almenas al fondo."
+    },
+    {
+      "archivo": "muro_lateral.glb",
+      "triangulos": 732,
+      "materiales": [
+        "piedra",
+        "piedra_clara",
+        "junta",
+        "piedra_oscura"
+      ],
+      "bytes": 95876,
+      "min": [
+        -0.69,
+        0.0,
+        -7.675
+      ],
+      "max": [
+        0.69,
+        2.77,
+        7.675
+      ],
+      "pivote": "base central",
+      "uso": "Repetir en (±9.6,0,0); muro a lo largo de Z."
+    },
+    {
+      "archivo": "parapeto_frontal.glb",
+      "triangulos": 168,
+      "materiales": [
+        "piedra",
+        "piedra_clara",
+        "junta",
+        "piedra_oscura"
+      ],
+      "bytes": 24792,
+      "min": [
+        -10.25,
+        0.0,
+        -0.675
+      ],
+      "max": [
+        10.25,
+        0.745,
+        0.675
+      ],
+      "pivote": "base central",
+      "uso": "(0,0,7.6); altura .5 para no tapar jugadores."
+    },
+    {
+      "archivo": "torre_esquina_alta.glb",
+      "triangulos": 764,
+      "materiales": [
+        "piedra",
+        "piedra_clara",
+        "piedra_oscura",
+        "rojo",
+        "oro_oscuro",
+        "oro",
+        "hierro_oscuro"
+      ],
+      "bytes": 102448,
+      "min": [
+        -1.865,
+        0,
+        -1.865
+      ],
+      "max": [
+        1.865,
+        6.22,
+        1.865
+      ],
+      "pivote": "base central",
+      "uso": "(±10.4,0,-8.2); altura 4.4 + tejado 1.65."
+    },
+    {
+      "archivo": "torre_esquina_baja.glb",
+      "triangulos": 572,
+      "materiales": [
+        "piedra",
+        "piedra_clara",
+        "piedra_oscura",
+        "rojo",
+        "oro_oscuro",
+        "oro",
+        "hierro_oscuro"
+      ],
+      "bytes": 78268,
+      "min": [
+        -1.865,
+        0,
+        -1.865
+      ],
+      "max": [
+        1.865,
+        4.22,
+        1.865
+      ],
+      "pivote": "base central",
+      "uso": "(±10.4,0,8.2); altura 2.4 + tejado 1.65."
+    },
+    {
+      "archivo": "torre_homenaje.glb",
+      "triangulos": 272,
+      "materiales": [
+        "piedra",
+        "junta",
+        "piedra_clara",
+        "madera_oscura",
+        "piedra_oscura",
+        "madera",
+        "oro"
+      ],
+      "bytes": 40444,
+      "min": [
+        -1.375,
+        0.0,
+        -1.375
+      ],
+      "max": [
+        1.375,
+        4.14,
+        1.42
+      ],
+      "pivote": "centro del obstaculo",
+      "uso": "(0,0,0); cuerpo 2.6 x 2.6 y altura de colision 2.2."
+    },
+    {
+      "archivo": "portal_fondo.glb",
+      "triangulos": 1028,
+      "materiales": [
+        "madera_oscura",
+        "madera_clara",
+        "hierro",
+        "piedra_oscura",
+        "piedra_clara",
+        "oro_oscuro"
+      ],
+      "bytes": 135016,
+      "min": [
+        -1.675,
+        0.0,
+        -0.22
+      ],
+      "max": [
+        1.675,
+        2.88,
+        0.26
+      ],
+      "pivote": "centro del porton",
+      "uso": "(0,0,-6.95); montaje en muro del fondo."
+    },
+    {
+      "archivo": "estandarte_rojo.glb",
+      "triangulos": 180,
+      "materiales": [
+        "madera",
+        "oro",
+        "madera_clara",
+        "rojo",
+        "rojo_claro",
+        "oro_claro"
+      ],
+      "bytes": 28196,
+      "min": [
+        -0.1222,
+        0,
+        -0.128
+      ],
+      "max": [
+        0.96,
+        1.84,
+        0.128
+      ],
+      "pivote": "pie del asta",
+      "uso": "(x,2.8,-7.2), x=-7.2+3.6*k para k par."
+    },
+    {
+      "archivo": "estandarte_dorado.glb",
+      "triangulos": 180,
+      "materiales": [
+        "madera",
+        "oro",
+        "madera_clara",
+        "oro_claro",
+        "rojo"
+      ],
+      "bytes": 27392,
+      "min": [
+        -0.1222,
+        0,
+        -0.128
+      ],
+      "max": [
+        0.96,
+        1.84,
+        0.128
+      ],
+      "pivote": "pie del asta",
+      "uso": "(x,2.8,-7.2), x=-7.2+3.6*k para k impar."
+    },
+    {
+      "archivo": "antorcha.glb",
+      "triangulos": 344,
+      "materiales": [
+        "madera",
+        "hierro",
+        "hierro_claro",
+        "fuego",
+        "fuego_claro"
+      ],
+      "bytes": 47852,
+      "min": [
+        -0.2161,
+        0.37,
+        -0.2265
+      ],
+      "max": [
+        0.23,
+        2.12,
+        0.2265
+      ],
+      "pivote": "base del soporte",
+      "uso": "(±8.8,0,-4.5+4.5*j), tres por lado."
+    },
+    {
+      "archivo": "marco_reja.glb",
+      "triangulos": 940,
+      "materiales": [
+        "piedra",
+        "piedra_clara",
+        "piedra_oscura",
+        "oro_oscuro",
+        "hierro_claro"
+      ],
+      "bytes": 122984,
+      "min": [
+        -2.505,
+        0.0,
+        -0.32
+      ],
+      "max": [
+        2.505,
+        5.57,
+        0.4771
+      ],
+      "pivote": "centro de reja al nivel del suelo",
+      "uso": "Centros (±5,0,0),(0,0,±4.2); girar 90 grados para las dos de X."
+    },
+    {
+      "archivo": "reja_levadiza.glb",
+      "triangulos": 336,
+      "materiales": [
+        "hierro",
+        "hierro_claro",
+        "hierro_oscuro",
+        "oro_oscuro"
+      ],
+      "bytes": 46016,
+      "min": [
+        -2.065,
+        0.0,
+        -0.09
+      ],
+      "max": [
+        2.065,
+        2.55,
+        0.143
+      ],
+      "pivote": "centro de reja al nivel del suelo",
+      "uso": "Centro x,z del estado; Y=(1-reja.altura)*2.6; girar 90 grados si mitadZ>mitadX."
+    },
+    {
+      "archivo": "aviso_reja.glb",
+      "triangulos": 96,
+      "materiales": [
+        "rojo_oscuro",
+        "rojo",
+        "rojo_claro"
+      ],
+      "bytes": 14868,
+      "min": [
+        -2.29,
+        0.0025,
+        -0.51
+      ],
+      "max": [
+        2.29,
+        0.0615,
+        0.51
+      ],
+      "pivote": "centro de aviso en suelo",
+      "uso": "Centro x,z; visible solo durante estado AVISO; girar 90 grados si mitadZ>mitadX."
+    },
+    {
+      "archivo": "moneda_tesoro.glb",
+      "triangulos": 344,
+      "materiales": [
+        "oro",
+        "oro_claro",
+        "oro_oscuro"
+      ],
+      "bytes": 46152,
+      "min": [
+        -0.2,
+        -0.2,
+        -0.045
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.0855
+      ],
+      "pivote": "centro de moneda",
+      "uso": "Centro de moneda.y+.12; conservar vuelo, giro y recogida en C++."
+    }
+  ]
+}

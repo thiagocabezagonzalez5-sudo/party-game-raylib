@@ -1,0 +1,356 @@
+{
+  "version": 1,
+  "rama_referencia": "claude/expansion-party",
+  "commit_referencia": "ea5472c",
+  "unidades": "1 unidad GLB = 1 unidad raylib",
+  "ejes": "Y arriba; jugador mira hacia Z negativo",
+  "licencia": "Arte original procedural sin recursos externos",
+  "nota": "La ventana de bateo, trayectorias, tipos y puntaje siguen en el código.",
+  "modelos": [
+    {
+      "archivo": "cumbre.glb",
+      "triangulos": 1332,
+      "materiales": [
+        "roca_oscura",
+        "basalto",
+        "roca",
+        "roca_clara"
+      ],
+      "bytes": 171464,
+      "min": [
+        -80.0,
+        -2.2,
+        -90.0
+      ],
+      "max": [
+        80.0,
+        0.2,
+        20.0
+      ],
+      "pivote": "centro del mundo",
+      "uso": "Mundo (0,0,0); roca base detrás de carriles."
+    },
+    {
+      "archivo": "observatorio_cupula.glb",
+      "triangulos": 3518,
+      "materiales": [
+        "metal_oscuro",
+        "oro_oscuro",
+        "roca",
+        "metal_claro",
+        "negro",
+        "roca_clara",
+        "oro"
+      ],
+      "bytes": 449580,
+      "min": [
+        -15.18,
+        -4.0126,
+        -15.18
+      ],
+      "max": [
+        15.18,
+        22.0706,
+        15.18
+      ],
+      "pivote": "centro XZ de cúpula",
+      "uso": "Mundo (-36,0,-64); diámetro 30, altura máxima 22."
+    },
+    {
+      "archivo": "telescopio.glb",
+      "triangulos": 576,
+      "materiales": [
+        "metal",
+        "oro",
+        "negro",
+        "metal_oscuro"
+      ],
+      "bytes": 76460,
+      "min": [
+        2.0086,
+        10.5537,
+        -9.9875
+      ],
+      "max": [
+        20.23,
+        37.9595,
+        10.8877
+      ],
+      "pivote": "centro de cúpula grande",
+      "uso": "Misma posición (-36,0,-64), tubo orientado hacia cielo."
+    },
+    {
+      "archivo": "observatorio_secundario.glb",
+      "triangulos": 1368,
+      "materiales": [
+        "metal_oscuro",
+        "roca",
+        "oro_oscuro",
+        "negro"
+      ],
+      "bytes": 176088,
+      "min": [
+        -10.14,
+        -4.0046,
+        -10.14
+      ],
+      "max": [
+        10.14,
+        15.0,
+        10.5
+      ],
+      "pivote": "centro XZ de cúpula",
+      "uso": "Mundo (44,0,-76); diámetro 20."
+    },
+    {
+      "archivo": "planeta_anillado.glb",
+      "triangulos": 7104,
+      "materiales": [
+        "planeta",
+        "planeta_claro",
+        "anillo"
+      ],
+      "bytes": 898048,
+      "min": [
+        -24.73,
+        -13.0,
+        -22.665
+      ],
+      "max": [
+        24.73,
+        13.0,
+        22.665
+      ],
+      "pivote": "centro del planeta",
+      "uso": "Mundo (34,34,-112); radio de esfera 13, anillos hasta 25."
+    },
+    {
+      "archivo": "farol.glb",
+      "triangulos": 320,
+      "materiales": [
+        "metal_oscuro",
+        "oro_oscuro",
+        "BOMBILLAS",
+        "metal"
+      ],
+      "bytes": 44000,
+      "min": [
+        -0.27,
+        0,
+        -0.2568
+      ],
+      "max": [
+        0.27,
+        2.24,
+        0.2568
+      ],
+      "pivote": "suelo entre carriles",
+      "uso": "Mundo X=-15,-9,-3,3,9; Z=3.2."
+    },
+    {
+      "archivo": "carril_plataforma.glb",
+      "triangulos": 444,
+      "materiales": [
+        "roca",
+        "roca_clara",
+        "metal_oscuro",
+        "COLOR_DINAMICO",
+        "basalto"
+      ],
+      "bytes": 60432,
+      "min": [
+        -2.7,
+        -0.47,
+        -15.0
+      ],
+      "max": [
+        2.7,
+        0.055,
+        5.0
+      ],
+      "pivote": "X centro de carril, suelo Y=0",
+      "uso": "Mundo (carrilX,0,0); Z=-15..+5, ancho 5.4."
+    },
+    {
+      "archivo": "campo_puntaje.glb",
+      "triangulos": 492,
+      "materiales": [
+        "basalto",
+        "azul",
+        "violeta",
+        "oro",
+        "COLOR_DINAMICO",
+        "metal_claro",
+        "oro_claro"
+      ],
+      "bytes": 68076,
+      "min": [
+        -2.7,
+        -0.4,
+        -30.0
+      ],
+      "max": [
+        2.7,
+        0.0038,
+        -12.5
+      ],
+      "pivote": "X centro de carril, suelo Y=0",
+      "uso": "Mundo (carrilX,0,0); zona Z=-30..-14."
+    },
+    {
+      "archivo": "canon_base.glb",
+      "triangulos": 304,
+      "materiales": [
+        "metal_oscuro",
+        "roca",
+        "metal",
+        "oro_oscuro"
+      ],
+      "bytes": 41916,
+      "min": [
+        -1.4,
+        0.0,
+        -1.4
+      ],
+      "max": [
+        1.4,
+        5.65,
+        1.4
+      ],
+      "pivote": "base pedestal en suelo",
+      "uso": "Mundo (carrilX,0,-12.8); hombro local (0,4.7,+.4)."
+    },
+    {
+      "archivo": "canon_tubo.glb",
+      "triangulos": 592,
+      "materiales": [
+        "metal",
+        "oro_oscuro",
+        "negro",
+        "oro",
+        "metal_oscuro"
+      ],
+      "bytes": 79128,
+      "min": [
+        -0.775,
+        0,
+        -0.775
+      ],
+      "max": [
+        0.775,
+        2.2276,
+        0.775
+      ],
+      "pivote": "inicio eje vertical +Y",
+      "uso": "Orientar desde (carrilX,4.7,-12.4) a direccion del punto dulce; largo 2.2."
+    },
+    {
+      "archivo": "meteorito_normal.glb",
+      "triangulos": 416,
+      "materiales": [
+        "meteor",
+        "meteor_oscuro",
+        "meteor_claro"
+      ],
+      "bytes": 55324,
+      "min": [
+        -0.4432,
+        -0.44,
+        -0.4321
+      ],
+      "max": [
+        0.4432,
+        0.44,
+        0.4321
+      ],
+      "pivote": "centro",
+      "uso": "PosicionMeteoritoEntrante/Golpeado; radio .45."
+    },
+    {
+      "archivo": "meteorito_dorado.glb",
+      "triangulos": 880,
+      "materiales": [
+        "oro",
+        "oro_claro"
+      ],
+      "bytes": 112884,
+      "min": [
+        -0.598,
+        -0.598,
+        -0.51
+      ],
+      "max": [
+        0.598,
+        0.598,
+        0.51
+      ],
+      "pivote": "centro",
+      "uso": "Misma lógica, radio .50, puntaje doble."
+    },
+    {
+      "archivo": "meteorito_rojo.glb",
+      "triangulos": 520,
+      "materiales": [
+        "brasa",
+        "rojo_claro",
+        "rojo"
+      ],
+      "bytes": 68444,
+      "min": [
+        -0.4924,
+        -0.5,
+        -0.4924
+      ],
+      "max": [
+        0.4924,
+        0.5,
+        0.4924
+      ],
+      "pivote": "centro",
+      "uso": "Misma lógica, inestable, no golpear."
+    },
+    {
+      "archivo": "bate.glb",
+      "triangulos": 572,
+      "materiales": [
+        "madera",
+        "COLOR_DINAMICO",
+        "metal_oscuro"
+      ],
+      "bytes": 74916,
+      "min": [
+        -0.16,
+        -0.16,
+        -1.4851
+      ],
+      "max": [
+        0.16,
+        0.16,
+        0.0
+      ],
+      "pivote": "inicio del swing",
+      "uso": "Mundo (carrilX+.4,1.05,.7), rotación Y ya calculada."
+    },
+    {
+      "archivo": "aro_punto_dulce.glb",
+      "triangulos": 552,
+      "materiales": [
+        "turquesa",
+        "BOMBILLAS"
+      ],
+      "bytes": 71644,
+      "min": [
+        -0.595,
+        -0.5917,
+        -0.04
+      ],
+      "max": [
+        0.595,
+        0.5917,
+        0.04
+      ],
+      "pivote": "centro del aro",
+      "uso": "Mundo (carrilX,1.4,-.7), orientado perpendicular a Z."
+    }
+  ]
+}

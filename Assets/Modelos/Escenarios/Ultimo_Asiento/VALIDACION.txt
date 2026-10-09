@@ -1,0 +1,30 @@
+VALIDACION DE MODELOS — ULTIMO ASIENTO v1
+Referencia de juego: ea5472c
+Carga real: raylib 6.1-dev / SDL / OpenGL (Mesa llvmpipe).
+
+OK carrusel_base.glb: 2064 triangulos; 264468 bytes; sin recursos externos.
+OK carrusel_columna.glb: 360 triangulos; 48160 bytes; sin recursos externos.
+OK carrusel_techo.glb: 2328 triangulos; 297796 bytes; sin recursos externos.
+OK caballito.glb: 1368 triangulos; 178636 bytes; sin recursos externos.
+OK poste_caballito.glb: 32 triangulos; 5172 bytes; sin recursos externos.
+OK bombilla.glb: 120 triangulos; 16196 bytes; sin recursos externos.
+OK taza.glb: 1616 triangulos; 206360 bytes; sin recursos externos.
+OK valla_tramo.glb: 616 triangulos; 81252 bytes; sin recursos externos.
+OK noria_soporte.glb: 352 triangulos; 48004 bytes; sin recursos externos.
+OK noria_rueda.glb: 3776 triangulos; 480288 bytes; sin recursos externos.
+OK noria_cabina.glb: 244 triangulos; 35176 bytes; sin recursos externos.
+OK montana_rusa_vias.glb: 8732 triangulos; 1104116 bytes; sin recursos externos.
+OK montana_rusa_carro.glb: 256 triangulos; 36768 bytes; sin recursos externos.
+OK puesto_feria.glb: 526 triangulos; 73180 bytes; sin recursos externos.
+OK grada.glb: 488 triangulos; 65916 bytes; sin recursos externos.
+OK globo.glb: 232 triangulos; 31204 bytes; sin recursos externos.
+OK arena.glb: 2112 triangulos; 269712 bytes; sin recursos externos.
+OK radio maximo taza.glb: 1.2350 <= 1.25
+OK radio maximo carrusel_techo.glb: 2.4800 <= 2.5
+
+17/17 modelos cargados en raylib sin warnings ni errores.
+Visor independiente compilado con g++ C++17.
+Modelos estaticos: movimiento por instancias desde C++; sin animaciones GLB incrustadas.
+La carga en Windows y la integracion jugable quedan pendientes.
+Visor ejecutado con --verificar: apertura, dibujo y cierre normal con descarga de recursos.
+Capturas con buffer de profundidad de 24 bits.

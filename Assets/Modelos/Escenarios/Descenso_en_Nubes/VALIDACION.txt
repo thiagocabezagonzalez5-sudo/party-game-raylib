@@ -1,0 +1,1 @@
+19/19 GLB cargados en raylib, 23 capturas generadas. GLB 2.0 autoincluidos; posiciones finitas e índices uint16 válidos. Radio de isla y diana, altura de banda de viento y ancho del planeador frenado comprobados. Visor C++17. Integración jugable y Windows pendientes.

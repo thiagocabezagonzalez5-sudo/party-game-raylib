@@ -1,0 +1,458 @@
+{
+  "minijuego": "Bolas de Azúcar",
+  "base": "claude/expansion-party ea5472c",
+  "arena_lado": 18,
+  "radio_gominola": 0.8,
+  "radio_bola_min": 0.3,
+  "radio_bola_max": 1.4,
+  "modelos": [
+    {
+      "archivo": "fondo_rosa.glb",
+      "triangulos": 2196,
+      "materiales": [
+        "rosa_fondo",
+        "rosa_claro"
+      ],
+      "bytes": 278712,
+      "min": [
+        -70.0,
+        -0.6,
+        -70.0
+      ],
+      "max": [
+        70.0,
+        -0.52,
+        70.0
+      ],
+      "pivote": "origen global",
+      "uso": "Plano decorativo 140x140, Y=-.55."
+    },
+    {
+      "archivo": "suelo_galleta.glb",
+      "triangulos": 804,
+      "materiales": [
+        "galleta",
+        "galleta_sombra",
+        "pepita_luz",
+        "pepita",
+        "galleta_luz"
+      ],
+      "bytes": 105836,
+      "min": [
+        -9.0,
+        -0.5,
+        -9.0
+      ],
+      "max": [
+        9.0,
+        0.068,
+        9.0
+      ],
+      "pivote": "centro del suelo",
+      "uso": "Arena 18x18, Y superior 0."
+    },
+    {
+      "archivo": "azucar_lateral.glb",
+      "triangulos": 636,
+      "materiales": [
+        "azucar",
+        "glaseado",
+        "azucar_sombra"
+      ],
+      "bytes": 83004,
+      "min": [
+        -2.0,
+        -0.0005,
+        -4.5
+      ],
+      "max": [
+        2.0,
+        0.086,
+        4.5
+      ],
+      "pivote": "centro",
+      "uso": "Centros X=±6, Z=0; zonas 4x9."
+    },
+    {
+      "archivo": "azucar_extremo.glb",
+      "triangulos": 636,
+      "materiales": [
+        "azucar",
+        "glaseado",
+        "azucar_sombra"
+      ],
+      "bytes": 83004,
+      "min": [
+        -3.0,
+        -0.0005,
+        -1.25
+      ],
+      "max": [
+        3.0,
+        0.086,
+        1.25
+      ],
+      "pivote": "centro",
+      "uso": "Centros X=0, Z=±6.75."
+    },
+    {
+      "archivo": "chocolate_grande.glb",
+      "triangulos": 808,
+      "materiales": [
+        "chocolate",
+        "chocolate_luz",
+        "chocolate_espuma"
+      ],
+      "bytes": 104744,
+      "min": [
+        -2.2,
+        0.005,
+        -2.2
+      ],
+      "max": [
+        2.2,
+        0.095,
+        2.2
+      ],
+      "pivote": "centro",
+      "uso": "Charco en (0,0,0), radio lógico 2.2."
+    },
+    {
+      "archivo": "chocolate_pequeno.glb",
+      "triangulos": 808,
+      "materiales": [
+        "chocolate",
+        "chocolate_luz",
+        "chocolate_espuma"
+      ],
+      "bytes": 104744,
+      "min": [
+        -1.407,
+        0.005,
+        -1.407
+      ],
+      "max": [
+        1.407,
+        0.095,
+        1.407
+      ],
+      "pivote": "centro",
+      "uso": "Dos en (-5.5,0,-6.5), (5.5,0,6.5)."
+    },
+    {
+      "archivo": "muro_galleta.glb",
+      "triangulos": 1386,
+      "materiales": [
+        "galleta_sombra",
+        "glaseado_sombra",
+        "glaseado",
+        "pepita"
+      ],
+      "bytes": 178280,
+      "min": [
+        -9.435,
+        0.0,
+        -0.24
+      ],
+      "max": [
+        9.435,
+        2.175,
+        0.26
+      ],
+      "pivote": "centro al pie",
+      "uso": "Cuatro muros, X/Z=±9.2; usar giro Y=90° para lados."
+    },
+    {
+      "archivo": "gominola_roja.glb",
+      "triangulos": 552,
+      "materiales": [
+        "gom_roja",
+        "gom_brillo",
+        "glaseado"
+      ],
+      "bytes": 72364,
+      "min": [
+        -0.818,
+        0,
+        -0.8097
+      ],
+      "max": [
+        0.818,
+        1.79,
+        0.8097
+      ],
+      "pivote": "pie central",
+      "uso": "Gominola 0, radio 0.8; centros X/Z=±3.2."
+    },
+    {
+      "archivo": "gominola_verde.glb",
+      "triangulos": 552,
+      "materiales": [
+        "gom_verde",
+        "gom_brillo",
+        "glaseado"
+      ],
+      "bytes": 72368,
+      "min": [
+        -0.818,
+        0,
+        -0.8097
+      ],
+      "max": [
+        0.818,
+        1.79,
+        0.8097
+      ],
+      "pivote": "pie central",
+      "uso": "Gominola 1, radio 0.8; centros X/Z=±3.2."
+    },
+    {
+      "archivo": "gominola_amarilla.glb",
+      "triangulos": 552,
+      "materiales": [
+        "gom_amarilla",
+        "gom_brillo",
+        "glaseado"
+      ],
+      "bytes": 72360,
+      "min": [
+        -0.818,
+        0,
+        -0.8097
+      ],
+      "max": [
+        0.818,
+        1.79,
+        0.8097
+      ],
+      "pivote": "pie central",
+      "uso": "Gominola 2, radio 0.8; centros X/Z=±3.2."
+    },
+    {
+      "archivo": "gominola_azul.glb",
+      "triangulos": 552,
+      "materiales": [
+        "gom_azul",
+        "gom_brillo",
+        "glaseado"
+      ],
+      "bytes": 72364,
+      "min": [
+        -0.818,
+        0,
+        -0.8097
+      ],
+      "max": [
+        0.818,
+        1.79,
+        0.8097
+      ],
+      "pivote": "pie central",
+      "uso": "Gominola 3, radio 0.8; centros X/Z=±3.2."
+    },
+    {
+      "archivo": "piruleta_rosa.glb",
+      "triangulos": 1276,
+      "materiales": [
+        "palito",
+        "pir_rosa",
+        "glaseado",
+        "glaseado_sombra"
+      ],
+      "bytes": 164592,
+      "min": [
+        -1.1818,
+        0,
+        -0.6204
+      ],
+      "max": [
+        1.1818,
+        5.6,
+        0.6868
+      ],
+      "pivote": "pie central",
+      "uso": "Árbol de piruleta color rosa, altura visual ≈5.6."
+    },
+    {
+      "archivo": "piruleta_azul.glb",
+      "triangulos": 1276,
+      "materiales": [
+        "palito",
+        "pir_azul",
+        "glaseado",
+        "glaseado_sombra"
+      ],
+      "bytes": 164604,
+      "min": [
+        -1.1818,
+        0,
+        -0.6204
+      ],
+      "max": [
+        1.1818,
+        5.6,
+        0.6868
+      ],
+      "pivote": "pie central",
+      "uso": "Árbol de piruleta color azul, altura visual ≈5.6."
+    },
+    {
+      "archivo": "piruleta_amarilla.glb",
+      "triangulos": 1276,
+      "materiales": [
+        "palito",
+        "pir_amarilla",
+        "glaseado",
+        "glaseado_sombra"
+      ],
+      "bytes": 164604,
+      "min": [
+        -1.1818,
+        0,
+        -0.6204
+      ],
+      "max": [
+        1.1818,
+        5.6,
+        0.6868
+      ],
+      "pivote": "pie central",
+      "uso": "Árbol de piruleta color amarilla, altura visual ≈5.6."
+    },
+    {
+      "archivo": "piruleta_violeta.glb",
+      "triangulos": 1276,
+      "materiales": [
+        "palito",
+        "pir_violeta",
+        "glaseado",
+        "glaseado_sombra"
+      ],
+      "bytes": 164616,
+      "min": [
+        -1.1818,
+        0,
+        -0.6204
+      ],
+      "max": [
+        1.1818,
+        5.6,
+        0.6868
+      ],
+      "pivote": "pie central",
+      "uso": "Árbol de piruleta color violeta, altura visual ≈5.6."
+    },
+    {
+      "archivo": "piruleta_verde.glb",
+      "triangulos": 1276,
+      "materiales": [
+        "palito",
+        "pir_verde",
+        "glaseado",
+        "glaseado_sombra"
+      ],
+      "bytes": 164608,
+      "min": [
+        -1.1818,
+        0,
+        -0.6204
+      ],
+      "max": [
+        1.1818,
+        5.6,
+        0.6868
+      ],
+      "pivote": "pie central",
+      "uso": "Árbol de piruleta color verde, altura visual ≈5.6."
+    },
+    {
+      "archivo": "columna_caramelo.glb",
+      "triangulos": 1520,
+      "materiales": [
+        "caramelo",
+        "caramelo_oscuro",
+        "caramelo_claro",
+        "glaseado"
+      ],
+      "bytes": 195280,
+      "min": [
+        -1.1,
+        -0.0849,
+        -1.1
+      ],
+      "max": [
+        1.1,
+        6.32,
+        1.1
+      ],
+      "pivote": "pie central",
+      "uso": "Cuatro fuera de arena, X=±12.5 Z=±12."
+    },
+    {
+      "archivo": "montana_nata.glb",
+      "triangulos": 478,
+      "materiales": [
+        "galleta_sombra",
+        "nata",
+        "nata_sombra",
+        "cereza",
+        "cereza_brillo"
+      ],
+      "bytes": 64824,
+      "min": [
+        -4.3,
+        0,
+        -4.0895
+      ],
+      "max": [
+        4.3,
+        9.4605,
+        4.0895
+      ],
+      "pivote": "pie central",
+      "uso": "Tres al fondo, X=-22,-2,18 y Z=-30."
+    },
+    {
+      "archivo": "bola_azucar.glb",
+      "triangulos": 1058,
+      "materiales": [
+        "bola",
+        "bola_sombra",
+        "COLOR_DINAMICO"
+      ],
+      "bytes": 136148,
+      "min": [
+        -1.017,
+        -1.0,
+        -1.017
+      ],
+      "max": [
+        1.017,
+        1.0,
+        1.017
+      ],
+      "pivote": "centro",
+      "uso": "Escalar uniformemente a radio lógico entre .3 y 1.4; tintar aro."
+    },
+    {
+      "archivo": "pepita_chocolate.glb",
+      "triangulos": 72,
+      "materiales": [
+        "pepita"
+      ],
+      "bytes": 10280,
+      "min": [
+        -0.1698,
+        -0.02,
+        -0.1405
+      ],
+      "max": [
+        0.1807,
+        0.14,
+        0.1405
+      ],
+      "pivote": "pie central",
+      "uso": "Decorado modular para suelo."
+    }
+  ]
+}

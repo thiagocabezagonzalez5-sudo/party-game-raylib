@@ -1,0 +1,357 @@
+{
+  "version": 1,
+  "rama_referencia": "claude/expansion-party",
+  "commit_referencia": "ea5472c",
+  "unidades": "1 unidad GLB = 1 unidad raylib",
+  "ejes": "Y arriba; tablero: celda (c,r) en X=c-5, Z=r-5",
+  "licencia": "Arte original procedural sin recursos externos",
+  "nota": "La simulacion de esfera, muros y trampas permanece en el codigo del minijuego.",
+  "modelos": [
+    {
+      "archivo": "losa_marco.glb",
+      "triangulos": 1944,
+      "materiales": [
+        "piedra_oscura",
+        "losa",
+        "arena",
+        "fisura",
+        "jade_oscuro",
+        "jade_claro",
+        "oro",
+        "oro_oscuro",
+        "jade"
+      ],
+      "bytes": 252932,
+      "min": [
+        -6.0,
+        -0.61,
+        -6.0
+      ],
+      "max": [
+        6.0,
+        0.33,
+        6.0
+      ],
+      "pivote": "centro de tablero, plano de juego Y=0",
+      "uso": "Colocar en centrosTableros; dentro de rlTranslate/rlRotate. Mide 12x12."
+    },
+    {
+      "archivo": "banda_jugador.glb",
+      "triangulos": 144,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "oro"
+      ],
+      "bytes": 20044,
+      "min": [
+        -5.94,
+        -0.135,
+        -0.035
+      ],
+      "max": [
+        5.94,
+        0.1775,
+        0.062
+      ],
+      "pivote": "centro del frente, Y=-.3",
+      "uso": "Colocar (0,-.30,6.02) relativo a losa; COLOR_DINAMICO tintado por jugador."
+    },
+    {
+      "archivo": "muro_bloque.glb",
+      "triangulos": 136,
+      "materiales": [
+        "piedra",
+        "piedra_clara",
+        "piedra_oscura",
+        "oro_oscuro",
+        "fisura"
+      ],
+      "bytes": 21660,
+      "min": [
+        -0.49,
+        0.0,
+        -0.49
+      ],
+      "max": [
+        0.49,
+        0.6117,
+        0.49
+      ],
+      "pivote": "suelo central de celda",
+      "uso": "Por cada celda #, posicion (c-5,r-5) en X/Z; limites de planta .98 y altura .61."
+    },
+    {
+      "archivo": "glifo_muro.glb",
+      "triangulos": 320,
+      "materiales": [
+        "oro",
+        "jade_claro"
+      ],
+      "bytes": 42304,
+      "min": [
+        -0.169,
+        -0.0023,
+        -0.169
+      ],
+      "max": [
+        0.169,
+        0.046,
+        0.169
+      ],
+      "pivote": "centro superior de muro",
+      "uso": "Colocar sobre muro en Y=.61 si (c*7+r*3)%5==0."
+    },
+    {
+      "archivo": "agujero.glb",
+      "triangulos": 552,
+      "materiales": [
+        "tierra",
+        "sombra",
+        "oro_oscuro",
+        "fisura"
+      ],
+      "bytes": 73328,
+      "min": [
+        -0.6127,
+        0.013,
+        -0.6128
+      ],
+      "max": [
+        0.6128,
+        0.0756,
+        0.6128
+      ],
+      "pivote": "centro de celda en suelo",
+      "uso": "Colocar por celda o; deteccion logica de caida radio .34, solo visual."
+    },
+    {
+      "archivo": "marca_salida.glb",
+      "triangulos": 384,
+      "materiales": [
+        "jade_oscuro",
+        "jade_claro",
+        "oro"
+      ],
+      "bytes": 51264,
+      "min": [
+        -0.39,
+        0,
+        -0.39
+      ],
+      "max": [
+        0.39,
+        0.0421,
+        0.39
+      ],
+      "pivote": "centro de celda en suelo",
+      "uso": "Colocar en (inicioColumna-5,inicioFila-5), Y=.05."
+    },
+    {
+      "archivo": "checkpoint.glb",
+      "triangulos": 552,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "oro_oscuro",
+        "piedra_oscura",
+        "piedra_clara"
+      ],
+      "bytes": 73224,
+      "min": [
+        -0.42,
+        0,
+        -0.42
+      ],
+      "max": [
+        0.42,
+        0.72,
+        0.42
+      ],
+      "pivote": "base del disco",
+      "uso": "Colocar en centro de checkpoint, Y=.05; tintar COLOR_DINAMICO oro/jade al activarse."
+    },
+    {
+      "archivo": "altar.glb",
+      "triangulos": 720,
+      "materiales": [
+        "piedra_clara",
+        "piedra_oscura",
+        "oro_oscuro",
+        "oro",
+        "BOMBILLAS"
+      ],
+      "bytes": 95200,
+      "min": [
+        -0.42,
+        0.0,
+        -0.42
+      ],
+      "max": [
+        0.42,
+        0.85,
+        0.42
+      ],
+      "pivote": "base del pedestal",
+      "uso": "Centro de celda M; solo visual."
+    },
+    {
+      "archivo": "esfera_jade.glb",
+      "triangulos": 1216,
+      "materiales": [
+        "jade",
+        "jade_oscuro",
+        "jade_claro",
+        "BOMBILLAS"
+      ],
+      "bytes": 156988,
+      "min": [
+        -0.28,
+        -0.28,
+        -0.28
+      ],
+      "max": [
+        0.28,
+        0.28,
+        0.28
+      ],
+      "pivote": "centro de esfera",
+      "uso": "PosicionLocal(e.x,e.z,.28*escala+.03); escalar por caida."
+    },
+    {
+      "archivo": "flecha_trampa.glb",
+      "triangulos": 14,
+      "materiales": [
+        "COLOR_DINAMICO"
+      ],
+      "bytes": 2844,
+      "min": [
+        -0.325,
+        0.004,
+        -0.23
+      ],
+      "max": [
+        0.3,
+        0.028,
+        0.23
+      ],
+      "pivote": "centro de baldosa",
+      "uso": "Orientar hacia direccion de dardos; tintar aviso rojo/naranja."
+    },
+    {
+      "archivo": "boquilla_trampa.glb",
+      "triangulos": 64,
+      "materiales": [
+        "piedra_oscura",
+        "oro_oscuro",
+        "COLOR_DINAMICO"
+      ],
+      "bytes": 10888,
+      "min": [
+        -0.2,
+        0.125,
+        -0.0475
+      ],
+      "max": [
+        0.2,
+        0.435,
+        0.1581
+      ],
+      "pivote": "centro del soporte",
+      "uso": "Instanciar en extremo de pasillo y rotar segun eje, sin colision."
+    },
+    {
+      "archivo": "templo_fondo.glb",
+      "triangulos": 1680,
+      "materiales": [
+        "muro_fondo",
+        "piedra_oscura",
+        "fisura",
+        "piedra",
+        "oro_oscuro",
+        "oro",
+        "jade",
+        "jade_claro"
+      ],
+      "bytes": 218732,
+      "min": [
+        -27.0,
+        -1.395,
+        -23.0
+      ],
+      "max": [
+        27.0,
+        11.0,
+        23.0
+      ],
+      "pivote": "centro de escena global",
+      "uso": "Mundo (0,0,0), fuera de tableros; suelo Y=-1."
+    },
+    {
+      "archivo": "columna_templo.glb",
+      "triangulos": 2160,
+      "materiales": [
+        "piedra_oscura",
+        "piedra_clara",
+        "piedra",
+        "jade_oscuro",
+        "oro"
+      ],
+      "bytes": 276732,
+      "min": [
+        -1.5,
+        -0.2,
+        -1.5
+      ],
+      "max": [
+        1.5,
+        10.25,
+        1.5
+      ],
+      "pivote": "base al suelo del templo",
+      "uso": "Mundo X+-23, Z=-14 y +12; modelo llega hasta Y=10.25."
+    },
+    {
+      "archivo": "antorcha.glb",
+      "triangulos": 432,
+      "materiales": [
+        "oro_oscuro",
+        "piedra_oscura",
+        "oro",
+        "sombra"
+      ],
+      "bytes": 58148,
+      "min": [
+        -0.3,
+        0,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        1.71,
+        0.3
+      ],
+      "pivote": "base del soporte",
+      "uso": "Mundo X=-15,-9,-3,3,9,15; Y=2.4, Z=-21."
+    },
+    {
+      "archivo": "llama.glb",
+      "triangulos": 388,
+      "materiales": [
+        "brasa",
+        "fuego"
+      ],
+      "bytes": 50948,
+      "min": [
+        -0.312,
+        -0.38,
+        -0.2925
+      ],
+      "max": [
+        0.312,
+        0.56,
+        0.2925
+      ],
+      "pivote": "centro de llama",
+      "uso": "Mundo en (x,4.3+parpadeo*.08,-20.9); escala por parpadeo."
+    }
+  ]
+}

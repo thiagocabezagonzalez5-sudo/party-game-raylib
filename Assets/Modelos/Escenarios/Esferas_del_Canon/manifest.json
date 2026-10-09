@@ -1,0 +1,617 @@
+{
+  "minijuego": "Esferas del Cañón",
+  "base": "claude/expansion-party ea5472c",
+  "longitud_curva": 142.2308,
+  "meta_s": 120,
+  "modelos": [
+    {
+      "archivo": "tramo_pista_1.glb",
+      "triangulos": 300,
+      "materiales": [
+        "lecho_alt",
+        "lecho",
+        "arena",
+        "arena_luz"
+      ],
+      "bytes": 41652,
+      "min": [
+        -4.4108,
+        -4.8,
+        -38.6369
+      ],
+      "max": [
+        13.459,
+        0.0,
+        0.1181
+      ],
+      "pivote": "origen global",
+      "uso": "Curva S=0..40; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "pared_izquierda_1.glb",
+      "triangulos": 384,
+      "materiales": [
+        "estrato_rojo",
+        "estrato_cobre",
+        "estrato_crema",
+        "arenisca",
+        "arenisca_clara",
+        "arenisca_oscura"
+      ],
+      "bytes": 54004,
+      "min": [
+        -5.4607,
+        -5.1,
+        -37.7948
+      ],
+      "max": [
+        4.8726,
+        7.1,
+        0.1476
+      ],
+      "pivote": "origen global",
+      "uso": "Lado izquierda S=0..40; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "pared_derecha_1.glb",
+      "triangulos": 384,
+      "materiales": [
+        "estrato_rojo",
+        "estrato_cobre",
+        "estrato_crema",
+        "arenisca",
+        "arenisca_clara",
+        "arenisca_oscura"
+      ],
+      "bytes": 54008,
+      "min": [
+        4.1889,
+        -5.1,
+        -38.7478
+      ],
+      "max": [
+        14.5073,
+        7.1,
+        -0.1237
+      ],
+      "pivote": "origen global",
+      "uso": "Lado derecha S=0..40; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "tramo_pista_2.glb",
+      "triangulos": 308,
+      "materiales": [
+        "grieta",
+        "borde",
+        "lecho",
+        "lecho_alt",
+        "arena",
+        "arena_luz"
+      ],
+      "bytes": 44408,
+      "min": [
+        -11.0873,
+        -8.88,
+        -69.3213
+      ],
+      "max": [
+        13.3685,
+        -4.755,
+        -37.7494
+      ],
+      "pivote": "origen global",
+      "uso": "Curva S=40..74; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "pared_izquierda_2.glb",
+      "triangulos": 312,
+      "materiales": [
+        "estrato_rojo",
+        "estrato_cobre",
+        "estrato_crema",
+        "arenisca",
+        "arenisca_clara",
+        "arenisca_oscura"
+      ],
+      "bytes": 44988,
+      "min": [
+        -12.0725,
+        -9.18,
+        -66.1637
+      ],
+      "max": [
+        4.8166,
+        2.3,
+        -37.6384
+      ],
+      "pivote": "origen global",
+      "uso": "Lado izquierda S=40..74; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "pared_derecha_2.glb",
+      "triangulos": 312,
+      "materiales": [
+        "estrato_rojo",
+        "estrato_cobre",
+        "estrato_crema",
+        "arenisca",
+        "arenisca_clara",
+        "arenisca_oscura"
+      ],
+      "bytes": 44988,
+      "min": [
+        -3.1134,
+        -9.18,
+        -69.7766
+      ],
+      "max": [
+        14.4126,
+        2.3,
+        -38.658
+      ],
+      "pivote": "origen global",
+      "uso": "Lado derecha S=40..74; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "tramo_pista_3.glb",
+      "triangulos": 56,
+      "materiales": [
+        "grieta",
+        "borde",
+        "lecho",
+        "lecho_alt"
+      ],
+      "bytes": 10928,
+      "min": [
+        -13.459,
+        -11.52,
+        -90.62
+      ],
+      "max": [
+        -1.3824,
+        -8.835,
+        -66.2329
+      ],
+      "pivote": "origen global",
+      "uso": "Curva S=74..96; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "pared_izquierda_3.glb",
+      "triangulos": 216,
+      "materiales": [
+        "estrato_rojo",
+        "estrato_cobre",
+        "estrato_crema",
+        "arenisca",
+        "arenisca_clara",
+        "arenisca_oscura"
+      ],
+      "bytes": 32932,
+      "min": [
+        -14.5073,
+        -11.82,
+        -91.1684
+      ],
+      "max": [
+        -8.716,
+        -1.78,
+        -65.8696
+      ],
+      "pivote": "origen global",
+      "uso": "Lado izquierda S=74..96; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "pared_derecha_3.glb",
+      "triangulos": 216,
+      "materiales": [
+        "estrato_rojo",
+        "estrato_cobre",
+        "estrato_crema",
+        "arenisca",
+        "arenisca_clara",
+        "arenisca_oscura"
+      ],
+      "bytes": 32928,
+      "min": [
+        -4.8726,
+        -11.82,
+        -86.1281
+      ],
+      "max": [
+        -0.487,
+        -1.78,
+        -69.2083
+      ],
+      "pivote": "origen global",
+      "uso": "Lado derecha S=74..96; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "tramo_pista_4.glb",
+      "triangulos": 392,
+      "materiales": [
+        "grieta",
+        "borde",
+        "lecho",
+        "lecho_alt",
+        "arena",
+        "arena_luz"
+      ],
+      "bytes": 54996,
+      "min": [
+        -8.5455,
+        -15.6,
+        -120.0929
+      ],
+      "max": [
+        11.1554,
+        -11.475,
+        -86.2325
+      ],
+      "pivote": "origen global",
+      "uso": "Curva S=96..130; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "pared_izquierda_4.glb",
+      "triangulos": 312,
+      "materiales": [
+        "estrato_rojo",
+        "estrato_cobre",
+        "estrato_crema",
+        "arenisca",
+        "arenisca_clara",
+        "arenisca_oscura"
+      ],
+      "bytes": 44944,
+      "min": [
+        -9.4409,
+        -15.9,
+        -116.5842
+      ],
+      "max": [
+        2.6467,
+        -4.42,
+        -90.7244
+      ],
+      "pivote": "origen global",
+      "uso": "Lado izquierda S=96..130; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "pared_derecha_4.glb",
+      "triangulos": 312,
+      "materiales": [
+        "estrato_rojo",
+        "estrato_cobre",
+        "estrato_crema",
+        "arenisca",
+        "arenisca_clara",
+        "arenisca_oscura"
+      ],
+      "bytes": 44944,
+      "min": [
+        -1.2118,
+        -15.9,
+        -120.5213
+      ],
+      "max": [
+        12.1943,
+        -4.42,
+        -85.6841
+      ],
+      "pivote": "origen global",
+      "uso": "Lado derecha S=96..130; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "puente_roto_1.glb",
+      "triangulos": 440,
+      "materiales": [
+        "madera_clara",
+        "madera_oscura",
+        "cuerda"
+      ],
+      "bytes": 58416,
+      "min": [
+        4.3195,
+        -5.244,
+        -43.1453
+      ],
+      "max": [
+        13.4996,
+        -3.7045,
+        -37.2975
+      ],
+      "pivote": "origen global",
+      "uso": "Franja segura grieta 1; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "puente_roto_2.glb",
+      "triangulos": 424,
+      "materiales": [
+        "madera_clara",
+        "madera_oscura",
+        "cuerda"
+      ],
+      "bytes": 56404,
+      "min": [
+        -12.4863,
+        -9.324,
+        -72.3767
+      ],
+      "max": [
+        -3.1828,
+        -7.7845,
+        -65.5818
+      ],
+      "pivote": "origen global",
+      "uso": "Franja segura grieta 2; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "puente_roto_3.glb",
+      "triangulos": 600,
+      "materiales": [
+        "madera_clara",
+        "madera_oscura",
+        "cuerda"
+      ],
+      "bytes": 78600,
+      "min": [
+        -8.76,
+        -12.264,
+        -96.1945
+      ],
+      "max": [
+        1.9524,
+        -10.4215,
+        -85.9667
+      ],
+      "pivote": "origen global",
+      "uso": "Franja segura grieta 3; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "rampa_atajo.glb",
+      "triangulos": 80,
+      "materiales": [
+        "madera_clara",
+        "oro"
+      ],
+      "bytes": 12184,
+      "min": [
+        -6.0884,
+        -10.75,
+        -85.2679
+      ],
+      "max": [
+        -3.1384,
+        -10.1074,
+        -81.6104
+      ],
+      "pivote": "origen global",
+      "uso": "S=90..93.5 lateral 2..3.6."
+    },
+    {
+      "archivo": "arco_natural.glb",
+      "triangulos": 320,
+      "materiales": [
+        "arenisca_oscura",
+        "estrato_cobre",
+        "arenisca",
+        "arenisca_clara"
+      ],
+      "bytes": 44192,
+      "min": [
+        -5.3348,
+        -1.49,
+        -13.969
+      ],
+      "max": [
+        6.2135,
+        5.56,
+        -9.9307
+      ],
+      "pivote": "origen global",
+      "uso": "S=12; colocar en (0,0,0)."
+    },
+    {
+      "archivo": "mesa_lejana.glb",
+      "triangulos": 60,
+      "materiales": [
+        "estrato_cobre",
+        "arenisca_clara",
+        "estrato_rojo",
+        "estrato_crema",
+        "arenisca_oscura"
+      ],
+      "bytes": 11952,
+      "min": [
+        -3.85,
+        0.0,
+        -3.25
+      ],
+      "max": [
+        3.85,
+        10.525,
+        3.25
+      ],
+      "pivote": "pie central",
+      "uso": "Decorar X=±20..30."
+    },
+    {
+      "archivo": "cactus.glb",
+      "triangulos": 624,
+      "materiales": [
+        "verde",
+        "verde_claro",
+        "espina"
+      ],
+      "bytes": 81528,
+      "min": [
+        -0.7,
+        0,
+        -0.3875
+      ],
+      "max": [
+        0.7,
+        1.97,
+        0.3875
+      ],
+      "pivote": "pie central",
+      "uso": "Obstáculo y decorado; radio lógico .5."
+    },
+    {
+      "archivo": "roca_caida.glb",
+      "triangulos": 120,
+      "materiales": [
+        "roca",
+        "roca_clara"
+      ],
+      "bytes": 17176,
+      "min": [
+        -0.8222,
+        -0.17,
+        -0.7493
+      ],
+      "max": [
+        0.875,
+        1.21,
+        0.7575
+      ],
+      "pivote": "pie central",
+      "uso": "Obstáculo; radio lógico .9."
+    },
+    {
+      "archivo": "banderin_checkpoint.glb",
+      "triangulos": 116,
+      "materiales": [
+        "madera_oscura",
+        "bandera",
+        "oro",
+        "arenisca"
+      ],
+      "bytes": 18240,
+      "min": [
+        -0.27,
+        0.0,
+        -0.27
+      ],
+      "max": [
+        0.92,
+        3.33,
+        0.27
+      ],
+      "pivote": "pie central",
+      "uso": "Instanciar lateral ±3.9 en S=28,58,88."
+    },
+    {
+      "archivo": "arco_salida.glb",
+      "triangulos": 252,
+      "materiales": [
+        "arenisca_clara",
+        "arenisca",
+        "salida",
+        "negro",
+        "blanco",
+        "oro"
+      ],
+      "bytes": 37040,
+      "min": [
+        -4.445,
+        0.0,
+        -0.42
+      ],
+      "max": [
+        4.42,
+        5.28,
+        0.565
+      ],
+      "pivote": "pie central",
+      "uso": "S=.8, orientar eje X perpendicular a tangente."
+    },
+    {
+      "archivo": "arco_meta.glb",
+      "triangulos": 252,
+      "materiales": [
+        "arenisca_clara",
+        "arenisca",
+        "meta",
+        "negro",
+        "blanco",
+        "oro"
+      ],
+      "bytes": 37036,
+      "min": [
+        -4.445,
+        0.0,
+        -0.42
+      ],
+      "max": [
+        4.42,
+        5.28,
+        0.565
+      ],
+      "pivote": "pie central",
+      "uso": "S=120, orientar eje X perpendicular a tangente."
+    },
+    {
+      "archivo": "esfera_piedra.glb",
+      "triangulos": 880,
+      "materiales": [
+        "esfera",
+        "esfera_oscura",
+        "esfera_clara"
+      ],
+      "bytes": 113776,
+      "min": [
+        -0.985,
+        -1.0,
+        -0.985
+      ],
+      "max": [
+        0.985,
+        1.0,
+        0.985
+      ],
+      "pivote": "centro",
+      "uso": "Centro Y=elevación+1; rotar sobre eje de rodadura."
+    },
+    {
+      "archivo": "aro_jugador.glb",
+      "triangulos": 300,
+      "materiales": [
+        "COLOR_DINAMICO"
+      ],
+      "bytes": 38956,
+      "min": [
+        -1.22,
+        -0.0176,
+        -1.2133
+      ],
+      "max": [
+        1.22,
+        0.0776,
+        1.2133
+      ],
+      "pivote": "centro",
+      "uso": "Teñir con color de jugador."
+    },
+    {
+      "archivo": "suelo_desertico.glb",
+      "triangulos": 628,
+      "materiales": [
+        "arenisca_oscura",
+        "arena"
+      ],
+      "bytes": 81144,
+      "min": [
+        -55.0,
+        -24.25,
+        -155.0
+      ],
+      "max": [
+        55.0,
+        -23.1,
+        25.0
+      ],
+      "pivote": "origen global",
+      "uso": "Decorado sin colisión; colocar en (0,0,0)."
+    }
+  ]
+}

@@ -1,0 +1,404 @@
+{
+  "version": 1,
+  "unidades": "1 unidad = 1 unidad del juego",
+  "ejes": "Y arriba, sistema derecho",
+  "rama_referencia": "claude/expansion-party",
+  "commit_referencia": "ea5472c",
+  "licencia": "Arte original generado para este proyecto; sin recursos externos.",
+  "modelos": [
+    {
+      "archivo": "carrusel_base.glb",
+      "triangulos": 2064,
+      "materiales": [
+        "cereza",
+        "oro_oscuro",
+        "oro",
+        "madera_clara",
+        "crema"
+      ],
+      "bytes": 264468,
+      "min": [
+        -2.2,
+        0,
+        -2.2
+      ],
+      "max": [
+        2.2,
+        0.53,
+        2.2
+      ],
+      "pivote": "Centro a nivel del suelo",
+      "uso": "Escala 1; Y=-0.05. Radio maximo 2.2."
+    },
+    {
+      "archivo": "carrusel_columna.glb",
+      "triangulos": 360,
+      "materiales": [
+        "oro",
+        "crema",
+        "turquesa"
+      ],
+      "bytes": 48160,
+      "min": [
+        -0.42,
+        0.53,
+        -0.42
+      ],
+      "max": [
+        0.42,
+        3.2,
+        0.42
+      ],
+      "pivote": "Mismo origen que base",
+      "uso": "Escala 1; Y=-0.05. Pieza fija."
+    },
+    {
+      "archivo": "carrusel_techo.glb",
+      "triangulos": 2328,
+      "materiales": [
+        "azul_oscuro",
+        "azul",
+        "crema",
+        "cereza",
+        "oro"
+      ],
+      "bytes": 297796,
+      "min": [
+        -2.48,
+        3.03,
+        -2.48
+      ],
+      "max": [
+        2.48,
+        4.58,
+        2.48
+      ],
+      "pivote": "Mismo origen que base",
+      "uso": "Escala 1; Y=-0.05. Radio maximo 2.48, bajo el limite fisico 2.5."
+    },
+    {
+      "archivo": "caballito.glb",
+      "triangulos": 1368,
+      "materiales": [
+        "blanco",
+        "crema",
+        "negro",
+        "oro_oscuro",
+        "cereza",
+        "azul",
+        "oro"
+      ],
+      "bytes": 178636,
+      "min": [
+        -0.5149,
+        -0.422,
+        -0.1934
+      ],
+      "max": [
+        0.67,
+        0.6506,
+        0.1934
+      ],
+      "pivote": "Centro del cuerpo; frente +X",
+      "uso": "Colocar a radio 1.55 y altura 1.2; orientar tangencialmente. Vaiven vertical separado."
+    },
+    {
+      "archivo": "poste_caballito.glb",
+      "triangulos": 32,
+      "materiales": [
+        "oro"
+      ],
+      "bytes": 5172,
+      "min": [
+        -0.045,
+        0.53,
+        -0.045
+      ],
+      "max": [
+        0.045,
+        3.15,
+        0.045
+      ],
+      "pivote": "Pie a nivel del carrusel",
+      "uso": "Colocar XZ a radio 1.55; Y=-0.05."
+    },
+    {
+      "archivo": "bombilla.glb",
+      "triangulos": 120,
+      "materiales": [
+        "BOMBILLAS"
+      ],
+      "bytes": 16196,
+      "min": [
+        -0.13,
+        -0.13,
+        -0.13
+      ],
+      "max": [
+        0.13,
+        0.13,
+        0.13
+      ],
+      "pivote": "Centro de la esfera",
+      "uso": "Reutilizar con DrawModel y tint para luces RGB; radio 0.13."
+    },
+    {
+      "archivo": "taza.glb",
+      "triangulos": 1616,
+      "materiales": [
+        "oro",
+        "crema",
+        "COLOR_DINAMICO"
+      ],
+      "bytes": 206360,
+      "min": [
+        -1.2,
+        0,
+        -1.2
+      ],
+      "max": [
+        1.235,
+        0.732,
+        1.2
+      ],
+      "pivote": "Centro del platillo a nivel del suelo",
+      "uso": "Cambiar solo material COLOR_DINAMICO para ocupacion/trampa; pared baja sin colisiones nuevas."
+    },
+    {
+      "archivo": "valla_tramo.glb",
+      "triangulos": 616,
+      "materiales": [
+        "crema",
+        "oro",
+        "BOMBILLAS",
+        "cereza"
+      ],
+      "bytes": 81252,
+      "min": [
+        -0.97,
+        0,
+        -0.13
+      ],
+      "max": [
+        0.97,
+        1.03,
+        0.13
+      ],
+      "pivote": "Centro del tramo, suelo",
+      "uso": "Ancho 1.94 con tapas; centros cada 1.70 aprox.; colocar tangente al radio 8.65."
+    },
+    {
+      "archivo": "noria_soporte.glb",
+      "triangulos": 352,
+      "materiales": [
+        "oro_oscuro",
+        "metal",
+        "turquesa",
+        "oro"
+      ],
+      "bytes": 48004,
+      "min": [
+        -1.94,
+        0.0,
+        -0.99
+      ],
+      "max": [
+        1.94,
+        6.65,
+        0.99
+      ],
+      "pivote": "Centro de la base, suelo",
+      "uso": "Trasladar a (15,0,-12.5). Centro del eje Y=6.4."
+    },
+    {
+      "archivo": "noria_rueda.glb",
+      "triangulos": 3776,
+      "materiales": [
+        "cereza",
+        "oro",
+        "azul",
+        "crema",
+        "BOMBILLAS"
+      ],
+      "bytes": 480288,
+      "min": [
+        -5.13,
+        -5.13,
+        -0.43
+      ],
+      "max": [
+        5.13,
+        5.13,
+        0.43
+      ],
+      "pivote": "Centro del eje de giro",
+      "uso": "Colocar en (15,6.4,-12.5), girar sobre Z; radio 5."
+    },
+    {
+      "archivo": "noria_cabina.glb",
+      "triangulos": 244,
+      "materiales": [
+        "oro",
+        "metal",
+        "azul_oscuro",
+        "COLOR_DINAMICO",
+        "crema"
+      ],
+      "bytes": 35176,
+      "min": [
+        -0.45,
+        -0.925,
+        -0.4
+      ],
+      "max": [
+        0.45,
+        0.055,
+        0.4
+      ],
+      "pivote": "Punto superior de suspension",
+      "uso": "8 instancias a radio 5. Mantener verticales mientras cambia su posicion."
+    },
+    {
+      "archivo": "montana_rusa_vias.glb",
+      "triangulos": 8732,
+      "materiales": [
+        "cereza",
+        "oro",
+        "metal",
+        "metal_oscuro"
+      ],
+      "bytes": 1104116,
+      "min": [
+        -21.07,
+        0.0,
+        -0.6
+      ],
+      "max": [
+        21.07,
+        9.8471,
+        0.6
+      ],
+      "pivote": "Centro XZ, suelo",
+      "uso": "Trasladar a Z=-17; recorrido X=-21..21, Y=5+3.2*sin(9t)+1.6*sin(23t)."
+    },
+    {
+      "archivo": "montana_rusa_carro.glb",
+      "triangulos": 256,
+      "materiales": [
+        "oro",
+        "cereza",
+        "turquesa",
+        "metal_oscuro",
+        "metal"
+      ],
+      "bytes": 36768,
+      "min": [
+        -0.525,
+        0.0054,
+        -0.415
+      ],
+      "max": [
+        0.54,
+        0.71,
+        0.415
+      ],
+      "pivote": "Centro de ruedas al nivel de los rieles",
+      "uso": "Frente +X. Colocar sobre el recorrido e inclinar alrededor de Z segun pendiente."
+    },
+    {
+      "archivo": "puesto_feria.glb",
+      "triangulos": 526,
+      "materiales": [
+        "madera_oscura",
+        "madera",
+        "cereza",
+        "crema",
+        "madera_clara",
+        "azul_oscuro",
+        "oro",
+        "turquesa"
+      ],
+      "bytes": 73180,
+      "min": [
+        -1.8,
+        0.0,
+        -1.1
+      ],
+      "max": [
+        1.8,
+        2.62,
+        1.1
+      ],
+      "pivote": "Centro de la base, frente +Z",
+      "uso": "Colocar (-15+5.2*k,0,-11), k=0..2."
+    },
+    {
+      "archivo": "grada.glb",
+      "triangulos": 488,
+      "materiales": [
+        "madera_oscura",
+        "madera_clara",
+        "madera",
+        "crema",
+        "oro"
+      ],
+      "bytes": 65916,
+      "min": [
+        -1.3,
+        0.0,
+        -2.8
+      ],
+      "max": [
+        1.3,
+        1.205,
+        2.8
+      ],
+      "pivote": "Centro XZ, suelo",
+      "uso": "Colocar (+/-11.1,0,0.3). Plataforma superior Y=0.7; lado de acceso -X."
+    },
+    {
+      "archivo": "globo.glb",
+      "triangulos": 232,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "crema"
+      ],
+      "bytes": 31204,
+      "min": [
+        -0.32,
+        -1.7006,
+        -0.32
+      ],
+      "max": [
+        0.32,
+        0.42,
+        0.32
+      ],
+      "pivote": "Centro del globo",
+      "uso": "Colores mediante COLOR_DINAMICO. Hilo incluido hacia -Y."
+    },
+    {
+      "archivo": "arena.glb",
+      "triangulos": 2112,
+      "materiales": [
+        "violeta_oscuro",
+        "violeta",
+        "oro",
+        "crema"
+      ],
+      "bytes": 269712,
+      "min": [
+        -9.0,
+        -0.45,
+        -9.0
+      ],
+      "max": [
+        9.0,
+        0.0305,
+        9.0
+      ],
+      "pivote": "Centro de la superficie de juego",
+      "uso": "Y=-0.05. Base decorativa opcional; no sustituye colisiones."
+    }
+  ]
+}

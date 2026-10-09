@@ -1,0 +1,1 @@
+20/20 GLB cargados en raylib; 25 capturas. GLB 2.0 autoincluidos, posiciones finitas e índices uint16 válidos. Arena 18x18, gominolas radio .8 y bola escalable de .3 a 1.4 comprobadas. Visor C++17. Integración jugable y Windows pendientes.

@@ -1,0 +1,1 @@
+15/15 GLB cargados en raylib, 19 capturas generadas. GLB 2.0 autoincluidos; posiciones finitas e índices uint16 válidos. Muro dentro de una celda, losa dentro de 12×12. Visor compilado C++17. Integración jugable y Windows pendientes.

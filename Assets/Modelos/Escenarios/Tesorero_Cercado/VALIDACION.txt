@@ -1,0 +1,1 @@
+16/16 GLB cargados en raylib, 20 capturas generadas. GLB 2.0 autoincluidos; posiciones finitas e índices uint16 válidos. Dimensiones de suelo, torre central y rejas comprobadas con el código de juego. Visor compilado C++17. Integración jugable y Windows pendientes.

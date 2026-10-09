@@ -1,0 +1,446 @@
+{
+  "version": 1,
+  "rama_referencia": "claude/expansion-party",
+  "commit_referencia": "ea5472c",
+  "unidades": "1 unidad GLB = 1 unidad raylib",
+  "ejes": "Y arriba; caída desde Y=100 hacia Y=0",
+  "licencia": "Arte original procedural sin recursos externos",
+  "nota": "Física, recogida, ráfagas, colisiones, frenado y puntaje permanecen en C++.",
+  "modelos": [
+    {
+      "archivo": "planeador.glb",
+      "triangulos": 212,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "azul_oscuro",
+        "metal",
+        "azul",
+        "oro",
+        "madera_oscura"
+      ],
+      "bytes": 32112,
+      "min": [
+        -1.124,
+        0.43,
+        -0.58
+      ],
+      "max": [
+        1.124,
+        1.435,
+        0.52
+      ],
+      "pivote": "centro del jugador",
+      "uso": "Jugador.position; ala Y=+1.3; tintar COLOR_DINAMICO con color de equipo."
+    },
+    {
+      "archivo": "planeador_frenado.glb",
+      "triangulos": 212,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "azul_oscuro",
+        "metal",
+        "rojo",
+        "oro",
+        "madera_oscura"
+      ],
+      "bytes": 32128,
+      "min": [
+        -1.7,
+        0.43,
+        -0.58
+      ],
+      "max": [
+        1.7,
+        1.435,
+        0.52
+      ],
+      "pivote": "centro del jugador",
+      "uso": "Jugador.position mientras frenando>0; ancho 3.4."
+    },
+    {
+      "archivo": "anillo_blanco.glb",
+      "triangulos": 904,
+      "materiales": [
+        "blanco",
+        "azul_oscuro",
+        "turquesa"
+      ],
+      "bytes": 116876,
+      "min": [
+        -0.925,
+        -0.065,
+        -0.925
+      ],
+      "max": [
+        0.925,
+        0.085,
+        0.925
+      ],
+      "pivote": "centro de anillo",
+      "uso": "anillo.posicion; radio .85 y valor 1."
+    },
+    {
+      "archivo": "anillo_dorado.glb",
+      "triangulos": 1112,
+      "materiales": [
+        "oro",
+        "oro_claro",
+        "BOMBILLAS"
+      ],
+      "bytes": 142960,
+      "min": [
+        -1.075,
+        -0.065,
+        -1.075
+      ],
+      "max": [
+        1.075,
+        0.142,
+        1.075
+      ],
+      "pivote": "centro de anillo",
+      "uso": "anillo.posicion; radio 1 y valor 3."
+    },
+    {
+      "archivo": "estrella.glb",
+      "triangulos": 104,
+      "materiales": [
+        "oro",
+        "oro_claro"
+      ],
+      "bytes": 15128,
+      "min": [
+        -0.2758,
+        -0.2346,
+        -0.04
+      ],
+      "max": [
+        0.2758,
+        0.29,
+        0.1085
+      ],
+      "pivote": "centro de estrella",
+      "uso": "Decoración o efecto de recogida, sin colisión."
+    },
+    {
+      "archivo": "nube_blanca.glb",
+      "triangulos": 600,
+      "materiales": [
+        "nube",
+        "nube_sombra",
+        "blanco"
+      ],
+      "bytes": 78444,
+      "min": [
+        -1.72,
+        -0.72,
+        -0.81
+      ],
+      "max": [
+        1.86,
+        0.88,
+        0.82
+      ],
+      "pivote": "centro de nube",
+      "uso": "Alrededor de cilindro de caída a radio 8.5..15.5."
+    },
+    {
+      "archivo": "nube_tormenta.glb",
+      "triangulos": 744,
+      "materiales": [
+        "tormenta_oscura",
+        "tormenta",
+        "tormenta_clara",
+        "rayo",
+        "rojo"
+      ],
+      "bytes": 98288,
+      "min": [
+        -1.956,
+        -1.5085,
+        -1.956
+      ],
+      "max": [
+        1.98,
+        0.92,
+        1.956
+      ],
+      "pivote": "centro de tormenta",
+      "uso": "tormenta.posicion; escalar por radio/1.6 si cambia."
+    },
+    {
+      "archivo": "flecha_viento.glb",
+      "triangulos": 84,
+      "materiales": [
+        "blanco",
+        "turquesa",
+        "azul_oscuro"
+      ],
+      "bytes": 13428,
+      "min": [
+        -0.83,
+        -0.27,
+        -0.27
+      ],
+      "max": [
+        1.14,
+        0.27,
+        0.27
+      ],
+      "pivote": "centro de flecha",
+      "uso": "En viento.altura; eje +X al sentido dirX,dirZ."
+    },
+    {
+      "archivo": "banda_viento.glb",
+      "triangulos": 1040,
+      "materiales": [
+        "cielo_claro",
+        "turquesa"
+      ],
+      "bytes": 133084,
+      "min": [
+        -6.042,
+        -1.6399,
+        -6.042
+      ],
+      "max": [
+        6.042,
+        1.6399,
+        6.042
+      ],
+      "pivote": "centro de banda",
+      "uso": "(0,viento.altura,0); radio 6, altura ±1.6."
+    },
+    {
+      "archivo": "mar_de_nubes.glb",
+      "triangulos": 1692,
+      "materiales": [
+        "nube",
+        "blanco"
+      ],
+      "bytes": 215176,
+      "min": [
+        -40.0,
+        -2.72,
+        -40.0
+      ],
+      "max": [
+        40.0,
+        -2.27,
+        40.0
+      ],
+      "pivote": "centro del plano",
+      "uso": "(0,0,0); superficie Y=-2.52 cerca de la isla."
+    },
+    {
+      "archivo": "isla_principal.glb",
+      "triangulos": 1560,
+      "materiales": [
+        "roca",
+        "roca_clara",
+        "hierba",
+        "hierba_clara"
+      ],
+      "bytes": 200300,
+      "min": [
+        -7.0,
+        -5.5,
+        -7.0
+      ],
+      "max": [
+        7.0,
+        0.21,
+        7.0
+      ],
+      "pivote": "centro en la superficie Y=0",
+      "uso": "(0,0,0); radio 7 y base hasta Y=-5.5."
+    },
+    {
+      "archivo": "diana_aterrizaje.glb",
+      "triangulos": 544,
+      "materiales": [
+        "rojo",
+        "blanco",
+        "oro_claro"
+      ],
+      "bytes": 71340,
+      "min": [
+        -1.8,
+        0.013,
+        -1.8
+      ],
+      "max": [
+        1.8,
+        0.087,
+        1.8
+      ],
+      "pivote": "centro del blanco",
+      "uso": "(0,0,0); radio de bonus 1.8."
+    },
+    {
+      "archivo": "isla_flotante.glb",
+      "triangulos": 424,
+      "materiales": [
+        "roca",
+        "hierba",
+        "hierba_clara",
+        "madera"
+      ],
+      "bytes": 57180,
+      "min": [
+        -2.43,
+        -2.6,
+        -2.4
+      ],
+      "max": [
+        2.43,
+        1.86,
+        2.4
+      ],
+      "pivote": "centro de cubierta",
+      "uso": "A radio 10.5..13.5 y altura 12+13*k."
+    },
+    {
+      "archivo": "globo_azul.glb",
+      "triangulos": 792,
+      "materiales": [
+        "azul",
+        "turquesa",
+        "madera",
+        "madera_oscura",
+        "oro"
+      ],
+      "bytes": 104432,
+      "min": [
+        -1.613,
+        -2.74,
+        -1.5819
+      ],
+      "max": [
+        1.6086,
+        1.82,
+        1.5819
+      ],
+      "pivote": "centro de la envolvente",
+      "uso": "En torno a X=±9.5, Y=20+17*k; mover suavemente."
+    },
+    {
+      "archivo": "globo_rojo.glb",
+      "triangulos": 792,
+      "materiales": [
+        "rojo",
+        "oro",
+        "madera",
+        "madera_oscura"
+      ],
+      "bytes": 103580,
+      "min": [
+        -1.613,
+        -2.74,
+        -1.5819
+      ],
+      "max": [
+        1.6086,
+        1.82,
+        1.5819
+      ],
+      "pivote": "centro de la envolvente",
+      "uso": "Variante de globo para repetir en altura."
+    },
+    {
+      "archivo": "molino_torre.glb",
+      "triangulos": 112,
+      "materiales": [
+        "blanco",
+        "rojo",
+        "madera_oscura",
+        "azul_oscuro"
+      ],
+      "bytes": 17748,
+      "min": [
+        -0.8,
+        0,
+        -0.8
+      ],
+      "max": [
+        0.8,
+        4.76,
+        0.88
+      ],
+      "pivote": "base del molino",
+      "uso": "Isla principal (-5.2,0,-3) o islas lejanas."
+    },
+    {
+      "archivo": "aspas_molino.glb",
+      "triangulos": 312,
+      "materiales": [
+        "oro",
+        "madera",
+        "blanco",
+        "azul"
+      ],
+      "bytes": 43008,
+      "min": [
+        -2.16,
+        -2.16,
+        -0.17
+      ],
+      "max": [
+        2.16,
+        2.16,
+        0.17
+      ],
+      "pivote": "eje de aspas",
+      "uso": "Molino (x,4.15,z+.88); rotar sobre eje Z."
+    },
+    {
+      "archivo": "ave.glb",
+      "triangulos": 234,
+      "materiales": [
+        "azul_oscuro",
+        "azul",
+        "blanco",
+        "oro"
+      ],
+      "bytes": 33284,
+      "min": [
+        -0.9561,
+        -0.12,
+        -0.53
+      ],
+      "max": [
+        0.9561,
+        0.2395,
+        0.3075
+      ],
+      "pivote": "centro del cuerpo",
+      "uso": "A radio ~8, alturas 6+12*k; animar posición/aleteo."
+    },
+    {
+      "archivo": "arcoiris.glb",
+      "triangulos": 4480,
+      "materiales": [
+        "rojo",
+        "arco_naranja",
+        "arco_amarillo",
+        "arco_verde",
+        "arco_azul",
+        "arco_anil",
+        "arco_violeta"
+      ],
+      "bytes": 571244,
+      "min": [
+        -16.2196,
+        -10.0109,
+        -0.2092
+      ],
+      "max": [
+        16.2196,
+        3.0198,
+        0.2092
+      ],
+      "pivote": "centro nominal del arco",
+      "uso": "(0,62,-16), visible cerca de altura 62."
+    }
+  ]
+}

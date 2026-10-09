@@ -1,0 +1,381 @@
+{
+  "version": 1,
+  "rama_referencia": "claude/expansion-party",
+  "commit_referencia": "ea5472c",
+  "unidades": "1 unidad = 1 unidad raylib",
+  "ejes": "Y arriba; vista frontal +Z",
+  "licencia": "Arte original sin recursos externos",
+  "modelos": [
+    {
+      "archivo": "muelle.glb",
+      "triangulos": 10920,
+      "materiales": [
+        "madera_oscura",
+        "madera",
+        "metal_oscuro",
+        "madera_clara",
+        "oro_oscuro",
+        "oro"
+      ],
+      "bytes": 1381300,
+      "min": [
+        -11.0,
+        -1.63,
+        -7.0
+      ],
+      "max": [
+        11.0,
+        0.28,
+        7.0
+      ],
+      "pivote": "centro de superficie; Y=0",
+      "uso": "mundo (0,0,0.75); borde Z=-6.25 a 7.75."
+    },
+    {
+      "archivo": "grua_portico.glb",
+      "triangulos": 1152,
+      "materiales": [
+        "oro",
+        "metal_oscuro",
+        "oro_oscuro",
+        "negro",
+        "metal"
+      ],
+      "bytes": 149672,
+      "min": [
+        -10.715,
+        0.0,
+        -1.58
+      ],
+      "max": [
+        11.19,
+        6.0729,
+        0.5025
+      ],
+      "pivote": "origen del portico en el muelle",
+      "uso": "mundo (0,0,-5), columnas X+-10.3 y altura de traviesa 5.35."
+    },
+    {
+      "archivo": "grua_carro.glb",
+      "triangulos": 452,
+      "materiales": [
+        "metal_oscuro",
+        "oro_oscuro",
+        "metal",
+        "negro",
+        "oro"
+      ],
+      "bytes": 61424,
+      "min": [
+        -1.2,
+        -0.19,
+        -1.02
+      ],
+      "max": [
+        1.2,
+        0.985,
+        1.02
+      ],
+      "pivote": "centro del carro a altura de traviesa",
+      "uso": "mundo (ganchoX,5.7,-5); piso bajo jugador del equipo solo."
+    },
+    {
+      "archivo": "grua_cabina.glb",
+      "triangulos": 744,
+      "materiales": [
+        "oro",
+        "oro_oscuro",
+        "metal_oscuro",
+        "turquesa"
+      ],
+      "bytes": 97424,
+      "min": [
+        -1.29,
+        0.31,
+        -1.025
+      ],
+      "max": [
+        1.29,
+        2.89,
+        1.025
+      ],
+      "pivote": "mismo origen que carro",
+      "uso": "mundo (ganchoX,5.7,-5); arco abierto para visualizar jugador."
+    },
+    {
+      "archivo": "grua_brazo.glb",
+      "triangulos": 120,
+      "materiales": [
+        "oro",
+        "metal_oscuro"
+      ],
+      "bytes": 17076,
+      "min": [
+        -0.265,
+        -0.23,
+        0.0
+      ],
+      "max": [
+        0.265,
+        0.12,
+        2.74
+      ],
+      "pivote": "union con el carro",
+      "uso": "mundo (ganchoX,5.55,-5); punta en Z=-2.5."
+    },
+    {
+      "archivo": "grua_cable_unidad.glb",
+      "triangulos": 96,
+      "materiales": [
+        "metal",
+        "metal_oscuro"
+      ],
+      "bytes": 14048,
+      "min": [
+        -0.07,
+        -1.0,
+        -0.07
+      ],
+      "max": [
+        0.07,
+        0.0,
+        0.07
+      ],
+      "pivote": "inicio superior, cable hacia Y negativo",
+      "uso": "instanciar en (ganchoX,5.55,-2.5), escalar SOLO Y hasta 5.55-yGancho."
+    },
+    {
+      "archivo": "grua_gancho.glb",
+      "triangulos": 360,
+      "materiales": [
+        "metal_oscuro",
+        "oro",
+        "metal"
+      ],
+      "bytes": 48220,
+      "min": [
+        -0.19,
+        -0.8447,
+        -0.2
+      ],
+      "max": [
+        0.4015,
+        -0.005,
+        0.2
+      ],
+      "pivote": "punto superior del gancho",
+      "uso": "mundo (ganchoX,yGancho,-2.5); yGancho=4.2+bob."
+    },
+    {
+      "archivo": "contenedor_cuerpo.glb",
+      "triangulos": 540,
+      "materiales": [
+        "metal_oscuro",
+        "COLOR_DINAMICO",
+        "oro_oscuro"
+      ],
+      "bytes": 70812,
+      "min": [
+        -0.98,
+        -0.09,
+        -1.03
+      ],
+      "max": [
+        0.98,
+        2.31,
+        1.04
+      ],
+      "pivote": "centro XZ, suelo del contenedor Y=0",
+      "uso": "mundo (2.1*(indice-3.5),0,-2.5). Interior abierto."
+    },
+    {
+      "archivo": "contenedor_puerta_izquierda.glb",
+      "triangulos": 268,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "metal_oscuro",
+        "oro",
+        "oro_oscuro"
+      ],
+      "bytes": 37408,
+      "min": [
+        -0.85,
+        -1.0,
+        -0.035
+      ],
+      "max": [
+        0.015,
+        1.0,
+        0.118
+      ],
+      "pivote": "bisagra izquierda en X=-0.85, Y del centro",
+      "uso": "puerta izquierda: (-.85,1.1,1.08) relativo a contenedor_cuerpo."
+    },
+    {
+      "archivo": "contenedor_puerta_derecha.glb",
+      "triangulos": 268,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "metal_oscuro",
+        "oro",
+        "oro_oscuro"
+      ],
+      "bytes": 37400,
+      "min": [
+        -0.015,
+        -1.0,
+        -0.035
+      ],
+      "max": [
+        0.85,
+        1.0,
+        0.118
+      ],
+      "pivote": "bisagra derecha en X=+0.85, Y del centro",
+      "uso": "puerta derecha: (+.85,1.1,1.08). Apertura logica 0..1."
+    },
+    {
+      "archivo": "contenedor_decoracion.glb",
+      "triangulos": 1076,
+      "materiales": [
+        "metal_oscuro",
+        "COLOR_DINAMICO",
+        "oro_oscuro",
+        "oro"
+      ],
+      "bytes": 139296,
+      "min": [
+        -1.7,
+        -0.09,
+        -2.06
+      ],
+      "max": [
+        1.7,
+        2.31,
+        2.208
+      ],
+      "pivote": "centro XZ, suelo de contenedor",
+      "uso": "cajas de fondo: (X+/-12.5,0,-5) y escalon Y+2.2."
+    },
+    {
+      "archivo": "farol.glb",
+      "triangulos": 460,
+      "materiales": [
+        "metal_oscuro",
+        "metal",
+        "oro_oscuro",
+        "BOMBILLAS",
+        "oro"
+      ],
+      "bytes": 62508,
+      "min": [
+        -0.26,
+        0,
+        -0.2473
+      ],
+      "max": [
+        0.3479,
+        3.73,
+        0.2473
+      ],
+      "pivote": "base a nivel de muelle",
+      "uso": "(-10.5|10.5,0,1.0|6.5). Luz en Y=3.3."
+    },
+    {
+      "archivo": "bolardo.glb",
+      "triangulos": 592,
+      "materiales": [
+        "madera_oscura",
+        "metal_oscuro",
+        "oxido",
+        "metal"
+      ],
+      "bytes": 78284,
+      "min": [
+        -0.33,
+        0,
+        -0.29
+      ],
+      "max": [
+        0.33,
+        0.92,
+        0.29
+      ],
+      "pivote": "base a nivel de muelle",
+      "uso": "X=-10,-6,-2,2,6,10; Z=7.8."
+    },
+    {
+      "archivo": "ancla_dorada.glb",
+      "triangulos": 568,
+      "materiales": [
+        "oro"
+      ],
+      "bytes": 72724,
+      "min": [
+        -0.555,
+        -0.0053,
+        -0.07
+      ],
+      "max": [
+        0.555,
+        0.982,
+        0.07
+      ],
+      "pivote": "ancla vertical a nivel del techo",
+      "uso": "refuerzo si contenedor.reforzado; centro del techo Y=2.26."
+    },
+    {
+      "archivo": "barco_fondo.glb",
+      "triangulos": 2040,
+      "materiales": [
+        "cereza_oscura",
+        "madera_oscura",
+        "oro_oscuro",
+        "madera",
+        "madera_clara",
+        "metal_oscuro",
+        "COLOR_DINAMICO",
+        "metal",
+        "cristal",
+        "cereza",
+        "negro",
+        "BOMBILLAS"
+      ],
+      "bytes": 267424,
+      "min": [
+        -17.3156,
+        -0.4,
+        -3.1
+      ],
+      "max": [
+        17.3156,
+        8.53,
+        3.1
+      ],
+      "pivote": "plano de agua bajo cubierta",
+      "uso": "mundo (0,-0.9,-17). 34.5 x 6.2."
+    },
+    {
+      "archivo": "marca_golpe.glb",
+      "triangulos": 400,
+      "materiales": [
+        "negro",
+        "cereza",
+        "oro"
+      ],
+      "bytes": 53332,
+      "min": [
+        -0.564,
+        0,
+        -0.564
+      ],
+      "max": [
+        0.564,
+        0.0919,
+        0.564
+      ],
+      "pivote": "centro de disco sobre el techo",
+      "uso": "solo si contenedor.marcas>0; colocar sobre Y=2.32."
+    }
+  ]
+}

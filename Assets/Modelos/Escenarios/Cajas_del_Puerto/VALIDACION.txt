@@ -1,0 +1,3 @@
+16/16 GLB cargados en raylib 6.1-dev (OpenGL / SDL software); 19 capturas generadas.
+GLB 2.0 autoincluidos; posiciones finitas; índices uint16 dentro de malla; contenedor dentro de su huella prevista.
+Visor compilado C++17. Windows y la integración jugable no verificados.

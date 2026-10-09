@@ -1,0 +1,511 @@
+{
+  "minijuego": "Grúa de Chatarra",
+  "base": "claude/expansion-party ea5472c",
+  "coordenadas": "Y arriba, una unidad GLB = una unidad raylib",
+  "modelos": [
+    {
+      "archivo": "suelo_desguace.glb",
+      "triangulos": 504,
+      "materiales": [
+        "suelo",
+        "pozo",
+        "borde",
+        "metal",
+        "oxido_sombra"
+      ],
+      "bytes": 68096,
+      "min": [
+        -10.5,
+        -0.5,
+        -7.3
+      ],
+      "max": [
+        10.5,
+        0.165,
+        7.7
+      ],
+      "pivote": "origen global",
+      "uso": "Centro de arena: X=0, Z=0; patio exterior 21×15."
+    },
+    {
+      "archivo": "escombros.glb",
+      "triangulos": 168,
+      "materiales": [
+        "metal",
+        "oxido"
+      ],
+      "bytes": 23152,
+      "min": [
+        -1.39,
+        0.02,
+        -0.89
+      ],
+      "max": [
+        1.49,
+        0.25,
+        1.09
+      ],
+      "pivote": "pie central",
+      "uso": "Decoración baja del pozo; dispersar copias sin tapar objetivos."
+    },
+    {
+      "archivo": "muro_fondo.glb",
+      "triangulos": 324,
+      "materiales": [
+        "metal_oscuro",
+        "metal",
+        "oxido_sombra",
+        "franja",
+        "amarillo"
+      ],
+      "bytes": 45280,
+      "min": [
+        -12.0,
+        0.0,
+        -0.4
+      ],
+      "max": [
+        12.0,
+        6.0,
+        0.4975
+      ],
+      "pivote": "centro al pie",
+      "uso": "Situar centro en (0,0,-9.2)."
+    },
+    {
+      "archivo": "engranaje_gigante.glb",
+      "triangulos": 656,
+      "materiales": [
+        "oxido",
+        "oxido_luz",
+        "metal_oscuro",
+        "metal_luz"
+      ],
+      "bytes": 86392,
+      "min": [
+        -2.225,
+        -2.225,
+        -0.35
+      ],
+      "max": [
+        2.225,
+        2.225,
+        0.4663
+      ],
+      "pivote": "centro geométrico",
+      "uso": "Dos instancias en (-7,3.4,-8.2), (7.5,3.4,-8.2). Rotar sobre eje Z para animación."
+    },
+    {
+      "archivo": "prensa_estructura.glb",
+      "triangulos": 164,
+      "materiales": [
+        "metal_oscuro",
+        "metal",
+        "metal_luz",
+        "peligro"
+      ],
+      "bytes": 24312,
+      "min": [
+        -1.2,
+        0.0,
+        -0.9
+      ],
+      "max": [
+        1.2,
+        5.4,
+        0.96
+      ],
+      "pivote": "pie central",
+      "uso": "Centro en (10.6,0,-3.5)."
+    },
+    {
+      "archivo": "prensa_plato.glb",
+      "triangulos": 212,
+      "materiales": [
+        "amarillo",
+        "metal_oscuro",
+        "metal_luz",
+        "franja"
+      ],
+      "bytes": 30276,
+      "min": [
+        -1.05,
+        -0.3,
+        -0.74
+      ],
+      "max": [
+        1.05,
+        0.32,
+        0.74
+      ],
+      "pivote": "centro geométrico",
+      "uso": "Posición (10.6,4-1.5*prensa,-3.5), prensa=0.5+0.5*sin(t*1.4)."
+    },
+    {
+      "archivo": "auto_aplastado_rojo.glb",
+      "triangulos": 392,
+      "materiales": [
+        "rojo",
+        "metal_oscuro",
+        "goma",
+        "metal_luz",
+        "amarillo_luz"
+      ],
+      "bytes": 53884,
+      "min": [
+        -0.9531,
+        0.03,
+        -1.545
+      ],
+      "max": [
+        0.9531,
+        0.62,
+        1.5625
+      ],
+      "pivote": "pie central",
+      "uso": "Apilar con base Y=0.05, separación vertical 0.5."
+    },
+    {
+      "archivo": "auto_aplastado_azul.glb",
+      "triangulos": 392,
+      "materiales": [
+        "azul",
+        "metal_oscuro",
+        "goma",
+        "metal_luz",
+        "amarillo_luz"
+      ],
+      "bytes": 53884,
+      "min": [
+        -0.9531,
+        0.03,
+        -1.545
+      ],
+      "max": [
+        0.9531,
+        0.62,
+        1.5625
+      ],
+      "pivote": "pie central",
+      "uso": "Apilar con base Y=0.55, separación vertical 0.5."
+    },
+    {
+      "archivo": "auto_aplastado_amarillo.glb",
+      "triangulos": 392,
+      "materiales": [
+        "crema",
+        "metal_oscuro",
+        "goma",
+        "metal_luz",
+        "amarillo_luz"
+      ],
+      "bytes": 53892,
+      "min": [
+        -0.9531,
+        0.03,
+        -1.545
+      ],
+      "max": [
+        0.9531,
+        0.62,
+        1.5625
+      ],
+      "pivote": "pie central",
+      "uso": "Apilar con base Y=1.05, separación vertical 0.5."
+    },
+    {
+      "archivo": "cinta_transportadora.glb",
+      "triangulos": 288,
+      "materiales": [
+        "metal_oscuro",
+        "goma",
+        "metal",
+        "amarillo",
+        "metal_luz"
+      ],
+      "bytes": 40748,
+      "min": [
+        -0.6,
+        -0.395,
+        -4.0
+      ],
+      "max": [
+        0.6,
+        0.63,
+        4.0
+      ],
+      "pivote": "centro de su planta",
+      "uso": "Dos instancias X=±9.9, Z=1.6; animar franjas por desplazamiento de material si se desea."
+    },
+    {
+      "archivo": "pila_chatarra.glb",
+      "triangulos": 172,
+      "materiales": [
+        "oxido_sombra",
+        "oxido",
+        "metal",
+        "oxido_luz",
+        "metal_luz",
+        "metal_oscuro"
+      ],
+      "bytes": 27092,
+      "min": [
+        -0.9,
+        0.045,
+        -0.59
+      ],
+      "max": [
+        0.85,
+        1.1125,
+        0.6687
+      ],
+      "pivote": "pie central",
+      "uso": "Nueve instancias X=-10+2.5*i, Z=6.6; escala Y entre .8 y 1.8."
+    },
+    {
+      "archivo": "foco_industrial.glb",
+      "triangulos": 368,
+      "materiales": [
+        "metal_oscuro",
+        "metal",
+        "metal_luz",
+        "BOMBILLAS",
+        "amarillo"
+      ],
+      "bytes": 50884,
+      "min": [
+        -0.36,
+        0,
+        -0.81
+      ],
+      "max": [
+        0.36,
+        5.98,
+        0.2283
+      ],
+      "pivote": "pie central",
+      "uso": "Cuatro instancias X=-8+5.4*i, Z=8."
+    },
+    {
+      "archivo": "tolva_equipo.glb",
+      "triangulos": 140,
+      "materiales": [
+        "metal_oscuro",
+        "metal",
+        "interior",
+        "COLOR_DINAMICO",
+        "amarillo"
+      ],
+      "bytes": 22056,
+      "min": [
+        -1.2,
+        0.0,
+        -2.29
+      ],
+      "max": [
+        1.2,
+        1.75,
+        0.86
+      ],
+      "pivote": "pie central",
+      "uso": "X=(puesto-(N-1)/2)*4.6, Z=-6.3; tintar COLOR_DINAMICO."
+    },
+    {
+      "archivo": "garra_iman.glb",
+      "triangulos": 304,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "metal_oscuro",
+        "metal_luz"
+      ],
+      "bytes": 41140,
+      "min": [
+        -0.5,
+        -0.195,
+        -0.49
+      ],
+      "max": [
+        0.5,
+        0.37,
+        0.49
+      ],
+      "pivote": "centro del imán",
+      "uso": "Centro en (estado.x,altura,estado.z), tinte del jugador."
+    },
+    {
+      "archivo": "garra_pinza.glb",
+      "triangulos": 24,
+      "materiales": [
+        "metal_luz",
+        "metal"
+      ],
+      "bytes": 4972,
+      "min": [
+        -0.055,
+        -0.485,
+        -0.215
+      ],
+      "max": [
+        0.055,
+        0.055,
+        0.055
+      ],
+      "pivote": "unión superior",
+      "uso": "Cuatro instancias en ángulo π/4+kπ/2, radio=apertura*0.7; altura -0.02 respecto al imán."
+    },
+    {
+      "archivo": "carro_grua.glb",
+      "triangulos": 216,
+      "materiales": [
+        "metal_oscuro",
+        "metal_luz",
+        "goma"
+      ],
+      "bytes": 29996,
+      "min": [
+        -0.37,
+        -0.22,
+        -0.38
+      ],
+      "max": [
+        0.37,
+        0.25,
+        0.38
+      ],
+      "pivote": "centro",
+      "uso": "Centro (estado.x,8,estado.z); cable dinámico entre carro e imán."
+    },
+    {
+      "archivo": "marca_garra.glb",
+      "triangulos": 304,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "BOMBILLAS"
+      ],
+      "bytes": 40260,
+      "min": [
+        -0.577,
+        0.018,
+        -0.577
+      ],
+      "max": [
+        0.577,
+        0.072,
+        0.577
+      ],
+      "pivote": "centro",
+      "uso": "Posición de estado (x,0,z), tintar por jugador."
+    },
+    {
+      "archivo": "objeto_tuerca.glb",
+      "triangulos": 200,
+      "materiales": [
+        "metal_luz",
+        "interior",
+        "metal"
+      ],
+      "bytes": 27992,
+      "min": [
+        -0.38,
+        0,
+        -0.3291
+      ],
+      "max": [
+        0.38,
+        0.267,
+        0.3291
+      ],
+      "pivote": "pie central",
+      "uso": "Posición del objeto, valor +1; radio lógico 1.1."
+    },
+    {
+      "archivo": "objeto_engranaje.glb",
+      "triangulos": 216,
+      "materiales": [
+        "metal",
+        "metal_luz",
+        "interior"
+      ],
+      "bytes": 30032,
+      "min": [
+        -0.565,
+        0,
+        -0.5415
+      ],
+      "max": [
+        0.565,
+        0.223,
+        0.5415
+      ],
+      "pivote": "pie central",
+      "uso": "Posición del objeto, valor +3; radio lógico .9."
+    },
+    {
+      "archivo": "objeto_motor.glb",
+      "triangulos": 136,
+      "materiales": [
+        "metal_oscuro",
+        "metal_luz",
+        "cobre",
+        "oxido"
+      ],
+      "bytes": 20756,
+      "min": [
+        -0.475,
+        0.0,
+        -0.35
+      ],
+      "max": [
+        0.475,
+        1.02,
+        0.52
+      ],
+      "pivote": "pie central",
+      "uso": "Posición del objeto, valor +5; radio lógico .7."
+    },
+    {
+      "archivo": "objeto_bateria.glb",
+      "triangulos": 104,
+      "materiales": [
+        "amarillo",
+        "franja",
+        "metal_luz"
+      ],
+      "bytes": 15892,
+      "min": [
+        -0.3,
+        0.0,
+        -0.225
+      ],
+      "max": [
+        0.3,
+        0.83,
+        0.244
+      ],
+      "pivote": "pie central",
+      "uso": "Posición del objeto, valor +8; radio lógico .55."
+    },
+    {
+      "archivo": "objeto_cartucho.glb",
+      "triangulos": 248,
+      "materiales": [
+        "peligro",
+        "amarillo",
+        "franja"
+      ],
+      "bytes": 34008,
+      "min": [
+        -0.321,
+        0,
+        -0.321
+      ],
+      "max": [
+        0.321,
+        0.64,
+        0.3225
+      ],
+      "pivote": "pie central",
+      "uso": "Posición del objeto, valor -2; radio lógico .9."
+    }
+  ]
+}

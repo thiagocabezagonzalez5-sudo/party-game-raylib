@@ -1,0 +1,1 @@
+15/15 GLB cargados en raylib, 19 capturas generadas. GLB 2.0 autoincluidos; posiciones finitas e índices uint16 válidos. Carriles dentro de 5,4 de ancho, meteoritos dentro de su radio. Visor compilado C++17. Integración jugable y Windows pendientes.

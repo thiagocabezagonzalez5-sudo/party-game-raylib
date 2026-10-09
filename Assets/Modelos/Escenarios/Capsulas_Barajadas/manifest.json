@@ -1,0 +1,377 @@
+{
+  "version": 1,
+  "rama_referencia": "claude/expansion-party",
+  "commit_referencia": "ea5472c",
+  "unidades": "1 unidad GLB = 1 unidad raylib",
+  "ejes": "Y arriba, frente sala hacia +Z",
+  "licencia": "Arte original procedural sin recursos externos",
+  "nota": "La elección, el barajado, las subfases y el puntaje siguen en C++.",
+  "modelos": [
+    {
+      "archivo": "sala_laboratorio.glb",
+      "triangulos": 1476,
+      "materiales": [
+        "suelo",
+        "junta",
+        "suelo_claro",
+        "pared",
+        "acero_oscuro",
+        "pared_oscura",
+        "menta"
+      ],
+      "bytes": 192212,
+      "min": [
+        -20.0,
+        -0.4,
+        -20.0
+      ],
+      "max": [
+        20.0,
+        8.0,
+        20.0
+      ],
+      "pivote": "centro del suelo",
+      "uso": "Mundo (0,0,0), pared posterior en Z=-8.4."
+    },
+    {
+      "archivo": "monitor.glb",
+      "triangulos": 300,
+      "materiales": [
+        "carbon",
+        "pantalla",
+        "menta",
+        "azul",
+        "oro"
+      ],
+      "bytes": 42228,
+      "min": [
+        -1.75,
+        -1.06,
+        -0.09
+      ],
+      "max": [
+        1.75,
+        1.06,
+        0.1345
+      ],
+      "pivote": "centro de pantalla",
+      "uso": "X=-7.5,-2.5,2.5,7.5; Y=4.6; Z=-8.1, frente +Z."
+    },
+    {
+      "archivo": "mostrador.glb",
+      "triangulos": 192,
+      "materiales": [
+        "acero_oscuro",
+        "acero",
+        "pared",
+        "menta",
+        "carbon"
+      ],
+      "bytes": 28640,
+      "min": [
+        -11.125,
+        0.0,
+        -0.81
+      ],
+      "max": [
+        11.125,
+        1.165,
+        0.81
+      ],
+      "pivote": "base del mostrador",
+      "uso": "Mundo (0,0,-6.4); largo 22."
+    },
+    {
+      "archivo": "tubo_ensayo.glb",
+      "triangulos": 720,
+      "materiales": [
+        "acero_oscuro",
+        "COLOR_DINAMICO",
+        "cristal",
+        "acero_claro",
+        "BOMBILLAS"
+      ],
+      "bytes": 95236,
+      "min": [
+        -0.36,
+        0,
+        -0.351
+      ],
+      "max": [
+        0.36,
+        1.5429,
+        0.351
+      ],
+      "pivote": "base del tubo",
+      "uso": "Mundo X=-8.4+2.4*k, Y=1, Z=-6.4 para k=0..7."
+    },
+    {
+      "archivo": "baliza.glb",
+      "triangulos": 680,
+      "materiales": [
+        "carbon",
+        "acero",
+        "COLOR_DINAMICO"
+      ],
+      "bytes": 88428,
+      "min": [
+        -0.38,
+        0,
+        -0.38
+      ],
+      "max": [
+        0.38,
+        1.24,
+        0.38
+      ],
+      "pivote": "base de baliza",
+      "uso": "Mundo (X+-10.5,5.6,-7.8); tintar segun subfase."
+    },
+    {
+      "archivo": "mesa_acero.glb",
+      "triangulos": 1604,
+      "materiales": [
+        "acero",
+        "carbon",
+        "acero_claro",
+        "acero_oscuro",
+        "menta"
+      ],
+      "bytes": 206616,
+      "min": [
+        -5.7,
+        0,
+        -1.8
+      ],
+      "max": [
+        5.7,
+        1.05,
+        1.8
+      ],
+      "pivote": "centro de mesa sobre suelo",
+      "uso": "Mundo (0,0,0); encimera Y=1.01."
+    },
+    {
+      "archivo": "pasarela.glb",
+      "triangulos": 336,
+      "materiales": [
+        "acero_oscuro",
+        "acero",
+        "amarillo",
+        "carbon"
+      ],
+      "bytes": 45948,
+      "min": [
+        -5.5,
+        0.0,
+        -1.3
+      ],
+      "max": [
+        5.5,
+        0.36,
+        1.3
+      ],
+      "pivote": "centro de base a suelo",
+      "uso": "Mundo (0,0,4.8); altura superior .3."
+    },
+    {
+      "archivo": "brazo_base.glb",
+      "triangulos": 1264,
+      "materiales": [
+        "carbon",
+        "acero_oscuro",
+        "naranja"
+      ],
+      "bytes": 162072,
+      "min": [
+        -0.83,
+        0,
+        -0.83
+      ],
+      "max": [
+        0.83,
+        4.64,
+        0.83
+      ],
+      "pivote": "base del robot",
+      "uso": "Mundo (0,0,-3.4); hombro Y=4.2."
+    },
+    {
+      "archivo": "brazo_segmento.glb",
+      "triangulos": 192,
+      "materiales": [
+        "naranja",
+        "acero_oscuro",
+        "carbon"
+      ],
+      "bytes": 26996,
+      "min": [
+        -0.25,
+        0,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        1.01,
+        0.25
+      ],
+      "pivote": "union inicial del brazo, apunta hacia +Y",
+      "uso": "Dibujar entre hombro-codo y codo-mano, orientar +Y y escalar longitud en Y."
+    },
+    {
+      "archivo": "brazo_articulacion.glb",
+      "triangulos": 584,
+      "materiales": [
+        "carbon",
+        "naranja",
+        "acero"
+      ],
+      "bytes": 76548,
+      "min": [
+        -0.335,
+        -0.335,
+        -0.2925
+      ],
+      "max": [
+        0.335,
+        0.335,
+        0.2925
+      ],
+      "pivote": "centro de articulacion",
+      "uso": "Colocar en codo calculado por PosicionManoCapsulas."
+    },
+    {
+      "archivo": "brazo_pinza.glb",
+      "triangulos": 100,
+      "materiales": [
+        "naranja",
+        "carbon",
+        "acero",
+        "acero_oscuro"
+      ],
+      "bytes": 16252,
+      "min": [
+        -0.27,
+        -0.475,
+        -0.165
+      ],
+      "max": [
+        0.27,
+        0.23,
+        0.165
+      ],
+      "pivote": "centro de mano",
+      "uso": "Colocar en PosicionManoCapsulas."
+    },
+    {
+      "archivo": "capsula_cuerpo.glb",
+      "triangulos": 1264,
+      "materiales": [
+        "carbon",
+        "acero",
+        "acero_oscuro",
+        "acero_claro"
+      ],
+      "bytes": 163040,
+      "min": [
+        -0.823,
+        0,
+        -0.823
+      ],
+      "max": [
+        0.823,
+        1.5576,
+        0.823
+      ],
+      "pivote": "base de capsula",
+      "uso": "PosicionCapsulaCapsulas; altura 1.5, radio .8."
+    },
+    {
+      "archivo": "capsula_banda.glb",
+      "triangulos": 648,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "BOMBILLAS"
+      ],
+      "bytes": 83584,
+      "min": [
+        -0.8616,
+        0.45,
+        -0.8634
+      ],
+      "max": [
+        0.864,
+        0.73,
+        0.8634
+      ],
+      "pivote": "base de capsula",
+      "uso": "Misma posicion, tinte individual solo en COLOR_DINAMICO."
+    },
+    {
+      "archivo": "capsula_tapa.glb",
+      "triangulos": 432,
+      "materiales": [
+        "carbon",
+        "acero",
+        "acero_claro",
+        "COLOR_DINAMICO"
+      ],
+      "bytes": 58060,
+      "min": [
+        -0.82,
+        0,
+        -0.82
+      ],
+      "max": [
+        0.82,
+        0.59,
+        0.82
+      ],
+      "pivote": "base de tapa",
+      "uso": "(p.x,p.y+1.5+tapaAbierta*1.3,p.z), misma elevacion revelada."
+    },
+    {
+      "archivo": "nucleo.glb",
+      "triangulos": 1208,
+      "materiales": [
+        "menta",
+        "BOMBILLAS",
+        "menta_clara"
+      ],
+      "bytes": 155000,
+      "min": [
+        -0.428,
+        -0.428,
+        -0.428
+      ],
+      "max": [
+        0.428,
+        0.428,
+        0.428
+      ],
+      "pivote": "centro del nucleo",
+      "uso": "Posicion del nucleo del minijuego; escala pulsante."
+    },
+    {
+      "archivo": "marcador.glb",
+      "triangulos": 348,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "carbon"
+      ],
+      "bytes": 45828,
+      "min": [
+        -0.276,
+        0,
+        -0.2718
+      ],
+      "max": [
+        0.276,
+        0.92,
+        0.2718
+      ],
+      "pivote": "suelo del marcador",
+      "uso": "En Z=1.5 sobre mesa; tinte por jugador."
+    }
+  ]
+}

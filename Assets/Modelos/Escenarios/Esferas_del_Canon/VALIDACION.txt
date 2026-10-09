@@ -1,0 +1,1 @@
+26/26 GLB cargados en raylib. 31 capturas. GLB 2.0 autoincluidos, posiciones finitas e índices uint16 válidos. Curva 142.23, meta S=120, ancho de pista 8.4, tres grietas y pendiente -0.12 comprobados. Visor C++17. Integración jugable y Windows pendientes.

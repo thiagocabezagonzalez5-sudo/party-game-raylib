@@ -1,0 +1,1 @@
+21/21 GLB cargados en raylib; 26 capturas. GLB 2.0 autoincluidos, posiciones finitas e índices uint16 válidos. Radio de tambor 1.7, altura 3 y separación de máquina 5.8 verificadas. Visor C++17. Integración jugable y Windows pendientes.

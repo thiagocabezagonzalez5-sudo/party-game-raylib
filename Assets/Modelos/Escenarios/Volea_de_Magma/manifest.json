@@ -1,0 +1,400 @@
+{
+  "version": 1,
+  "rama_referencia": "claude/expansion-party",
+  "commit_referencia": "ea5472c",
+  "unidades": "1 unidad GLB = 1 unidad raylib",
+  "ejes": "Y arriba; red en X=0",
+  "licencia": "Arte original procedural sin recursos externos",
+  "nota": "Pelota, reglas de toques, puntos, charcos y colisiones siguen en C++.",
+  "modelos": [
+    {
+      "archivo": "lago_lava.glb",
+      "triangulos": 6952,
+      "materiales": [
+        "lava_roja",
+        "lava",
+        "lava_clara"
+      ],
+      "bytes": 878772,
+      "min": [
+        -60.0,
+        -1.9,
+        -68.0937
+      ],
+      "max": [
+        60.0,
+        -1.425,
+        25.0
+      ],
+      "pivote": "centro en Y de la planicie",
+      "uso": "Mundo (0,0,0); extiende X±60, Z=-65..25, superficie Y=-1.5."
+    },
+    {
+      "archivo": "cancha_obsidiana.glb",
+      "triangulos": 1380,
+      "materiales": [
+        "obsidiana_oscura",
+        "obsidiana",
+        "obsidiana_clara",
+        "grieta",
+        "lava_clara",
+        "lava_amarilla",
+        "naranja",
+        "celeste"
+      ],
+      "bytes": 180940,
+      "min": [
+        -10.0,
+        -1.0,
+        -6.0
+      ],
+      "max": [
+        10.0,
+        0.071,
+        6.0
+      ],
+      "pivote": "centro del campo",
+      "uso": "Mundo (0,0,0); plataforma 20x12 y zona válida 18x10."
+    },
+    {
+      "archivo": "borde_cancha.glb",
+      "triangulos": 312,
+      "materiales": [
+        "basalto",
+        "lava_clara",
+        "lava_amarilla"
+      ],
+      "bytes": 42128,
+      "min": [
+        -10.0631,
+        0.01,
+        -6.0757
+      ],
+      "max": [
+        10.08,
+        0.52,
+        6.0757
+      ],
+      "pivote": "centro del campo",
+      "uso": "Mundo (0,0,0); borde exterior a X±9.9, Z±5.9."
+    },
+    {
+      "archivo": "poste_red.glb",
+      "triangulos": 556,
+      "materiales": [
+        "hierro",
+        "basalto",
+        "cadena",
+        "lava_clara",
+        "lava_amarilla"
+      ],
+      "bytes": 74620,
+      "min": [
+        -0.3,
+        -0.08,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        3.22,
+        0.3
+      ],
+      "pivote": "pie al suelo",
+      "uso": "Instanciar en (0,0,-5.4) y (0,0,5.4)."
+    },
+    {
+      "archivo": "red_cadenas.glb",
+      "triangulos": 3104,
+      "materiales": [
+        "cadena",
+        "cadena_clara",
+        "hierro_claro",
+        "lava_amarilla"
+      ],
+      "bytes": 394840,
+      "min": [
+        -0.06,
+        0.762,
+        -5.594
+      ],
+      "max": [
+        0.06,
+        2.594,
+        5.594
+      ],
+      "pivote": "centro del campo",
+      "uso": "Mundo (0,0,0); plano X=0, Z±5.4, altura principal 2.4."
+    },
+    {
+      "archivo": "volcan_menor.glb",
+      "triangulos": 1188,
+      "materiales": [
+        "roca",
+        "obsidiana_oscura",
+        "lava_clara",
+        "lava_amarilla",
+        "lava",
+        "obsidiana"
+      ],
+      "bytes": 155236,
+      "min": [
+        -16.0,
+        0,
+        -15.7569
+      ],
+      "max": [
+        16.0,
+        20.075,
+        15.7569
+      ],
+      "pivote": "pie del volcán",
+      "uso": "Mundo (-28,-1.5,-38); altura 20, radio de base 16."
+    },
+    {
+      "archivo": "volcan_mayor.glb",
+      "triangulos": 1188,
+      "materiales": [
+        "roca",
+        "obsidiana_oscura",
+        "lava_clara",
+        "lava_amarilla",
+        "lava",
+        "obsidiana"
+      ],
+      "bytes": 155248,
+      "min": [
+        -20.0,
+        0,
+        -19.6962
+      ],
+      "max": [
+        20.0,
+        26.075,
+        19.6962
+      ],
+      "pivote": "pie del volcán",
+      "uso": "Mundo (26,-1.5,-44); altura 26, radio de base 20."
+    },
+    {
+      "archivo": "columna_basalto.glb",
+      "triangulos": 168,
+      "materiales": [
+        "basalto",
+        "basalto_claro",
+        "obsidiana_oscura"
+      ],
+      "bytes": 24012,
+      "min": [
+        -1.21,
+        0,
+        -1.0479
+      ],
+      "max": [
+        1.21,
+        4.16,
+        1.0479
+      ],
+      "pivote": "pie de columna",
+      "uso": "Repetir sobre Y=-1.5, escalar solo Y=altura/4 (altura 2.5..7)."
+    },
+    {
+      "archivo": "columna_con_llama.glb",
+      "triangulos": 320,
+      "materiales": [
+        "basalto",
+        "basalto_claro",
+        "obsidiana_oscura",
+        "lava_clara",
+        "lava_amarilla"
+      ],
+      "bytes": 44940,
+      "min": [
+        -1.21,
+        0,
+        -1.0479
+      ],
+      "max": [
+        1.21,
+        4.75,
+        1.0479
+      ],
+      "pivote": "pie de columna",
+      "uso": "Repetir en X=±12.2, Z=±3.5; escalar solo Y=altura/4."
+    },
+    {
+      "archivo": "roca_magma.glb",
+      "triangulos": 916,
+      "materiales": [
+        "roca",
+        "lava_roja",
+        "grieta",
+        "roca_clara"
+      ],
+      "bytes": 119276,
+      "min": [
+        -0.45,
+        -0.44,
+        -0.4387
+      ],
+      "max": [
+        0.45,
+        0.44,
+        0.4387
+      ],
+      "pivote": "centro de pelota",
+      "uso": "pelota.posicion; radio visual .45, temp<.85."
+    },
+    {
+      "archivo": "roca_sobrecalentada.glb",
+      "triangulos": 916,
+      "materiales": [
+        "lava",
+        "lava_amarilla",
+        "lava_clara",
+        "roca"
+      ],
+      "bytes": 119268,
+      "min": [
+        -0.45,
+        -0.44,
+        -0.4387
+      ],
+      "max": [
+        0.45,
+        0.44,
+        0.4387
+      ],
+      "pivote": "centro de pelota",
+      "uso": "pelota.posicion; temp≥.85."
+    },
+    {
+      "archivo": "charco_lava.glb",
+      "triangulos": 622,
+      "materiales": [
+        "lava_roja",
+        "lava",
+        "lava_clara",
+        "lava_amarilla"
+      ],
+      "bytes": 82116,
+      "min": [
+        -1.8,
+        0.02,
+        -1.7869
+      ],
+      "max": [
+        1.8,
+        0.137,
+        1.7869
+      ],
+      "pivote": "centro en suelo",
+      "uso": "(charco.x,0,charco.z); radio 1.8; dibujar solo si activo."
+    },
+    {
+      "archivo": "sombra_pelota.glb",
+      "triangulos": 216,
+      "materiales": [
+        "obsidiana_oscura",
+        "grieta"
+      ],
+      "bytes": 29232,
+      "min": [
+        -0.515,
+        0.015,
+        -0.5072
+      ],
+      "max": [
+        0.515,
+        0.045,
+        0.5072
+      ],
+      "pivote": "centro sobre suelo",
+      "uso": "(pelota.x,0,pelota.z); escalar con altura si interesa."
+    },
+    {
+      "archivo": "indicador_caida.glb",
+      "triangulos": 592,
+      "materiales": [
+        "lava_amarilla",
+        "lava",
+        "BOMBILLAS"
+      ],
+      "bytes": 77448,
+      "min": [
+        -0.66,
+        0.037,
+        -0.66
+      ],
+      "max": [
+        0.66,
+        0.13,
+        0.66
+      ],
+      "pivote": "centro sobre suelo",
+      "uso": "(prediccion.x,0,prediccion.z) cuando pelota en juego."
+    },
+    {
+      "archivo": "burbuja_lava.glb",
+      "triangulos": 296,
+      "materiales": [
+        "lava_clara",
+        "lava_amarilla",
+        "BOMBILLAS"
+      ],
+      "bytes": 40060,
+      "min": [
+        -0.48,
+        -0.43,
+        -0.48
+      ],
+      "max": [
+        0.48,
+        0.43,
+        0.48
+      ],
+      "pivote": "centro de burbuja",
+      "uso": "Fuera de la cancha, Y≈-1.45; animar seno."
+    },
+    {
+      "archivo": "ceniza.glb",
+      "triangulos": 12,
+      "materiales": [
+        "ceniza"
+      ],
+      "bytes": 2620,
+      "min": [
+        -0.045,
+        -0.045,
+        -0.045
+      ],
+      "max": [
+        0.045,
+        0.045,
+        0.045
+      ],
+      "pivote": "centro de partícula",
+      "uso": "Instanciar con posiciones animadas, sin colisión."
+    },
+    {
+      "archivo": "estela_ascua.glb",
+      "triangulos": 128,
+      "materiales": [
+        "lava_clara",
+        "lava_amarilla"
+      ],
+      "bytes": 18136,
+      "min": [
+        -0.1712,
+        -0.18,
+        -0.1628
+      ],
+      "max": [
+        0.1712,
+        0.18,
+        0.1628
+      ],
+      "pivote": "centro de estela",
+      "uso": "Repetir sobre trayectoria de la roca, escalando tamaño."
+    }
+  ]
+}

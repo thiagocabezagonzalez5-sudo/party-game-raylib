@@ -1,0 +1,333 @@
+{
+  "version": 1,
+  "rama_referencia": "claude/expansion-party",
+  "commit_referencia": "ea5472c",
+  "unidades": "1 unidad GLB = 1 unidad raylib",
+  "ejes": "Y arriba, cámara hacia Z negativo",
+  "licencia": "Arte original procedural sin recursos externos",
+  "nota": "La selección, veneno, turno, vuelos y hundimiento siguen en C++.",
+  "modelos": [
+    {
+      "archivo": "agua_pantano.glb",
+      "triangulos": 18840,
+      "materiales": [
+        "agua",
+        "agua_clara",
+        "espuma",
+        "lodo"
+      ],
+      "bytes": 2377656,
+      "min": [
+        -45.0,
+        -0.42,
+        -39.0
+      ],
+      "max": [
+        45.0,
+        -0.005,
+        31.0
+      ],
+      "pivote": "centro de pantano",
+      "uso": "Mundo (0,0,0); superficie Y=-.1 y centro Z=-4."
+    },
+    {
+      "archivo": "arbol_podrido.glb",
+      "triangulos": 548,
+      "materiales": [
+        "lodo",
+        "corteza",
+        "corteza_clara",
+        "madera_oscura",
+        "hoja_oscura",
+        "hoja"
+      ],
+      "bytes": 74684,
+      "min": [
+        -2.7689,
+        -0.15,
+        -0.856
+      ],
+      "max": [
+        4.8557,
+        11.4872,
+        1.1926
+      ],
+      "pivote": "pie del arbol",
+      "uso": "Mundo (-4.8,0,-1); rama termina sobre enredadera central."
+    },
+    {
+      "archivo": "enredadera_central.glb",
+      "triangulos": 1328,
+      "materiales": [
+        "hoja_oscura",
+        "hoja",
+        "hoja_clara"
+      ],
+      "bytes": 170204,
+      "min": [
+        -0.3804,
+        1.2,
+        -0.152
+      ],
+      "max": [
+        0.3804,
+        11.3,
+        0.152
+      ],
+      "pivote": "centro de racimo en suelo",
+      "uso": "Mundo (0,0,0); ramas laterales coinciden con frutos y=1.5+.42*i."
+    },
+    {
+      "archivo": "fruto_normal.glb",
+      "triangulos": 402,
+      "materiales": [
+        "fruto",
+        "corteza",
+        "hoja",
+        "fruto_claro"
+      ],
+      "bytes": 54388,
+      "min": [
+        -0.2,
+        -0.2,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.26,
+        0.2
+      ],
+      "pivote": "centro de baya",
+      "uso": "PosicionFrutaRacimo(i,t); radio .2."
+    },
+    {
+      "archivo": "fruto_toxico.glb",
+      "triangulos": 594,
+      "materiales": [
+        "veneno",
+        "corteza",
+        "hoja",
+        "veneno_claro"
+      ],
+      "bytes": 78560,
+      "min": [
+        -0.219,
+        -0.2257,
+        -0.2
+      ],
+      "max": [
+        0.219,
+        0.26,
+        0.2
+      ],
+      "pivote": "centro de baya",
+      "uso": "Indices 5,11,17; centro de fruto segun estado."
+    },
+    {
+      "archivo": "fruto_dorado.glb",
+      "triangulos": 738,
+      "materiales": [
+        "oro",
+        "corteza",
+        "hoja",
+        "oro_claro"
+      ],
+      "bytes": 96756,
+      "min": [
+        -0.24,
+        -0.2364,
+        -0.2
+      ],
+      "max": [
+        0.24,
+        0.26,
+        0.2
+      ],
+      "pivote": "centro de baya",
+      "uso": "Indice de premio aleatorio, centro segun estado."
+    },
+    {
+      "archivo": "balsa.glb",
+      "triangulos": 1000,
+      "materiales": [
+        "madera",
+        "madera_clara",
+        "oro_oscuro",
+        "madera_oscura",
+        "hoja_oscura"
+      ],
+      "bytes": 130524,
+      "min": [
+        -1.625,
+        -0.25,
+        -1.05
+      ],
+      "max": [
+        1.625,
+        0.212,
+        1.1
+      ],
+      "pivote": "centro del listonado Y=0",
+      "uso": "Mundo (posicionBalsaX,0.08+hundimiento+bamboleo,3.5); ancho 3.2."
+    },
+    {
+      "archivo": "tronco_flotante.glb",
+      "triangulos": 726,
+      "materiales": [
+        "corteza",
+        "madera_oscura",
+        "hoja",
+        "hoja_oscura"
+      ],
+      "bytes": 95296,
+      "min": [
+        -0.339,
+        -0.339,
+        0.0
+      ],
+      "max": [
+        0.339,
+        0.355,
+        1.0
+      ],
+      "pivote": "inicio de tronco sobre +Z",
+      "uso": "Repetir entre extremos de DibujarTroncoFlotanteRacimo orientando +Z y escalando largo."
+    },
+    {
+      "archivo": "cabana_pilotes.glb",
+      "triangulos": 556,
+      "materiales": [
+        "madera_oscura",
+        "piedra",
+        "madera",
+        "madera_clara",
+        "oro_claro",
+        "BOMBILLAS",
+        "hoja_oscura",
+        "hoja"
+      ],
+      "bytes": 77100,
+      "min": [
+        -1.6416,
+        0.44,
+        -1.3
+      ],
+      "max": [
+        1.6416,
+        4.8377,
+        1.3
+      ],
+      "pivote": "base al nivel del agua",
+      "uso": "Mundo (-10.5,0,-8) y (9.5,0,-9)."
+    },
+    {
+      "archivo": "arbol_fondo.glb",
+      "triangulos": 486,
+      "materiales": [
+        "corteza",
+        "hoja_oscura",
+        "hoja"
+      ],
+      "bytes": 64160,
+      "min": [
+        -2.1413,
+        0,
+        -1.9045
+      ],
+      "max": [
+        2.0,
+        10.6,
+        1.7817
+      ],
+      "pivote": "base al suelo",
+      "uso": "Mundo X=-16+5.5*i, Z=-15 para i=0..6."
+    },
+    {
+      "archivo": "luciernaga.glb",
+      "triangulos": 240,
+      "materiales": [
+        "luz",
+        "BOMBILLAS",
+        "madera_oscura"
+      ],
+      "bytes": 33120,
+      "min": [
+        -0.156,
+        -0.1521,
+        -0.0678
+      ],
+      "max": [
+        0.156,
+        0.1521,
+        0.0678
+      ],
+      "pivote": "centro de insecto",
+      "uso": "Instanciar 16 según posiciones animadas; brillo por tamaño o material."
+    },
+    {
+      "archivo": "nenufar.glb",
+      "triangulos": 392,
+      "materiales": [
+        "hoja",
+        "hoja_clara",
+        "oro"
+      ],
+      "bytes": 52284,
+      "min": [
+        -0.48,
+        0,
+        -0.4727
+      ],
+      "max": [
+        0.48,
+        0.23,
+        0.4727
+      ],
+      "pivote": "base al agua",
+      "uso": "Decoración libre en Y=-.08, fuera de las balsas."
+    },
+    {
+      "archivo": "roca_pantano.glb",
+      "triangulos": 248,
+      "materiales": [
+        "piedra",
+        "piedra_clara",
+        "hoja_oscura"
+      ],
+      "bytes": 34196,
+      "min": [
+        -0.6848,
+        -0.23,
+        -0.4975
+      ],
+      "max": [
+        0.6848,
+        0.51,
+        0.4975
+      ],
+      "pivote": "base al agua",
+      "uso": "Decoración libre, fuera del espacio jugable."
+    },
+    {
+      "archivo": "aro_turno.glb",
+      "triangulos": 704,
+      "materiales": [
+        "oro",
+        "BOMBILLAS"
+      ],
+      "bytes": 90780,
+      "min": [
+        -2.37,
+        -0.05,
+        -2.37
+      ],
+      "max": [
+        2.37,
+        0.05,
+        2.37
+      ],
+      "pivote": "centro en plano agua",
+      "uso": "Mundo (posicionBalsaX,.02,3.5) cuando activa."
+    }
+  ]
+}

@@ -1,0 +1,364 @@
+{
+  "version": 1,
+  "rama_referencia": "claude/expansion-party",
+  "commit_referencia": "ea5472c",
+  "unidades": "1 unidad GLB = 1 unidad raylib",
+  "ejes": "Y arriba, riel orientado en Z",
+  "licencia": "Arte original procedural sin recursos externos",
+  "nota": "Las mallas no alteran los bloques logicos, golpes, puntuacion ni fisica.",
+  "modelos": [
+    {
+      "archivo": "suelo_mina.glb",
+      "triangulos": 1740,
+      "materiales": [
+        "suelo",
+        "roca_clara",
+        "roca",
+        "fisura",
+        "rojo",
+        "hierro",
+        "azul"
+      ],
+      "bytes": 225628,
+      "min": [
+        -12.0,
+        -1.02,
+        -8.0
+      ],
+      "max": [
+        12.0,
+        0.0555,
+        8.0
+      ],
+      "pivote": "centro de arena, suelo Y=0",
+      "uso": "Mundo (0,0,0); 24x16; limite logico jugadores X+-10.6 Z+-7.2."
+    },
+    {
+      "archivo": "paredes_tunel.glb",
+      "triangulos": 732,
+      "materiales": [
+        "roca",
+        "roca_oscura",
+        "roca_clara",
+        "hierro_oscuro"
+      ],
+      "bytes": 95880,
+      "min": [
+        -13.2,
+        0.0,
+        -9.2
+      ],
+      "max": [
+        13.2,
+        5.6,
+        8.8
+      ],
+      "pivote": "centro del tunel",
+      "uso": "Mundo (0,0,0); fondo Z=-8.6, laterales X+-12.6."
+    },
+    {
+      "archivo": "veta_pared.glb",
+      "triangulos": 188,
+      "materiales": [
+        "roca_clara",
+        "azul",
+        "violeta",
+        "oro",
+        "azul_claro",
+        "BOMBILLAS"
+      ],
+      "bytes": 29156,
+      "min": [
+        -0.435,
+        -0.46,
+        -0.15
+      ],
+      "max": [
+        0.43,
+        0.36,
+        0.2427
+      ],
+      "pivote": "centro de grupo de minerales",
+      "uso": "Repetir en fondo y laterales, adaptar rotacion en Y. Solo visual."
+    },
+    {
+      "archivo": "portico_madera.glb",
+      "triangulos": 928,
+      "materiales": [
+        "madera",
+        "madera_clara",
+        "hierro_oscuro",
+        "madera_oscura",
+        "hierro",
+        "oro"
+      ],
+      "bytes": 122292,
+      "min": [
+        -10.0592,
+        0.0,
+        -8.13
+      ],
+      "max": [
+        10.0592,
+        5.05,
+        -7.427
+      ],
+      "pivote": "centro de mina",
+      "uso": "Mundo (0,0,0), postes X+-9,+-3 y traviesa Y=4.8."
+    },
+    {
+      "archivo": "poste_lateral.glb",
+      "triangulos": 120,
+      "materiales": [
+        "madera",
+        "madera_oscura",
+        "hierro_oscuro",
+        "hierro",
+        "roca_oscura"
+      ],
+      "bytes": 19560,
+      "min": [
+        -0.33,
+        0.0,
+        -0.7
+      ],
+      "max": [
+        0.33,
+        4.25,
+        0.7
+      ],
+      "pivote": "pie de poste",
+      "uso": "Mundo (X+-11.7,0,Z=-5/0/5)."
+    },
+    {
+      "archivo": "lampara_colgante.glb",
+      "triangulos": 552,
+      "materiales": [
+        "hierro_oscuro",
+        "BOMBILLAS",
+        "hierro",
+        "madera_oscura",
+        "oro"
+      ],
+      "bytes": 74176,
+      "min": [
+        -0.32,
+        -0.27,
+        -0.32
+      ],
+      "max": [
+        0.32,
+        0.56,
+        0.32
+      ],
+      "pivote": "centro de luz",
+      "uso": "Mundo (X+-11.0,3.7,Z=-5/0/5). Sin iluminacion real."
+    },
+    {
+      "archivo": "riel_central.glb",
+      "triangulos": 624,
+      "materiales": [
+        "roca_oscura",
+        "madera_oscura",
+        "hierro_oscuro",
+        "hierro"
+      ],
+      "bytes": 82288,
+      "min": [
+        -1.19,
+        -0.005,
+        -8.0
+      ],
+      "max": [
+        1.19,
+        0.23,
+        8.0
+      ],
+      "pivote": "centro de riel a suelo",
+      "uso": "Mundo (0,0,0), direccion Z, longitud 16."
+    },
+    {
+      "archivo": "vagoneta.glb",
+      "triangulos": 1344,
+      "materiales": [
+        "hierro_oscuro",
+        "madera_oscura",
+        "madera",
+        "hierro",
+        "negro",
+        "azul",
+        "oro",
+        "violeta",
+        "azul_claro",
+        "BOMBILLAS"
+      ],
+      "bytes": 178280,
+      "min": [
+        -0.9167,
+        0.02,
+        -1.0917
+      ],
+      "max": [
+        0.9167,
+        1.3,
+        1.0917
+      ],
+      "pivote": "centro a suelo de vagoneta",
+      "uso": "Mundo (0,0,vagonetaZ); visible solo si vagonetaActiva."
+    },
+    {
+      "archivo": "geoda_pequena.glb",
+      "triangulos": 216,
+      "materiales": [
+        "violeta",
+        "hierro_oscuro",
+        "azul",
+        "azul_claro",
+        "violeta_claro"
+      ],
+      "bytes": 31800,
+      "min": [
+        -0.624,
+        -0.5785,
+        -0.624
+      ],
+      "max": [
+        0.624,
+        0.585,
+        0.6329
+      ],
+      "pivote": "centro de bloque logico",
+      "uso": "8 posiciones X+-3.8/+-7.6 y Z+-3.6/+3.6, centro Y=2.85."
+    },
+    {
+      "archivo": "geoda_grande.glb",
+      "triangulos": 216,
+      "materiales": [
+        "violeta",
+        "hierro_oscuro",
+        "oro",
+        "oro_claro",
+        "violeta_claro"
+      ],
+      "bytes": 31824,
+      "min": [
+        -0.864,
+        -0.801,
+        -0.864
+      ],
+      "max": [
+        0.864,
+        0.81,
+        0.8748
+      ],
+      "pivote": "centro de bloque logico",
+      "uso": "2 posiciones X+-6, Z=0, centro Y=3.10."
+    },
+    {
+      "archivo": "geoda_agotada.glb",
+      "triangulos": 120,
+      "materiales": [
+        "roca_oscura",
+        "hierro_oscuro",
+        "roca",
+        "fisura"
+      ],
+      "bytes": 18868,
+      "min": [
+        -0.624,
+        -0.624,
+        -0.624
+      ],
+      "max": [
+        0.624,
+        0.5785,
+        0.6556
+      ],
+      "pivote": "centro de bloque logico",
+      "uso": "Para pequena descargada; escalar 0.9/0.65 para grande descargada."
+    },
+    {
+      "archivo": "gema_azul.glb",
+      "triangulos": 96,
+      "materiales": [
+        "azul",
+        "azul_claro"
+      ],
+      "bytes": 14036,
+      "min": [
+        -0.2,
+        -0.2,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "pivote": "centro del coleccionable",
+      "uso": "Seguir GemaVeta (x,y,z), valor 1."
+    },
+    {
+      "archivo": "gema_dorada.glb",
+      "triangulos": 96,
+      "materiales": [
+        "oro",
+        "oro_claro"
+      ],
+      "bytes": 14048,
+      "min": [
+        -0.28,
+        -0.28,
+        -0.28
+      ],
+      "max": [
+        0.28,
+        0.28,
+        0.28
+      ],
+      "pivote": "centro del coleccionable",
+      "uso": "Seguir GemaVeta (x,y,z), valor 3."
+    },
+    {
+      "archivo": "gema_violeta.glb",
+      "triangulos": 96,
+      "materiales": [
+        "violeta",
+        "azul_claro"
+      ],
+      "bytes": 14108,
+      "min": [
+        -0.38,
+        -0.38,
+        -0.38
+      ],
+      "max": [
+        0.38,
+        0.38,
+        0.38
+      ],
+      "pivote": "centro del coleccionable",
+      "uso": "Seguir GemaVeta (x,y,z), valor 4 o 6."
+    },
+    {
+      "archivo": "marca_geoda.glb",
+      "triangulos": 440,
+      "materiales": [
+        "COLOR_DINAMICO"
+      ],
+      "bytes": 56624,
+      "min": [
+        -0.585,
+        -0.0133,
+        -0.585
+      ],
+      "max": [
+        0.585,
+        0.0533,
+        0.585
+      ],
+      "pivote": "centro de aro al suelo",
+      "uso": "Mundo (geoda.x,.04,geoda.z), tintar segun tipo."
+    }
+  ]
+}

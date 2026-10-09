@@ -1,0 +1,407 @@
+{
+  "minijuego": "Pesca Isleña",
+  "base": "claude/expansion-party ea5472c",
+  "radio_laguna": 8.5,
+  "distancia_muelle": 10.5,
+  "modelos": [
+    {
+      "archivo": "oceano.glb",
+      "triangulos": 2944,
+      "materiales": [
+        "oceano",
+        "oceano_luz"
+      ],
+      "bytes": 372964,
+      "min": [
+        -85.0,
+        -0.112,
+        -85.0
+      ],
+      "max": [
+        85.0,
+        -0.062,
+        85.0
+      ],
+      "pivote": "origen global",
+      "uso": "Plano marino 120x120; centro (0,0,0)."
+    },
+    {
+      "archivo": "isla_laguna.glb",
+      "triangulos": 1152,
+      "materiales": [
+        "arena",
+        "arena_sombra",
+        "laguna",
+        "arena_clara",
+        "fondo"
+      ],
+      "bytes": 149608,
+      "min": [
+        -15.35,
+        -1.82,
+        -15.35
+      ],
+      "max": [
+        15.35,
+        0.008,
+        15.35
+      ],
+      "pivote": "origen global",
+      "uso": "Arena exterior radio 15; laguna radio 8.5 y fondo Y=-1.8."
+    },
+    {
+      "archivo": "superficie_laguna.glb",
+      "triangulos": 1344,
+      "materiales": [
+        "laguna",
+        "agua_luz"
+      ],
+      "bytes": 171352,
+      "min": [
+        -8.48,
+        -1.78,
+        -8.48
+      ],
+      "max": [
+        8.48,
+        0.028,
+        8.48
+      ],
+      "pivote": "origen global",
+      "uso": "Fondo turquesa a Y=-1.78 y ondas a Y=.01; peces visibles a Y=-.9."
+    },
+    {
+      "archivo": "muelle_bambu.glb",
+      "triangulos": 852,
+      "materiales": [
+        "bambu_oscuro",
+        "bambu_claro",
+        "bambu",
+        "soga"
+      ],
+      "bytes": 111060,
+      "min": [
+        -1.7,
+        -1.8,
+        -1.5779
+      ],
+      "max": [
+        1.7,
+        0.435,
+        1.5779
+      ],
+      "pivote": "centro en agua",
+      "uso": "Instanciar cuatro veces en X/Z=±10.5; tablero Y=.35."
+    },
+    {
+      "archivo": "cana_pescar.glb",
+      "triangulos": 252,
+      "materiales": [
+        "madera",
+        "bambu_oscuro",
+        "madera_oscura",
+        "metal"
+      ],
+      "bytes": 35580,
+      "min": [
+        -0.2092,
+        -0.0297,
+        -1.4129
+      ],
+      "max": [
+        0.2092,
+        1.6202,
+        0.1034
+      ],
+      "pivote": "mano",
+      "uso": "Mango en mano Y=1.45 del muelle, punta elevada hacia centro."
+    },
+    {
+      "archivo": "corcho.glb",
+      "triangulos": 184,
+      "materiales": [
+        "blanco",
+        "rojo",
+        "metal"
+      ],
+      "bytes": 25972,
+      "min": [
+        -0.17,
+        -0.17,
+        -0.17
+      ],
+      "max": [
+        0.17,
+        0.32,
+        0.17
+      ],
+      "pivote": "centro",
+      "uso": "En anzuelo (x,y,z); tintar tapa por jugador si hace falta."
+    },
+    {
+      "archivo": "palmera.glb",
+      "triangulos": 948,
+      "materiales": [
+        "tronco",
+        "madera",
+        "hoja_luz",
+        "hoja",
+        "coco"
+      ],
+      "bytes": 124196,
+      "min": [
+        -2.0352,
+        -0.027,
+        -2.1448
+      ],
+      "max": [
+        2.1469,
+        4.5064,
+        2.1448
+      ],
+      "pivote": "pie central",
+      "uso": "8 unidades en anillo radio 13.2, ángulos 22.5+45*k."
+    },
+    {
+      "archivo": "barca.glb",
+      "triangulos": 140,
+      "materiales": [
+        "madera",
+        "madera_oscura",
+        "lona"
+      ],
+      "bytes": 20456,
+      "min": [
+        -1.6,
+        -0.11,
+        -0.747
+      ],
+      "max": [
+        2.5148,
+        2.68,
+        0.747
+      ],
+      "pivote": "centro del casco",
+      "uso": "Posición (-12,0,-11)."
+    },
+    {
+      "archivo": "gaviota.glb",
+      "triangulos": 274,
+      "materiales": [
+        "blanco",
+        "rojo"
+      ],
+      "bytes": 36544,
+      "min": [
+        -0.9052,
+        -0.14,
+        -0.3177
+      ],
+      "max": [
+        0.9047,
+        0.2705,
+        0.1311
+      ],
+      "pivote": "centro",
+      "uso": "Cuatro en vuelo alrededor de radio 11."
+    },
+    {
+      "archivo": "volcan.glb",
+      "triangulos": 264,
+      "materiales": [
+        "volcan",
+        "volcan_claro",
+        "lava"
+      ],
+      "bytes": 36100,
+      "min": [
+        -4.2,
+        0,
+        -4.2
+      ],
+      "max": [
+        4.2,
+        6.5311,
+        4.2
+      ],
+      "pivote": "pie central",
+      "uso": "Posición (0,0,-21)."
+    },
+    {
+      "archivo": "humo_volcan.glb",
+      "triangulos": 320,
+      "materiales": [
+        "humo"
+      ],
+      "bytes": 41508,
+      "min": [
+        -1.092,
+        -0.377,
+        -1.0854
+      ],
+      "max": [
+        1.3313,
+        3.33,
+        1.0854
+      ],
+      "pivote": "base de columna",
+      "uso": "Añadir a (0,7,-21), variar escala/altura visual."
+    },
+    {
+      "archivo": "coral_1.glb",
+      "triangulos": 536,
+      "materiales": [
+        "arena_sombra",
+        "coral_violeta",
+        "coral"
+      ],
+      "bytes": 70484,
+      "min": [
+        -0.5712,
+        0,
+        -0.6459
+      ],
+      "max": [
+        0.6711,
+        1.09,
+        0.6459
+      ],
+      "pivote": "pie central",
+      "uso": "Distribuir 16 en laguna; base Y=-1.8, radio 2..7.8."
+    },
+    {
+      "archivo": "coral_2.glb",
+      "triangulos": 536,
+      "materiales": [
+        "arena_sombra",
+        "coral_violeta",
+        "coral_naranja"
+      ],
+      "bytes": 70492,
+      "min": [
+        -0.5712,
+        0,
+        -0.6459
+      ],
+      "max": [
+        0.6711,
+        1.09,
+        0.6459
+      ],
+      "pivote": "pie central",
+      "uso": "Distribuir 16 en laguna; base Y=-1.8, radio 2..7.8."
+    },
+    {
+      "archivo": "pez_pequeno.glb",
+      "triangulos": 584,
+      "materiales": [
+        "pez_azul",
+        "aleta",
+        "blanco",
+        "ojo"
+      ],
+      "bytes": 77432,
+      "min": [
+        -0.4536,
+        -0.154,
+        -0.1506
+      ],
+      "max": [
+        0.3139,
+        0.2576,
+        0.1506
+      ],
+      "pivote": "centro",
+      "uso": "Tipo 0, valor 1; centro Y=-.9."
+    },
+    {
+      "archivo": "pez_mediano.glb",
+      "triangulos": 584,
+      "materiales": [
+        "pez_verde",
+        "pez_oscuro",
+        "blanco",
+        "ojo"
+      ],
+      "bytes": 77352,
+      "min": [
+        -0.6804,
+        -0.231,
+        -0.226
+      ],
+      "max": [
+        0.4709,
+        0.3864,
+        0.226
+      ],
+      "pivote": "centro",
+      "uso": "Tipo 1, valor 2; centro Y=-.9."
+    },
+    {
+      "archivo": "pez_dorado.glb",
+      "triangulos": 584,
+      "materiales": [
+        "pez_dorado",
+        "pez_oro",
+        "blanco",
+        "ojo"
+      ],
+      "bytes": 77272,
+      "min": [
+        -0.81,
+        -0.275,
+        -0.269
+      ],
+      "max": [
+        0.5606,
+        0.46,
+        0.269
+      ],
+      "pivote": "centro",
+      "uso": "Tipo raro 2, valor 5; centro Y=-.9."
+    },
+    {
+      "archivo": "bota_vieja.glb",
+      "triangulos": 84,
+      "materiales": [
+        "bota_sombra",
+        "bota",
+        "arena_sombra"
+      ],
+      "bytes": 13492,
+      "min": [
+        -0.33,
+        -0.01,
+        -0.29
+      ],
+      "max": [
+        0.395,
+        0.725,
+        0.325
+      ],
+      "pivote": "centro",
+      "uso": "Tipo 3, valor 0; centro Y=-.9."
+    },
+    {
+      "archivo": "cursor_lanzamiento.glb",
+      "triangulos": 240,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "blanco"
+      ],
+      "bytes": 32180,
+      "min": [
+        -0.68,
+        -0.01,
+        -0.68
+      ],
+      "max": [
+        0.68,
+        0.05,
+        0.68
+      ],
+      "pivote": "centro",
+      "uso": "En cursor (x,.09,z), tintar por jugador."
+    }
+  ]
+}

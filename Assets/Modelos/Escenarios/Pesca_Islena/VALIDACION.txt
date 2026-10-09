@@ -1,0 +1,1 @@
+18/18 GLB cargados en raylib; 23 capturas. GLB 2.0 autoincluidos, posiciones finitas e índices uint16 válidos. Laguna radio 8.5, muelles X/Z ±10.5 y nivel de fondo -1.8 verificados. Visor C++17. Integración jugable y Windows pendientes.

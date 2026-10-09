@@ -1,0 +1,1 @@
+17/17 GLB cargados en raylib, 21 capturas generadas. GLB 2.0 autoincluidos; posiciones finitas e índices uint16 válidos. Cancha 20×12, red X=0, roca de radio .45 y charco de radio 1.8 verificados. Visor C++17. Integración jugable y Windows pendientes.
