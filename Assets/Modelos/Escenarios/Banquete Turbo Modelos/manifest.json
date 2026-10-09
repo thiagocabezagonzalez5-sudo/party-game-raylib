@@ -1,0 +1,356 @@
+{
+  "minijuego": "Banquete Turbo",
+  "base": "claude/expansion-party 6958b26",
+  "coordenadas": "Y arriba; unidades raylib; separación puestos 4.2",
+  "modelos": [
+    {
+      "archivo": "comedor_orbital.glb",
+      "triangulos": 324,
+      "materiales": [
+        "suelo",
+        "cian_sombra",
+        "panel",
+        "pared",
+        "cian",
+        "metal_oscuro"
+      ],
+      "bytes": 46096,
+      "min": [
+        -20.04,
+        -0.5,
+        -12.0
+      ],
+      "max": [
+        20.04,
+        1.8,
+        10.0
+      ],
+      "pivote": "centro suelo",
+      "uso": "Centro (0,0,-1), suelo a Y=0; malla generada ya desplazada Z=-1."
+    },
+    {
+      "archivo": "ventanal_tierra.glb",
+      "triangulos": 876,
+      "materiales": [
+        "pared",
+        "cian",
+        "cian_sombra",
+        "metal_oscuro",
+        "metal_luz",
+        "metal"
+      ],
+      "bytes": 115712,
+      "min": [
+        -17.0,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        17.0,
+        11.9,
+        0.5762
+      ],
+      "pivote": "centro del muro",
+      "uso": "Centro (0,0,-8), abertura de 20 por 7."
+    },
+    {
+      "archivo": "tierra.glb",
+      "triangulos": 2616,
+      "materiales": [
+        "azul_tierra",
+        "continente",
+        "nube",
+        "cian_sombra"
+      ],
+      "bytes": 333444,
+      "min": [
+        -10.47,
+        -10.47,
+        -10.0
+      ],
+      "max": [
+        10.47,
+        10.47,
+        10.0113
+      ],
+      "pivote": "centro de planeta",
+      "uso": "Centro (-7,7,-24), radio 10; cara continental hacia +Z."
+    },
+    {
+      "archivo": "cielo_estrellado.glb",
+      "triangulos": 3252,
+      "materiales": [
+        "espacio",
+        "cian",
+        "blanco"
+      ],
+      "bytes": 412632,
+      "min": [
+        -45.0,
+        -21.0,
+        -0.08
+      ],
+      "max": [
+        45.0,
+        21.0,
+        0.1003
+      ],
+      "pivote": "centro de fondo",
+      "uso": "Centro (0,0,-36); fondo visible a través del ventanal."
+    },
+    {
+      "archivo": "techo_comedor.glb",
+      "triangulos": 120,
+      "materiales": [
+        "pared",
+        "metal_oscuro",
+        "cian_sombra"
+      ],
+      "bytes": 17892,
+      "min": [
+        -20.0,
+        -0.27,
+        -10.0
+      ],
+      "max": [
+        20.0,
+        0.175,
+        10.0
+      ],
+      "pivote": "centro del techo",
+      "uso": "Centro (0,10,-1)."
+    },
+    {
+      "archivo": "tuberias_techo.glb",
+      "triangulos": 2072,
+      "materiales": [
+        "metal",
+        "metal_oscuro",
+        "cian"
+      ],
+      "bytes": 263964,
+      "min": [
+        -18.0,
+        -0.475,
+        -1.057
+      ],
+      "max": [
+        18.0,
+        0.257,
+        1.635
+      ],
+      "pivote": "centro tramo",
+      "uso": "Centro (0,9,-4), 36 unidades a lo largo de X."
+    },
+    {
+      "archivo": "lampara_colgante.glb",
+      "triangulos": 400,
+      "materiales": [
+        "metal",
+        "metal_oscuro",
+        "EMISION",
+        "cian"
+      ],
+      "bytes": 54020,
+      "min": [
+        -0.56,
+        -1.31,
+        -0.56
+      ],
+      "max": [
+        0.56,
+        0,
+        0.56
+      ],
+      "pivote": "enganche al techo",
+      "uso": "Repetir en X; pivote en Y=0, luz queda a Y=-1.2."
+    },
+    {
+      "archivo": "mesa_magnetica.glb",
+      "triangulos": 348,
+      "materiales": [
+        "metal_oscuro",
+        "cian_sombra",
+        "panel",
+        "cian",
+        "COLOR_JUGADOR",
+        "metal_luz"
+      ],
+      "bytes": 49104,
+      "min": [
+        -1.6,
+        0,
+        -0.8
+      ],
+      "max": [
+        1.6,
+        0.955,
+        0.8
+      ],
+      "pivote": "pie centro",
+      "uso": "Centro (posicionX[i],0,1.3), tapa Y=.86."
+    },
+    {
+      "archivo": "bandeja.glb",
+      "triangulos": 72,
+      "materiales": [
+        "metal_luz",
+        "metal",
+        "panel"
+      ],
+      "bytes": 11824,
+      "min": [
+        -1.3,
+        -0.0275,
+        -0.5
+      ],
+      "max": [
+        1.3,
+        0.0625,
+        0.5
+      ],
+      "pivote": "centro bandeja",
+      "uso": "Centro (posicionX[i],.95,1.3)."
+    },
+    {
+      "archivo": "taburete.glb",
+      "triangulos": 504,
+      "materiales": [
+        "metal_oscuro",
+        "COLOR_JUGADOR",
+        "panel",
+        "cian"
+      ],
+      "bytes": 67132,
+      "min": [
+        -0.51,
+        0,
+        -0.51
+      ],
+      "max": [
+        0.51,
+        0.412,
+        0.51
+      ],
+      "pivote": "pie centro",
+      "uso": "Centro (posicionX[i],0,-.3); COLOR_JUGADOR según participante."
+    },
+    {
+      "archivo": "robot_camarero.glb",
+      "triangulos": 916,
+      "materiales": [
+        "metal_luz",
+        "cian",
+        "pantalla",
+        "EMISION",
+        "metal",
+        "metal_oscuro",
+        "rojo"
+      ],
+      "bytes": 121772,
+      "min": [
+        -0.9851,
+        -1.15,
+        -0.4
+      ],
+      "max": [
+        0.9931,
+        1.805,
+        0.5418
+      ],
+      "pivote": "torso centro",
+      "uso": "Centro (robotX,2.5,-3); desplazar y animar el brazo aparte."
+    },
+    {
+      "archivo": "tubo_comida_normal.glb",
+      "triangulos": 720,
+      "materiales": [
+        "comida",
+        "metal_luz",
+        "verde"
+      ],
+      "bytes": 93624,
+      "min": [
+        -0.9767,
+        -0.249,
+        -0.2428
+      ],
+      "max": [
+        0.985,
+        0.249,
+        0.2428
+      ],
+      "pivote": "centro de ración",
+      "uso": "Ración normal; disminuir escala X según bocados restantes."
+    },
+    {
+      "archivo": "tubo_comida_picante.glb",
+      "triangulos": 744,
+      "materiales": [
+        "rojo",
+        "metal_luz",
+        "naranja"
+      ],
+      "bytes": 96684,
+      "min": [
+        -0.9767,
+        -0.249,
+        -0.2428
+      ],
+      "max": [
+        0.985,
+        0.4,
+        0.2428
+      ],
+      "pivote": "centro de ración",
+      "uso": "Ración roja; alternar tinte de material para aviso."
+    },
+    {
+      "archivo": "tubo_comida_dorada.glb",
+      "triangulos": 888,
+      "materiales": [
+        "oro",
+        "metal_luz",
+        "blanco"
+      ],
+      "bytes": 114808,
+      "min": [
+        -0.9767,
+        -0.249,
+        -0.2428
+      ],
+      "max": [
+        0.985,
+        0.26,
+        0.2428
+      ],
+      "pivote": "centro de ración",
+      "uso": "Ración que vale doble; escala y animación externas."
+    },
+    {
+      "archivo": "consola_lateral.glb",
+      "triangulos": 240,
+      "materiales": [
+        "metal_oscuro",
+        "pantalla",
+        "verde",
+        "cian",
+        "oro",
+        "metal"
+      ],
+      "bytes": 35572,
+      "min": [
+        -1.0,
+        0.0,
+        -0.41
+      ],
+      "max": [
+        1.0,
+        1.41,
+        0.4175
+      ],
+      "pivote": "pie centro",
+      "uso": "Decoración a los costados X≈±17; fuera de los puestos."
+    }
+  ]
+}

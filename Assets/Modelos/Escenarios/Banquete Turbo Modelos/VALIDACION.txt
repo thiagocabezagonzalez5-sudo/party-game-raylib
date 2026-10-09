@@ -1,0 +1,8 @@
+Banquete Turbo — revisión del paquete
+15 de 15 GLB 2.0 cargados con raylib (sin recursos faltantes).
+18 capturas PNG generadas con el visor raylib en modo offscreen.
+Vista principal: Vistas/Camara_del_juego.png; copia Vista_previa.png.
+El juego se comprobó por separado con sus fuentes de producción en Linux con raylib SDL.
+La tarea recursiva existente de VS Code incluye visores .cpp previos dentro de Assets,
+cada uno con su propio main, y falla por definiciones duplicadas; es ajeno a estos GLB.
+Los GLB aún no están integrados en MinijuegoBanqueteTurbo.cpp.
