@@ -1,0 +1,3 @@
+23/23 GLB 2.0 válidos: cabecera, chunks JSON/BIN, longitudes, primitivas y límites comprobados.
+23/23 cargados por raylib; 28 capturas PNG con OpenGL software.
+El juego completo compiló con el comando equivalente Linux de la tarea de VS Code.

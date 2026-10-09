@@ -1,0 +1,525 @@
+{
+  "minijuego": "Autos de Globo",
+  "base": "claude/expansion-party f290cb2",
+  "coordenadas": "Y arriba; frente del auto +X; unidades raylib",
+  "modelos": [
+    {
+      "archivo": "plaza_elevada.glb",
+      "triangulos": 264,
+      "materiales": [
+        "plaza_sombra",
+        "plaza",
+        "cian",
+        "metal"
+      ],
+      "bytes": 36880,
+      "min": [
+        -9.95,
+        -2.0,
+        -7.25
+      ],
+      "max": [
+        9.95,
+        0.015,
+        7.25
+      ],
+      "pivote": "origen global",
+      "uso": "Arena 18.3×12.9, límites de centros X=±8.3, Z=±5.6."
+    },
+    {
+      "archivo": "anillo_central.glb",
+      "triangulos": 1184,
+      "materiales": [
+        "cian",
+        "rosa",
+        "cian_luz"
+      ],
+      "bytes": 152192,
+      "min": [
+        -2.6496,
+        -0.013,
+        -2.6536
+      ],
+      "max": [
+        2.655,
+        0.078,
+        2.6536
+      ],
+      "pivote": "centro",
+      "uso": "Colocar en origen sobre suelo."
+    },
+    {
+      "archivo": "barrera_frontal.glb",
+      "triangulos": 912,
+      "materiales": [
+        "metal_oscuro",
+        "rosa",
+        "metal",
+        "rosa_luz",
+        "cian"
+      ],
+      "bytes": 119368,
+      "min": [
+        -9.44,
+        0.0,
+        -0.15
+      ],
+      "max": [
+        9.44,
+        0.99,
+        0.169
+      ],
+      "pivote": "centro al pie",
+      "uso": "Dos copias en Z=±6.45."
+    },
+    {
+      "archivo": "barrera_lateral.glb",
+      "triangulos": 636,
+      "materiales": [
+        "metal_oscuro",
+        "rosa",
+        "metal",
+        "rosa_luz",
+        "cian"
+      ],
+      "bytes": 84576,
+      "min": [
+        -6.54,
+        0.0,
+        -0.15
+      ],
+      "max": [
+        6.54,
+        0.99,
+        0.169
+      ],
+      "pivote": "centro al pie",
+      "uso": "Dos copias en X=±9.15 con giro Y=90°."
+    },
+    {
+      "archivo": "rascacielos_bajo.glb",
+      "triangulos": 288,
+      "materiales": [
+        "vidrio",
+        "metal_luz",
+        "ventana",
+        "cian",
+        "jardin"
+      ],
+      "bytes": 40816,
+      "min": [
+        -1.5,
+        0.0,
+        -1.5
+      ],
+      "max": [
+        1.5,
+        10.16,
+        1.5
+      ],
+      "pivote": "pie central",
+      "uso": "Instanciar fuera de plaza; Y=-6."
+    },
+    {
+      "archivo": "rascacielos_medio.glb",
+      "triangulos": 432,
+      "materiales": [
+        "vidrio_oscuro",
+        "metal_luz",
+        "ventana",
+        "vidrio",
+        "cian",
+        "jardin"
+      ],
+      "bytes": 59748,
+      "min": [
+        -1.8,
+        0.0,
+        -1.8
+      ],
+      "max": [
+        1.8,
+        16.16,
+        1.8
+      ],
+      "pivote": "pie central",
+      "uso": "Instanciar fuera de plaza; Y=-6."
+    },
+    {
+      "archivo": "rascacielos_alto.glb",
+      "triangulos": 576,
+      "materiales": [
+        "vidrio",
+        "metal_luz",
+        "ventana",
+        "cian",
+        "jardin"
+      ],
+      "bytes": 77176,
+      "min": [
+        -2.15,
+        0.0,
+        -2.15
+      ],
+      "max": [
+        2.15,
+        22.16,
+        2.15
+      ],
+      "pivote": "pie central",
+      "uso": "Instanciar fuera de plaza; Y=-6."
+    },
+    {
+      "archivo": "jardin_vertical.glb",
+      "triangulos": 780,
+      "materiales": [
+        "jardin",
+        "verde_oscuro",
+        "jardin_luz"
+      ],
+      "bytes": 101176,
+      "min": [
+        -0.75,
+        0.0,
+        -0.09
+      ],
+      "max": [
+        0.69,
+        4.0,
+        0.215
+      ],
+      "pivote": "pie central",
+      "uso": "Colocar en fachadas de edificios; orientar hacia la cámara."
+    },
+    {
+      "archivo": "autopista_trasera.glb",
+      "triangulos": 228,
+      "materiales": [
+        "asfalto",
+        "metal",
+        "ventana"
+      ],
+      "bytes": 31480,
+      "min": [
+        -25.0,
+        -0.55,
+        -1.1
+      ],
+      "max": [
+        25.0,
+        -0.18,
+        1.1
+      ],
+      "pivote": "centro de tramo",
+      "uso": "Centro (0,0,-9.6), detrás de plaza."
+    },
+    {
+      "archivo": "autopista_lateral.glb",
+      "triangulos": 192,
+      "materiales": [
+        "asfalto",
+        "metal",
+        "ventana"
+      ],
+      "bytes": 26968,
+      "min": [
+        -1.0,
+        -0.55,
+        -20.0
+      ],
+      "max": [
+        1.0,
+        -0.18,
+        20.0
+      ],
+      "pivote": "centro de tramo",
+      "uso": "Centro (12.4,0,0), fuera de plaza."
+    },
+    {
+      "archivo": "vehiculo_trafico.glb",
+      "triangulos": 152,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "vidrio_oscuro",
+        "cian"
+      ],
+      "bytes": 21884,
+      "min": [
+        -0.4,
+        0,
+        -0.315
+      ],
+      "max": [
+        0.4,
+        0.275,
+        0.315
+      ],
+      "pivote": "centro",
+      "uso": "Decoración animable en autopistas; teñir COLOR_DINAMICO."
+    },
+    {
+      "archivo": "holograma_pedestal.glb",
+      "triangulos": 196,
+      "materiales": [
+        "metal_oscuro",
+        "cian",
+        "cian_luz"
+      ],
+      "bytes": 27536,
+      "min": [
+        -0.43,
+        0,
+        -0.409
+      ],
+      "max": [
+        0.43,
+        2.35,
+        0.409
+      ],
+      "pivote": "pie central",
+      "uso": "Centros (±10.6,0,±7.6)."
+    },
+    {
+      "archivo": "holograma_anillos.glb",
+      "triangulos": 800,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "cian_luz",
+        "BOMBILLAS"
+      ],
+      "bytes": 103732,
+      "min": [
+        -0.838,
+        -0.838,
+        -0.838
+      ],
+      "max": [
+        0.838,
+        0.838,
+        0.838
+      ],
+      "pivote": "centro",
+      "uso": "Animar rotación Y en Y≈2.4 sobre pedestal; tintar COLOR_DINAMICO."
+    },
+    {
+      "archivo": "dron_cuerpo.glb",
+      "triangulos": 404,
+      "materiales": [
+        "metal_luz",
+        "metal",
+        "metal_oscuro",
+        "rojo"
+      ],
+      "bytes": 54660,
+      "min": [
+        -0.51,
+        -0.24,
+        -0.5036
+      ],
+      "max": [
+        0.51,
+        0.17,
+        0.5036
+      ],
+      "pivote": "centro",
+      "uso": "Cuatro drones en órbita; posición Y≈3.5..5.3."
+    },
+    {
+      "archivo": "dron_helice.glb",
+      "triangulos": 56,
+      "materiales": [
+        "metal_luz",
+        "cian"
+      ],
+      "bytes": 9008,
+      "min": [
+        -0.375,
+        -0.04,
+        -0.375
+      ],
+      "max": [
+        0.375,
+        0.0305,
+        0.375
+      ],
+      "pivote": "centro",
+      "uso": "Cuatro instancias por dron, girar Y individualmente."
+    },
+    {
+      "archivo": "placa_aviso.glb",
+      "triangulos": 820,
+      "materiales": [
+        "naranja",
+        "ventana",
+        "BOMBILLAS"
+      ],
+      "bytes": 106164,
+      "min": [
+        -1.146,
+        0.01,
+        -1.146
+      ],
+      "max": [
+        1.146,
+        0.1287,
+        1.146
+      ],
+      "pivote": "centro al pie",
+      "uso": "Radio lógico 1.1; visible durante aviso."
+    },
+    {
+      "archivo": "placa_recarga.glb",
+      "triangulos": 820,
+      "materiales": [
+        "verde",
+        "cian_luz",
+        "BOMBILLAS"
+      ],
+      "bytes": 106180,
+      "min": [
+        -1.146,
+        0.01,
+        -1.146
+      ],
+      "max": [
+        1.146,
+        0.1287,
+        1.146
+      ],
+      "pivote": "centro al pie",
+      "uso": "Radio lógico 1.1; visible durante fase activa."
+    },
+    {
+      "archivo": "orbe_recarga.glb",
+      "triangulos": 364,
+      "materiales": [
+        "verde",
+        "cian_luz",
+        "BOMBILLAS"
+      ],
+      "bytes": 48716,
+      "min": [
+        -0.367,
+        -0.367,
+        -0.242
+      ],
+      "max": [
+        0.367,
+        0.367,
+        0.242
+      ],
+      "pivote": "centro",
+      "uso": "Flotar en Y≈.9 sobre placa activa."
+    },
+    {
+      "archivo": "auto_flotante.glb",
+      "triangulos": 704,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "metal_luz",
+        "cian",
+        "vidrio",
+        "rojo",
+        "cian_luz",
+        "metal_oscuro"
+      ],
+      "bytes": 94860,
+      "min": [
+        -1.06,
+        0.025,
+        -0.6882
+      ],
+      "max": [
+        1.14,
+        0.71,
+        0.6882
+      ],
+      "pivote": "centro de auto",
+      "uso": "Local +X es frente; trasladar a (a.x,0,a.z), rotar −a.angulo; teñir COLOR_DINAMICO."
+    },
+    {
+      "archivo": "globo_energia.glb",
+      "triangulos": 512,
+      "materiales": [
+        "COLOR_DINAMICO",
+        "cian_luz",
+        "BOMBILLAS",
+        "metal"
+      ],
+      "bytes": 68180,
+      "min": [
+        -0.358,
+        -0.43,
+        -0.3544
+      ],
+      "max": [
+        0.358,
+        0.38,
+        0.3544
+      ],
+      "pivote": "centro de globo",
+      "uso": "Instanciar 0..3 por auto según a.globos, en altura≈1.9..2.1; teñir COLOR_DINAMICO."
+    },
+    {
+      "archivo": "cuerda_globo.glb",
+      "triangulos": 24,
+      "materiales": [
+        "metal_luz"
+      ],
+      "bytes": 4240,
+      "min": [
+        -0.0147,
+        -0.0029,
+        -0.013
+      ],
+      "max": [
+        0.2147,
+        1.0029,
+        0.013
+      ],
+      "pivote": "anclaje inferior",
+      "uso": "Opcional, trasladar/rotar/escalar entre amarre y globo; el cable también puede ser línea dinámica."
+    },
+    {
+      "archivo": "llama_turbo.glb",
+      "triangulos": 32,
+      "materiales": [
+        "naranja",
+        "ventana"
+      ],
+      "bytes": 5952,
+      "min": [
+        -1.15,
+        -0.26,
+        -0.26
+      ],
+      "max": [
+        0.0,
+        0.26,
+        0.26
+      ],
+      "pivote": "base de escape",
+      "uso": "Solo si turboActivo>0, en X local=-1.05,Y=.35."
+    },
+    {
+      "archivo": "halo_auto.glb",
+      "triangulos": 280,
+      "materiales": [
+        "cian"
+      ],
+      "bytes": 36492,
+      "min": [
+        -0.955,
+        0.0017,
+        -0.955
+      ],
+      "max": [
+        0.955,
+        0.0683,
+        0.955
+      ],
+      "pivote": "centro sobre suelo",
+      "uso": "A nivel del suelo debajo de cada auto, radio .92."
+    }
+  ]
+}
