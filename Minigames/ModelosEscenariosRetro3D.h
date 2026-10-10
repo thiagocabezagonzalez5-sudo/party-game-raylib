@@ -98,6 +98,8 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D pescaIslena[CANTIDAD_MODELOS_PESCA_ISLENA_3D];
     RecursoModeloEscenarioRetro3D rodillosNeon[CANTIDAD_MODELOS_RODILLOS_NEON_3D];
     RecursoModeloEscenarioRetro3D bolasAzucar[CANTIDAD_MODELOS_BOLAS_AZUCAR_3D];
+    RecursoModeloEscenarioRetro3D gruaChatarra[CANTIDAD_MODELOS_GRUA_CHATARRA_3D];
+    float* franjasCintaGrua = nullptr; // Reposo CPU; una unica malla/VBO para ambas cintas.
     AnimacionRodillosRetro3D animacionesRodillos[4]; // suelo, dos LEDs, linea
     AnimacionMallaPescaRetro3D animacionesPesca[5]; // gaviota, humo y tres colas
     AlasDescensoNubesRetro3D alasNubes;
@@ -1421,6 +1423,105 @@ inline bool DibujarBolaAzucarRetro3D(Vector3 centro, float radio,
     return dibujado;
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteGruaChatarraRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_GRUA_CHATARRA_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_GRUA_CHATARRA_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_GRUA_CHATARRA_3D[i];
+        // Primitives del paquete v1; el cargador resuelve sus meshMaterial.
+        definiciones[MODELO_GRUA_TOLVA].mallaColor = 3;
+        definiciones[MODELO_GRUA_IMAN].mallaColor = 0;
+        definiciones[MODELO_GRUA_MARCA].mallaColor = 0;
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().gruaChatarra,
+        definiciones, CANTIDAD_MODELOS_GRUA_CHATARRA_3D};
+}
+
+inline void CargarPaqueteGruaChatarraRetro3D()
+{
+    auto paquete = ObtenerPaqueteGruaChatarraRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    const int esperadas[] = {5,2,5,4,4,4,5,5,5,5,6,5,5,3,2,3,2,3,3,4,3,3};
+    for (int i = 0; i < paquete.cantidad; i++)
+    {
+        auto& r = paquete.recursos[i];
+        if (!r.cargado) continue;
+        bool valido = r.modelo.meshCount == esperadas[i];
+        if (valido && i == MODELO_GRUA_CINTA)
+            valido = r.modelo.meshes[3].vertexCount == 8 * 36;
+        if (valido) continue;
+        UnloadModel(r.modelo); r.modelo = {}; r.cargado = false;
+        TraceLog(LOG_WARNING, "Paquete Grua de Chatarra incompatible; se usan primitivas: %s", r.ruta);
+    }
+    auto& almacen = ObtenerModelosEscenariosRetro3D();
+    auto& cinta = almacen.gruaChatarra[MODELO_GRUA_CINTA];
+    // La copia solo se prepara al cargar el paquete, nunca al dibujar.
+    if (cinta.cargado && !almacen.franjasCintaGrua)
+    {
+        const int bytes = cinta.modelo.meshes[3].vertexCount * 3 * sizeof(float);
+        almacen.franjasCintaGrua = static_cast<float*>(MemAlloc(bytes));
+        if (almacen.franjasCintaGrua)
+            std::memcpy(almacen.franjasCintaGrua, cinta.modelo.meshes[3].vertices, bytes);
+        else
+        {
+            UnloadModel(cinta.modelo); cinta.modelo = {}; cinta.cargado = false;
+            TraceLog(LOG_WARNING, "No se pudo preparar la cinta de Grua de Chatarra; se usan primitivas");
+        }
+    }
+}
+
+inline bool DibujarModeloGruaChatarraRetro3D(ModeloGruaChatarra3D pieza,
+    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
+    Vector3 escala = {1,1,1}, Color color = WHITE)
+{
+    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().gruaChatarra[pieza],
+        posicion, eje, angulo, escala, color);
+}
+
+inline bool DibujarSueloGruaChatarraRetro3D()
+{
+    auto& r = ObtenerModelosEscenariosRetro3D().gruaChatarra[MODELO_GRUA_SUELO];
+    if (!r.cargado) return false;
+    // Omite el escombro incorporado (primitives 3/4). La pieza modular se
+    // instancia en los puntos procedurales actuales, con fallback independiente.
+    for (int i = 0; i < 3; i++)
+    {
+        auto vista = r;
+        vista.modelo.meshCount = 1;
+        vista.modelo.meshes = &r.modelo.meshes[i];
+        vista.modelo.meshMaterial = &r.modelo.meshMaterial[i];
+        DibujarModeloEscenarioRetro3D(vista, {}, {0,1,0}, 0, {1,1,1});
+    }
+    return true;
+}
+
+inline bool DibujarCintaGruaChatarraRetro3D(float x, int lado, float tiempo)
+{
+    auto& almacen = ObtenerModelosEscenariosRetro3D();
+    auto& r = almacen.gruaChatarra[MODELO_GRUA_CINTA];
+    if (!r.cargado || !almacen.franjasCintaGrua) return false;
+    Mesh& malla = r.modelo.meshes[3];
+    const int bytes = malla.vertexCount * 3 * sizeof(float);
+    // Ocho cajas de 36 vertices. Conserva el fmod y la velocidad original,
+    // incluso su recorrido asimetrico cuando lado=-1, sin mover los herrajes.
+    for (int v = 0; v < malla.vertexCount; v++)
+    {
+        int k = v / 36;
+        float z = -2.2f + std::fmod(k + tiempo * 1.2f * lado, 8.0f);
+        malla.vertices[v * 3 + 2] = almacen.franjasCintaGrua[v * 3 + 2] +
+            z - 1.6f - (-3.5f + k);
+    }
+    UpdateMeshBuffer(malla, 0, malla.vertices, bytes, 0);
+    bool dibujado = DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_CINTA, {x,0,1.6f});
+    std::memcpy(malla.vertices, almacen.franjasCintaGrua, bytes);
+    UpdateMeshBuffer(malla, 0, malla.vertices, bytes, 0);
+    return dibujado;
+}
+
 inline void DescargarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -1430,6 +1531,10 @@ inline void DescargarModelosEscenariosRetro3D()
     DescargarAlasDescensoNubesRetro3D();
     DescargarAnimacionesPescaIslenaRetro3D();
     DescargarAnimacionesRodillosNeonRetro3D();
+    MemFree(recursos.franjasCintaGrua);
+    recursos.franjasCintaGrua = nullptr;
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.gruaChatarra)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.bolasAzucar)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.rodillosNeon)

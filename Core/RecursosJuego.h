@@ -818,6 +818,48 @@ static_assert(sizeof(RUTAS_MODELOS_BOLAS_AZUCAR_3D) /
     "Las rutas de Bolas de Azucar deben coincidir con sus piezas");
 
 //==================================================
+// GRUA DE CHATARRA: piezas del paquete existente, sin normalizar pivotes.
+enum ModeloGruaChatarra3D
+{
+    MODELO_GRUA_SUELO, MODELO_GRUA_ESCOMBROS, MODELO_GRUA_MURO,
+    MODELO_GRUA_ENGRANAJE_GIGANTE, MODELO_GRUA_PRENSA_ESTRUCTURA,
+    MODELO_GRUA_PRENSA_PLATO, MODELO_GRUA_AUTO_ROJO, MODELO_GRUA_AUTO_AZUL,
+    MODELO_GRUA_AUTO_AMARILLO, MODELO_GRUA_CINTA, MODELO_GRUA_PILA,
+    MODELO_GRUA_FOCO, MODELO_GRUA_TOLVA, MODELO_GRUA_IMAN,
+    MODELO_GRUA_PINZA, MODELO_GRUA_CARRO, MODELO_GRUA_MARCA,
+    MODELO_GRUA_TUERCA, MODELO_GRUA_ENGRANAJE, MODELO_GRUA_MOTOR,
+    MODELO_GRUA_BATERIA, MODELO_GRUA_CARTUCHO,
+    CANTIDAD_MODELOS_GRUA_CHATARRA_3D
+};
+inline constexpr const char* RUTAS_MODELOS_GRUA_CHATARRA_3D[] =
+{
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/suelo_desguace.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/escombros.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/muro_fondo.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/engranaje_gigante.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/prensa_estructura.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/prensa_plato.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/auto_aplastado_rojo.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/auto_aplastado_azul.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/auto_aplastado_amarillo.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/cinta_transportadora.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/pila_chatarra.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/foco_industrial.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/tolva_equipo.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/garra_iman.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/garra_pinza.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/carro_grua.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/marca_garra.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/objeto_tuerca.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/objeto_engranaje.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/objeto_motor.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/objeto_bateria.glb",
+    "Assets/Modelos/Escenarios/Grua de Chatarra Modelos/GLB/objeto_cartucho.glb",
+};
+static_assert(sizeof(RUTAS_MODELOS_GRUA_CHATARRA_3D) /
+    sizeof(RUTAS_MODELOS_GRUA_CHATARRA_3D[0]) == CANTIDAD_MODELOS_GRUA_CHATARRA_3D,
+    "Las rutas de Grua de Chatarra deben coincidir con sus piezas");
+
 // TEXTURAS GENERALES
 //==================================================
 

@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -788,6 +789,7 @@ void MinijuegoGruaChatarra::Reiniciar(
         return;
     }
 
+    CargarPaqueteGruaChatarraRetro3D();
     partidaValida = true;
     cantidadPuestos = cantidad;
 
@@ -996,52 +998,61 @@ static float AlturaGarraGrua(const EstadoJugadorGrua& estado)
 static void DibujarObjetoGrua(int tipo, float x, float y, float z, float giro)
 {
     float rad = giro * 0.0174533f;
-
-    if (tipo == OBJETO_GRUA_TUERCA)
+    // Pivote al pie: igual para objetos del pozo y los transportados.
+    const ModeloGruaChatarra3D piezas[] = {MODELO_GRUA_TUERCA,
+        MODELO_GRUA_ENGRANAJE, MODELO_GRUA_MOTOR, MODELO_GRUA_BATERIA,
+        MODELO_GRUA_CARTUCHO};
+    bool dibujado = DibujarModeloGruaChatarraRetro3D(piezas[tipo], {x,y,z}, giro);
+    if (!dibujado)
     {
-        DrawCylinder({ x, y, z }, 0.38f, 0.38f, 0.22f, 6, Color{ 170, 176, 186, 255 });
-        DrawCylinder({ x, y + 0.2f, z }, 0.16f, 0.16f, 0.04f, 6, Color{ 50, 52, 58, 255 });
-    }
-    else if (tipo == OBJETO_GRUA_ENGRANAJE)
-    {
-        DrawCylinder({ x, y, z }, 0.5f, 0.5f, 0.2f, 10, Color{ 224, 140, 52, 255 });
-        DrawCylinder({ x, y + 0.18f, z }, 0.18f, 0.18f, 0.06f, 8, Color{ 70, 60, 54, 255 });
-
-        for (int k = 0; k < 6; k++)
+        if (tipo == OBJETO_GRUA_TUERCA)
         {
-            float a = rad + (float)k * 1.0471976f;
-            DrawCube({ x + std::cos(a) * 0.55f, y + 0.1f, z + std::sin(a) * 0.55f }, 0.18f, 0.18f, 0.18f, Color{ 224, 140, 52, 255 });
+            (DrawCylinder)({ x, y, z }, 0.38f, 0.38f, 0.22f, 6, Color{ 170, 176, 186, 255 });
+            (DrawCylinder)({ x, y + 0.2f, z }, 0.16f, 0.16f, 0.04f, 6, Color{ 50, 52, 58, 255 });
+        }
+        else if (tipo == OBJETO_GRUA_ENGRANAJE)
+        {
+            (DrawCylinder)({ x, y, z }, 0.5f, 0.5f, 0.2f, 10, Color{ 224, 140, 52, 255 });
+            (DrawCylinder)({ x, y + 0.18f, z }, 0.18f, 0.18f, 0.06f, 8, Color{ 70, 60, 54, 255 });
+
+            for (int k = 0; k < 6; k++)
+            {
+                float a = rad + (float)k * 1.0471976f;
+                (DrawCube)({ x + std::cos(a) * 0.55f, y + 0.1f, z + std::sin(a) * 0.55f }, 0.18f, 0.18f, 0.18f, Color{ 224, 140, 52, 255 });
+            }
+        }
+        else if (tipo == OBJETO_GRUA_MOTOR)
+        {
+            (DrawCube)({ x, y + 0.4f, z }, 0.95f, 0.7f, 0.7f, Color{ 90, 110, 140, 255 });
+            DrawCubeWires({ x, y + 0.4f, z }, 0.95f, 0.7f, 0.7f, Color{ 30, 36, 50, 255 });
+            (DrawCylinder)({ x - 0.25f, y + 0.75f, z }, 0.12f, 0.12f, 0.3f, 6, Color{ 60, 66, 76, 255 });
+            (DrawCylinder)({ x + 0.25f, y + 0.75f, z }, 0.12f, 0.12f, 0.3f, 6, Color{ 60, 66, 76, 255 });
+        }
+        else if (tipo == OBJETO_GRUA_BATERIA)
+        {
+            (DrawCube)({ x, y + 0.35f, z }, 0.6f, 0.7f, 0.45f, Color{ 255, 205, 60, 255 });
+            (DrawCube)({ x - 0.15f, y + 0.78f, z }, 0.1f, 0.12f, 0.1f, Color{ 60, 60, 66, 255 });
+            (DrawCube)({ x + 0.15f, y + 0.78f, z }, 0.1f, 0.12f, 0.1f, Color{ 60, 60, 66, 255 });
+        }
+        else
+        {
+            (DrawCylinder)({ x, y, z }, 0.32f, 0.32f, 0.55f, 8, Color{ 120, 60, 40, 255 });
+            (DrawCylinder)({ x, y + 0.2f, z }, 0.335f, 0.335f, 0.1f, 8, Color{ 220, 190, 40, 255 });
         }
     }
-    else if (tipo == OBJETO_GRUA_MOTOR)
-    {
-        DrawCube({ x, y + 0.4f, z }, 0.95f, 0.7f, 0.7f, Color{ 90, 110, 140, 255 });
-        DrawCubeWires({ x, y + 0.4f, z }, 0.95f, 0.7f, 0.7f, Color{ 30, 36, 50, 255 });
-        DrawCylinder({ x - 0.25f, y + 0.75f, z }, 0.12f, 0.12f, 0.3f, 6, Color{ 60, 66, 76, 255 });
-        DrawCylinder({ x + 0.25f, y + 0.75f, z }, 0.12f, 0.12f, 0.3f, 6, Color{ 60, 66, 76, 255 });
-    }
-    else if (tipo == OBJETO_GRUA_BATERIA)
+    // El halo es un efecto procedural; el GLB solo reemplaza el cuerpo.
+    if (tipo == OBJETO_GRUA_BATERIA)
     {
         float brillo = 0.5f + 0.5f * std::sin(rad * 0.4f);
-        DrawCube({ x, y + 0.35f, z }, 0.6f, 0.7f, 0.45f, Color{ 255, 205, 60, 255 });
-        DrawCube({ x - 0.15f, y + 0.78f, z }, 0.1f, 0.12f, 0.1f, Color{ 60, 60, 66, 255 });
-        DrawCube({ x + 0.15f, y + 0.78f, z }, 0.1f, 0.12f, 0.1f, Color{ 60, 60, 66, 255 });
-        DrawSphere({ x, y + 0.4f, z }, 0.62f, Fade(Color{ 255, 220, 90, 255 }, 0.12f + 0.12f * brillo));
-    }
-    else
-    {
-        DrawCylinder({ x, y, z }, 0.32f, 0.32f, 0.55f, 8, Color{ 120, 60, 40, 255 });
-        DrawCylinder({ x, y + 0.2f, z }, 0.335f, 0.335f, 0.1f, 8, Color{ 220, 190, 40, 255 });
+        (DrawSphere)({x,y + 0.4f,z}, 0.62f,
+            Fade(Color{255,220,90,255}, 0.12f + 0.12f * brillo));
     }
 }
 
 
 // Desguace: pozo de chatarra, pilas, autos aplastados, engranajes gigantes,
 // prensa, cintas, tolvas, focos y grua con cables.
-// MODELO FUTURO: pilas de chatarra y autos aplastados, engranajes gigantes,
-// prensa hidraulica, cintas transportadoras, tolvas con embudo, focos
-// industriales, garra magnetica y los objetos (tuerca, engranaje, motor,
-// bateria, cartucho) como GLB.
+// Cada pieza usa su GLB compartido o conserva sus primitivas originales.
 static void DibujarDesgueceGrua(const MinijuegoGruaChatarra& minijuego)
 {
     float t = minijuego.tiempoAnimacion;
@@ -1050,8 +1061,11 @@ static void DibujarDesgueceGrua(const MinijuegoGruaChatarra& minijuego)
     const Color oxido = Color{ 140, 78, 50, 255 };
 
     // Suelo del pozo y del patio.
-    DrawCube({ 0.0f, -0.25f, 0.2f }, 21.0f, 0.5f, 15.0f, Color{ 66, 60, 56, 255 });
-    DrawCube({ 0.0f, -0.18f, 0.2f }, 18.2f, 0.4f, 11.2f, Color{ 78, 66, 58, 255 });
+    if (!DibujarSueloGruaChatarraRetro3D())
+    {
+        (DrawCube)({ 0.0f, -0.25f, 0.2f }, 21.0f, 0.5f, 15.0f, Color{ 66, 60, 56, 255 });
+        (DrawCube)({ 0.0f, -0.18f, 0.2f }, 18.2f, 0.4f, 11.2f, Color{ 78, 66, 58, 255 });
+    }
 
     // Escombros del pozo (bajos para no tapar los objetos).
     for (int i = 0; i < 46; i++)
@@ -1061,16 +1075,25 @@ static void DibujarDesgueceGrua(const MinijuegoGruaChatarra& minijuego)
         float tam = 0.18f + Ruido01Grua(i, 3) * 0.3f;
         Color color = i % 3 == 0 ? oxido : (i % 3 == 1 ? Color{ 98, 100, 108, 255 } : Color{ 60, 56, 52, 255 });
 
-        DrawCube({ x, 0.05f + tam * 0.4f, z }, tam * 1.6f, tam * 0.5f, tam * 1.1f, color);
+        // Ajuste explicito de instancia al volumen del escombro original.
+        // No se centra ni se modifica el pivote del recurso compartido.
+        Vector3 escala = {tam * 1.6f / 2.88f, tam * 0.5f / 0.23f, tam * 1.1f / 1.98f};
+        if (!DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_ESCOMBROS,
+            {x - .05f * escala.x, .05f + tam * .15f - .02f * escala.y, z - .1f * escala.z},
+            0, {0,1,0}, escala))
+            (DrawCube)({ x, 0.05f + tam * 0.4f, z }, tam * 1.6f, tam * 0.5f, tam * 1.1f, color);
     }
 
     // Muro del fondo con engranajes gigantes.
-    DrawCube({ 0.0f, 3.0f, -9.2f }, 24.0f, 6.0f, 0.8f, metalOscuro);
+    if (!DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_MURO, {0,0,-9.2f}))
+        (DrawCube)({ 0.0f, 3.0f, -9.2f }, 24.0f, 6.0f, 0.8f, metalOscuro);
 
     for (int g = 0; g < 2; g++)
     {
         float cx = g == 0 ? -7.0f : 7.5f;
         float giro = t * (g == 0 ? 0.6f : -0.5f);
+        if (DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_ENGRANAJE_GIGANTE,
+            {cx,3.4f,-8.2f}, giro * RAD2DEG, {0,0,1})) continue;
 
         DrawCylinderEx({ cx, 3.4f, -8.7f }, { cx, 3.4f, -8.2f }, 2.0f, 2.0f, 16, Color{ 110, 82, 54, 255 });
         DrawCylinderEx({ cx, 3.4f, -8.2f }, { cx, 3.4f, -8.0f }, 0.6f, 0.6f, 8, metalOscuro);
@@ -1078,37 +1101,44 @@ static void DibujarDesgueceGrua(const MinijuegoGruaChatarra& minijuego)
         for (int k = 0; k < 12; k++)
         {
             float a = giro + (float)k * 0.5235988f;
-            DrawCube({ cx + std::cos(a) * 2.15f, 3.4f + std::sin(a) * 2.15f, -8.45f }, 0.5f, 0.5f, 0.5f, Color{ 110, 82, 54, 255 });
+            (DrawCube)({ cx + std::cos(a) * 2.15f, 3.4f + std::sin(a) * 2.15f, -8.45f }, 0.5f, 0.5f, 0.5f, Color{ 110, 82, 54, 255 });
         }
     }
 
     // Prensa hidraulica a la derecha del fondo.
     float prensa = 0.5f + 0.5f * std::sin(t * 1.4f);
-    DrawCube({ 10.6f, 2.6f, -3.5f }, 1.2f, 5.2f, 1.2f, metal);
-    DrawCube({ 10.6f, 5.0f, -3.5f }, 2.4f, 0.6f, 1.6f, metalOscuro);
-    DrawCube({ 10.6f, 4.0f - prensa * 1.5f, -3.5f }, 2.0f, 0.5f, 1.4f, Color{ 190, 150, 50, 255 });
-    DrawCube({ 10.6f, 0.2f, -3.5f }, 2.4f, 0.4f, 1.8f, metalOscuro);
+    if (!DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_PRENSA_ESTRUCTURA, {10.6f,0,-3.5f}))
+    {
+        (DrawCube)({ 10.6f, 2.6f, -3.5f }, 1.2f, 5.2f, 1.2f, metal);
+        (DrawCube)({ 10.6f, 5.0f, -3.5f }, 2.4f, 0.6f, 1.6f, metalOscuro);
+        (DrawCube)({ 10.6f, 0.2f, -3.5f }, 2.4f, 0.4f, 1.8f, metalOscuro);
+    }
+    if (!DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_PRENSA_PLATO, {10.6f,4.0f - prensa * 1.5f,-3.5f}))
+        (DrawCube)({ 10.6f, 4.0f - prensa * 1.5f, -3.5f }, 2.0f, 0.5f, 1.4f, Color{ 190, 150, 50, 255 });
 
     // Autos aplastados a la izquierda del fondo.
     for (int k = 0; k < 3; k++)
     {
         Color carroceria = k == 0 ? Color{ 170, 50, 46, 255 } : (k == 1 ? Color{ 60, 100, 160, 255 } : Color{ 190, 170, 70, 255 });
         float y = 0.3f + (float)k * 0.5f;
+        if (DibujarModeloGruaChatarraRetro3D(static_cast<ModeloGruaChatarra3D>(MODELO_GRUA_AUTO_ROJO + k),
+            {-10.8f,.05f + k * .5f,-3.5f + (k % 2) * .2f})) continue;
 
-        DrawCube({ -10.8f, y, -3.5f + (float)(k % 2) * 0.2f }, 1.6f, 0.45f, 3.0f, carroceria);
-        DrawCube({ -10.8f, y + 0.3f, -3.5f }, 1.2f, 0.2f, 1.6f, Color{ 50, 60, 70, 255 });
+        (DrawCube)({ -10.8f, y, -3.5f + (float)(k % 2) * 0.2f }, 1.6f, 0.45f, 3.0f, carroceria);
+        (DrawCube)({ -10.8f, y + 0.3f, -3.5f }, 1.2f, 0.2f, 1.6f, Color{ 50, 60, 70, 255 });
     }
 
     // Cintas transportadoras laterales con franjas en movimiento.
     for (int lado = -1; lado <= 1; lado += 2)
     {
         float x = (float)lado * 9.9f;
-        DrawCube({ x, 0.2f, 1.6f }, 1.2f, 0.4f, 8.0f, metalOscuro);
+        if (DibujarCintaGruaChatarraRetro3D(x, lado, t)) continue;
+        (DrawCube)({ x, 0.2f, 1.6f }, 1.2f, 0.4f, 8.0f, metalOscuro);
 
         for (int k = 0; k < 8; k++)
         {
             float z = -2.2f + std::fmod((float)k * 1.0f + t * 1.2f * (float)lado, 8.0f);
-            DrawCube({ x, 0.43f, z + 0.0f }, 1.0f, 0.06f, 0.18f, Color{ 220, 190, 50, 255 });
+            (DrawCube)({ x, 0.43f, z + 0.0f }, 1.0f, 0.06f, 0.18f, Color{ 220, 190, 50, 255 });
         }
     }
 
@@ -1117,16 +1147,24 @@ static void DibujarDesgueceGrua(const MinijuegoGruaChatarra& minijuego)
     {
         float x = -10.0f + (float)i * 2.5f;
         float alto = 0.8f + Ruido01Grua(i, 7) * 1.0f;
-        DrawCube({ x, alto * 0.5f, 6.6f }, 1.8f, alto, 1.2f, i % 2 == 0 ? oxido : Color{ 96, 98, 106, 255 });
+        if (DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_PILA,
+            {x,0,6.6f}, 0, {0,1,0}, {1,alto,1})) continue;
+        (DrawCube)({ x, alto * 0.5f, 6.6f }, 1.8f, alto, 1.2f, i % 2 == 0 ? oxido : Color{ 96, 98, 106, 255 });
     }
 
     // Focos industriales.
     for (int k = 0; k < 4; k++)
     {
         float x = -8.0f + (float)k * 5.4f;
-        DrawCube({ x, 3.0f, 8.0f }, 0.2f, 6.0f, 0.2f, metal);
-        DrawSphere({ x, 6.0f, 7.8f }, 0.3f, Color{ 255, 236, 170, 255 });
-        DrawSphere({ x, 6.0f, 7.8f }, 0.8f, Fade(Color{ 255, 230, 150, 255 }, 0.14f));
+        bool foco = DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_FOCO, {x,0,8});
+        if (!foco)
+        {
+            (DrawCube)({ x, 3.0f, 8.0f }, 0.2f, 6.0f, 0.2f, metal);
+            (DrawSphere)({ x, 6.0f, 7.8f }, 0.3f, Color{ 255, 236, 170, 255 });
+        }
+        // Halo alineado con la bombilla del GLB o de su fallback.
+        (DrawSphere)({x,foco ? 5.78f : 6.0f,foco ? 7.55f : 7.8f},
+            0.8f, Fade(Color{255,230,150,255}, 0.14f));
     }
 }
 
@@ -1149,13 +1187,16 @@ static void DibujarTolvasGrua(
         float x = TolvaXGrua(minijuego, estado.puesto);
         Color color = participantes[i].color;
 
-        DrawCube({ x, 0.6f, Z_TOLVA_GRUA }, 2.4f, 1.2f, 1.6f, Color{ 60, 62, 70, 255 });
-        DrawCube({ x, 1.25f, Z_TOLVA_GRUA + 0.78f }, 2.4f, 0.12f, 0.1f, color);
-        DrawCylinder({ x, 1.2f, Z_TOLVA_GRUA }, 1.2f, 0.7f, 0.5f, 8, color);
+        // El GLB incluye tambien la plataforma y el respaldo del operador.
+        if (DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_TOLVA,
+            {x,0,Z_TOLVA_GRUA}, 0, {0,1,0}, {1,1,1}, color)) continue;
+        (DrawCube)({ x, 0.6f, Z_TOLVA_GRUA }, 2.4f, 1.2f, 1.6f, Color{ 60, 62, 70, 255 });
+        (DrawCube)({ x, 1.25f, Z_TOLVA_GRUA + 0.78f }, 2.4f, 0.12f, 0.1f, color);
+        (DrawCylinder)({ x, 1.2f, Z_TOLVA_GRUA }, 1.2f, 0.7f, 0.5f, 8, color);
 
         // Puesto del operador.
-        DrawCube({ x, 0.3f, Z_TOLVA_GRUA - 1.5f }, 2.0f, 0.6f, 1.6f, Color{ 90, 94, 104, 255 });
-        DrawCube({ x, 0.65f, Z_TOLVA_GRUA - 2.2f }, 1.6f, 0.9f, 0.2f, Color{ 52, 54, 62, 255 });
+        (DrawCube)({ x, 0.3f, Z_TOLVA_GRUA - 1.5f }, 2.0f, 0.6f, 1.6f, Color{ 90, 94, 104, 255 });
+        (DrawCube)({ x, 0.65f, Z_TOLVA_GRUA - 2.2f }, 1.6f, 0.9f, 0.2f, Color{ 52, 54, 62, 255 });
     }
 }
 
@@ -1186,21 +1227,34 @@ static void DibujarGarraGrua(
     }
 
     // Sombra / marca de la garra en el suelo.
-    DrawCircle3D({ x, 0.04f, z }, 0.55f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(color, 0.9f));
-    DrawCircle3D({ x, 0.045f, z }, 0.08f, { 1.0f, 0.0f, 0.0f }, 90.0f, WHITE);
+    if (!DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_MARCA,
+        {x,0,z}, 0, {0,1,0}, {1,1,1}, Fade(color,.9f)))
+    {
+        DrawCircle3D({ x, 0.04f, z }, 0.55f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(color, 0.9f));
+        DrawCircle3D({ x, 0.045f, z }, 0.08f, { 1.0f, 0.0f, 0.0f }, 90.0f, WHITE);
+    }
 
     // Cable desde el carro del puente grua.
     DrawLine3D({ x, 8.0f, z }, { x, altura + 0.35f, z }, Color{ 40, 40, 46, 255 });
-    DrawCube({ x, 8.0f, z }, 0.7f, 0.3f, 0.7f, Color{ 60, 62, 70, 255 });
+    if (!DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_CARRO, {x,8,z}))
+        (DrawCube)({ x, 8.0f, z }, 0.7f, 0.3f, 0.7f, Color{ 60, 62, 70, 255 });
 
     // Iman y pinzas.
-    DrawCylinder({ x, altura, z }, 0.45f, 0.5f, 0.3f, 12, color);
-    DrawCylinder({ x, altura + 0.3f, z }, 0.2f, 0.2f, 0.2f, 8, Color{ 60, 62, 70, 255 });
+    if (!DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_IMAN,
+        {x,altura,z}, 0, {0,1,0}, {1,1,1}, color))
+    {
+        (DrawCylinder)({ x, altura, z }, 0.45f, 0.5f, 0.3f, 12, color);
+        (DrawCylinder)({ x, altura + 0.3f, z }, 0.2f, 0.2f, 0.2f, 8, Color{ 60, 62, 70, 255 });
+    }
 
     for (int k = 0; k < 4; k++)
     {
         float a = (float)k * 1.5707963f + 0.7853982f;
-        DrawCube({ x + std::cos(a) * apertura * 0.7f, altura - 0.2f, z + std::sin(a) * apertura * 0.7f }, 0.1f, 0.5f, 0.1f, Color{ 190, 190, 200, 255 });
+        // La punta local apunta hacia -Z: girar hacia el centro del iman.
+        if (!DibujarModeloGruaChatarraRetro3D(MODELO_GRUA_PINZA,
+            {x + std::cos(a) * apertura * .7f,altura - .02f,z + std::sin(a) * apertura * .7f},
+            90 - a * RAD2DEG))
+            (DrawCube)({ x + std::cos(a) * apertura * 0.7f, altura - 0.2f, z + std::sin(a) * apertura * 0.7f }, 0.1f, 0.5f, 0.1f, Color{ 190, 190, 200, 255 });
     }
 
     if (estado.estado == GARRA_GRUA_ACCION)
