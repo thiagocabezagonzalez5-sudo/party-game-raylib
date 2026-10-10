@@ -537,6 +537,71 @@ static_assert(sizeof(RUTAS_MODELOS_VOLEA_MAGMA_3D) /
     "Las rutas deben coincidir con los IDs del paquete Volea de Magma");
 
 //==================================================
+// PAQUETE DE PAREJAS GLACIARES
+//==================================================
+
+enum ModeloParejasGlaciar3D
+{
+    MODELO_GLACIAR_MAR,
+    MODELO_GLACIAR_LAGO,
+    MODELO_GLACIAR_TABLERO,
+    MODELO_GLACIAR_BLOQUE_OCULTO,
+    MODELO_GLACIAR_BLOQUE_EMPAREJADO,
+    MODELO_GLACIAR_CURSOR,
+    MODELO_GLACIAR_SIMBOLO_0,
+    MODELO_GLACIAR_SIMBOLO_1,
+    MODELO_GLACIAR_SIMBOLO_2,
+    MODELO_GLACIAR_SIMBOLO_3,
+    MODELO_GLACIAR_SIMBOLO_4,
+    MODELO_GLACIAR_SIMBOLO_5,
+    MODELO_GLACIAR_SIMBOLO_6,
+    MODELO_GLACIAR_SIMBOLO_7,
+    MODELO_GLACIAR_TEMPANO,
+    MODELO_GLACIAR_ICEBERG,
+    MODELO_GLACIAR_MONTANA,
+    MODELO_GLACIAR_CUEVA,
+    MODELO_GLACIAR_PINGUINO,
+    MODELO_GLACIAR_FOCA,
+    MODELO_GLACIAR_AURORA_VERDE,
+    MODELO_GLACIAR_AURORA_VIOLETA,
+    MODELO_GLACIAR_AURORA_CIAN,
+    MODELO_GLACIAR_FRAGMENTO,
+    CANTIDAD_MODELOS_PAREJAS_GLACIAR_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_PAREJAS_GLACIAR_3D[] =
+{
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/mar_frio.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/lago_helado.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/tablero_4x4.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/bloque_oculto.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/bloque_emparejado.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/cursor_seleccion.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/simbolo_0_esfera.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/simbolo_1_cubo.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/simbolo_2_cono.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/simbolo_3_cilindro.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/simbolo_4_rombo.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/simbolo_5_nieve.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/simbolo_6_copo.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/simbolo_7_aurora.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/tempano_jugador.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/iceberg.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/montana_nevada.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/cueva_hielo.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/pinguino.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/foca.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/aurora_verde.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/aurora_violeta.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/aurora_cian.glb",
+    "Assets/Modelos/Escenarios/Parejas Glaciares Modelos/GLB/fragmento_hielo.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_PAREJAS_GLACIAR_3D) /
+    sizeof(RUTAS_MODELOS_PAREJAS_GLACIAR_3D[0]) == CANTIDAD_MODELOS_PAREJAS_GLACIAR_3D,
+    "Las rutas deben coincidir con los IDs del paquete Parejas Glaciares");
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 

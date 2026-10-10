@@ -76,6 +76,7 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D tesoreroCercado[CANTIDAD_MODELOS_TESORERO_CERCADO_3D];
     RecursoModeloEscenarioRetro3D descensoNubes[CANTIDAD_MODELOS_DESCENSO_NUBES_3D];
     RecursoModeloEscenarioRetro3D voleaMagma[CANTIDAD_MODELOS_VOLEA_MAGMA_3D];
+    RecursoModeloEscenarioRetro3D parejasGlaciar[CANTIDAD_MODELOS_PAREJAS_GLACIAR_3D];
     AlasDescensoNubesRetro3D alasNubes;
     bool inicializados = false;
 };
@@ -843,6 +844,72 @@ inline bool DibujarModeloVoleaMagmaRetro3D(
     return DibujarModeloEscenarioRetro3D(vista, posicion, {0,1,0}, 0, escala, colorEstado);
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteParejasGlaciarRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_PAREJAS_GLACIAR_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_PAREJAS_GLACIAR_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_PAREJAS_GLACIAR_3D[i];
+        // GLB v1: indices de primitive, resueltos mediante meshMaterial.
+        // COLOR_JUGADOR solo colorea la marca; aurora conserva el pulso C++.
+        definiciones[MODELO_GLACIAR_BLOQUE_EMPAREJADO].mallaColor = 3;
+        definiciones[MODELO_GLACIAR_SIMBOLO_7].mallaColor = 0;
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().parejasGlaciar,
+        definiciones, CANTIDAD_MODELOS_PAREJAS_GLACIAR_3D };
+}
+
+inline void CargarPaqueteParejasGlaciarRetro3D()
+{
+    PaqueteModelosEscenarioRetro3D paquete = ObtenerPaqueteParejasGlaciarRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    const int mallasEsperadas[] = {2,3,3,4,4,2,1,1,1,1,1,1,1,2,3,3,3,4,3,2,2,2,2,2};
+    for (int i = 0; i < paquete.cantidad; i++)
+    {
+        RecursoModeloEscenarioRetro3D& recurso = paquete.recursos[i];
+        if (!recurso.cargado || recurso.modelo.meshCount == mallasEsperadas[i]) continue;
+        UnloadModel(recurso.modelo);
+        recurso.modelo = {};
+        recurso.cargado = false;
+        TraceLog(LOG_WARNING, "Primitives inesperadas en escenario; se usan primitivas: %s", recurso.ruta);
+    }
+}
+
+inline bool DibujarModeloParejasGlaciarRetro3D(
+    ModeloParejasGlaciar3D pieza, Vector3 posicion, Vector3 escala = {1,1,1},
+    Color colorEstado = WHITE, int mallaOmitida = -1, float opacidad = 1.0f,
+    float anguloY = 0.0f)
+{
+    RecursoModeloEscenarioRetro3D& recurso = ObtenerModelosEscenariosRetro3D().parejasGlaciar[pieza];
+    if (!recurso.cargado) return false;
+    if (mallaOmitida < 0 && opacidad >= 1.0f)
+        return DibujarModeloEscenarioRetro3D(recurso, posicion, {0,1,0}, anguloY, escala, colorEstado);
+
+    // Vista sin propiedad: ocultar la talla al revelar, o desvanecer las
+    // bandas sin duplicar VBO/materiales. Cada dibujo restaura el material.
+    RecursoModeloEscenarioRetro3D vista = recurso;
+    vista.modelo.meshCount = 1;
+    for (int i = 0; i < recurso.modelo.meshCount; i++)
+    {
+        if (i == mallaOmitida) continue;
+        vista.modelo.meshes = &recurso.modelo.meshes[i];
+        vista.modelo.meshMaterial = &recurso.modelo.meshMaterial[i];
+        Color color = colorEstado;
+        vista.materialColor = recurso.materialColor;
+        if (opacidad < 1.0f)
+        {
+            vista.materialColor = recurso.modelo.meshMaterial[i];
+            color = recurso.modelo.materials[vista.materialColor].maps[MATERIAL_MAP_DIFFUSE].color;
+            color.a = (unsigned char)(color.a * opacidad);
+        }
+        DibujarModeloEscenarioRetro3D(vista, posicion, {0,1,0}, anguloY, escala, color);
+    }
+    return true;
+}
+
 inline void InicializarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -929,6 +996,8 @@ inline void DescargarModelosEscenariosRetro3D()
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.descensoNubes)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.voleaMagma)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.parejasGlaciar)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.ultimoAsiento)
         DescargarSlotModeloEscenarioRetro3D(recurso);

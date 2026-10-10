@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -720,6 +721,7 @@ void MinijuegoParejasGlaciar::Reiniciar(
         return;
     }
 
+    CargarPaqueteParejasGlaciarRetro3D();
     const float esquinasX[MAX_PARTICIPANTES] = { -7.2f, 7.2f, -7.2f, 7.2f };
     const float esquinasZ[MAX_PARTICIPANTES] = { -2.6f, -2.6f, 2.6f, 2.6f };
 
@@ -823,9 +825,8 @@ void MinijuegoParejasGlaciar::Actualizar(
 // VISUAL
 //==================================================
 //
-// MODELO FUTURO: reemplazar por GLB los bloques de hielo con simbolos
-// tallados, los tempanos, los icebergs, las montanas nevadas, la cueva de
-// hielo, los pinguinos, la foca y las bandas de aurora.
+// GLB compartidos con pivotes originales. El dibujo conserva las animaciones
+// del estado; las primitivas se usan solo si falla la pieza correspondiente.
 //==================================================
 
 
@@ -850,34 +851,49 @@ static Color ColorSimboloGlaciar(int simbolo)
 static void DibujarSimboloGlaciar(int simbolo, Vector3 p, float tiempo)
 {
     Color color = ColorSimboloGlaciar(simbolo);
+    float mezcla = 0.5f + 0.5f * std::sin(tiempo * 3.0f);
+    Color brillo = {
+        (unsigned char)(120.0f + 120.0f * mezcla),
+        (unsigned char)(255.0f - 120.0f * mezcla),
+        (unsigned char)(170.0f + 40.0f * mezcla), 255
+    };
+    if (DibujarModeloParejasGlaciarRetro3D(
+        (ModeloParejasGlaciar3D)(MODELO_GLACIAR_SIMBOLO_0 + (simbolo & 7)),
+        p, {1,1,1}, brillo))
+    {
+        // El halo sigue siendo un efecto procedural, no forma parte del GLB.
+        if (simbolo == SIMBOLO_AURORA_GLACIAR)
+            (DrawSphere)({p.x,p.y + 0.4f,p.z}, 0.55f, Fade(brillo,0.25f));
+        return;
+    }
 
     switch (simbolo)
     {
     case 0:
-        DrawSphere({ p.x, p.y + 0.35f, p.z }, 0.35f, color);
+        (DrawSphere)({ p.x, p.y + 0.35f, p.z }, 0.35f, color);
         break;
     case 1:
-        DrawCube({ p.x, p.y + 0.3f, p.z }, 0.6f, 0.6f, 0.6f, color);
+        (DrawCube)({ p.x, p.y + 0.3f, p.z }, 0.6f, 0.6f, 0.6f, color);
         break;
     case 2:
-        DrawCylinder(p, 0.0f, 0.38f, 0.8f, 10, color);
+        (DrawCylinder)(p, 0.0f, 0.38f, 0.8f, 10, color);
         break;
     case 3:
-        DrawCylinder(p, 0.28f, 0.28f, 0.7f, 10, color);
+        (DrawCylinder)(p, 0.28f, 0.28f, 0.7f, 10, color);
         break;
     case 4:
-        DrawCylinder(p, 0.0f, 0.34f, 0.4f, 4, color);
-        DrawCylinder({ p.x, p.y + 0.4f, p.z }, 0.34f, 0.0f, 0.4f, 4, color);
+        (DrawCylinder)(p, 0.0f, 0.34f, 0.4f, 4, color);
+        (DrawCylinder)({ p.x, p.y + 0.4f, p.z }, 0.34f, 0.0f, 0.4f, 4, color);
         break;
     case 5:
-        DrawSphere({ p.x, p.y + 0.3f, p.z }, 0.3f, color);
-        DrawSphere({ p.x, p.y + 0.78f, p.z }, 0.2f, color);
+        (DrawSphere)({ p.x, p.y + 0.3f, p.z }, 0.3f, color);
+        (DrawSphere)({ p.x, p.y + 0.78f, p.z }, 0.2f, color);
         break;
     case 6:
         for (int k = 0; k < 6; k++)
         {
             float angulo = (float)k * 1.0472f;
-            DrawSphere(
+            (DrawSphere)(
                 { p.x + std::cos(angulo) * 0.33f, p.y + 0.15f, p.z + std::sin(angulo) * 0.33f },
                 0.11f,
                 color
@@ -887,24 +903,17 @@ static void DibujarSimboloGlaciar(int simbolo, Vector3 p, float tiempo)
     default:
     {
         // Aurora: estrella que cambia de color.
-        float mezcla = 0.5f + 0.5f * std::sin(tiempo * 3.0f);
-        Color brillo = Color{
-            (unsigned char)(120.0f + 120.0f * mezcla),
-            (unsigned char)(255.0f - 120.0f * mezcla),
-            (unsigned char)(170.0f + 40.0f * mezcla),
-            255
-        };
-        DrawCube({ p.x, p.y + 0.4f, p.z }, 0.8f, 0.14f, 0.14f, brillo);
-        DrawCube({ p.x, p.y + 0.4f, p.z }, 0.14f, 0.8f, 0.14f, brillo);
-        DrawCube({ p.x, p.y + 0.4f, p.z }, 0.14f, 0.14f, 0.8f, brillo);
-        DrawSphere({ p.x, p.y + 0.4f, p.z }, 0.55f, Fade(brillo, 0.25f));
+        (DrawCube)({ p.x, p.y + 0.4f, p.z }, 0.8f, 0.14f, 0.14f, brillo);
+        (DrawCube)({ p.x, p.y + 0.4f, p.z }, 0.14f, 0.8f, 0.14f, brillo);
+        (DrawCube)({ p.x, p.y + 0.4f, p.z }, 0.14f, 0.14f, 0.8f, brillo);
+        (DrawSphere)({ p.x, p.y + 0.4f, p.z }, 0.55f, Fade(brillo, 0.25f));
         break;
     }
     }
 }
 
 
-static void DibujarBloqueGlaciar(const BloqueGlaciar& bloque, int indice, float tiempo)
+static void DibujarBloqueGlaciar(const BloqueGlaciar& bloque, int indice, float tiempo, Color colorDuenio)
 {
     float x = PosicionXBloqueGlaciar(indice);
     float z = PosicionZBloqueGlaciar(indice);
@@ -920,10 +929,19 @@ static void DibujarBloqueGlaciar(const BloqueGlaciar& bloque, int indice, float 
         ? Color{ 150, 190, 215, 255 }
         : Color{ 170, 218, 246, 255 };
 
-    DrawCube({ x, altura * 0.5f, z }, 1.65f, altura, 1.65f, hielo);
-    DrawCubeWires({ x, altura * 0.5f, z }, 1.65f, altura, 1.65f, Color{ 90, 140, 200, 255 });
+    bool modelo = DibujarModeloParejasGlaciarRetro3D(
+        bloque.emparejado ? MODELO_GLACIAR_BLOQUE_EMPAREJADO : MODELO_GLACIAR_BLOQUE_OCULTO,
+        {x,0,z}, {1,altura / (bloque.emparejado ? 0.26f : ALTURA_BLOQUE_GLACIAR),1},
+        colorDuenio, !bloque.emparejado && bloque.derretido >= 0.5f ? 3 : -1);
+    if (!modelo)
+    {
+        (DrawCube)({ x, altura * 0.5f, z }, 1.65f, altura, 1.65f, hielo);
+        DrawCubeWires({ x, altura * 0.5f, z }, 1.65f, altura, 1.65f, Color{ 90, 140, 200, 255 });
+        if (bloque.emparejado && bloque.duenio >= 0)
+            (DrawCylinder)({x,0,z}, 0.75f,0.75f,0.05f,14,colorDuenio);
+    }
 
-    if (bloque.derretido < 0.5f)
+    if (bloque.derretido < 0.5f && !modelo)
     {
         // Copo tallado en la cara superior.
         Color talla = Color{ 110, 160, 215, 255 };
@@ -933,46 +951,70 @@ static void DibujarBloqueGlaciar(const BloqueGlaciar& bloque, int indice, float 
         DrawLine3D({ x - 0.35f, y, z - 0.35f }, { x + 0.35f, y, z + 0.35f }, talla);
         DrawLine3D({ x - 0.35f, y, z + 0.35f }, { x + 0.35f, y, z - 0.35f }, talla);
     }
-    else
+    else if (bloque.derretido >= 0.5f)
     {
         DibujarSimboloGlaciar(bloque.simbolo, { x, altura + 0.05f, z }, tiempo);
+    }
+
+    if (bloque.temblor > 0.0f)
+    {
+        // Fragmentos visuales ligados al mismo temblor, sin estado fisico nuevo.
+        for (int k = 0; k < 3; k++)
+        {
+            float a = tiempo * 8.0f + k * 2.0944f;
+            Vector3 p = {x + std::cos(a) * 0.9f,
+                altura + 0.1f + 0.18f * (1.0f + std::sin(a * 2.0f)),
+                z + std::sin(a) * 0.9f};
+            if (!DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_FRAGMENTO,
+                p, {0.22f,0.22f,0.22f}, WHITE, -1, 0.75f, a * RAD2DEG))
+                (DrawCube)(p,0.13f,0.15f,0.13f,Fade(SKYBLUE,0.75f));
+        }
     }
 }
 
 
 static void DibujarPinguinoGlaciar(float x, float y, float z)
 {
-    DrawCylinder({ x, y, z }, 0.28f, 0.34f, 0.8f, 8, Color{ 24, 28, 36, 255 });
-    DrawSphere({ x, y + 0.45f, z + 0.18f }, 0.26f, Color{ 235, 238, 245, 255 });
-    DrawSphere({ x, y + 0.95f, z }, 0.24f, Color{ 24, 28, 36, 255 });
-    DrawCube({ x, y + 0.92f, z + 0.25f }, 0.12f, 0.06f, 0.16f, Color{ 245, 160, 40, 255 });
+    if (DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_PINGUINO, {x,y,z})) return;
+    (DrawCylinder)({ x, y, z }, 0.28f, 0.34f, 0.8f, 8, Color{ 24, 28, 36, 255 });
+    (DrawSphere)({ x, y + 0.45f, z + 0.18f }, 0.26f, Color{ 235, 238, 245, 255 });
+    (DrawSphere)({ x, y + 0.95f, z }, 0.24f, Color{ 24, 28, 36, 255 });
+    (DrawCube)({ x, y + 0.92f, z + 0.25f }, 0.12f, 0.06f, 0.16f, Color{ 245, 160, 40, 255 });
 }
 
 
 static void DibujarFocaGlaciar(float x, float y, float z)
 {
+    if (DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_FOCA, {x,y,z})) return;
     DrawCylinderEx({ x - 0.7f, y + 0.35f, z }, { x + 0.5f, y + 0.4f, z }, 0.42f, 0.34f, 10, Color{ 120, 128, 140, 255 });
-    DrawSphere({ x + 0.7f, y + 0.55f, z }, 0.32f, Color{ 130, 138, 150, 255 });
-    DrawSphere({ x - 0.75f, y + 0.35f, z }, 0.38f, Color{ 120, 128, 140, 255 });
-    DrawSphere({ x + 0.92f, y + 0.62f, z + 0.14f }, 0.05f, BLACK);
+    (DrawSphere)({ x + 0.7f, y + 0.55f, z }, 0.32f, Color{ 130, 138, 150, 255 });
+    (DrawSphere)({ x - 0.75f, y + 0.35f, z }, 0.38f, Color{ 120, 128, 140, 255 });
+    (DrawSphere)({ x + 0.92f, y + 0.62f, z + 0.14f }, 0.05f, BLACK);
 }
 
 
 static void DibujarEscenarioGlaciar(float tiempo)
 {
-    DrawPlane({ 0.0f, -0.6f, -6.0f }, { 120.0f, 90.0f }, Color{ 10, 30, 62, 255 });
+    if (!DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_MAR, {0,0,0}))
+        DrawPlane({ 0.0f, -0.6f, -6.0f }, { 120.0f, 90.0f }, Color{ 10, 30, 62, 255 });
 
     // Lago helado y losa del tablero.
-    DrawCube({ 0.0f, -0.35f, 0.0f }, 20.0f, 0.5f, 11.0f, Color{ 190, 224, 242, 255 });
-    DrawCube({ 0.0f, -0.12f, 0.0f }, 8.2f, 0.28f, 8.2f, Color{ 120, 170, 215, 255 });
+    if (!DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_LAGO, {0,0,0}))
+        (DrawCube)({ 0.0f, -0.35f, 0.0f }, 20.0f, 0.5f, 11.0f, Color{ 190, 224, 242, 255 });
+    if (!DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_TABLERO, {0,0,0}))
+        (DrawCube)({ 0.0f, -0.12f, 0.0f }, 8.2f, 0.28f, 8.2f, Color{ 120, 170, 215, 255 });
 
     // Montanas nevadas.
     for (int i = 0; i < 6; i++)
     {
         float x = -22.0f + 8.5f * (float)i;
         float alto = 9.0f + (float)((i * 7) % 5);
-        DrawCylinder({ x, -0.5f, -20.0f }, 0.0f, 6.0f, alto, 6, Color{ 62, 84, 120, 255 });
-        DrawCylinder({ x, alto * 0.6f - 0.5f, -20.0f }, 0.0f, 2.4f, alto * 0.4f, 6, Color{ 235, 242, 250, 255 });
+        // El GLB tiene la base en -.5 y altura 11: anclar la misma base
+        // tras escalar conserva las alturas originales de cada montana.
+        if (DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_MONTANA,
+            {x,-0.5f + 0.5f * alto / 11.0f,-20}, {1,alto / 11.0f,1})) continue;
+        (DrawCylinder)({ x, -0.5f, -20.0f }, 0.0f, 6.0f, alto, 6, Color{ 62, 84, 120, 255 });
+        (DrawCylinder)({ x, alto * 0.6f - 0.5f, -20.0f }, 0.0f, 2.4f, alto * 0.4f, 6, Color{ 235, 242, 250, 255 });
     }
 
     // Aurora detras de las montanas.
@@ -980,19 +1022,32 @@ static void DibujarEscenarioGlaciar(float tiempo)
     {
         float x = -24.0f + 6.0f * (float)i;
         float alto = 7.0f + 3.0f * std::sin(tiempo * 0.6f + (float)i);
+        float escalaY = alto / 11.9067f;
+        if (DibujarModeloParejasGlaciarRetro3D(
+            (ModeloParejasGlaciar3D)(MODELO_GLACIAR_AURORA_VERDE + i % 3),
+            {x,14.0f + alto * 0.3f - 12.14395f * escalaY,-26},
+            {1,escalaY,1}, WHITE, -1, 0.22f)) continue;
         Color banda = i % 2 == 0 ? Color{ 80, 255, 160, 255 } : Color{ 200, 90, 240, 255 };
-        DrawCube({ x, 14.0f + alto * 0.3f, -26.0f }, 5.0f, alto, 0.2f, Fade(banda, 0.22f));
+        (DrawCube)({ x, 14.0f + alto * 0.3f, -26.0f }, 5.0f, alto, 0.2f, Fade(banda, 0.22f));
     }
 
     // Icebergs, cueva de hielo y fauna.
-    DrawCylinder({ -12.0f, -0.5f, -9.0f }, 0.0f, 3.2f, 4.5f, 5, Color{ 170, 214, 240, 255 });
-    DrawCylinder({ 11.0f, -0.5f, -10.0f }, 0.0f, 3.8f, 5.5f, 5, Color{ 150, 200, 235, 255 });
-    DrawCylinder({ 15.0f, -0.5f, 1.0f }, 0.0f, 2.2f, 3.0f, 5, Color{ 190, 226, 245, 255 });
+    if (!DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_ICEBERG, {-12,0,-9}))
+        (DrawCylinder)({ -12.0f, -0.5f, -9.0f }, 0.0f, 3.2f, 4.5f, 5, Color{ 170, 214, 240, 255 });
+    if (!DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_ICEBERG,
+        {11,-0.5f + 0.5f * 5.5f / 4.5f,-10}, {3.8f / 3.2f,5.5f / 4.5f,3.8f / 3.2f}))
+        (DrawCylinder)({ 11.0f, -0.5f, -10.0f }, 0.0f, 3.8f, 5.5f, 5, Color{ 150, 200, 235, 255 });
+    if (!DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_ICEBERG,
+        {15,-0.5f + 0.5f * 3.0f / 4.5f,1}, {2.2f / 3.2f,3.0f / 4.5f,2.2f / 3.2f}))
+        (DrawCylinder)({ 15.0f, -0.5f, 1.0f }, 0.0f, 2.2f, 3.0f, 5, Color{ 190, 226, 245, 255 });
 
-    DrawCube({ -4.0f, 1.8f, -11.0f }, 1.2f, 3.6f, 1.5f, Color{ 90, 160, 225, 255 });
-    DrawCube({ 4.0f, 1.8f, -11.0f }, 1.2f, 3.6f, 1.5f, Color{ 90, 160, 225, 255 });
-    DrawCube({ 0.0f, 3.9f, -11.0f }, 9.2f, 1.2f, 1.5f, Color{ 110, 180, 235, 255 });
-    DrawCube({ 0.0f, 1.8f, -11.4f }, 6.8f, 3.6f, 0.4f, Color{ 20, 50, 100, 255 });
+    if (!DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_CUEVA, {0,0,-11}))
+    {
+        (DrawCube)({ -4.0f, 1.8f, -11.0f }, 1.2f, 3.6f, 1.5f, Color{ 90, 160, 225, 255 });
+        (DrawCube)({ 4.0f, 1.8f, -11.0f }, 1.2f, 3.6f, 1.5f, Color{ 90, 160, 225, 255 });
+        (DrawCube)({ 0.0f, 3.9f, -11.0f }, 9.2f, 1.2f, 1.5f, Color{ 110, 180, 235, 255 });
+        (DrawCube)({ 0.0f, 1.8f, -11.4f }, 6.8f, 3.6f, 0.4f, Color{ 20, 50, 100, 255 });
+    }
 
     DibujarPinguinoGlaciar(-12.6f, 2.4f, -8.4f);
     DibujarPinguinoGlaciar(-11.6f, 1.2f, -7.4f);
@@ -1003,12 +1058,15 @@ static void DibujarEscenarioGlaciar(float tiempo)
 
 static void DibujarTempanoGlaciar(float x, float z, bool activo, float tiempo)
 {
-    DrawCylinder({ x, -0.45f, z }, 2.1f, 2.4f, 0.5f, 16, Color{ 205, 232, 248, 255 });
+    bool modelo = DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_TEMPANO, {x,0,z});
+    if (!modelo)
+        (DrawCylinder)({ x, -0.45f, z }, 2.1f, 2.4f, 0.5f, 16, Color{ 205, 232, 248, 255 });
 
     if (activo)
     {
         float pulso = 0.45f + 0.3f * std::sin(tiempo * 6.0f);
-        DrawCylinder({ x, 0.06f, z }, 1.9f, 1.9f, 0.04f, 20, Fade(YELLOW, pulso));
+        // La tapa del GLB llega a .115: el indicador queda sobre ella.
+        (DrawCylinder)({ x, modelo ? 0.12f : 0.06f, z }, 1.9f, 1.9f, 0.04f, 20, Fade(YELLOW, pulso));
     }
 }
 
@@ -1029,32 +1087,20 @@ void MinijuegoParejasGlaciar::Dibujar(
 
     for (int i = 0; i < CANTIDAD_BLOQUES_GLACIAR; i++)
     {
-        DibujarBloqueGlaciar(bloques[i], i, tiempoAnimacion);
-
-        if (bloques[i].emparejado && bloques[i].duenio >= 0)
-        {
-            DrawCylinder(
-                { PosicionXBloqueGlaciar(i), 0.0f, PosicionZBloqueGlaciar(i) },
-                0.75f,
-                0.75f,
-                0.05f,
-                14,
-                participantes[bloques[i].duenio].color
-            );
-        }
+        Color duenio = bloques[i].duenio >= 0 ? participantes[bloques[i].duenio].color : WHITE;
+        DibujarBloqueGlaciar(bloques[i], i, tiempoAnimacion, duenio);
     }
 
     if (fase == FASE_GLACIAR_ELEGIR && turno >= 0)
     {
-        DrawCubeWires(
-            { PosicionXBloqueGlaciar(cursor), 0.55f, PosicionZBloqueGlaciar(cursor) },
-            1.85f,
-            1.1f,
-            1.85f,
-            YELLOW
-        );
-        DrawCylinder(
-            { PosicionXBloqueGlaciar(cursor), 0.0f, PosicionZBloqueGlaciar(cursor) },
+        if (!DibujarModeloParejasGlaciarRetro3D(MODELO_GLACIAR_CURSOR,
+            {PosicionXBloqueGlaciar(cursor),0,PosicionZBloqueGlaciar(cursor)}))
+            DrawCubeWires(
+                { PosicionXBloqueGlaciar(cursor), 0.55f, PosicionZBloqueGlaciar(cursor) },
+                1.85f, 1.1f, 1.85f, YELLOW
+            );
+        (DrawCylinder)(
+            { PosicionXBloqueGlaciar(cursor), 0.048f, PosicionZBloqueGlaciar(cursor) },
             1.0f,
             1.0f,
             0.04f,
