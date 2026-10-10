@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -1123,6 +1124,7 @@ void MinijuegoBolasAzucar::Reiniciar(
     }
 
     const float esquinasX[MAX_PARTICIPANTES] = { -7.5f, 7.5f, 7.5f, -7.5f };
+    CargarPaqueteBolasAzucarRetro3D();
     const float esquinasZ[MAX_PARTICIPANTES] = { -7.5f, 7.5f, -7.5f, 7.5f };
 
     int limite = cantidadMaxima < MAX_PARTICIPANTES
@@ -1241,33 +1243,35 @@ void MinijuegoBolasAzucar::Actualizar(
 // VISUAL
 //==================================================
 //
-// MODELO FUTURO: reemplazar por GLB el suelo de galleta, los parches de
-// azucar glas, los charcos de chocolate, las gominolas, los muros de
-// galleta, los arboles de piruleta, las columnas de caramelo, las
-// montanas de nata y las bolas de azucar.
+// GLB compartidos con pivotes originales. Los datos logicos siguen siendo
+// la unica fuente de posiciones, radios y colisiones; fallback por pieza.
 //==================================================
 
 
-static void DibujarPiruletaBolas(float x, float z, Color color)
+static void DibujarPiruletaBolas(float x, float z, Color color, int tipo)
 {
-    DrawCylinder({ x, 0.0f, z }, 0.12f, 0.12f, 3.6f, 6, Color{ 250, 245, 240, 255 });
-    DrawSphere({ x, 4.4f, z }, 1.2f, color);
-    DrawCylinder({ x, 4.35f, z }, 1.22f, 1.22f, 0.12f, 14, Fade(WHITE, 0.8f));
-    DrawSphere({ x, 4.4f, z }, 0.5f, Fade(WHITE, 0.55f));
+    auto pieza = static_cast<ModeloBolasAzucar3D>(MODELO_AZUCAR_PIRULETA_ROSA + tipo);
+    if (DibujarModeloBolasAzucarRetro3D(pieza, {x,0,z})) return;
+    (DrawCylinder)({ x, 0.0f, z }, 0.12f, 0.12f, 3.6f, 6, Color{ 250, 245, 240, 255 });
+    (DrawSphere)({ x, 4.4f, z }, 1.2f, color);
+    (DrawCylinder)({ x, 4.35f, z }, 1.22f, 1.22f, 0.12f, 14, Fade(WHITE, 0.8f));
+    (DrawSphere)({ x, 4.4f, z }, 0.5f, Fade(WHITE, 0.55f));
 }
 
 
 static void DibujarFondoBolas()
 {
-    DrawPlane({ 0.0f, -0.55f, 0.0f }, { 140.0f, 140.0f }, Color{ 246, 190, 214, 255 });
+    if (!DibujarModeloBolasAzucarRetro3D(MODELO_AZUCAR_FONDO))
+        DrawPlane({ 0.0f, -0.55f, 0.0f }, { 140.0f, 140.0f }, Color{ 246, 190, 214, 255 });
 
     // Montanas de nata con cereza.
     for (int i = 0; i < 3; i++)
     {
         float x = -22.0f + 20.0f * (float)i;
-        DrawCylinder({ x, -0.5f, -30.0f }, 0.0f, 8.0f, 11.0f, 10, Color{ 255, 250, 245, 255 });
-        DrawSphere({ x, 10.8f, -30.0f }, 0.7f, Color{ 220, 40, 70, 255 });
-        DrawCylinder({ x, 2.0f, -30.0f }, 4.2f, 4.8f, 0.4f, 10, Color{ 120, 70, 44, 255 });
+        if (DibujarModeloBolasAzucarRetro3D(MODELO_AZUCAR_MONTANA, {x,-.5f,-30})) continue;
+        (DrawCylinder)({ x, -0.5f, -30.0f }, 0.0f, 8.0f, 11.0f, 10, Color{ 255, 250, 245, 255 });
+        (DrawSphere)({ x, 10.8f, -30.0f }, 0.7f, Color{ 220, 40, 70, 255 });
+        (DrawCylinder)({ x, 2.0f, -30.0f }, 4.2f, 4.8f, 0.4f, 10, Color{ 120, 70, 44, 255 });
     }
 
     // Arboles de piruleta.
@@ -1283,20 +1287,21 @@ static void DibujarFondoBolas()
     for (int i = 0; i < 7; i++)
     {
         float x = -20.0f + 6.5f * (float)i;
-        DibujarPiruletaBolas(x, -16.0f, colores[i % 5]);
+        DibujarPiruletaBolas(x, -16.0f, colores[i % 5], i % 5);
     }
 
-    DibujarPiruletaBolas(-16.0f, 4.0f, colores[1]);
-    DibujarPiruletaBolas(16.0f, -3.0f, colores[3]);
-    DibujarPiruletaBolas(17.0f, 9.0f, colores[0]);
+    DibujarPiruletaBolas(-16.0f, 4.0f, colores[1], 1);
+    DibujarPiruletaBolas(16.0f, -3.0f, colores[3], 3);
+    DibujarPiruletaBolas(17.0f, 9.0f, colores[0], 0);
 
     // Columnas de caramelo.
     for (int i = 0; i < 4; i++)
     {
         float x = (i % 2 == 0 ? -12.5f : 12.5f);
         float z = (i < 2 ? -12.0f : 12.0f);
-        DrawCylinder({ x, 0.0f, z }, 0.8f, 0.9f, 6.0f, 10, Fade(Color{ 235, 150, 40, 255 }, 0.85f));
-        DrawCylinder({ x, 6.0f, z }, 1.1f, 1.1f, 0.3f, 10, Color{ 255, 200, 90, 255 });
+        if (DibujarModeloBolasAzucarRetro3D(MODELO_AZUCAR_COLUMNA, {x,0,z})) continue;
+        (DrawCylinder)({ x, 0.0f, z }, 0.8f, 0.9f, 6.0f, 10, Fade(Color{ 235, 150, 40, 255 }, 0.85f));
+        (DrawCylinder)({ x, 6.0f, z }, 1.1f, 1.1f, 0.3f, 10, Color{ 255, 200, 90, 255 });
     }
 }
 
@@ -1304,7 +1309,8 @@ static void DibujarFondoBolas()
 static void DibujarArenaBolas(const MinijuegoBolasAzucar& minijuego)
 {
     // Suelo de galleta con pepitas de chocolate.
-    DrawCube({ 0.0f, -0.25f, 0.0f }, MITAD_ARENA_BOLAS * 2.0f, 0.5f, MITAD_ARENA_BOLAS * 2.0f, Color{ 208, 152, 92, 255 });
+    if (!DibujarSueloBolasAzucarRetro3D())
+        (DrawCube)({ 0.0f, -0.25f, 0.0f }, MITAD_ARENA_BOLAS * 2.0f, 0.5f, MITAD_ARENA_BOLAS * 2.0f, Color{ 208, 152, 92, 255 });
 
     for (int i = 0; i < 28; i++)
     {
@@ -1313,13 +1319,18 @@ static void DibujarArenaBolas(const MinijuegoBolasAzucar& minijuego)
 
         if (!EnAzucarBolas(x, z) && !EnChocolateBolas(x, z))
         {
-            DrawCylinder({ x, 0.0f, z }, 0.16f, 0.16f, 0.04f, 8, Color{ 94, 56, 36, 255 });
+            if (!DibujarModeloBolasAzucarRetro3D(MODELO_AZUCAR_PEPITA, {x,0,z}))
+                (DrawCylinder)({ x, 0.0f, z }, 0.16f, 0.16f, 0.04f, 8, Color{ 94, 56, 36, 255 });
         }
     }
 
     for (const RectanguloAzucarBolas& zona : ZONAS_AZUCAR_BOLAS)
     {
-        DrawCube(
+        auto pieza = zona.zMax - zona.zMin > zona.xMax - zona.xMin
+            ? MODELO_AZUCAR_AZUCAR_LATERAL : MODELO_AZUCAR_AZUCAR_EXTREMO;
+        if (DibujarModeloBolasAzucarRetro3D(pieza,
+            {(zona.xMin+zona.xMax)*.5f, 0, (zona.zMin+zona.zMax)*.5f})) continue;
+        (DrawCube)(
             { (zona.xMin + zona.xMax) * 0.5f, 0.02f, (zona.zMin + zona.zMax) * 0.5f },
             zona.xMax - zona.xMin,
             0.05f,
@@ -1330,16 +1341,21 @@ static void DibujarArenaBolas(const MinijuegoBolasAzucar& minijuego)
 
     for (int i = 0; i < 3; i++)
     {
-        DrawCylinder({ CHARCOS_BOLAS[i].x, 0.0f, CHARCOS_BOLAS[i].z }, CHARCOS_BOLAS[i].radio, CHARCOS_BOLAS[i].radio, 0.06f, 20, Color{ 70, 38, 22, 255 });
-        DrawCylinder({ CHARCOS_BOLAS[i].x, 0.06f, CHARCOS_BOLAS[i].z }, CHARCOS_BOLAS[i].radio * 0.55f, CHARCOS_BOLAS[i].radio * 0.55f, 0.01f, 16, Color{ 108, 62, 40, 255 });
+        auto pieza = i == 0 ? MODELO_AZUCAR_CHOCOLATE_GRANDE : MODELO_AZUCAR_CHOCOLATE_PEQUENO;
+        if (DibujarModeloBolasAzucarRetro3D(pieza, {CHARCOS_BOLAS[i].x,0,CHARCOS_BOLAS[i].z})) continue;
+        (DrawCylinder)({ CHARCOS_BOLAS[i].x, 0.0f, CHARCOS_BOLAS[i].z }, CHARCOS_BOLAS[i].radio, CHARCOS_BOLAS[i].radio, 0.06f, 20, Color{ 70, 38, 22, 255 });
+        (DrawCylinder)({ CHARCOS_BOLAS[i].x, 0.06f, CHARCOS_BOLAS[i].z }, CHARCOS_BOLAS[i].radio * 0.55f, CHARCOS_BOLAS[i].radio * 0.55f, 0.01f, 16, Color{ 108, 62, 40, 255 });
     }
 
     // Muros de galleta con glaseado.
     for (int i = 1; i <= 4; i++)
     {
         const BloquePrueba& muro = minijuego.bloques[i];
-        DrawCube(muro.posicion, muro.tamano.x, muro.tamano.y, muro.tamano.z, Color{ 190, 132, 82, 255 });
-        DrawCube(
+        Vector3 pie = {muro.posicion.x, muro.posicion.y-muro.tamano.y*.5f, muro.posicion.z};
+        float giro = muro.tamano.z > muro.tamano.x ? 90.0f : 0.0f;
+        if (DibujarModeloBolasAzucarRetro3D(MODELO_AZUCAR_MURO, pie, giro)) continue;
+        (DrawCube)(muro.posicion, muro.tamano.x, muro.tamano.y, muro.tamano.z, Color{ 190, 132, 82, 255 });
+        (DrawCube)(
             { muro.posicion.x, muro.posicion.y + muro.tamano.y * 0.5f + 0.05f, muro.posicion.z },
             muro.tamano.x + 0.05f,
             0.12f,
@@ -1360,9 +1376,11 @@ static void DibujarArenaBolas(const MinijuegoBolasAzucar& minijuego)
     for (int i = 0; i < 4; i++)
     {
         const CirculoBolas& gominola = GOMINOLAS_BOLAS[i];
-        DrawCylinder({ gominola.x, 0.0f, gominola.z }, gominola.radio, gominola.radio, 1.0f, 14, Fade(coloresGominola[i], 0.9f));
-        DrawSphere({ gominola.x, 1.0f, gominola.z }, gominola.radio, Fade(coloresGominola[i], 0.9f));
-        DrawSphere({ gominola.x - 0.25f, 1.3f, gominola.z - 0.2f }, 0.18f, Fade(WHITE, 0.6f));
+        auto pieza = static_cast<ModeloBolasAzucar3D>(MODELO_AZUCAR_GOMINOLA_ROJA + i);
+        if (DibujarModeloBolasAzucarRetro3D(pieza, {gominola.x,0,gominola.z})) continue;
+        (DrawCylinder)({ gominola.x, 0.0f, gominola.z }, gominola.radio, gominola.radio, 1.0f, 14, Fade(coloresGominola[i], 0.9f));
+        (DrawSphere)({ gominola.x, 1.0f, gominola.z }, gominola.radio, Fade(coloresGominola[i], 0.9f));
+        (DrawSphere)({ gominola.x - 0.25f, 1.3f, gominola.z - 0.2f }, 0.18f, Fade(WHITE, 0.6f));
     }
 }
 
@@ -1373,9 +1391,13 @@ static void DibujarBolaBolas(const BolaAzucar& bola, Color colorDuenio, bool deb
         ? 1.0f - bola.inactiva / 3.0f * 0.6f
         : 1.0f;
 
-    DrawSphere({ bola.x, bola.radio, bola.z }, bola.radio, Fade(Color{ 252, 250, 255, 255 }, alpha));
-    DrawSphereWires({ bola.x, bola.radio, bola.z }, bola.radio * 1.02f, 6, 6, Fade(colorDuenio, 0.7f * alpha));
-    DrawSphere(
+    if (!DibujarBolaAzucarRetro3D({bola.x,bola.radio,bola.z}, bola.radio, bola.giro, alpha, colorDuenio))
+    {
+        (DrawSphere)({ bola.x, bola.radio, bola.z }, bola.radio, Fade(Color{ 252, 250, 255, 255 }, alpha));
+        DrawSphereWires({ bola.x, bola.radio, bola.z }, bola.radio * 1.02f, 6, 6, Fade(colorDuenio, 0.7f * alpha));
+    }
+    // Marcador procedural del giro; sigue siendo un indicador del duenio.
+    (DrawSphere)(
         { bola.x + std::cos(bola.giro) * bola.radio * 0.6f, bola.radio + std::sin(bola.giro) * bola.radio * 0.6f, bola.z },
         bola.radio * 0.12f,
         Fade(colorDuenio, alpha)

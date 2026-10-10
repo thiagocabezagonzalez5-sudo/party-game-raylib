@@ -97,6 +97,7 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D esferasCanon[CANTIDAD_MODELOS_ESFERAS_CANON_3D];
     RecursoModeloEscenarioRetro3D pescaIslena[CANTIDAD_MODELOS_PESCA_ISLENA_3D];
     RecursoModeloEscenarioRetro3D rodillosNeon[CANTIDAD_MODELOS_RODILLOS_NEON_3D];
+    RecursoModeloEscenarioRetro3D bolasAzucar[CANTIDAD_MODELOS_BOLAS_AZUCAR_3D];
     AnimacionRodillosRetro3D animacionesRodillos[4]; // suelo, dos LEDs, linea
     AnimacionMallaPescaRetro3D animacionesPesca[5]; // gaviota, humo y tres colas
     AlasDescensoNubesRetro3D alasNubes;
@@ -1344,6 +1345,82 @@ inline bool DibujarSimboloRodillosNeonRetro3D(int tipo, bool glitch, Vector3 pos
     return DibujarModeloEscenarioRetro3D(vista, posicion, {1,0,0}, anguloX, {1,1,1}, colorGlitch);
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteBolasAzucarRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_BOLAS_AZUCAR_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_BOLAS_AZUCAR_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_BOLAS_AZUCAR_3D[i];
+        // COLOR_DINAMICO del aro: primitive 2, resuelto via meshMaterial.
+        definiciones[MODELO_AZUCAR_BOLA].mallaColor = 2;
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().bolasAzucar,
+        definiciones, CANTIDAD_MODELOS_BOLAS_AZUCAR_3D};
+}
+
+inline void CargarPaqueteBolasAzucarRetro3D()
+{
+    auto paquete = ObtenerPaqueteBolasAzucarRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    const int esperadas[] = {2,5,3,3,3,3,4,3,3,3,3,4,4,4,4,4,4,5,3,1};
+    for (int i = 0; i < paquete.cantidad; i++)
+    {
+        auto& r = paquete.recursos[i];
+        if (!r.cargado || r.modelo.meshCount == esperadas[i]) continue;
+        UnloadModel(r.modelo); r.modelo = {}; r.cargado = false;
+        TraceLog(LOG_WARNING, "Paquete Bolas de Azucar incompatible; se usan primitivas: %s", r.ruta);
+    }
+}
+
+inline bool DibujarModeloBolasAzucarRetro3D(ModeloBolasAzucar3D pieza,
+    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
+    Vector3 escala = {1,1,1}, Color color = WHITE)
+{
+    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().bolasAzucar[pieza],
+        posicion, eje, angulo, escala, color);
+}
+
+inline bool DibujarSueloBolasAzucarRetro3D()
+{
+    auto& r = ObtenerModelosEscenariosRetro3D().bolasAzucar[MODELO_AZUCAR_SUELO];
+    if (!r.cargado) return false;
+    // Las primitives 2/3 ya contienen pepitas. Se reemplazan por la pieza
+    // modular, para conservar sus posiciones y fallback sin superponerlas.
+    const int mallas[] = {0,1,4};
+    for (int i : mallas)
+    {
+        auto vista = r;
+        vista.modelo.meshCount = 1;
+        vista.modelo.meshes = &r.modelo.meshes[i];
+        vista.modelo.meshMaterial = &r.modelo.meshMaterial[i];
+        DibujarModeloEscenarioRetro3D(vista, {}, {0,1,0}, 0, {1,1,1});
+    }
+    return true;
+}
+
+inline bool DibujarBolaAzucarRetro3D(Vector3 centro, float radio,
+    float giro, float alpha, Color colorDuenio)
+{
+    auto& r = ObtenerModelosEscenariosRetro3D().bolasAzucar[MODELO_AZUCAR_BOLA];
+    if (!r.cargado) return false;
+    Color anteriores[2];
+    for (int i = 0; i < 2; i++)
+    {
+        MaterialMap& mapa = r.modelo.materials[r.modelo.meshMaterial[i]].maps[MATERIAL_MAP_DIFFUSE];
+        anteriores[i] = mapa.color;
+        mapa.color.a = static_cast<unsigned char>(anteriores[i].a * alpha);
+    }
+    // El marcador original orbita en XY: el giro procedural es sobre Z.
+    bool dibujado = DibujarModeloBolasAzucarRetro3D(MODELO_AZUCAR_BOLA,
+        centro, giro * RAD2DEG, {0,0,1}, {radio,radio,radio}, Fade(colorDuenio, .7f * alpha));
+    for (int i = 0; i < 2; i++)
+        r.modelo.materials[r.modelo.meshMaterial[i]].maps[MATERIAL_MAP_DIFFUSE].color = anteriores[i];
+    return dibujado;
+}
+
 inline void DescargarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -1353,6 +1430,8 @@ inline void DescargarModelosEscenariosRetro3D()
     DescargarAlasDescensoNubesRetro3D();
     DescargarAnimacionesPescaIslenaRetro3D();
     DescargarAnimacionesRodillosNeonRetro3D();
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.bolasAzucar)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.rodillosNeon)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.descensoNubes)

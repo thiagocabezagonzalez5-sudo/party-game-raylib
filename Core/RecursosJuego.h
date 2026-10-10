@@ -762,6 +762,62 @@ static_assert(sizeof(RUTAS_MODELOS_RODILLOS_NEON_3D) /
     "Las rutas de Rodillos Neon deben coincidir con sus piezas");
 
 //==================================================
+// PAQUETE DE BOLAS DE AZUCAR
+//==================================================
+
+enum ModeloBolasAzucar3D
+{
+    MODELO_AZUCAR_FONDO,
+    MODELO_AZUCAR_SUELO,
+    MODELO_AZUCAR_AZUCAR_LATERAL,
+    MODELO_AZUCAR_AZUCAR_EXTREMO,
+    MODELO_AZUCAR_CHOCOLATE_GRANDE,
+    MODELO_AZUCAR_CHOCOLATE_PEQUENO,
+    MODELO_AZUCAR_MURO,
+    MODELO_AZUCAR_GOMINOLA_ROJA,
+    MODELO_AZUCAR_GOMINOLA_VERDE,
+    MODELO_AZUCAR_GOMINOLA_AMARILLA,
+    MODELO_AZUCAR_GOMINOLA_AZUL,
+    MODELO_AZUCAR_PIRULETA_ROSA,
+    MODELO_AZUCAR_PIRULETA_AZUL,
+    MODELO_AZUCAR_PIRULETA_AMARILLA,
+    MODELO_AZUCAR_PIRULETA_VIOLETA,
+    MODELO_AZUCAR_PIRULETA_VERDE,
+    MODELO_AZUCAR_COLUMNA,
+    MODELO_AZUCAR_MONTANA,
+    MODELO_AZUCAR_BOLA,
+    MODELO_AZUCAR_PEPITA,
+    CANTIDAD_MODELOS_BOLAS_AZUCAR_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_BOLAS_AZUCAR_3D[] =
+{
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/fondo_rosa.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/suelo_galleta.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/azucar_lateral.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/azucar_extremo.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/chocolate_grande.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/chocolate_pequeno.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/muro_galleta.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/gominola_roja.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/gominola_verde.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/gominola_amarilla.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/gominola_azul.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/piruleta_rosa.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/piruleta_azul.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/piruleta_amarilla.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/piruleta_violeta.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/piruleta_verde.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/columna_caramelo.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/montana_nata.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/bola_azucar.glb",
+    "Assets/Modelos/Escenarios/Bolas_de_Azucar/GLB/pepita_chocolate.glb",
+};
+static_assert(sizeof(RUTAS_MODELOS_BOLAS_AZUCAR_3D) /
+    sizeof(RUTAS_MODELOS_BOLAS_AZUCAR_3D[0]) == CANTIDAD_MODELOS_BOLAS_AZUCAR_3D,
+    "Las rutas de Bolas de Azucar deben coincidir con sus piezas");
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 
