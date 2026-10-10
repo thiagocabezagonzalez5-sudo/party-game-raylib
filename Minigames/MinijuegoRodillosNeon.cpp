@@ -1,6 +1,7 @@
 #include "Minigames/MinijuegoRodillosNeon.h"
 
 #include "Minigames/AudioMinijuegos.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -458,6 +459,7 @@ void MinijuegoRodillosNeon::Reiniciar(
     }
 
     cantidadMaquinas = total;
+    CargarPaqueteRodillosNeonRetro3D();
     ConfigurarCamaraRodillos(*this);
 
     int maquina = 0;
@@ -1044,12 +1046,10 @@ void MinijuegoRodillosNeon::Actualizar(
 
 
 //==================================================
-// VISUAL (MODELO FUTURO)
+// VISUAL: GLB COMPARTIDOS Y FALLBACK POR PIEZA
 //==================================================
-// MODELO FUTURO: reemplazar por GLB las maquinas arcade (gabinete, marco de
-// ventana, boton), los rodillos con sus simbolos, las columnas de LEDs, los
-// hologramas flotantes y los letreros neon. La logica (rodillos, linea de
-// comodin, puntuacion, glitch, IA) no depende de esta decoracion.
+// La logica no depende de las mallas. Las transformaciones locales de la
+// maquina y los hologramas se heredan una vez; nunca se repite su origen.
 //==================================================
 
 // Poligono plano relleno en el plano XY local (visible por ambas caras).
@@ -1108,12 +1108,16 @@ static void DibujarRodillo(
     float t
 )
 {
-    // Tambor oscuro.
-    DrawCylinderEx(
-        { x - 0.4f, 0.0f, 0.0f },
-        { x + 0.4f, 0.0f, 0.0f },
-        RADIO_RODILLO, RADIO_RODILLO, 20, Color{ 16, 14, 30, 255 }
-    );
+    // Pivote del eje X: el giro real incluye frenado y fallo de sistema.
+    if (!DibujarModeloRodillosNeonRetro3D(MODELO_RODILLOS_TAMBOR,
+        {x,0,0}, -rodillo.angulo * RAD2DEG, {1,0,0}))
+    {
+        (DrawCylinderEx)(
+            { x - 0.4f, 0.0f, 0.0f },
+            { x + 0.4f, 0.0f, 0.0f },
+            RADIO_RODILLO, RADIO_RODILLO, 20, Color{ 16, 14, 30, 255 }
+        );
+    }
 
     for (int k = 0; k < SIMBOLOS_POR_RODILLO; k++)
     {
@@ -1134,9 +1138,17 @@ static void DibujarRodillo(
         }
 
         rlPushMatrix();
-        rlTranslatef(x, RADIO_RODILLO * std::sin(angulo), (RADIO_RODILLO + 0.03f) * std::cos(angulo));
-        rlRotatef(-angulo * RAD2DEG, 1.0f, 0.0f, 0.0f);
-        DibujarSimboloNeon(rodillo.tira[k], 0.36f, color);
+        // Composicion equivalente a tambor + k*36 grados, sin doble giro.
+        Vector3 posicion = {x, (RADIO_RODILLO + .03f) * std::sin(angulo),
+            (RADIO_RODILLO + .03f) * std::cos(angulo)};
+        if (!DibujarSimboloRodillosNeonRetro3D(rodillo.tira[k], glitch, posicion,
+            -angulo * RAD2DEG, color))
+        {
+            // Conserva exactamente la posicion de las primitivas originales.
+            rlTranslatef(x, RADIO_RODILLO * std::sin(angulo), (RADIO_RODILLO + .03f) * std::cos(angulo));
+            rlRotatef(-angulo * RAD2DEG, 1,0,0);
+            DibujarSimboloNeon(rodillo.tira[k], 0.36f, color);
+        }
         rlPopMatrix();
     }
 }
@@ -1156,28 +1168,40 @@ static void DibujarMaquina(
     rlTranslatef(e.posicionX, 0.0f, 0.0f);
 
     // Gabinete: base, laterales, cabecera y panel de control.
-    DrawCube({ 0.0f, 0.75f, 0.3f }, 4.4f, 1.5f, 2.8f, Color{ 28, 22, 46, 255 });
-    DrawCube({ -1.95f, 3.0f, 0.2f }, 0.5f, 3.2f, 3.4f, Color{ 34, 28, 56, 255 });
-    DrawCube({ 1.95f, 3.0f, 0.2f }, 0.5f, 3.2f, 3.4f, Color{ 34, 28, 56, 255 });
-    DrawCube({ 0.0f, 4.95f, 0.2f }, 4.4f, 1.2f, 3.4f, Color{ 30, 24, 52, 255 });
-    DrawCube({ 0.0f, 1.55f, 1.95f }, 3.4f, 0.4f, 0.3f, Color{ 24, 20, 40, 255 });
-    DrawCube({ 0.0f, 4.5f, 1.95f }, 3.4f, 0.55f, 0.3f, Color{ 24, 20, 40, 255 });
+    if (!DibujarModeloRodillosNeonRetro3D(MODELO_RODILLOS_GABINETE))
+    {
+        (DrawCube)({ 0.0f, 0.75f, 0.3f }, 4.4f, 1.5f, 2.8f, Color{ 28, 22, 46, 255 });
+        (DrawCube)({ -1.95f, 3.0f, 0.2f }, 0.5f, 3.2f, 3.4f, Color{ 34, 28, 56, 255 });
+        (DrawCube)({ 1.95f, 3.0f, 0.2f }, 0.5f, 3.2f, 3.4f, Color{ 34, 28, 56, 255 });
+        (DrawCube)({ 0.0f, 4.95f, 0.2f }, 4.4f, 1.2f, 3.4f, Color{ 30, 24, 52, 255 });
+        (DrawCube)({ 0.0f, 1.55f, 1.95f }, 3.4f, 0.4f, 0.3f, Color{ 24, 20, 40, 255 });
+        (DrawCube)({ 0.0f, 4.5f, 1.95f }, 3.4f, 0.55f, 0.3f, Color{ 24, 20, 40, 255 });
+
+        // Estos aros ya pertenecen al gabinete GLB.
+        DrawCircle3D({ -1.2f, 5.0f, 1.99f }, .32f, {0,0,1}, 0, COLORES_SIMBOLOS[1]);
+        DrawCircle3D({ 0, 5.0f, 1.99f }, .32f, {0,0,1}, 0, COLORES_SIMBOLOS[0]);
+        DrawCircle3D({ 1.2f, 5.0f, 1.99f }, .32f, {0,0,1}, 0, COLORES_SIMBOLOS[4]);
+    }
 
     // Bordes neon del color del jugador.
-    DrawCube({ -2.2f, 2.9f, 1.95f }, 0.07f, 4.4f, 0.07f, colorJugador);
-    DrawCube({ 2.2f, 2.9f, 1.95f }, 0.07f, 4.4f, 0.07f, colorJugador);
-    DrawCube({ 0.0f, 5.55f, 1.95f }, 4.4f, 0.07f, 0.07f, colorJugador);
-    DrawCube({ 0.0f, 0.04f, 1.75f }, 4.4f, 0.07f, 0.07f, colorJugador);
-
-    // Letrero neon superior (sin texto): aro y formas.
-    DrawCircle3D({ -1.2f, 5.0f, 1.99f }, 0.32f, { 0.0f, 0.0f, 1.0f }, 0.0f, COLORES_SIMBOLOS[1]);
-    DrawCircle3D({ 0.0f, 5.0f, 1.99f }, 0.32f, { 0.0f, 0.0f, 1.0f }, 0.0f, COLORES_SIMBOLOS[0]);
-    DrawCircle3D({ 1.2f, 5.0f, 1.99f }, 0.32f, { 0.0f, 0.0f, 1.0f }, 0.0f, COLORES_SIMBOLOS[4]);
+    if (!DibujarModeloRodillosNeonRetro3D(MODELO_RODILLOS_MARCO,
+        {}, 0, {0,1,0}, {1,1,1}, colorJugador))
+    {
+        (DrawCube)({ -2.2f, 2.9f, 1.95f }, 0.07f, 4.4f, 0.07f, colorJugador);
+        (DrawCube)({ 2.2f, 2.9f, 1.95f }, 0.07f, 4.4f, 0.07f, colorJugador);
+        (DrawCube)({ 0.0f, 5.55f, 1.95f }, 4.4f, 0.07f, 0.07f, colorJugador);
+        (DrawCube)({ 0.0f, 0.04f, 1.75f }, 4.4f, 0.07f, 0.07f, colorJugador);
+    }
 
     // Boton de detener, brillando cuando todavia queda un rodillo por parar.
     bool pendiente = e.rodilloActual < CANTIDAD_RODILLOS_NEON && m.etapa == ETAPA_RODILLOS_GIRO;
-    DrawCube({ 0.0f, 1.2f, 1.9f }, 1.5f, 0.35f, 0.8f, Color{ 40, 34, 66, 255 });
-    DrawSphere({ 0.0f, 1.42f, 1.95f }, 0.3f, pendiente ? Fade(colorJugador, 0.6f + 0.4f * pulso) : Fade(colorJugador, 0.35f));
+    Color colorBoton = pendiente ? Fade(colorJugador, .6f + .4f * pulso) : Fade(colorJugador, .35f);
+    if (!DibujarModeloRodillosNeonRetro3D(MODELO_RODILLOS_BOTON,
+        {0,1.2f,1.9f}, 0, {0,1,0}, {1,1,1}, colorBoton))
+    {
+        (DrawCube)({ 0.0f, 1.2f, 1.9f }, 1.5f, 0.35f, 0.8f, Color{ 40, 34, 66, 255 });
+        (DrawSphere)({ 0.0f, 1.42f, 1.95f }, 0.3f, pendiente ? Fade(colorJugador, 0.6f + 0.4f * pulso) : Fade(colorJugador, 0.35f));
+    }
 
     // Rodillos centrados en la altura de la ventana.
     rlPushMatrix();
@@ -1211,16 +1235,23 @@ static void DibujarMaquina(
             std::fmod(t, 0.2f) < 0.1f
         )
         {
-            DrawCube({ x, 0.0f, RADIO_RODILLO + 0.2f }, 0.95f, 2.6f, 0.05f, Fade(Color{ 255, 40, 200, 255 }, 0.55f));
+            (DrawCube)({ x, 0.0f, RADIO_RODILLO + 0.2f }, 0.95f, 2.6f, 0.05f, Fade(Color{ 255, 40, 200, 255 }, 0.55f));
         }
     }
 
     // Linea central y banda de comodin.
-    DrawCube({ 0.0f, 0.0f, RADIO_RODILLO + 0.14f }, 3.5f, 0.03f, 0.02f, Color{ 255, 255, 255, 255 });
     float alturaComodin = RADIO_RODILLO * std::sin(VentanaComodin(m.ronda));
-    DrawCube({ 0.0f, 0.0f, RADIO_RODILLO + 0.12f }, 3.3f, alturaComodin * 2.0f, 0.02f, Fade(Color{ 255, 235, 90, 255 }, 0.25f));
-    DrawTriangle3D({ -1.9f, 0.14f, RADIO_RODILLO + 0.2f }, { -1.9f, -0.14f, RADIO_RODILLO + 0.2f }, { -1.65f, 0.0f, RADIO_RODILLO + 0.2f }, Color{ 255, 235, 90, 255 });
-    DrawTriangle3D({ 1.9f, -0.14f, RADIO_RODILLO + 0.2f }, { 1.9f, 0.14f, RADIO_RODILLO + 0.2f }, { 1.65f, 0.0f, RADIO_RODILLO + 0.2f }, Color{ 255, 235, 90, 255 });
+    bool lineaGLB = DibujarModeloAnimadoRodillosNeonRetro3D(MODELO_RODILLOS_LINEA,
+        {0,0,RADIO_RODILLO + .14f}, t, alturaComodin);
+    if (!lineaGLB)
+        (DrawCube)({ 0.0f, 0.0f, RADIO_RODILLO + 0.14f }, 3.5f, 0.03f, 0.02f, Color{ 255, 255, 255, 255 });
+    // Transparencia procedural necesaria para mostrar la ventana temporal.
+    (DrawCube)({ 0.0f, 0.0f, RADIO_RODILLO + 0.12f }, 3.3f, alturaComodin * 2.0f, 0.02f, Fade(Color{ 255, 235, 90, 255 }, 0.25f));
+    if (!lineaGLB)
+    {
+        DrawTriangle3D({ -1.9f, 0.14f, RADIO_RODILLO + 0.2f }, { -1.9f, -0.14f, RADIO_RODILLO + 0.2f }, { -1.65f, 0.0f, RADIO_RODILLO + 0.2f }, Color{ 255, 235, 90, 255 });
+        DrawTriangle3D({ 1.9f, -0.14f, RADIO_RODILLO + 0.2f }, { 1.9f, 0.14f, RADIO_RODILLO + 0.2f }, { 1.65f, 0.0f, RADIO_RODILLO + 0.2f }, Color{ 255, 235, 90, 255 });
+    }
     rlPopMatrix();
 
     rlPopMatrix();
@@ -1230,28 +1261,36 @@ static void DibujarMaquina(
 static void DibujarSalaArcade(float t)
 {
     // Suelo oscuro con rejilla luminosa.
-    DrawCube({ 0.0f, -0.2f, 0.0f }, 60.0f, 0.4f, 40.0f, Color{ 10, 8, 20, 255 });
-
-    for (int i = -15; i <= 15; i++)
+    if (!DibujarModeloAnimadoRodillosNeonRetro3D(MODELO_RODILLOS_SUELO, {}, t))
     {
-        float brillo = 0.5f + 0.5f * std::sin(t * 2.0f + (float)i * 0.5f);
-        Color color = (i % 2 == 0)
-            ? Color{ 0, (unsigned char)(120 + 100 * brillo), 255, 255 }
-            : Color{ (unsigned char)(160 + 90 * brillo), 40, 220, 255 };
-        DrawLine3D({ (float)i * 2.0f, 0.01f, -16.0f }, { (float)i * 2.0f, 0.01f, 12.0f }, color);
-    }
+        (DrawCube)({ 0.0f, -0.2f, 0.0f }, 60.0f, 0.4f, 40.0f, Color{ 10, 8, 20, 255 });
 
-    for (int i = -8; i <= 6; i++)
-    {
-        DrawLine3D({ -30.0f, 0.01f, (float)i * 2.0f }, { 30.0f, 0.01f, (float)i * 2.0f }, Color{ 40, 80, 190, 255 });
+        for (int i = -15; i <= 15; i++)
+        {
+            float brillo = 0.5f + 0.5f * std::sin(t * 2.0f + (float)i * 0.5f);
+            Color color = (i % 2 == 0)
+                ? Color{ 0, (unsigned char)(120 + 100 * brillo), 255, 255 }
+                : Color{ (unsigned char)(160 + 90 * brillo), 40, 220, 255 };
+            DrawLine3D({ (float)i * 2.0f, 0.01f, -16.0f }, { (float)i * 2.0f, 0.01f, 12.0f }, color);
+        }
+
+        for (int i = -8; i <= 6; i++)
+        {
+            DrawLine3D({ -30.0f, 0.01f, (float)i * 2.0f }, { 30.0f, 0.01f, (float)i * 2.0f }, Color{ 40, 80, 190, 255 });
+        }
+
     }
 
     // Pared del fondo con rejilla.
-    DrawCube({ 0.0f, 7.0f, -9.0f }, 60.0f, 16.0f, 0.4f, Color{ 14, 10, 30, 255 });
-
-    for (int i = -14; i <= 14; i++)
+    if (!DibujarModeloRodillosNeonRetro3D(MODELO_RODILLOS_PARED))
     {
-        DrawLine3D({ (float)i * 2.0f, 0.0f, -8.75f }, { (float)i * 2.0f, 15.0f, -8.75f }, Color{ 40, 30, 90, 255 });
+        (DrawCube)({ 0.0f, 7.0f, -9.0f }, 60.0f, 16.0f, 0.4f, Color{ 14, 10, 30, 255 });
+
+        for (int i = -14; i <= 14; i++)
+        {
+            DrawLine3D({ (float)i * 2.0f, 0.0f, -8.75f }, { (float)i * 2.0f, 15.0f, -8.75f }, Color{ 40, 30, 90, 255 });
+        }
+
     }
 
     // Columnas de LEDs animadas.
@@ -1259,7 +1298,10 @@ static void DibujarSalaArcade(float t)
     {
         float x = -24.0f + 6.0f * (float)c;
 
-        DrawCube({ x, 6.5f, -8.5f }, 0.5f, 13.0f, 0.4f, Color{ 22, 18, 40, 255 });
+        auto pieza = c % 2 ? MODELO_RODILLOS_LED_ROSA : MODELO_RODILLOS_LED_CIAN;
+        if (DibujarModeloAnimadoRodillosNeonRetro3D(pieza, {x,0,-8.5f}, t, (float)c)) continue;
+
+        (DrawCube)({ x, 6.5f, -8.5f }, 0.5f, 13.0f, 0.4f, Color{ 22, 18, 40, 255 });
 
         for (int k = 0; k < 10; k++)
         {
@@ -1267,7 +1309,7 @@ static void DibujarSalaArcade(float t)
             Color color = (c % 2 == 0)
                 ? Color{ 0, (unsigned char)(80 + 170 * fase), 255, 255 }
                 : Color{ (unsigned char)(120 + 135 * fase), 40, 230, 255 };
-            DrawCube({ x, 1.2f + 1.25f * (float)k, -8.25f }, 0.3f, 0.5f, 0.15f, color);
+            (DrawCube)({ x, 1.2f + 1.25f * (float)k, -8.25f }, 0.3f, 0.5f, 0.15f, color);
         }
     }
 
@@ -1282,9 +1324,13 @@ static void DibujarSalaArcade(float t)
         rlRotatef(t * 40.0f + (float)k * 60.0f, 0.0f, 1.0f, 0.0f);
         rlRotatef(20.0f, 1.0f, 0.0f, 0.0f);
 
-        if (k == 0) DrawCubeWires({ 0.0f, 0.0f, 0.0f }, 1.8f, 1.8f, 1.8f, COLORES_SIMBOLOS[0]);
-        else if (k == 1) DrawSphereWires({ 0.0f, 0.0f, 0.0f }, 1.1f, 8, 10, COLORES_SIMBOLOS[1]);
-        else DrawCylinderWires({ 0.0f, -0.9f, 0.0f }, 0.0f, 1.2f, 1.8f, 4, COLORES_SIMBOLOS[4]);
+        auto pieza = static_cast<ModeloRodillosNeon3D>(MODELO_RODILLOS_HOLOGRAMA_CUBO + k);
+        if (!DibujarModeloRodillosNeonRetro3D(pieza))
+        {
+            if (k == 0) DrawCubeWires({ 0.0f, 0.0f, 0.0f }, 1.8f, 1.8f, 1.8f, COLORES_SIMBOLOS[0]);
+            else if (k == 1) DrawSphereWires({ 0.0f, 0.0f, 0.0f }, 1.1f, 8, 10, COLORES_SIMBOLOS[1]);
+            else DrawCylinderWires({ 0.0f, -0.9f, 0.0f }, 0.0f, 1.2f, 1.8f, 4, COLORES_SIMBOLOS[4]);
+        }
 
         rlPopMatrix();
     }
@@ -1293,10 +1339,12 @@ static void DibujarSalaArcade(float t)
     for (int k = 0; k < 4; k++)
     {
         float x = -18.0f + 12.0f * (float)k;
-        DrawCube({ x, 11.5f, -8.4f }, 4.6f, 0.08f, 0.1f, COLORES_SIMBOLOS[k % TIPOS_SIMBOLO_NEON]);
-        DrawCube({ x, 13.1f, -8.4f }, 4.6f, 0.08f, 0.1f, COLORES_SIMBOLOS[k % TIPOS_SIMBOLO_NEON]);
-        DrawCube({ x - 2.3f, 12.3f, -8.4f }, 0.08f, 1.7f, 0.1f, COLORES_SIMBOLOS[k % TIPOS_SIMBOLO_NEON]);
-        DrawCube({ x + 2.3f, 12.3f, -8.4f }, 0.08f, 1.7f, 0.1f, COLORES_SIMBOLOS[k % TIPOS_SIMBOLO_NEON]);
+        auto pieza = static_cast<ModeloRodillosNeon3D>(MODELO_RODILLOS_LETRERO_CIAN + k);
+        if (DibujarModeloRodillosNeonRetro3D(pieza, {x,12.3f,-8.4f})) continue;
+        (DrawCube)({ x, 11.5f, -8.4f }, 4.6f, 0.08f, 0.1f, COLORES_SIMBOLOS[k % TIPOS_SIMBOLO_NEON]);
+        (DrawCube)({ x, 13.1f, -8.4f }, 4.6f, 0.08f, 0.1f, COLORES_SIMBOLOS[k % TIPOS_SIMBOLO_NEON]);
+        (DrawCube)({ x - 2.3f, 12.3f, -8.4f }, 0.08f, 1.7f, 0.1f, COLORES_SIMBOLOS[k % TIPOS_SIMBOLO_NEON]);
+        (DrawCube)({ x + 2.3f, 12.3f, -8.4f }, 0.08f, 1.7f, 0.1f, COLORES_SIMBOLOS[k % TIPOS_SIMBOLO_NEON]);
 
         rlPushMatrix();
         rlTranslatef(x, 12.3f, -8.3f);

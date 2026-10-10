@@ -72,6 +72,14 @@ struct AnimacionMallaPescaRetro3D
     bool intentada = false;
 };
 
+// Solo copias CPU de reposo; cada pieza mantiene una unica malla/VBO.
+struct AnimacionRodillosRetro3D
+{
+    unsigned char* colores[2]{};
+    float* vertices = nullptr;
+    bool intentada = false;
+};
+
 struct ModelosEscenariosRetro3D
 {
     RecursoModeloEscenarioRetro3D montanaLava;
@@ -88,6 +96,8 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D parejasGlaciar[CANTIDAD_MODELOS_PAREJAS_GLACIAR_3D];
     RecursoModeloEscenarioRetro3D esferasCanon[CANTIDAD_MODELOS_ESFERAS_CANON_3D];
     RecursoModeloEscenarioRetro3D pescaIslena[CANTIDAD_MODELOS_PESCA_ISLENA_3D];
+    RecursoModeloEscenarioRetro3D rodillosNeon[CANTIDAD_MODELOS_RODILLOS_NEON_3D];
+    AnimacionRodillosRetro3D animacionesRodillos[4]; // suelo, dos LEDs, linea
     AnimacionMallaPescaRetro3D animacionesPesca[5]; // gaviota, humo y tres colas
     AlasDescensoNubesRetro3D alasNubes;
     bool inicializados = false;
@@ -1160,6 +1170,180 @@ inline void DescargarSlotModeloEscenarioRetro3D(
 }
 
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteRodillosNeonRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_RODILLOS_NEON_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_RODILLOS_NEON_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_RODILLOS_NEON_3D[i];
+        // Primitives COLOR_DINAMICO, resueltos mediante meshMaterial.
+        definiciones[MODELO_RODILLOS_MARCO].mallaColor = 0;
+        definiciones[MODELO_RODILLOS_BOTON].mallaColor = 2;
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().rodillosNeon,
+        definiciones, CANTIDAD_MODELOS_RODILLOS_NEON_3D};
+}
+
+inline void DescargarAnimacionesRodillosNeonRetro3D()
+{
+    for (auto& a : ObtenerModelosEscenariosRetro3D().animacionesRodillos)
+    {
+        MemFree(a.colores[0]); MemFree(a.colores[1]); MemFree(a.vertices);
+        a = {};
+    }
+}
+
+inline void CargarPaqueteRodillosNeonRetro3D()
+{
+    auto paquete = ObtenerPaqueteRodillosNeonRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    const int esperadas[] = {4,3,7,2,4,4,2,3,2,2,2,2,4,4,1,1,1,4,5,4,4};
+    for (int i = 0; i < paquete.cantidad; i++)
+    {
+        auto& r = paquete.recursos[i];
+        if (!r.cargado) continue;
+        if (r.modelo.meshCount != esperadas[i])
+        {
+            UnloadModel(r.modelo); r.modelo = {}; r.cargado = false;
+            TraceLog(LOG_WARNING, "Paquete Rodillos Neon incompatible; se usan primitivas: %s", r.ruta);
+        }
+    }
+    const int piezas[] = {MODELO_RODILLOS_SUELO, MODELO_RODILLOS_LED_CIAN,
+        MODELO_RODILLOS_LED_ROSA, MODELO_RODILLOS_LINEA};
+    for (int i = 0; i < 4; i++)
+    {
+        auto& a = ObtenerModelosEscenariosRetro3D().animacionesRodillos[i];
+        auto& r = paquete.recursos[piezas[i]];
+        if (a.intentada) continue;
+        a.intentada = true;
+        if (!r.cargado) continue;
+        bool valido = true;
+        if (i == 3)
+        {
+            Mesh& m = r.modelo.meshes[1];
+            valido = m.vboId && m.vboId[0];
+            if (valido)
+            {
+                a.vertices = static_cast<float*>(MemAlloc(m.vertexCount * 3 * sizeof(float)));
+                valido = a.vertices != nullptr;
+                if (valido) std::memcpy(a.vertices, m.vertices, m.vertexCount * 3 * sizeof(float));
+            }
+        }
+        else for (int j = 0; j < 2 && valido; j++)
+        {
+            Mesh& m = r.modelo.meshes[j + 1];
+            valido = m.colors && m.vboId && m.vboId[3] && m.vertexCount % 36 == 0;
+            if (valido)
+            {
+                a.colores[j] = static_cast<unsigned char*>(MemAlloc(m.vertexCount * 4));
+                valido = a.colores[j] != nullptr;
+                if (valido) std::memcpy(a.colores[j], m.colors, m.vertexCount * 4);
+            }
+        }
+        if (!valido)
+        {
+            MemFree(a.vertices); a.vertices = nullptr;
+            for (auto& c : a.colores) { MemFree(c); c = nullptr; }
+            UnloadModel(r.modelo); r.modelo = {}; r.cargado = false;
+            TraceLog(LOG_WARNING, "No se puede animar la pieza de Rodillos Neon; se usan primitivas: %s", r.ruta);
+        }
+    }
+}
+
+inline bool DibujarModeloRodillosNeonRetro3D(ModeloRodillosNeon3D pieza,
+    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
+    Vector3 escala = {1,1,1}, Color color = WHITE)
+{
+    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().rodillosNeon[pieza],
+        posicion, eje, angulo, escala, color);
+}
+
+// Pulsos sobre el alpha original: conserva RGB/materiales y restaura el VBO.
+// La linea mueve solo los bordes amarillos, sin escalar las flechas.
+inline bool DibujarModeloAnimadoRodillosNeonRetro3D(ModeloRodillosNeon3D pieza,
+    Vector3 posicion, float tiempo, float parametro = 0)
+{
+    auto& r = ObtenerModelosEscenariosRetro3D().rodillosNeon[pieza];
+    if (!r.cargado) return false;
+    int indice = pieza == MODELO_RODILLOS_SUELO ? 0 : pieza == MODELO_RODILLOS_LED_CIAN ? 1 :
+        pieza == MODELO_RODILLOS_LED_ROSA ? 2 : 3;
+    auto& a = ObtenerModelosEscenariosRetro3D().animacionesRodillos[indice];
+    if (indice == 3)
+    {
+        Mesh& m = r.modelo.meshes[1];
+        for (int v = 0; v < m.vertexCount; v++)
+        {
+            float y = a.vertices[v*3+1];
+            if (std::fabs(y) > .2f)
+                m.vertices[v*3+1] = std::copysign(parametro + std::fabs(y) - .23f, y);
+        }
+        UpdateMeshBuffer(m, 0, m.vertices, m.vertexCount * 3 * sizeof(float), 0);
+    }
+    else for (int j = 0; j < 2; j++)
+    {
+        Mesh& m = r.modelo.meshes[j+1];
+        for (int inicio = 0; inicio < m.vertexCount; inicio += 36)
+        {
+            float brillo = 1.0f;
+            if (indice == 0)
+            {
+                // Horizontales (Z fijo) mantienen su color. Verticales: X=2*i.
+                float minimoZ = m.vertices[inicio*3+2], maximoZ = minimoZ;
+                for (int q = inicio; q < inicio+36 && q < m.vertexCount; q++)
+                {
+                    float z = m.vertices[q*3+2];
+                    if (z < minimoZ) minimoZ = z;
+                    if (z > maximoZ) maximoZ = z;
+                }
+                if (maximoZ - minimoZ > 1.0f)
+                {
+                    float x = 0;
+                    for (int q = inicio; q < inicio+36; q++) x += m.vertices[q*3];
+                    float columna = std::round(x / 36.0f / 2.0f);
+                    brillo = .5f + .5f * std::sin(tiempo * 2.0f + columna * .5f);
+                }
+            }
+            else
+            {
+                float y = 0;
+                for (int q = inicio; q < inicio+36; q++) y += m.vertices[q*3+1];
+                float led = std::round((y / 36.0f - 1.2f) / 1.25f);
+                brillo = .5f + .5f * std::sin(tiempo * 3.0f - led * .6f + parametro);
+            }
+            for (int v = inicio; v < inicio + 36; v++)
+                m.colors[v*4+3] = static_cast<unsigned char>(a.colores[j][v*4+3] * (.35f + .65f*brillo));
+        }
+        UpdateMeshBuffer(m, 3, m.colors, m.vertexCount * 4, 0);
+    }
+    bool dibujado = DibujarModeloRodillosNeonRetro3D(pieza, posicion);
+    if (indice == 3)
+    {
+        Mesh& m = r.modelo.meshes[1];
+        std::memcpy(m.vertices, a.vertices, m.vertexCount * 3 * sizeof(float));
+        UpdateMeshBuffer(m, 0, m.vertices, m.vertexCount * 3 * sizeof(float), 0);
+    }
+    else for (int j = 0; j < 2; j++)
+    {
+        Mesh& m = r.modelo.meshes[j+1];
+        std::memcpy(m.colors, a.colores[j], m.vertexCount * 4);
+        UpdateMeshBuffer(m, 3, m.colors, m.vertexCount * 4, 0);
+    }
+    return dibujado;
+}
+
+// Solo la cara del simbolo cambia durante el glitch; luces/herrajes intactos.
+inline bool DibujarSimboloRodillosNeonRetro3D(int tipo, bool glitch, Vector3 posicion,
+    float anguloX, Color colorGlitch)
+{
+    auto& r = ObtenerModelosEscenariosRetro3D().rodillosNeon[MODELO_RODILLOS_TRIANGULO + tipo];
+    auto vista = r;
+    if (glitch && r.cargado) vista.materialColor = r.modelo.meshMaterial[0];
+    return DibujarModeloEscenarioRetro3D(vista, posicion, {1,0,0}, anguloX, {1,1,1}, colorGlitch);
+}
+
 inline void DescargarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -1168,6 +1352,9 @@ inline void DescargarModelosEscenariosRetro3D()
     DescargarSlotModeloEscenarioRetro3D(recursos.montanaLava);
     DescargarAlasDescensoNubesRetro3D();
     DescargarAnimacionesPescaIslenaRetro3D();
+    DescargarAnimacionesRodillosNeonRetro3D();
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.rodillosNeon)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.descensoNubes)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.voleaMagma)

@@ -706,6 +706,61 @@ static_assert(sizeof(RUTAS_MODELOS_PESCA_ISLENA_3D) /
     sizeof(RUTAS_MODELOS_PESCA_ISLENA_3D[0]) == CANTIDAD_MODELOS_PESCA_ISLENA_3D,
     "Las rutas deben coincidir con los IDs del paquete Pesca Islena");
 
+// Paquete Rodillos Neon: pivotes originales, unidades del juego.
+enum ModeloRodillosNeon3D
+{
+    MODELO_RODILLOS_SUELO,
+    MODELO_RODILLOS_PARED,
+    MODELO_RODILLOS_GABINETE,
+    MODELO_RODILLOS_MARCO,
+    MODELO_RODILLOS_BOTON,
+    MODELO_RODILLOS_TAMBOR,
+    MODELO_RODILLOS_TRIANGULO,
+    MODELO_RODILLOS_CIRCULO,
+    MODELO_RODILLOS_CUADRADO,
+    MODELO_RODILLOS_ROMBO,
+    MODELO_RODILLOS_ESTRELLA,
+    MODELO_RODILLOS_LINEA,
+    MODELO_RODILLOS_LED_CIAN,
+    MODELO_RODILLOS_LED_ROSA,
+    MODELO_RODILLOS_HOLOGRAMA_CUBO,
+    MODELO_RODILLOS_HOLOGRAMA_ESFERA,
+    MODELO_RODILLOS_HOLOGRAMA_PIRAMIDE,
+    MODELO_RODILLOS_LETRERO_CIAN,
+    MODELO_RODILLOS_LETRERO_ROSA,
+    MODELO_RODILLOS_LETRERO_VERDE,
+    MODELO_RODILLOS_LETRERO_NARANJA,
+    CANTIDAD_MODELOS_RODILLOS_NEON_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_RODILLOS_NEON_3D[] =
+{
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/suelo_arcade.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/pared_arcade.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/gabinete_arcade.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/marco_jugador.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/boton_detener.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/tambor_rodillo.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/simbolo_triangulo.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/simbolo_circulo.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/simbolo_cuadrado.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/simbolo_rombo.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/simbolo_estrella.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/linea_comodin.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/columna_led_cian.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/columna_led_rosa.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/holograma_cubo.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/holograma_esfera.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/holograma_piramide.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/letrero_cian.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/letrero_rosa.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/letrero_verde.glb",
+    "Assets/Modelos/Escenarios/Rodillos_Neon/GLB/letrero_naranja.glb",
+};
+static_assert(sizeof(RUTAS_MODELOS_RODILLOS_NEON_3D) /
+    sizeof(RUTAS_MODELOS_RODILLOS_NEON_3D[0]) == CANTIDAD_MODELOS_RODILLOS_NEON_3D,
+    "Las rutas de Rodillos Neon deben coincidir con sus piezas");
+
 //==================================================
 // TEXTURAS GENERALES
 //==================================================
