@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -1487,6 +1488,7 @@ void MinijuegoPisotonPlagas::Reiniciar(
         return;
     }
 
+    CargarPaquetePisotonPlagasRetro3D();
     int limite = LimitePisoton(cantidadMaxima);
 
     for (int k = 0; k < cantidad; k++)
@@ -1658,10 +1660,10 @@ void MinijuegoPisotonPlagas::Actualizar(
 // VISUAL: ESCENARIO (solo decoracion, la logica no depende de esto)
 //==================================================
 
-// MODELO FUTURO: briznas de pasto gigantes, flores del fondo y flor de
-// floracion, setas, regadera, piedras, gotas de rocio, cerca de madera,
-// madrigueras (monticulos), escarabajo, oruga, babosa dorada y avispa:
-// reemplazar cada uno por un GLB.
+// GLB compartidos con pivotes originales y fallback independiente por pieza.
+// (DrawCube/Sphere/Cylinder) evita las sombras automaticas de SombrasRetro:
+// estas piezas y efectos conservan sus sombras explicitas; jugadores usan
+// el dibujo compartido original.
 
 static float HashPisoton(int semilla)
 {
@@ -1675,40 +1677,46 @@ static float HashPisoton(int semilla)
 
 static void DibujarSueloPisoton(const MinijuegoPisotonPlagas& m)
 {
-    // Cesped lejano y cesped de la arena.
-    DrawPlane({ 0.0f, -0.12f, 0.0f }, { 90.0f, 90.0f }, Color{ 58, 118, 46, 255 });
-
-    for (int i = 0; i < m.cantidadBloques; i++)
+    bool suelo = DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_SUELO);
+    if (!suelo)
     {
-        DrawCube(m.bloques[i].posicion, m.bloques[i].tamano.x, m.bloques[i].tamano.y, m.bloques[i].tamano.z, m.bloques[i].color);
+        // Cesped lejano y cesped de la arena.
+        DrawPlane({ 0.0f, -0.12f, 0.0f }, { 90.0f, 90.0f }, Color{ 58, 118, 46, 255 });
+
+        for (int i = 0; i < m.cantidadBloques; i++)
+        {
+            (DrawCube)(m.bloques[i].posicion, m.bloques[i].tamano.x, m.bloques[i].tamano.y, m.bloques[i].tamano.z, m.bloques[i].color);
+        }
+
+        // Parches de cesped para dar textura.
+        for (int k = 0; k < 18; k++)
+        {
+            float x = (HashPisoton(k * 3 + 1) * 2.0f - 1.0f) * LIMITE_X_PISOTON;
+            float z = (HashPisoton(k * 3 + 2) * 2.0f - 1.0f) * LIMITE_Z_PISOTON;
+            float ancho = 1.2f + HashPisoton(k * 3 + 3) * 2.2f;
+            Color verde = (k % 2 == 0) ? Color{ 98, 168, 70, 255 } : Color{ 70, 132, 52, 255 };
+
+            (DrawCube)({ x, SUELO_PISOTON + 0.005f, z }, ancho, 0.01f, ancho * 0.7f, verde);
+        }
+
+        // Mechones cortos de pasto dentro de la arena.
+        for (int k = 0; k < 26; k++)
+        {
+            float x = (HashPisoton(k * 5 + 40) * 2.0f - 1.0f) * (LIMITE_X_PISOTON + 0.5f);
+            float z = (HashPisoton(k * 5 + 41) * 2.0f - 1.0f) * (LIMITE_Z_PISOTON + 0.3f);
+            (DrawCylinder)({ x, SUELO_PISOTON, z }, 0.0f, 0.07f, 0.3f + HashPisoton(k) * 0.2f, 4, Color{ 110, 184, 76, 255 });
+        }
+
     }
-
-    // Parches de cesped para dar textura.
-    for (int k = 0; k < 18; k++)
-    {
-        float x = (HashPisoton(k * 3 + 1) * 2.0f - 1.0f) * LIMITE_X_PISOTON;
-        float z = (HashPisoton(k * 3 + 2) * 2.0f - 1.0f) * LIMITE_Z_PISOTON;
-        float ancho = 1.2f + HashPisoton(k * 3 + 3) * 2.2f;
-        Color verde = (k % 2 == 0) ? Color{ 98, 168, 70, 255 } : Color{ 70, 132, 52, 255 };
-
-        DrawCube({ x, SUELO_PISOTON + 0.005f, z }, ancho, 0.01f, ancho * 0.7f, verde);
-    }
-
-    // Mechones cortos de pasto dentro de la arena.
-    for (int k = 0; k < 26; k++)
-    {
-        float x = (HashPisoton(k * 5 + 40) * 2.0f - 1.0f) * (LIMITE_X_PISOTON + 0.5f);
-        float z = (HashPisoton(k * 5 + 41) * 2.0f - 1.0f) * (LIMITE_Z_PISOTON + 0.3f);
-        DrawCylinder({ x, SUELO_PISOTON, z }, 0.0f, 0.07f, 0.3f + HashPisoton(k) * 0.2f, 4, Color{ 110, 184, 76, 255 });
-    }
-
-    // Gotas de rocio.
+    // Gotas de rocio: el GLB conserva el pulso de transparencia.
     for (int k = 0; k < 10; k++)
     {
         float x = (HashPisoton(k * 7 + 90) * 2.0f - 1.0f) * LIMITE_X_PISOTON;
         float z = (HashPisoton(k * 7 + 91) * 2.0f - 1.0f) * LIMITE_Z_PISOTON;
         float brillo = 0.5f + 0.5f * std::sin(m.tiempoAnimacion * 2.0f + (float)k);
-        DrawSphere({ x, SUELO_PISOTON + 0.09f, z }, 0.09f, Fade(Color{ 190, 230, 255, 255 }, 0.55f + 0.3f * brillo));
+        if (!DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_ROCIO,
+            {x,SUELO_PISOTON,z}, 0, {1,1,1}, WHITE, .55f + .3f * brillo))
+            (DrawSphere)({ x, SUELO_PISOTON + 0.09f, z }, 0.09f, Fade(Color{ 190, 230, 255, 255 }, 0.55f + 0.3f * brillo));
     }
 }
 
@@ -1727,13 +1735,21 @@ static void DibujarMadriguerasPisoton(const MinijuegoPisotonPlagas& m)
             elevacion = 0.15f * (1.0f - madriguera.aviso / DURACION_AVISO_MADRIGUERA_PISOTON);
         }
 
-        DrawCylinder({ madriguera.x + temblor, SUELO_PISOTON, madriguera.z }, 0.35f + elevacion, 0.7f, 0.12f + elevacion, 12, Color{ 118, 82, 50, 255 });
-        DrawCylinder({ madriguera.x, SUELO_PISOTON + 0.115f + elevacion, madriguera.z }, 0.3f, 0.3f, 0.01f, 12, Color{ 40, 26, 18, 255 });
+        float altura = (0.12f + elevacion) / .12f;
+        if (!DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_MADRIGUERA,
+            {madriguera.x + temblor,SUELO_PISOTON + .045f * altura,madriguera.z},
+            0, {1,altura,1}))
+        {
+            (DrawCylinder)({ madriguera.x + temblor, SUELO_PISOTON, madriguera.z }, 0.35f + elevacion, 0.7f, 0.12f + elevacion, 12, Color{ 118, 82, 50, 255 });
+            (DrawCylinder)({ madriguera.x, SUELO_PISOTON + 0.115f + elevacion, madriguera.z }, 0.3f, 0.3f, 0.01f, 12, Color{ 40, 26, 18, 255 });
+        }
 
         if (madriguera.aviso > 0.0f)
         {
             float pulso = 0.5f + 0.5f * std::sin(m.tiempoAnimacion * 14.0f);
-            DrawCircle3D({ madriguera.x, SUELO_PISOTON + 0.03f, madriguera.z }, 0.85f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(ORANGE, 0.5f + 0.4f * pulso));
+            if (!DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_ARO_AVISO,
+                {madriguera.x,SUELO_PISOTON,madriguera.z}, 0, {1,1,1}, Fade(ORANGE,.5f + .4f * pulso)))
+                DrawCircle3D({ madriguera.x, SUELO_PISOTON + 0.03f, madriguera.z }, 0.85f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(ORANGE, 0.5f + 0.4f * pulso));
         }
     }
 }
@@ -1744,28 +1760,32 @@ static void DibujarCercaPisoton()
     const float zFondo = -LIMITE_Z_PISOTON - 1.3f;
 
     // Fondo.
-    for (int k = -10; k <= 10; k++)
+    if (!DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_CERCA_FONDO, {0,0,zFondo}))
     {
-        float x = (float)k * 1.05f;
-        DrawCube({ x, 0.75f, zFondo }, 0.22f, 1.5f, 0.14f, Color{ 160, 112, 66, 255 });
-        DrawCylinder({ x, 1.5f, zFondo }, 0.0f, 0.15f, 0.2f, 4, Color{ 160, 112, 66, 255 });
-    }
+        for (int k = -10; k <= 10; k++)
+        {
+            float x = (float)k * 1.05f;
+            (DrawCube)({ x, 0.75f, zFondo }, 0.22f, 1.5f, 0.14f, Color{ 160, 112, 66, 255 });
+            (DrawCylinder)({ x, 1.5f, zFondo }, 0.0f, 0.15f, 0.2f, 4, Color{ 160, 112, 66, 255 });
+        }
 
-    DrawCube({ 0.0f, 1.15f, zFondo }, 22.0f, 0.18f, 0.1f, Color{ 190, 138, 84, 255 });
-    DrawCube({ 0.0f, 0.55f, zFondo }, 22.0f, 0.18f, 0.1f, Color{ 190, 138, 84, 255 });
+        (DrawCube)({ 0.0f, 1.15f, zFondo }, 22.0f, 0.18f, 0.1f, Color{ 190, 138, 84, 255 });
+        (DrawCube)({ 0.0f, 0.55f, zFondo }, 22.0f, 0.18f, 0.1f, Color{ 190, 138, 84, 255 });
+    }
 
     // Laterales.
     for (int lado = -1; lado <= 1; lado += 2)
     {
         float x = (float)lado * (LIMITE_X_PISOTON + 1.4f);
+        if (DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_CERCA_LATERAL, {x,0,0}, 90)) continue;
 
         for (int k = -5; k <= 5; k++)
         {
-            DrawCube({ x, 0.6f, (float)k * 1.05f }, 0.14f, 1.2f, 0.22f, Color{ 160, 112, 66, 255 });
+            (DrawCube)({ x, 0.6f, (float)k * 1.05f }, 0.14f, 1.2f, 0.22f, Color{ 160, 112, 66, 255 });
         }
 
-        DrawCube({ x, 0.95f, 0.0f }, 0.1f, 0.16f, 11.5f, Color{ 190, 138, 84, 255 });
-        DrawCube({ x, 0.45f, 0.0f }, 0.1f, 0.16f, 11.5f, Color{ 190, 138, 84, 255 });
+        (DrawCube)({ x, 0.95f, 0.0f }, 0.1f, 0.16f, 11.5f, Color{ 190, 138, 84, 255 });
+        (DrawCube)({ x, 0.45f, 0.0f }, 0.1f, 0.16f, 11.5f, Color{ 190, 138, 84, 255 });
     }
 }
 
@@ -1793,8 +1813,10 @@ static void DibujarVegetacionPisoton(const MinijuegoPisotonPlagas& m)
         float alto = 3.0f + HashPisoton(k * 11 + 8) * 3.2f;
         float mecer = std::sin(m.tiempoAnimacion * 1.2f + (float)k) * 0.15f;
         Color verde = (k % 3 == 0) ? Color{ 52, 130, 50, 255 } : ((k % 3 == 1) ? Color{ 70, 150, 58, 255 } : Color{ 40, 110, 44, 255 });
+        if (DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_BRIZNA,
+            {x + mecer,0,z}, 0, {1,alto / 4.5f,1})) continue;
 
-        DrawCylinder({ x + mecer, 0.0f, z }, 0.0f, 0.45f, alto, 5, verde);
+        (DrawCylinder)({ x + mecer, 0.0f, z }, 0.0f, 0.45f, alto, 5, verde);
     }
 
     // Flores gigantes del fondo.
@@ -1806,16 +1828,17 @@ static void DibujarVegetacionPisoton(const MinijuegoPisotonPlagas& m)
         float x = floresX[f];
         float z = -LIMITE_Z_PISOTON - 3.8f - (float)(f % 2) * 1.2f;
         float alto = 5.0f + (float)f * 0.6f;
+        if (DibujarModeloPisotonPlagasRetro3D(static_cast<ModeloPisotonPlagas3D>(MODELO_PISOTON_FLOR_ROSA + f), {x,0,z})) continue;
 
-        DrawCylinder({ x, 0.0f, z }, 0.14f, 0.2f, alto, 6, Color{ 60, 140, 52, 255 });
+        (DrawCylinder)({ x, 0.0f, z }, 0.14f, 0.2f, alto, 6, Color{ 60, 140, 52, 255 });
 
         for (int p = 0; p < 8; p++)
         {
             float angulo = (float)p * 2.0f * PI / 8.0f;
-            DrawSphere({ x + std::cos(angulo) * 1.15f, alto, z + std::sin(angulo) * 0.35f + 0.3f }, 0.62f, petalos[f]);
+            (DrawSphere)({ x + std::cos(angulo) * 1.15f, alto, z + std::sin(angulo) * 0.35f + 0.3f }, 0.62f, petalos[f]);
         }
 
-        DrawSphere({ x, alto, z + 0.35f }, 0.6f, Color{ 120, 70, 30, 255 });
+        (DrawSphere)({ x, alto, z + 0.35f }, 0.6f, Color{ 120, 70, 30, 255 });
     }
 
     // Setas.
@@ -1824,16 +1847,20 @@ static void DibujarVegetacionPisoton(const MinijuegoPisotonPlagas& m)
 
     for (int s = 0; s < 3; s++)
     {
-        DrawCylinder({ setasX[s], 0.0f, setasZ[s] }, 0.2f, 0.25f, 0.7f, 8, Color{ 235, 225, 205, 255 });
-        DrawCylinder({ setasX[s], 0.7f, setasZ[s] }, 0.0f, 0.75f, 0.45f, 10, Color{ 210, 60, 52, 255 });
-        DrawSphere({ setasX[s] + 0.25f, 0.95f, setasZ[s] + 0.2f }, 0.1f, WHITE);
-        DrawSphere({ setasX[s] - 0.2f, 0.9f, setasZ[s] - 0.15f }, 0.08f, WHITE);
+        if (DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_SETA, {setasX[s],0,setasZ[s]})) continue;
+        (DrawCylinder)({ setasX[s], 0.0f, setasZ[s] }, 0.2f, 0.25f, 0.7f, 8, Color{ 235, 225, 205, 255 });
+        (DrawCylinder)({ setasX[s], 0.7f, setasZ[s] }, 0.0f, 0.75f, 0.45f, 10, Color{ 210, 60, 52, 255 });
+        (DrawSphere)({ setasX[s] + 0.25f, 0.95f, setasZ[s] + 0.2f }, 0.1f, WHITE);
+        (DrawSphere)({ setasX[s] - 0.2f, 0.9f, setasZ[s] - 0.15f }, 0.08f, WHITE);
     }
 
     // Regadera olvidada.
-    DrawCube({ -11.2f, 0.5f, -3.0f }, 1.1f, 1.0f, 0.8f, Color{ 70, 130, 200, 255 });
-    DrawCylinderEx({ -10.6f, 0.7f, -3.0f }, { -9.9f, 1.3f, -3.0f }, 0.08f, 0.14f, 6, Color{ 60, 116, 180, 255 });
-    DrawCylinderEx({ -11.8f, 0.9f, -3.0f }, { -11.2f, 1.25f, -3.0f }, 0.06f, 0.06f, 6, Color{ 60, 116, 180, 255 });
+    if (!DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_REGADERA, {-11.2f,0,-3}))
+    {
+        (DrawCube)({ -11.2f, 0.5f, -3.0f }, 1.1f, 1.0f, 0.8f, Color{ 70, 130, 200, 255 });
+        DrawCylinderEx({ -10.6f, 0.7f, -3.0f }, { -9.9f, 1.3f, -3.0f }, 0.08f, 0.14f, 6, Color{ 60, 116, 180, 255 });
+        DrawCylinderEx({ -11.8f, 0.9f, -3.0f }, { -11.2f, 1.25f, -3.0f }, 0.06f, 0.06f, 6, Color{ 60, 116, 180, 255 });
+    }
 
     // Piedras.
     const float piedrasX[5] = { 10.4f, -10.5f, 6.5f, -5.5f, 11.4f };
@@ -1841,7 +1868,10 @@ static void DibujarVegetacionPisoton(const MinijuegoPisotonPlagas& m)
 
     for (int r = 0; r < 5; r++)
     {
-        DrawSphere({ piedrasX[r], 0.2f, piedrasZ[r] }, 0.55f - (float)(r % 2) * 0.12f, Color{ 128, 128, 134, 255 });
+        float escala = (0.55f - (r % 2) * .12f) / .55f;
+        if (DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_PIEDRA,
+            {piedrasX[r],0,piedrasZ[r]}, 0, {escala,escala,escala})) continue;
+        (DrawSphere)({ piedrasX[r], 0.2f, piedrasZ[r] }, 0.55f - (float)(r % 2) * 0.12f, Color{ 128, 128, 134, 255 });
     }
 }
 
@@ -1855,7 +1885,7 @@ static void DibujarEstrellasAturdidoPisoton(float x, float z, float altura, floa
     for (int k = 0; k < 3; k++)
     {
         float angulo = tiempo * 6.0f + (float)k * 2.0944f;
-        DrawSphere({ x + std::cos(angulo) * 0.35f, altura, z + std::sin(angulo) * 0.35f }, 0.07f, YELLOW);
+        (DrawSphere)({ x + std::cos(angulo) * 0.35f, altura, z + std::sin(angulo) * 0.35f }, 0.07f, YELLOW);
     }
 }
 
@@ -1885,6 +1915,8 @@ static void DibujarPlagaPisoton(const PlagaPisoton& plaga, float tiempo)
     PosicionPlagaPisoton(plaga, px, pz);
 
     float oscila = aturdida ? 0.0f : std::sin(plaga.edad * 14.0f);
+    // Los modelos miran hacia +X; raylib gira +X hacia -Z en un giro Y positivo.
+    float giro = -std::atan2(fz,fx) * RAD2DEG;
 
     if (plaga.tipo == PLAGA_PISOTON_ESCARABAJO)
     {
@@ -1893,39 +1925,46 @@ static void DibujarPlagaPisoton(const PlagaPisoton& plaga, float tiempo)
         Color cuerpo = destello ? Color{ 255, 230, 200, 255 } : Color{ 150, 38, 30, 255 };
 
         DrawCircle3D({ x, SUELO_PISOTON + 0.02f, z }, 0.38f * escala, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(BLACK, 0.3f));
-        DrawSphere({ x, 0.27f * escala, z }, 0.3f * escala, cuerpo);
-        DrawSphere({ x + fx * 0.3f * escala, 0.24f * escala, z + fz * 0.3f * escala }, 0.16f * escala, Color{ 30, 20, 20, 255 });
-        DrawSphere({ x - fx * 0.05f + sx * 0.12f, 0.5f * escala, z - fz * 0.05f + sz * 0.12f }, 0.06f * escala, BLACK);
-        DrawSphere({ x - fx * 0.05f - sx * 0.12f, 0.5f * escala, z - fz * 0.05f - sz * 0.12f }, 0.06f * escala, BLACK);
-        DrawLine3D({ x, 0.45f * escala, z }, { x - fx * 0.28f, 0.2f * escala, z - fz * 0.28f }, Color{ 90, 20, 16, 255 });
-
-        for (int p = -1; p <= 1; p++)
+        bool modelo = DibujarPlagaAnimadaPisotonRetro3D(MODELO_PISOTON_ESCARABAJO,
+            {x,0,z}, giro, escala, oscila);
+        if (!modelo)
         {
-            float pata = (float)p * 0.2f;
-            float meneo = oscila * 0.08f * (float)(p == 0 ? -1 : 1);
+            (DrawSphere)({ x, 0.27f * escala, z }, 0.3f * escala, cuerpo);
+            (DrawSphere)({ x + fx * 0.3f * escala, 0.24f * escala, z + fz * 0.3f * escala }, 0.16f * escala, Color{ 30, 20, 20, 255 });
+            (DrawSphere)({ x - fx * 0.05f + sx * 0.12f, 0.5f * escala, z - fz * 0.05f + sz * 0.12f }, 0.06f * escala, BLACK);
+            (DrawSphere)({ x - fx * 0.05f - sx * 0.12f, 0.5f * escala, z - fz * 0.05f - sz * 0.12f }, 0.06f * escala, BLACK);
+            DrawLine3D({ x, 0.45f * escala, z }, { x - fx * 0.28f, 0.2f * escala, z - fz * 0.28f }, Color{ 90, 20, 16, 255 });
 
-            for (int lado = -1; lado <= 1; lado += 2)
+            for (int p = -1; p <= 1; p++)
             {
-                DrawLine3D(
-                    { x + fx * pata, 0.15f * escala, z + fz * pata },
-                    { x + fx * (pata + meneo) + sx * 0.42f * (float)lado * escala, 0.03f, z + fz * (pata + meneo) + sz * 0.42f * (float)lado * escala },
-                    Color{ 40, 24, 20, 255 }
-                );
+                float pata = (float)p * 0.2f;
+                float meneo = oscila * 0.08f * (float)(p == 0 ? -1 : 1);
+
+                for (int lado = -1; lado <= 1; lado += 2)
+                {
+                    DrawLine3D(
+                        { x + fx * pata, 0.15f * escala, z + fz * pata },
+                        { x + fx * (pata + meneo) + sx * 0.42f * (float)lado * escala, 0.03f, z + fz * (pata + meneo) + sz * 0.42f * (float)lado * escala },
+                        Color{ 40, 24, 20, 255 }
+                    );
+                }
             }
+
+            // Cuernos.
+            DrawLine3D(
+                { x + fx * 0.4f * escala, 0.28f * escala, z + fz * 0.4f * escala },
+                { x + fx * 0.62f * escala + sx * 0.1f, 0.4f * escala, z + fz * 0.62f * escala + sz * 0.1f },
+                Color{ 40, 24, 20, 255 }
+            );
+            DrawLine3D(
+                { x + fx * 0.4f * escala, 0.28f * escala, z + fz * 0.4f * escala },
+                { x + fx * 0.62f * escala - sx * 0.1f, 0.4f * escala, z + fz * 0.62f * escala - sz * 0.1f },
+                Color{ 40, 24, 20, 255 }
+            );
+
         }
-
-        // Cuernos.
-        DrawLine3D(
-            { x + fx * 0.4f * escala, 0.28f * escala, z + fz * 0.4f * escala },
-            { x + fx * 0.62f * escala + sx * 0.1f, 0.4f * escala, z + fz * 0.62f * escala + sz * 0.1f },
-            Color{ 40, 24, 20, 255 }
-        );
-        DrawLine3D(
-            { x + fx * 0.4f * escala, 0.28f * escala, z + fz * 0.4f * escala },
-            { x + fx * 0.62f * escala - sx * 0.1f, 0.4f * escala, z + fz * 0.62f * escala - sz * 0.1f },
-            Color{ 40, 24, 20, 255 }
-        );
-
+        // Destello como efecto: no existe COLOR_DINAMICO en el cuerpo GLB.
+        if (modelo && destello) DrawSphereWires({x,.3f * escala,z}, .34f * escala, 6, 8, cuerpo);
         if (aturdida)
         {
             DibujarEstrellasAturdidoPisoton(x, z, 0.85f, tiempo);
@@ -1933,6 +1972,9 @@ static void DibujarPlagaPisoton(const PlagaPisoton& plaga, float tiempo)
     }
     else if (plaga.tipo == PLAGA_PISOTON_ORUGA)
     {
+        int cabeza = 0;
+        while (cabeza < MAX_SEGMENTOS_PISOTON - 1 && !plaga.segVivo[cabeza]) cabeza++;
+        bool cabezaModelada = false;
         for (int s = MAX_SEGMENTOS_PISOTON - 1; s >= 0; s--)
         {
             if (!plaga.segVivo[s])
@@ -1951,7 +1993,15 @@ static void DibujarPlagaPisoton(const PlagaPisoton& plaga, float tiempo)
             }
 
             DrawCircle3D({ x, SUELO_PISOTON + 0.02f, z }, 0.3f * escala, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(BLACK, 0.3f));
-            DrawSphere({ x, (0.27f + bote) * escala, z }, 0.27f * escala, verde);
+            bool modelo = DibujarModeloPisotonPlagasRetro3D(s == cabeza ? MODELO_PISOTON_ORUGA_CABEZA : MODELO_PISOTON_ORUGA_SEGMENTO,
+                {x,bote * escala,z}, giro, {escala,escala,escala});
+            if (s == cabeza) cabezaModelada = modelo;
+            if (modelo)
+            {
+                if (destello) DrawSphereWires({x,(.27f + bote) * escala,z}, .3f * escala, 6, 8, verde);
+                continue;
+            }
+            (DrawSphere)({ x, (0.27f + bote) * escala, z }, 0.27f * escala, verde);
         }
 
         // Cara en el primer segmento vivo.
@@ -1964,10 +2014,13 @@ static void DibujarPlagaPisoton(const PlagaPisoton& plaga, float tiempo)
 
             float x = plaga.segX[s];
             float z = plaga.segZ[s];
-            DrawSphere({ x + fx * 0.2f + sx * 0.11f, 0.4f * escala, z + fz * 0.2f + sz * 0.11f }, 0.07f * escala, WHITE);
-            DrawSphere({ x + fx * 0.2f - sx * 0.11f, 0.4f * escala, z + fz * 0.2f - sz * 0.11f }, 0.07f * escala, WHITE);
-            DrawLine3D({ x, 0.5f * escala, z }, { x + fx * 0.25f + sx * 0.12f, 0.75f * escala, z + fz * 0.25f + sz * 0.12f }, Color{ 50, 100, 40, 255 });
-            DrawLine3D({ x, 0.5f * escala, z }, { x + fx * 0.25f - sx * 0.12f, 0.75f * escala, z + fz * 0.25f - sz * 0.12f }, Color{ 50, 100, 40, 255 });
+            if (!cabezaModelada)
+            {
+                (DrawSphere)({ x + fx * 0.2f + sx * 0.11f, 0.4f * escala, z + fz * 0.2f + sz * 0.11f }, 0.07f * escala, WHITE);
+                (DrawSphere)({ x + fx * 0.2f - sx * 0.11f, 0.4f * escala, z + fz * 0.2f - sz * 0.11f }, 0.07f * escala, WHITE);
+                DrawLine3D({ x, 0.5f * escala, z }, { x + fx * 0.25f + sx * 0.12f, 0.75f * escala, z + fz * 0.25f + sz * 0.12f }, Color{ 50, 100, 40, 255 });
+                DrawLine3D({ x, 0.5f * escala, z }, { x + fx * 0.25f - sx * 0.12f, 0.75f * escala, z + fz * 0.25f - sz * 0.12f }, Color{ 50, 100, 40, 255 });
+            }
 
             if (aturdida)
             {
@@ -1985,25 +2038,31 @@ static void DibujarPlagaPisoton(const PlagaPisoton& plaga, float tiempo)
         float estira = aturdida ? 0.0f : std::sin(plaga.edad * 5.0f) * 0.04f;
 
         DrawCircle3D({ x - fx * 0.2f, SUELO_PISOTON + 0.02f, z - fz * 0.2f }, 0.5f * escala, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(BLACK, 0.3f));
-        DrawSphere({ x, 0.3f * escala, z }, 0.3f * escala, oro);
-        DrawSphere({ x - fx * (0.3f + estira), 0.25f * escala, z - fz * (0.3f + estira) }, 0.26f * escala, oro);
-        DrawSphere({ x - fx * 0.55f, 0.19f * escala, z - fz * 0.55f }, 0.2f * escala, Color{ 240, 180, 30, 255 });
-        DrawSphere({ x + fx * 0.05f, 0.45f * escala, z + fz * 0.05f }, 0.12f * escala, Color{ 255, 240, 160, 255 });
-
-        // Tentaculos con ojos.
-        for (int lado = -1; lado <= 1; lado += 2)
+        bool modelo = DibujarPlagaAnimadaPisotonRetro3D(MODELO_PISOTON_BABOSA,
+            {x,0,z}, giro, escala, estira / .04f);
+        if (!modelo)
         {
-            float ex = x + fx * 0.28f + sx * 0.12f * (float)lado;
-            float ez = z + fz * 0.28f + sz * 0.12f * (float)lado;
-            DrawLine3D({ x + fx * 0.2f, 0.4f * escala, z + fz * 0.2f }, { ex, 0.75f * escala, ez }, Color{ 200, 140, 20, 255 });
-            DrawSphere({ ex, 0.78f * escala, ez }, 0.06f * escala, BLACK);
-        }
+            (DrawSphere)({ x, 0.3f * escala, z }, 0.3f * escala, oro);
+            (DrawSphere)({ x - fx * (0.3f + estira), 0.25f * escala, z - fz * (0.3f + estira) }, 0.26f * escala, oro);
+            (DrawSphere)({ x - fx * 0.55f, 0.19f * escala, z - fz * 0.55f }, 0.2f * escala, Color{ 240, 180, 30, 255 });
+            (DrawSphere)({ x + fx * 0.05f, 0.45f * escala, z + fz * 0.05f }, 0.12f * escala, Color{ 255, 240, 160, 255 });
 
+            // Tentaculos con ojos.
+            for (int lado = -1; lado <= 1; lado += 2)
+            {
+                float ex = x + fx * 0.28f + sx * 0.12f * (float)lado;
+                float ez = z + fz * 0.28f + sz * 0.12f * (float)lado;
+                DrawLine3D({ x + fx * 0.2f, 0.4f * escala, z + fz * 0.2f }, { ex, 0.75f * escala, ez }, Color{ 200, 140, 20, 255 });
+                (DrawSphere)({ ex, 0.78f * escala, ez }, 0.06f * escala, BLACK);
+            }
+
+        }
+        if (modelo && destello) DrawSphereWires({x,.3f * escala,z}, .4f * escala, 6, 8, oro);
         // Destellos de brillo.
         for (int k = 0; k < 2; k++)
         {
             float angulo = tiempo * 3.0f + (float)k * PI;
-            DrawSphere({ x + std::cos(angulo) * 0.6f, 0.6f + 0.1f * std::sin(tiempo * 8.0f + (float)k), z + std::sin(angulo) * 0.6f }, 0.05f, WHITE);
+            (DrawSphere)({ x + std::cos(angulo) * 0.6f, 0.6f + 0.1f * std::sin(tiempo * 8.0f + (float)k), z + std::sin(angulo) * 0.6f }, 0.05f, WHITE);
         }
 
         if (aturdida)
@@ -2033,20 +2092,32 @@ static void DibujarAvispaPisoton(const AvispaPisoton& avispa, float tiempo)
     Color amarillo = asustada ? Color{ 255, 150, 90, 255 } : Color{ 255, 214, 40, 255 };
 
     DrawCircle3D({ avispa.x, SUELO_PISOTON + 0.02f, avispa.z }, 0.3f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(BLACK, 0.3f));
-    DrawSphere({ avispa.x + fx * 0.24f, avispa.altura, avispa.z + fz * 0.24f }, 0.13f, Color{ 30, 24, 20, 255 });
-    DrawSphere({ avispa.x, avispa.altura, avispa.z }, 0.17f, Color{ 30, 24, 20, 255 });
-    DrawSphere({ avispa.x - fx * 0.25f, avispa.altura, avispa.z - fz * 0.25f }, 0.2f, amarillo);
-    DrawSphere({ avispa.x - fx * 0.2f, avispa.altura, avispa.z - fz * 0.2f }, 0.205f, Color{ 30, 24, 20, 255 });
-    DrawSphere({ avispa.x - fx * 0.3f, avispa.altura, avispa.z - fz * 0.3f }, 0.2f, amarillo);
-    DrawLine3D(
-        { avispa.x - fx * 0.44f, avispa.altura, avispa.z - fz * 0.44f },
-        { avispa.x - fx * 0.62f, avispa.altura - 0.05f, avispa.z - fz * 0.62f },
-        Color{ 40, 20, 16, 255 }
-    );
+    float giro = -std::atan2(fz,fx) * RAD2DEG;
+    bool modelo = DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_AVISPA,
+        {avispa.x,avispa.altura,avispa.z}, giro);
+    if (!modelo)
+    {
+        (DrawSphere)({ avispa.x + fx * 0.24f, avispa.altura, avispa.z + fz * 0.24f }, 0.13f, Color{ 30, 24, 20, 255 });
+        (DrawSphere)({ avispa.x, avispa.altura, avispa.z }, 0.17f, Color{ 30, 24, 20, 255 });
+        (DrawSphere)({ avispa.x - fx * 0.25f, avispa.altura, avispa.z - fz * 0.25f }, 0.2f, amarillo);
+        (DrawSphere)({ avispa.x - fx * 0.2f, avispa.altura, avispa.z - fz * 0.2f }, 0.205f, Color{ 30, 24, 20, 255 });
+        (DrawSphere)({ avispa.x - fx * 0.3f, avispa.altura, avispa.z - fz * 0.3f }, 0.2f, amarillo);
+        DrawLine3D(
+            { avispa.x - fx * 0.44f, avispa.altura, avispa.z - fz * 0.44f },
+            { avispa.x - fx * 0.62f, avispa.altura - 0.05f, avispa.z - fz * 0.62f },
+            Color{ 40, 20, 16, 255 }
+        );
+    }
+    if (modelo && asustada)
+        DrawSphereWires({avispa.x - fx * .27f,avispa.altura,avispa.z - fz * .27f}, .34f, 6, 8, amarillo);
 
     for (int lado = -1; lado <= 1; lado += 2)
     {
-        DrawCube(
+        Vector3 posicion = {avispa.x + sx * .22f * lado,
+            avispa.altura + .17f + aleteo,avispa.z + sz * .22f * lado};
+        if (DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_ALA,
+            posicion, giro + (lado < 0 ? 180 : 0))) continue;
+        (DrawCube)(
             { avispa.x + sx * 0.22f * (float)lado, avispa.altura + 0.17f + aleteo, avispa.z + sz * 0.22f * (float)lado },
             0.3f, 0.02f, 0.18f,
             Fade(Color{ 220, 240, 255, 255 }, 0.7f)
@@ -2056,7 +2127,7 @@ static void DibujarAvispaPisoton(const AvispaPisoton& avispa, float tiempo)
     // Marca de peligro sobre la avispa.
     if (!asustada)
     {
-        DrawSphere({ avispa.x, avispa.altura + 0.5f, avispa.z }, 0.07f, RED);
+        (DrawSphere)({ avispa.x, avispa.altura + 0.5f, avispa.z }, 0.07f, RED);
     }
 }
 
@@ -2082,28 +2153,41 @@ static void DibujarFlorPisoton(const MinijuegoPisotonPlagas& m)
 
     // Zona de disputa en el suelo.
     float pulso = 0.5f + 0.5f * std::sin(m.tiempoAnimacion * (4.0f + 10.0f * crecimiento));
-    DrawCylinder({ x, SUELO_PISOTON + 0.01f, z }, RADIO_FLOR_PISOTON, RADIO_FLOR_PISOTON, 0.015f, 28, Fade(Color{ 255, 150, 210, 255 }, 0.25f + 0.2f * pulso));
-    DrawCircle3D({ x, SUELO_PISOTON + 0.05f, z }, RADIO_FLOR_PISOTON, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(Color{ 255, 110, 190, 255 }, 0.7f + 0.3f * pulso));
+    // Durante el aviso se mantiene el indicador lleno; al florecer lo
+    // reemplaza el aro abierto, sin cubrir las plagas y con fallback local.
+    if (!(m.florAbierta > 0 && DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_ARO_FLOR,
+        {x,SUELO_PISOTON + .03f,z}, 0, {1,1,1}, WHITE, .7f + .3f * pulso)))
+    {
+        (DrawCylinder)({ x, SUELO_PISOTON + 0.01f, z }, RADIO_FLOR_PISOTON, RADIO_FLOR_PISOTON, 0.015f, 28, Fade(Color{ 255, 150, 210, 255 }, 0.25f + 0.2f * pulso));
+        DrawCircle3D({ x, SUELO_PISOTON + 0.05f, z }, RADIO_FLOR_PISOTON, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(Color{ 255, 110, 190, 255 }, 0.7f + 0.3f * pulso));
+    }
 
-    DrawCylinder({ x, SUELO_PISOTON, z }, 0.08f, 0.12f, alto, 6, Color{ 70, 150, 56, 255 });
+    if (abierta > 0)
+    {
+        if (DibujarFlorAbiertaPisotonRetro3D({x,SUELO_PISOTON,z}, alto, abierta, m.tiempoAnimacion)) return;
+    }
+    else if (DibujarModeloPisotonPlagasRetro3D(MODELO_PISOTON_BROTE,
+        {x,SUELO_PISOTON,z}, 0, {(.22f + .2f * crecimiento) / .38f,alto / 2.6f,(.22f + .2f * crecimiento) / .38f})) return;
+
+    (DrawCylinder)({ x, SUELO_PISOTON, z }, 0.08f, 0.12f, alto, 6, Color{ 70, 150, 56, 255 });
 
     if (abierta <= 0.0f)
     {
-        DrawSphere({ x, alto + 0.12f, z }, 0.22f + 0.2f * crecimiento, Color{ 100, 180, 70, 255 });
+        (DrawSphere)({ x, alto + 0.12f, z }, 0.22f + 0.2f * crecimiento, Color{ 100, 180, 70, 255 });
         return;
     }
 
     for (int p = 0; p < 8; p++)
     {
         float angulo = (float)p * 2.0f * PI / 8.0f + m.tiempoAnimacion * 0.4f;
-        DrawSphere(
+        (DrawSphere)(
             { x + std::cos(angulo) * 0.75f * abierta, alto + 0.05f, z + std::sin(angulo) * 0.75f * abierta },
             0.38f,
             (p % 2 == 0) ? Color{ 255, 120, 190, 255 } : Color{ 255, 160, 215, 255 }
         );
     }
 
-    DrawSphere({ x, alto + 0.12f, z }, 0.4f, Color{ 255, 210, 60, 255 });
+    (DrawSphere)({ x, alto + 0.12f, z }, 0.4f, Color{ 255, 210, 60, 255 });
 }
 
 

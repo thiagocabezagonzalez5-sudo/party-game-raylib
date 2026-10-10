@@ -860,6 +860,48 @@ static_assert(sizeof(RUTAS_MODELOS_GRUA_CHATARRA_3D) /
     sizeof(RUTAS_MODELOS_GRUA_CHATARRA_3D[0]) == CANTIDAD_MODELOS_GRUA_CHATARRA_3D,
     "Las rutas de Grua de Chatarra deben coincidir con sus piezas");
 
+// PISOTON DE PLAGAS: rutas del paquete existente.
+enum ModeloPisotonPlagas3D
+{
+    MODELO_PISOTON_SUELO, MODELO_PISOTON_BRIZNA, MODELO_PISOTON_FLOR_ROSA,
+    MODELO_PISOTON_FLOR_AMARILLA, MODELO_PISOTON_FLOR_VIOLETA,
+    MODELO_PISOTON_BROTE, MODELO_PISOTON_FLOR_ABIERTA, MODELO_PISOTON_ARO_FLOR,
+    MODELO_PISOTON_SETA, MODELO_PISOTON_REGADERA, MODELO_PISOTON_PIEDRA,
+    MODELO_PISOTON_CERCA_FONDO, MODELO_PISOTON_CERCA_LATERAL,
+    MODELO_PISOTON_MADRIGUERA, MODELO_PISOTON_ARO_AVISO, MODELO_PISOTON_ESCARABAJO,
+    MODELO_PISOTON_ORUGA_CABEZA, MODELO_PISOTON_ORUGA_SEGMENTO,
+    MODELO_PISOTON_BABOSA, MODELO_PISOTON_AVISPA, MODELO_PISOTON_ALA,
+    MODELO_PISOTON_ROCIO, CANTIDAD_MODELOS_PISOTON_PLAGAS_3D
+};
+inline constexpr const char* RUTAS_MODELOS_PISOTON_PLAGAS_3D[] =
+{
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/suelo_jardin.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/brizna_gigante.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/flor_fondo_rosa.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/flor_fondo_amarilla.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/flor_fondo_violeta.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/flor_brote.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/flor_abierta.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/aro_flor.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/seta.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/regadera.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/piedra.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/cerca_fondo.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/cerca_lateral.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/madriguera.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/aro_aviso.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/escarabajo.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/oruga_cabeza.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/oruga_segmento.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/babosa_dorada.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/avispa_cuerpo.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/avispa_ala.glb",
+    "Assets/Modelos/Escenarios/Pisoton de Plagas Modelos/GLB/gota_rocio.glb",
+};
+static_assert(sizeof(RUTAS_MODELOS_PISOTON_PLAGAS_3D) /
+    sizeof(RUTAS_MODELOS_PISOTON_PLAGAS_3D[0]) == CANTIDAD_MODELOS_PISOTON_PLAGAS_3D,
+    "Las rutas de Pisoton de Plagas deben coincidir con sus piezas");
+
 // TEXTURAS GENERALES
 //==================================================
 

@@ -80,6 +80,13 @@ struct AnimacionRodillosRetro3D
     bool intentada = false;
 };
 
+// Reposo de patas, cola y petalos. Las instancias comparten una sola malla/VBO.
+struct ReposoMallaPisotonRetro3D
+{
+    float* vertices = nullptr;
+    float* normales = nullptr;
+};
+
 struct ModelosEscenariosRetro3D
 {
     RecursoModeloEscenarioRetro3D montanaLava;
@@ -99,6 +106,8 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D rodillosNeon[CANTIDAD_MODELOS_RODILLOS_NEON_3D];
     RecursoModeloEscenarioRetro3D bolasAzucar[CANTIDAD_MODELOS_BOLAS_AZUCAR_3D];
     RecursoModeloEscenarioRetro3D gruaChatarra[CANTIDAD_MODELOS_GRUA_CHATARRA_3D];
+    RecursoModeloEscenarioRetro3D pisotonPlagas[CANTIDAD_MODELOS_PISOTON_PLAGAS_3D];
+    ReposoMallaPisotonRetro3D animacionesPisoton[4]; // patas, cola, petalos pares/impares
     float* franjasCintaGrua = nullptr; // Reposo CPU; una unica malla/VBO para ambas cintas.
     AnimacionRodillosRetro3D animacionesRodillos[4]; // suelo, dos LEDs, linea
     AnimacionMallaPescaRetro3D animacionesPesca[5]; // gaviota, humo y tres colas
@@ -1522,6 +1531,163 @@ inline bool DibujarCintaGruaChatarraRetro3D(float x, int lado, float tiempo)
     return dibujado;
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaquetePisotonPlagasRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_PISOTON_PLAGAS_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_PISOTON_PLAGAS_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_PISOTON_PLAGAS_3D[i];
+        definiciones[MODELO_PISOTON_ARO_AVISO].mallaColor = 0; // Unico COLOR_DINAMICO.
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().pisotonPlagas,
+        definiciones, CANTIDAD_MODELOS_PISOTON_PLAGAS_3D};
+}
+
+inline void CargarPaquetePisotonPlagasRetro3D()
+{
+    auto paquete = ObtenerPaquetePisotonPlagasRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    const int esperadas[] = {5,2,5,4,5,2,4,2,3,3,2,3,3,3,1,5,5,2,5,3,2,2};
+    for (int i = 0; i < paquete.cantidad; i++)
+    {
+        auto& r = paquete.recursos[i];
+        if (!r.cargado || r.modelo.meshCount == esperadas[i]) continue;
+        UnloadModel(r.modelo); r.modelo = {}; r.cargado = false;
+        TraceLog(LOG_WARNING, "Paquete Pisoton de Plagas incompatible; se usan primitivas: %s", r.ruta);
+    }
+    const int piezas[] = {MODELO_PISOTON_ESCARABAJO,MODELO_PISOTON_BABOSA,
+        MODELO_PISOTON_FLOR_ABIERTA,MODELO_PISOTON_FLOR_ABIERTA};
+    const int mallas[] = {3,0,1,2}, vertices[] = {876,618,1152,1152};
+    for (int i = 0; i < 4; i++)
+    {
+        auto& r = paquete.recursos[piezas[i]];
+        auto& reposo = ObtenerModelosEscenariosRetro3D().animacionesPisoton[i];
+        if (!r.cargado || reposo.vertices) continue;
+        Mesh& m = r.modelo.meshes[mallas[i]];
+        bool valido = m.vertexCount == vertices[i] && m.normals;
+        const int bytes = m.vertexCount * 3 * sizeof(float);
+        if (valido)
+        {
+            reposo.vertices = static_cast<float*>(MemAlloc(bytes));
+            reposo.normales = static_cast<float*>(MemAlloc(bytes));
+            valido = reposo.vertices && reposo.normales;
+        }
+        if (valido)
+        {
+            std::memcpy(reposo.vertices, m.vertices, bytes);
+            std::memcpy(reposo.normales, m.normals, bytes);
+        }
+        else
+        {
+            MemFree(reposo.vertices); MemFree(reposo.normales); reposo = {};
+            UnloadModel(r.modelo); r.modelo = {}; r.cargado = false;
+            TraceLog(LOG_WARNING, "No se pudo preparar la animacion de Pisoton de Plagas: %s", r.ruta);
+        }
+    }
+}
+
+inline bool DibujarModeloPisotonPlagasRetro3D(ModeloPisotonPlagas3D pieza,
+    Vector3 posicion = {}, float angulo = 0, Vector3 escala = {1,1,1},
+    Color color = WHITE, float alpha = 1)
+{
+    auto& r = ObtenerModelosEscenariosRetro3D().pisotonPlagas[pieza];
+    if (!r.cargado) return false;
+    // Solo opacidad de instancia: RGB blanco conserva todos los materiales
+    // y colores de vertice. DrawModelEx restaura su multiplicacion interna.
+    if (pieza == MODELO_PISOTON_ROCIO || pieza == MODELO_PISOTON_ARO_FLOR)
+    {
+        (DrawModelEx)(r.modelo,posicion,{0,1,0},angulo,escala,Fade(WHITE,alpha));
+        return true;
+    }
+    return DibujarModeloEscenarioRetro3D(r,posicion,{0,1,0},angulo,escala,color);
+}
+
+inline void RestaurarMallaPisotonRetro3D(Mesh& m, const ReposoMallaPisotonRetro3D& reposo)
+{
+    const int bytes = m.vertexCount * 3 * sizeof(float);
+    std::memcpy(m.vertices,reposo.vertices,bytes);
+    std::memcpy(m.normals,reposo.normales,bytes);
+    UpdateMeshBuffer(m,0,m.vertices,bytes,0);
+    UpdateMeshBuffer(m,2,m.normals,bytes,0);
+}
+
+inline bool DibujarPlagaAnimadaPisotonRetro3D(ModeloPisotonPlagas3D pieza,
+    Vector3 posicion, float angulo, float escala, float oscilacion)
+{
+    auto& almacen = ObtenerModelosEscenariosRetro3D();
+    auto& r = almacen.pisotonPlagas[pieza];
+    if (!r.cargado) return false;
+    int animacion = pieza == MODELO_PISOTON_ESCARABAJO ? 0 : 1;
+    auto& reposo = almacen.animacionesPisoton[animacion];
+    Mesh& m = r.modelo.meshes[animacion == 0 ? 3 : 0];
+    for (int v = 0; v < m.vertexCount; v++)
+    {
+        const float* p = &reposo.vertices[v * 3];
+        Vector3 normal = {reposo.normales[v*3],reposo.normales[v*3+1],reposo.normales[v*3+2]};
+        if (animacion == 0)
+        {
+            // Cabeza: 300 vertices; luego tres patas y un cuerno por lado.
+            int inicio = v >= 300 && v < 516 ? 300 : (v >= 588 && v < 804 ? 588 : -1);
+            if (inicio < 0) continue;
+            float meneo = oscilacion * .08f * ((v-inicio)/72 == 1 ? -1 : 1);
+            float peso = std::fmax(0.0f,std::fmin((.22f-p[1])/.17f,1.0f));
+            m.vertices[v*3] = p[0] + meneo * peso;
+            if (p[1] > .05f && p[1] < .22f) normal.y += meneo / .17f * normal.x;
+        }
+        else
+        {
+            if (v >= 450) continue; // Solo cola; tentaculos sin deformar.
+            float peso = std::fmax(0.0f,1.0f-std::fabs(p[0]+.3f)/.4f);
+            m.vertices[v*3] = p[0] - oscilacion * .04f * peso;
+            if (peso > 0) normal.x /= 1 + oscilacion * .04f * (p[0]>=-.3f ? 1 : -1) / .4f;
+        }
+        normal = Vector3Normalize(normal);
+        m.normals[v*3]=normal.x; m.normals[v*3+1]=normal.y; m.normals[v*3+2]=normal.z;
+    }
+    const int bytes = m.vertexCount * 3 * sizeof(float);
+    UpdateMeshBuffer(m,0,m.vertices,bytes,0); UpdateMeshBuffer(m,2,m.normals,bytes,0);
+    bool dibujado = DibujarModeloPisotonPlagasRetro3D(pieza,posicion,angulo,{escala,escala,escala});
+    RestaurarMallaPisotonRetro3D(m,reposo);
+    return dibujado;
+}
+
+inline bool DibujarFlorAbiertaPisotonRetro3D(Vector3 posicion, float alto, float apertura, float tiempo)
+{
+    auto& almacen = ObtenerModelosEscenariosRetro3D();
+    auto& r = almacen.pisotonPlagas[MODELO_PISOTON_FLOR_ABIERTA];
+    if (!r.cargado) return false;
+    // El tallo crece; los petalos conservan su tamano al separarse y girar.
+    for (int i = 0; i < 4; i++)
+    {
+        auto vista = r;
+        vista.modelo.meshCount=1; vista.modelo.meshes=&r.modelo.meshes[i];
+        vista.modelo.meshMaterial=&r.modelo.meshMaterial[i];
+        Vector3 p = posicion, escala = {1,1,1}; float giro = 0;
+        if (i == 0) escala.y = alto / 2.6f;
+        else p.y += alto - 2.6f;
+        if (i == 1 || i == 2)
+        {
+            auto& reposo = almacen.animacionesPisoton[i+1];
+            Mesh& m = r.modelo.meshes[i];
+            for (int v = 0; v < m.vertexCount; v++)
+            {
+                int petalo = (v / 288) * 2 + (i == 2 ? 1 : 0);
+                float a = petalo * PI / 4;
+                m.vertices[v*3] = reposo.vertices[v*3] + .75f * (apertura-1) * std::cos(a);
+                m.vertices[v*3+2] = reposo.vertices[v*3+2] + .75f * (apertura-1) * std::sin(a);
+            }
+            UpdateMeshBuffer(m,0,m.vertices,m.vertexCount*3*sizeof(float),0);
+            giro = -tiempo * .4f * RAD2DEG;
+        }
+        DibujarModeloEscenarioRetro3D(vista,p,{0,1,0},giro,escala);
+        if (i == 1 || i == 2) RestaurarMallaPisotonRetro3D(r.modelo.meshes[i],almacen.animacionesPisoton[i+1]);
+    }
+    return true;
+}
+
 inline void DescargarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -1531,6 +1697,12 @@ inline void DescargarModelosEscenariosRetro3D()
     DescargarAlasDescensoNubesRetro3D();
     DescargarAnimacionesPescaIslenaRetro3D();
     DescargarAnimacionesRodillosNeonRetro3D();
+    for (auto& reposo : recursos.animacionesPisoton)
+    {
+        MemFree(reposo.vertices); MemFree(reposo.normales); reposo = {};
+    }
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.pisotonPlagas)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
     MemFree(recursos.franjasCintaGrua);
     recursos.franjasCintaGrua = nullptr;
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.gruaChatarra)
