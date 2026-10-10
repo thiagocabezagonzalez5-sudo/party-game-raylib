@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -762,6 +763,7 @@ void MinijuegoPescaIsla::Reiniciar(
         return;
     }
 
+    CargarPaquetePescaIslenaRetro3D();
     int limite = LimitePesca(cantidadMaxima);
 
     for (int k = 0; k < cantidad; k++)
@@ -968,19 +970,29 @@ void MinijuegoPescaIsla::Actualizar(
 // VISUAL: ISLA TROPICAL (solo decoracion, la logica no depende de esto)
 //==================================================
 
-// MODELO FUTURO: muelles de bambu, cana de pescar y corcho, palmeras, barca,
-// gaviotas, volcan, arrecife de coral, peces (pequeno, mediano, dorado) y
-// bota vieja: reemplazar cada uno por GLB.
+// GLB compartidos; cada pieza conserva sus primitivas si falla la carga.
+// Los parentesis en fallbacks evitan sombras automaticas en Y=0 para
+// arrecife, peces sumergidos, humo y gaviotas de SombrasRetro.h.
+
+static float GiroMuellePesca(int muelle)
+{
+    const float giros[] = {0,180,-90,90};
+    return giros[muelle % 4];
+}
 
 static void DibujarEntornoPesca(const MinijuegoPescaIsla& m)
 {
     float t = m.tiempoAnimacion;
 
     // Oceano, arena y fondo de la laguna.
-    DrawPlane({ 0.0f, -0.08f, 0.0f }, { 120.0f, 120.0f }, Color{ 20, 110, 150, 255 });
-    DrawCylinder({ 0.0f, -0.06f, 0.0f }, 15.0f, 15.0f, 0.08f, 40, Color{ 238, 222, 170, 255 });
-    DrawCylinder({ 0.0f, PROFUNDIDAD_PESCA, 0.0f }, RADIO_LAGUNA_PESCA, RADIO_LAGUNA_PESCA, 0.05f, 36, Color{ 214, 196, 150, 255 });
-    DrawCylinder({ 0.0f, PROFUNDIDAD_PESCA, 0.0f }, RADIO_LAGUNA_PESCA + 0.01f, RADIO_LAGUNA_PESCA + 0.01f, 1.8f, 36, Color{ 30, 120, 140, 255 });
+    if (!DibujarModeloPescaIslenaRetro3D(MODELO_PESCA_OCEANO,{0,0,0}))
+        DrawPlane({ 0.0f, -0.08f, 0.0f }, { 120.0f, 120.0f }, Color{ 20, 110, 150, 255 });
+    if (!DibujarModeloPescaIslenaRetro3D(MODELO_PESCA_ISLA,{0,0,0}))
+    {
+        (DrawCylinder)({ 0.0f, -0.06f, 0.0f }, 15.0f, 15.0f, 0.08f, 40, Color{ 238, 222, 170, 255 });
+        (DrawCylinder)({ 0.0f, PROFUNDIDAD_PESCA, 0.0f }, RADIO_LAGUNA_PESCA, RADIO_LAGUNA_PESCA, 0.05f, 36, Color{ 214, 196, 150, 255 });
+        (DrawCylinder)({ 0.0f, PROFUNDIDAD_PESCA, 0.0f }, RADIO_LAGUNA_PESCA + 0.01f, RADIO_LAGUNA_PESCA + 0.01f, 1.8f, 36, Color{ 30, 120, 140, 255 });
+    }
 
     // Arrecife de coral visible bajo el agua.
     for (int k = 0; k < 16; k++)
@@ -992,33 +1004,37 @@ static void DibujarEntornoPesca(const MinijuegoPescaIsla& m)
         Color color = ColorFromHSV(HashPesca(k, 3) * 60.0f + (k % 2 == 0 ? 300.0f : 0.0f), 0.65f, 0.95f);
         float altura = 0.5f + HashPesca(k, 4) * 0.6f;
 
-        DrawCylinder({ x, PROFUNDIDAD_PESCA, z }, 0.12f, 0.2f, altura, 6, color);
+        if (DibujarModeloPescaIslenaRetro3D(k % 2 == 0 ? MODELO_PESCA_CORAL_1 : MODELO_PESCA_CORAL_2,
+            {x,PROFUNDIDAD_PESCA,z},0,{0,1,0},{1,altura/.91f,1})) continue;
+
+        (DrawCylinder)({ x, PROFUNDIDAD_PESCA, z }, 0.12f, 0.2f, altura, 6, color);
         DrawSphereEx({ x, PROFUNDIDAD_PESCA + altura, z }, 0.28f, 6, 6, color);
-        DrawCylinder({ x + 0.3f, PROFUNDIDAD_PESCA, z + 0.2f }, 0.08f, 0.14f, altura * 0.7f, 6, color);
+        (DrawCylinder)({ x + 0.3f, PROFUNDIDAD_PESCA, z + 0.2f }, 0.08f, 0.14f, altura * 0.7f, 6, color);
     }
 
     // Muelles de bambu.
     for (int d = 0; d < 4; d++)
     {
         Vector3 p = PosicionMuellePesca(d);
+        if (DibujarModeloPescaIslenaRetro3D(MODELO_PESCA_MUELLE,{p.x,0,p.z},GiroMuellePesca(d))) continue;
         bool lateral = d >= 2;
         float ancho = lateral ? 3.0f : 3.4f;
         float largo = lateral ? 3.4f : 3.0f;
 
-        DrawCube({ p.x, ALTURA_MUELLE_PESCA - 0.1f, p.z }, ancho, 0.2f, largo, Color{ 214, 180, 90, 255 });
+        (DrawCube)({ p.x, ALTURA_MUELLE_PESCA - 0.1f, p.z }, ancho, 0.2f, largo, Color{ 214, 180, 90, 255 });
 
         for (int tabla = 0; tabla < 6; tabla++)
         {
             float desplazamiento = ((float)tabla - 2.5f) * 0.55f;
             Vector3 centro = { p.x + (lateral ? 0.0f : desplazamiento), ALTURA_MUELLE_PESCA + 0.02f, p.z + (lateral ? desplazamiento : 0.0f) };
-            DrawCube(centro, lateral ? ancho : 0.5f, 0.05f, lateral ? 0.5f : largo, (tabla % 2 == 0) ? Color{ 230, 200, 110, 255 } : Color{ 200, 165, 80, 255 });
+            (DrawCube)(centro, lateral ? ancho : 0.5f, 0.05f, lateral ? 0.5f : largo, (tabla % 2 == 0) ? Color{ 230, 200, 110, 255 } : Color{ 200, 165, 80, 255 });
         }
 
         for (int sx = -1; sx <= 1; sx += 2)
         {
             for (int sz = -1; sz <= 1; sz += 2)
             {
-                DrawCylinder({ p.x + (float)sx * ancho * 0.45f, -1.0f, p.z + (float)sz * largo * 0.45f }, 0.12f, 0.12f, 1.6f, 6, Color{ 150, 160, 70, 255 });
+                (DrawCylinder)({ p.x + (float)sx * ancho * 0.45f, -1.0f, p.z + (float)sz * largo * 0.45f }, 0.12f, 0.12f, 1.6f, 6, Color{ 150, 160, 70, 255 });
             }
         }
     }
@@ -1032,6 +1048,9 @@ static void DibujarEntornoPesca(const MinijuegoPescaIsla& m)
         float balanceo = std::sin(t * 1.2f + (float)k) * 0.1f;
         Vector3 copa = { x + balanceo, 4.2f, z };
 
+        if (DibujarModeloPescaIslenaRetro3D(MODELO_PESCA_PALMERA,{x,0,z},
+            -std::atan2(balanceo,4.2f)*RAD2DEG,{0,0,1})) continue;
+
         DrawCylinderEx({ x, 0.0f, z }, copa, 0.28f, 0.18f, 6, Color{ 130, 92, 56, 255 });
 
         for (int h = 0; h < 5; h++)
@@ -1044,18 +1063,27 @@ static void DibujarEntornoPesca(const MinijuegoPescaIsla& m)
     }
 
     // Barca anclada.
-    DrawCube({ -12.0f, 0.1f, -11.0f }, 3.2f, 0.6f, 1.2f, Color{ 160, 90, 50, 255 });
-    DrawCylinder({ -12.0f, 0.3f, -11.0f }, 0.06f, 0.06f, 2.6f, 5, Color{ 110, 80, 50, 255 });
-    DrawCube({ -11.7f, 1.7f, -11.0f }, 1.3f, 1.5f, 0.05f, Color{ 250, 245, 230, 255 });
+    if (!DibujarModeloPescaIslenaRetro3D(MODELO_PESCA_BARCA,{-12,0,-11}))
+    {
+        (DrawCube)({ -12.0f, 0.1f, -11.0f }, 3.2f, 0.6f, 1.2f, Color{ 160, 90, 50, 255 });
+        (DrawCylinder)({ -12.0f, 0.3f, -11.0f }, 0.06f, 0.06f, 2.6f, 5, Color{ 110, 80, 50, 255 });
+        (DrawCube)({ -11.7f, 1.7f, -11.0f }, 1.3f, 1.5f, 0.05f, Color{ 250, 245, 230, 255 });
+    }
 
     // Volcan lejano con humo.
-    DrawCylinder({ 0.0f, 0.0f, -21.0f }, 1.6f, 8.0f, 7.0f, 14, Color{ 90, 70, 60, 255 });
-    DrawSphereEx({ 0.0f, 7.0f, -21.0f }, 1.3f, 8, 8, Color{ 235, 90, 30, 255 });
-
-    for (int h = 0; h < 4; h++)
+    if (!DibujarModeloPescaIslenaRetro3D(MODELO_PESCA_VOLCAN,{0,0,-21}))
     {
-        float fase = std::fmod(t * 0.25f + (float)h * 0.25f, 1.0f);
-        DrawSphereEx({ 0.5f * std::sin(t + (float)h), 7.8f + fase * 4.0f, -21.0f }, 0.6f + fase * 0.9f, 6, 6, Fade(Color{ 120, 120, 130, 255 }, 0.7f * (1.0f - fase)));
+        (DrawCylinder)({ 0.0f, 0.0f, -21.0f }, 1.6f, 8.0f, 7.0f, 14, Color{ 90, 70, 60, 255 });
+        DrawSphereEx({ 0.0f, 7.0f, -21.0f }, 1.3f, 8, 8, Color{ 235, 90, 30, 255 });
+    }
+
+    if (!DibujarModeloAnimadoPescaIslenaRetro3D(MODELO_PESCA_HUMO,{0,7,-21},0,t))
+    {
+        for (int h = 0; h < 4; h++)
+        {
+            float fase = std::fmod(t * 0.25f + (float)h * 0.25f, 1.0f);
+            DrawSphereEx({ 0.5f * std::sin(t + (float)h), 7.8f + fase * 4.0f, -21.0f }, 0.6f + fase * 0.9f, 6, 6, Fade(Color{ 120, 120, 130, 255 }, 0.7f * (1.0f - fase)));
+        }
     }
 
     // Gaviotas.
@@ -1064,6 +1092,9 @@ static void DibujarEntornoPesca(const MinijuegoPescaIsla& m)
         float angulo = t * (0.3f + 0.06f * (float)k) + (float)k * 1.6f;
         Vector3 p = { std::cos(angulo) * 11.0f, 5.5f + (float)k * 0.6f + std::sin(t * 2.0f + (float)k) * 0.3f, std::sin(angulo) * 11.0f };
         float aleteo = std::sin(t * 8.0f + (float)k) * 0.3f;
+
+        if (DibujarModeloAnimadoPescaIslenaRetro3D(MODELO_PESCA_GAVIOTA,p,
+            180-angulo*RAD2DEG,aleteo)) continue;
 
         DrawLine3D({ p.x - 0.45f, p.y + aleteo, p.z }, p, WHITE);
         DrawLine3D(p, { p.x + 0.45f, p.y + aleteo, p.z }, WHITE);
@@ -1076,39 +1107,46 @@ static void DibujarPezPesca(const PezPesca& pez, float tiempo)
     float y = -0.9f;
     Color sombra = Fade(Color{ 10, 40, 60, 255 }, 0.75f);
     float radio = 0.28f;
+    bool modelo = pez.tipo == PEZ_PESCA_BOTA
+        ? DibujarModeloPescaIslenaRetro3D(MODELO_PESCA_BOTA,{pez.x,y,pez.z},-std::atan2(pez.dirZ,pez.dirX)*RAD2DEG)
+        : DibujarModeloAnimadoPescaIslenaRetro3D((ModeloPescaIslena3D)(MODELO_PESCA_PEQUENO+pez.tipo),
+            {pez.x,y,pez.z},-std::atan2(pez.dirZ,pez.dirX)*RAD2DEG,std::sin(tiempo*10+pez.semilla)*.15f);
 
-    if (pez.tipo == PEZ_PESCA_MEDIANO)
+    if (!modelo)
     {
-        radio = 0.42f;
-        sombra = Fade(Color{ 10, 30, 70, 255 }, 0.8f);
-    }
-    else if (pez.tipo == PEZ_PESCA_RARO)
-    {
-        radio = 0.5f;
-        sombra = Fade(Color{ 255, 205, 40, 255 }, 0.9f);
-    }
-    else if (pez.tipo == PEZ_PESCA_BOTA)
-    {
-        DrawCube({ pez.x, y, pez.z }, 0.3f, 0.12f, 0.8f, Color{ 120, 80, 50, 255 });
-        DrawCube({ pez.x + 0.25f, y, pez.z + 0.3f }, 0.5f, 0.12f, 0.25f, Color{ 100, 66, 40, 255 });
-        return;
-    }
+        if (pez.tipo == PEZ_PESCA_MEDIANO)
+        {
+            radio = 0.42f;
+            sombra = Fade(Color{ 10, 30, 70, 255 }, 0.8f);
+        }
+        else if (pez.tipo == PEZ_PESCA_RARO)
+        {
+            radio = 0.5f;
+            sombra = Fade(Color{ 255, 205, 40, 255 }, 0.9f);
+        }
+        else if (pez.tipo == PEZ_PESCA_BOTA)
+        {
+            (DrawCube)({ pez.x, y, pez.z }, 0.3f, 0.12f, 0.8f, Color{ 120, 80, 50, 255 });
+            (DrawCube)({ pez.x + 0.25f, y, pez.z + 0.3f }, 0.5f, 0.12f, 0.25f, Color{ 100, 66, 40, 255 });
+            return;
+        }
 
-    DrawCylinder({ pez.x, y, pez.z }, radio, radio, 0.06f, 10, sombra);
-    DrawCylinder({ pez.x + pez.dirX * radio * 0.8f, y, pez.z + pez.dirZ * radio * 0.8f }, radio * 0.7f, radio * 0.7f, 0.06f, 8, sombra);
+        (DrawCylinder)({ pez.x, y, pez.z }, radio, radio, 0.06f, 10, sombra);
+        (DrawCylinder)({ pez.x + pez.dirX * radio * 0.8f, y, pez.z + pez.dirZ * radio * 0.8f }, radio * 0.7f, radio * 0.7f, 0.06f, 8, sombra);
 
-    // Cola en abanico (ambas caras para evitar el descarte de caras traseras).
-    float colaX = pez.x - pez.dirX * radio * 1.3f;
-    float colaZ = pez.z - pez.dirZ * radio * 1.3f;
-    float lateralX = -pez.dirZ * radio * 0.6f;
-    float lateralZ = pez.dirX * radio * 0.6f;
-    float coleo = std::sin(tiempo * 10.0f + pez.semilla) * 0.15f;
-    Vector3 a = { pez.x - pez.dirX * radio * 0.6f, y + 0.03f, pez.z - pez.dirZ * radio * 0.6f };
-    Vector3 b = { colaX + lateralX + coleo, y + 0.03f, colaZ + lateralZ };
-    Vector3 c = { colaX - lateralX + coleo, y + 0.03f, colaZ - lateralZ };
+        // Cola en abanico (ambas caras para evitar el descarte de caras traseras).
+        float colaX = pez.x - pez.dirX * radio * 1.3f;
+        float colaZ = pez.z - pez.dirZ * radio * 1.3f;
+        float lateralX = -pez.dirZ * radio * 0.6f;
+        float lateralZ = pez.dirX * radio * 0.6f;
+        float coleo = std::sin(tiempo * 10.0f + pez.semilla) * 0.15f;
+        Vector3 a = { pez.x - pez.dirX * radio * 0.6f, y + 0.03f, pez.z - pez.dirZ * radio * 0.6f };
+        Vector3 b = { colaX + lateralX + coleo, y + 0.03f, colaZ + lateralZ };
+        Vector3 c = { colaX - lateralX + coleo, y + 0.03f, colaZ - lateralZ };
 
-    DrawTriangle3D(a, b, c, sombra);
-    DrawTriangle3D(a, c, b, sombra);
+        DrawTriangle3D(a, b, c, sombra);
+        DrawTriangle3D(a, c, b, sombra);
+    }
 
     if (pez.tipo == PEZ_PESCA_RARO)
     {
@@ -1124,7 +1162,9 @@ static void DibujarPezPesca(const PezPesca& pez, float tiempo)
 static void DibujarAguaPesca(const MinijuegoPescaIsla& m)
 {
     // Superficie translucida: se dibuja despues de lo que hay debajo.
-    DrawCylinder({ 0.0f, 0.0f, 0.0f }, RADIO_LAGUNA_PESCA, RADIO_LAGUNA_PESCA, 0.05f, 40, Fade(Color{ 60, 210, 215, 255 }, 0.55f));
+    // El GLB tiene fondo y ondas, sin tapa opaca que esconda los peces.
+    if (!DibujarModeloPescaIslenaRetro3D(MODELO_PESCA_AGUA,{0,0,0}))
+        (DrawCylinder)({ 0.0f, 0.0f, 0.0f }, RADIO_LAGUNA_PESCA, RADIO_LAGUNA_PESCA, 0.05f, 40, Fade(Color{ 60, 210, 215, 255 }, 0.55f));
 
     for (int k = 0; k < 3; k++)
     {
@@ -1151,11 +1191,17 @@ static void DibujarLineasPesca(
         Vector3 punta = PuntaCanaPesca(m.muelleDe[i]);
         Vector3 mano = PosicionMuellePesca(m.muelleDe[i]);
 
-        DrawCylinderEx({ mano.x, mano.y + 1.1f, mano.z }, punta, 0.06f, 0.03f, 5, Color{ 120, 84, 50, 255 });
+        // Escala Y explicita: punta GLB (0,1.6,-1.4) conecta con PuntaCanaPesca.
+        if (!DibujarModeloPescaIslenaRetro3D(MODELO_PESCA_CANA,{mano.x,mano.y+1.1f,mano.z},
+            GiroMuellePesca(m.muelleDe[i]),{0,1,0},{1,1.25f/1.6f,1}))
+            DrawCylinderEx({ mano.x, mano.y + 1.1f, mano.z }, punta, 0.06f, 0.03f, 5, Color{ 120, 84, 50, 255 });
 
         if (estado.estado == PESCA_LIBRE)
         {
             float pulso = 0.5f + 0.5f * std::sin(m.tiempoAnimacion * 6.0f);
+            float escala = (.45f+.1f*pulso)/.48f;
+            if (DibujarModeloPescaIslenaRetro3D(MODELO_PESCA_CURSOR,{estado.cursorX,.09f,estado.cursorZ},
+                0,{0,1,0},{escala,1,escala},color)) continue;
             DrawCircle3D({ estado.cursorX, 0.09f, estado.cursorZ }, 0.45f + 0.1f * pulso, { 1.0f, 0.0f, 0.0f }, 90.0f, color);
             DrawCircle3D({ estado.cursorX, 0.09f, estado.cursorZ }, 0.25f, { 1.0f, 0.0f, 0.0f }, 90.0f, WHITE);
             DrawLine3D({ estado.cursorX - 0.7f, 0.09f, estado.cursorZ }, { estado.cursorX + 0.7f, 0.09f, estado.cursorZ }, Fade(color, 0.7f));
@@ -1193,12 +1239,15 @@ static void DibujarLineasPesca(
         }
 
         DrawLine3D(punta, anzuelo, Fade(WHITE, 0.9f));
-        DrawSphereEx(anzuelo, 0.17f, 6, 6, Color{ 240, 240, 240, 255 });
-        DrawSphereEx({ anzuelo.x, anzuelo.y + 0.12f, anzuelo.z }, 0.13f, 6, 6, color);
+        if (!DibujarModeloPescaIslenaRetro3D(MODELO_PESCA_CORCHO,anzuelo,0,{0,1,0},{1,1,1},color))
+        {
+            DrawSphereEx(anzuelo, 0.17f, 6, 6, Color{ 240, 240, 240, 255 });
+            DrawSphereEx({ anzuelo.x, anzuelo.y + 0.12f, anzuelo.z }, 0.13f, 6, 6, color);
+        }
 
         if (estado.estado == PESCA_PICADA && std::fmod(m.tiempoAnimacion * 12.0f, 1.0f) < 0.7f)
         {
-            DrawCylinder({ anzuelo.x, anzuelo.y + 0.7f, anzuelo.z }, 0.1f, 0.1f, 0.7f, 6, RED);
+            (DrawCylinder)({ anzuelo.x, anzuelo.y + 0.7f, anzuelo.z }, 0.1f, 0.1f, 0.7f, 6, RED);
             DrawSphereEx({ anzuelo.x, anzuelo.y + 0.45f, anzuelo.z }, 0.12f, 6, 6, RED);
         }
     }

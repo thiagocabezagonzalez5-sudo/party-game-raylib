@@ -654,6 +654,59 @@ static_assert(sizeof(RUTAS_MODELOS_ESFERAS_CANON_3D) /
     "Las rutas deben coincidir con los IDs del paquete Esferas del Canon");
 
 //==================================================
+// PAQUETE DE PESCA ISLENA
+//==================================================
+
+enum ModeloPescaIslena3D
+{
+    MODELO_PESCA_OCEANO,
+    MODELO_PESCA_ISLA,
+    MODELO_PESCA_AGUA,
+    MODELO_PESCA_MUELLE,
+    MODELO_PESCA_CANA,
+    MODELO_PESCA_CORCHO,
+    MODELO_PESCA_PALMERA,
+    MODELO_PESCA_BARCA,
+    MODELO_PESCA_GAVIOTA,
+    MODELO_PESCA_VOLCAN,
+    MODELO_PESCA_HUMO,
+    MODELO_PESCA_CORAL_1,
+    MODELO_PESCA_CORAL_2,
+    MODELO_PESCA_PEQUENO,
+    MODELO_PESCA_MEDIANO,
+    MODELO_PESCA_DORADO,
+    MODELO_PESCA_BOTA,
+    MODELO_PESCA_CURSOR,
+    CANTIDAD_MODELOS_PESCA_ISLENA_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_PESCA_ISLENA_3D[] =
+{
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/oceano.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/isla_laguna.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/superficie_laguna.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/muelle_bambu.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/cana_pescar.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/corcho.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/palmera.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/barca.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/gaviota.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/volcan.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/humo_volcan.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/coral_1.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/coral_2.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/pez_pequeno.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/pez_mediano.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/pez_dorado.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/bota_vieja.glb",
+    "Assets/Modelos/Escenarios/Pesca_Islena/GLB/cursor_lanzamiento.glb",
+};
+
+static_assert(sizeof(RUTAS_MODELOS_PESCA_ISLENA_3D) /
+    sizeof(RUTAS_MODELOS_PESCA_ISLENA_3D[0]) == CANTIDAD_MODELOS_PESCA_ISLENA_3D,
+    "Las rutas deben coincidir con los IDs del paquete Pesca Islena");
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 

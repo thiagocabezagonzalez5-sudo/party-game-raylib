@@ -63,6 +63,15 @@ struct AlasDescensoNubesRetro3D
     bool intentada = false;
 };
 
+// Reposo de una unica malla/VBO por recurso; se restaura tras cada instancia.
+struct AnimacionMallaPescaRetro3D
+{
+    float* vertices = nullptr;
+    float* normales = nullptr;
+    unsigned char* colores = nullptr;
+    bool intentada = false;
+};
+
 struct ModelosEscenariosRetro3D
 {
     RecursoModeloEscenarioRetro3D montanaLava;
@@ -78,6 +87,8 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D voleaMagma[CANTIDAD_MODELOS_VOLEA_MAGMA_3D];
     RecursoModeloEscenarioRetro3D parejasGlaciar[CANTIDAD_MODELOS_PAREJAS_GLACIAR_3D];
     RecursoModeloEscenarioRetro3D esferasCanon[CANTIDAD_MODELOS_ESFERAS_CANON_3D];
+    RecursoModeloEscenarioRetro3D pescaIslena[CANTIDAD_MODELOS_PESCA_ISLENA_3D];
+    AnimacionMallaPescaRetro3D animacionesPesca[5]; // gaviota, humo y tres colas
     AlasDescensoNubesRetro3D alasNubes;
     bool inicializados = false;
 };
@@ -936,6 +947,143 @@ inline bool DibujarModeloEsferasCanonRetro3D(
         posicion, eje, anguloGrados, escala, colorEstado);
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaquetePescaIslenaRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_PESCA_ISLENA_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_PESCA_ISLENA_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_PESCA_ISLENA_3D[i];
+        definiciones[MODELO_PESCA_CURSOR].mallaColor = 0; // COLOR_DINAMICO
+        definiciones[MODELO_PESCA_CORCHO].mallaColor = 1; // tapa: color del jugador
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().pescaIslena,
+        definiciones, CANTIDAD_MODELOS_PESCA_ISLENA_3D};
+}
+
+inline void DescargarAnimacionesPescaIslenaRetro3D()
+{
+    for (auto& a : ObtenerModelosEscenariosRetro3D().animacionesPesca)
+    {
+        MemFree(a.vertices); MemFree(a.normales); MemFree(a.colores);
+        a = {};
+    }
+}
+
+inline void CargarPaquetePescaIslenaRetro3D()
+{
+    auto paquete = ObtenerPaquetePescaIslenaRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    const int esperadas[] = {2,5,2,4,4,3,5,3,2,3,1,3,3,4,4,4,3,2};
+    for (int i = 0; i < paquete.cantidad; i++)
+    {
+        auto& r = paquete.recursos[i];
+        if (!r.cargado || r.modelo.meshCount == esperadas[i]) continue;
+        UnloadModel(r.modelo); r.modelo = {}; r.cargado = false;
+        TraceLog(LOG_WARNING,"Primitives inesperadas en Pesca; se usan primitivas: %s",r.ruta);
+    }
+    const int piezas[] = {MODELO_PESCA_GAVIOTA,MODELO_PESCA_HUMO,
+        MODELO_PESCA_PEQUENO,MODELO_PESCA_MEDIANO,MODELO_PESCA_DORADO};
+    for (int i = 0; i < 5; i++)
+    {
+        auto& a = ObtenerModelosEscenariosRetro3D().animacionesPesca[i];
+        auto& r = paquete.recursos[piezas[i]];
+        if (a.intentada || !r.cargado) continue;
+        a.intentada = true;
+        Mesh& m = r.modelo.meshes[i < 2 ? 0 : 1];
+        bool valida = m.normals && m.colors && m.vboId && m.vboId[0] && m.vboId[2] &&
+            (i != 1 || (m.vertexCount == 960 && m.vboId[3]));
+        unsigned int bytes = (unsigned int)m.vertexCount * 3 * sizeof(float);
+        if (valida)
+        {
+            a.vertices = (float*)MemAlloc(bytes); a.normales = (float*)MemAlloc(bytes);
+            if (i == 1) a.colores = (unsigned char*)MemAlloc(m.vertexCount * 4);
+            valida = a.vertices && a.normales && (i != 1 || a.colores);
+        }
+        if (valida)
+        {
+            std::memcpy(a.vertices,m.vertices,bytes); std::memcpy(a.normales,m.normals,bytes);
+            if (a.colores) std::memcpy(a.colores,m.colors,m.vertexCount * 4);
+        }
+        else
+        {
+            MemFree(a.vertices); MemFree(a.normales); MemFree(a.colores); a = {}; a.intentada = true;
+            UnloadModel(r.modelo); r.modelo = {}; r.cargado = false;
+            TraceLog(LOG_WARNING,"No se pudo preparar la animacion de Pesca; se usan primitivas: %s",r.ruta);
+        }
+    }
+}
+
+inline bool DibujarModeloPescaIslenaRetro3D(ModeloPescaIslena3D pieza,
+    Vector3 posicion, float angulo = 0, Vector3 eje = {0,1,0},
+    Vector3 escala = {1,1,1}, Color color = WHITE)
+{
+    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().pescaIslena[pieza],
+        posicion,eje,angulo,escala,color);
+}
+
+inline bool DibujarModeloAnimadoPescaIslenaRetro3D(ModeloPescaIslena3D pieza,
+    Vector3 posicion, float yaw, float movimiento)
+{
+    int indice = pieza == MODELO_PESCA_GAVIOTA ? 0 : pieza == MODELO_PESCA_HUMO ? 1 :
+        2 + pieza - MODELO_PESCA_PEQUENO;
+    auto& r = ObtenerModelosEscenariosRetro3D().pescaIslena[pieza];
+    auto& a = ObtenerModelosEscenariosRetro3D().animacionesPesca[indice];
+    if (!r.cargado || !a.vertices) return false;
+    Mesh& m = r.modelo.meshes[indice < 2 ? 0 : 1];
+    const float radios[] = {.28f,.42f,.5f};
+    const Vector3 centros[] = {{0,0,0},{.28f,.65f,0},{-.16f,1.6f,0},{.19f,2.55f,0}};
+    const float humoRadios[] = {.58f,.78f,.98f,1.2f};
+    for (int v = 0; v < m.vertexCount; v++)
+    {
+        int p = v * 3; float x = a.vertices[p];
+        Vector3 normal = {a.normales[p],a.normales[p+1],a.normales[p+2]};
+        if (indice == 0)
+        {
+            float peso = std::fmin(1.0f,std::fmax(0.0f,(std::fabs(x)-.24f)/.66f));
+            m.vertices[p+1] = a.vertices[p+1] + movimiento * peso;
+            if (peso > 0 && peso < 1) normal.x -= (x < 0 ? -1 : 1) * movimiento/.66f * normal.y;
+        }
+        else if (indice == 1)
+        {
+            // GLB v1: cuatro ellipsoides consecutivos de 240 vertices.
+            int h = v / 240; float fase = std::fmod(movimiento*.25f+h*.25f,1.0f);
+            float escala = (.6f+fase*.9f)/humoRadios[h];
+            m.vertices[p] = (x-centros[h].x)*escala + .5f*std::sin(movimiento+h);
+            m.vertices[p+1] = (a.vertices[p+1]-centros[h].y)*escala/.65f + .8f+fase*4;
+            m.vertices[p+2] = a.vertices[p+2]*escala;
+            normal.y *= .65f;
+            m.colors[v*4+3] = (unsigned char)(a.colores[v*4+3]*.7f*(1-fase));
+        }
+        else
+        {
+            float radio = radios[indice-2], largo = .76f*radio;
+            float peso = std::fmin(1.0f,std::fmax(0.0f,(-x-.86f*radio)/largo));
+            // Coleo original en X de mundo, convertido al espacio local del pez.
+            float dx = std::cos(yaw*DEG2RAD)*movimiento, dz = std::sin(yaw*DEG2RAD)*movimiento;
+            m.vertices[p] = x + dx*peso; m.vertices[p+2] = a.vertices[p+2] + dz*peso;
+            if (peso > 0 && peso < 1) normal.x = (normal.x+dz/largo*normal.z)/(1-dx/largo);
+        }
+        normal = Vector3Normalize(normal);
+        m.normals[p] = normal.x; m.normals[p+1] = normal.y; m.normals[p+2] = normal.z;
+    }
+    int bytes = m.vertexCount * 3 * (int)sizeof(float);
+    UpdateMeshBuffer(m,0,m.vertices,bytes,0); UpdateMeshBuffer(m,2,m.normals,bytes,0);
+    if (a.colores) UpdateMeshBuffer(m,3,m.colors,m.vertexCount*4,0);
+    DibujarModeloPescaIslenaRetro3D(pieza,posicion,yaw);
+    // La siguiente instancia y la siguiente ronda reciben siempre el reposo.
+    std::memcpy(m.vertices,a.vertices,bytes); std::memcpy(m.normals,a.normales,bytes);
+    UpdateMeshBuffer(m,0,m.vertices,bytes,0); UpdateMeshBuffer(m,2,m.normals,bytes,0);
+    if (a.colores)
+    {
+        std::memcpy(m.colors,a.colores,m.vertexCount*4);
+        UpdateMeshBuffer(m,3,m.colors,m.vertexCount*4,0);
+    }
+    return true;
+}
+
 inline void InicializarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -1019,6 +1167,7 @@ inline void DescargarModelosEscenariosRetro3D()
 
     DescargarSlotModeloEscenarioRetro3D(recursos.montanaLava);
     DescargarAlasDescensoNubesRetro3D();
+    DescargarAnimacionesPescaIslenaRetro3D();
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.descensoNubes)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.voleaMagma)
@@ -1026,6 +1175,8 @@ inline void DescargarModelosEscenariosRetro3D()
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.parejasGlaciar)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.esferasCanon)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.pescaIslena)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.ultimoAsiento)
         DescargarSlotModeloEscenarioRetro3D(recurso);
