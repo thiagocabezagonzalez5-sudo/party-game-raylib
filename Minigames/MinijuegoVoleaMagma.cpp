@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -328,6 +329,7 @@ void MinijuegoVoleaMagma::Reiniciar(
     }
 
     partidaValida = true;
+    CargarPaqueteVoleaMagmaRetro3D();
 
     for (int i = cantidad - 1; i > 0; i--)
     {
@@ -1204,11 +1206,8 @@ void MinijuegoVoleaMagma::Actualizar(
 
 
 //==================================================
-// VISUAL (MODELO FUTURO)
+// VISUAL: GLB COMPARTIDOS CON FALLBACK POR PIEZA
 //==================================================
-// MODELO FUTURO: reemplazar por GLB la cancha de obsidiana con su borde, los
-// postes y las cadenas incandescentes de la red, los dos volcanes, las
-// columnas de basalto, el lago de lava, la roca de magma y el charco de lava.
 // La logica (cancha, red, reglas de toques, puntos, IA) no depende de esta
 // decoracion.
 //==================================================
@@ -1243,7 +1242,8 @@ static Color ColorRoca(float temperatura, float t)
 
 static void DibujarLagoLava(float t)
 {
-    DrawCube({ 0.0f, -1.7f, -20.0f }, 120.0f, 0.4f, 90.0f, Color{ 255, 86, 20, 255 });
+    if (!DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_LAGO, {0,0,0}))
+        (DrawCube)({ 0.0f, -1.7f, -20.0f }, 120.0f, 0.4f, 90.0f, Color{ 255, 86, 20, 255 });
 
     // Burbujas y ondas de lava.
     for (int i = 0; i < 16; i++)
@@ -1258,29 +1258,34 @@ static void DibujarLagoLava(float t)
             continue;
         }
 
-        DrawSphere(
-            { x, -1.45f + 0.18f * fase, z },
-            0.5f + 0.15f * fase,
-            Color{ 255, (unsigned char)(150 + 60 * fase), 40, 255 }
-        );
+        Vector3 p = {x,-1.45f + 0.18f * fase,z};
+        float radio = 0.5f + 0.15f * fase;
+        float escala = radio / 0.48f;
+        Color color = {255,(unsigned char)(150 + 60 * fase),40,255};
+        if (!DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_BURBUJA, p, {escala,escala,escala}, color))
+            (DrawSphere)(p, radio, color);
     }
 }
 
 
 static void DibujarVolcan(float x, float z, float alto, float radio, float t, int semilla)
 {
-    DrawCylinder({ x, -1.5f, z }, radio * 0.12f, radio, alto, 14, Color{ 52, 38, 36, 255 });
-    DrawSphere({ x, -1.5f + alto, z }, radio * 0.14f, Color{ 255, 120, 30, 255 });
-
-    // Coladas de lava por la ladera.
-    for (int k = 0; k < 3; k++)
+    ModeloVoleaMagma3D pieza = alto > 20.0f ? MODELO_VOLEA_VOLCAN_MAYOR : MODELO_VOLEA_VOLCAN_MENOR;
+    if (!DibujarModeloVoleaMagmaRetro3D(pieza, {x,-1.5f,z}))
     {
-        float angulo = (float)k * 2.1f + (float)semilla;
-        DrawCylinderEx(
-            { x + std::cos(angulo) * radio * 0.1f, -1.5f + alto, z + std::sin(angulo) * radio * 0.1f },
-            { x + std::cos(angulo) * radio * 0.75f, -1.5f + alto * 0.22f, z + std::sin(angulo) * radio * 0.75f },
-            0.25f, 0.5f, 6, Color{ 255, 100, 30, 255 }
-        );
+        (DrawCylinder)({ x, -1.5f, z }, radio * 0.12f, radio, alto, 14, Color{ 52, 38, 36, 255 });
+        (DrawSphere)({ x, -1.5f + alto, z }, radio * 0.14f, Color{ 255, 120, 30, 255 });
+
+        // Coladas de lava por la ladera.
+        for (int k = 0; k < 3; k++)
+        {
+            float angulo = (float)k * 2.1f + (float)semilla;
+            DrawCylinderEx(
+                { x + std::cos(angulo) * radio * 0.1f, -1.5f + alto, z + std::sin(angulo) * radio * 0.1f },
+                { x + std::cos(angulo) * radio * 0.75f, -1.5f + alto * 0.22f, z + std::sin(angulo) * radio * 0.75f },
+                0.25f, 0.5f, 6, Color{ 255, 100, 30, 255 }
+            );
+        }
     }
 
     // Humo que sube y se desvanece.
@@ -1290,7 +1295,8 @@ static void DibujarVolcan(float x, float z, float alto, float radio, float t, in
         float altura = -1.5f + alto + fase * 18.0f;
         float radioHumo = 1.5f + 3.5f * fase;
 
-        DrawSphere(
+        // El humo no proyecta una mancha humana sobre la cancha.
+        (DrawSphere)(
             { x + 4.0f * fase * (float)(k % 2 == 0 ? 1 : -1), altura, z },
             radioHumo,
             Color{ 70, 64, 66, (unsigned char)(120.0f * (1.0f - fase)) }
@@ -1310,8 +1316,12 @@ static void DibujarEscenarioVolcan(float t)
     {
         float x = -15.0f + 3.4f * (float)i;
         float alto = 2.5f + 4.5f * Hash01(i * 3 + 7);
-        DrawCylinder({ x, -1.5f, -9.0f - Hash01(i + 40) * 2.0f }, 1.0f, 1.2f, alto, 6, Color{ 44, 42, 52, 255 });
-        DrawCylinder({ x, -1.5f + alto, -9.0f - Hash01(i + 40) * 2.0f }, 0.9f, 1.0f, 0.15f, 6, Color{ 80, 74, 88, 255 });
+        if (!DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_COLUMNA,
+            {x,-1.5f,-9.0f - Hash01(i + 40) * 2.0f}, {1,alto / 4.0f,1}))
+        {
+            (DrawCylinder)({ x, -1.5f, -9.0f - Hash01(i + 40) * 2.0f }, 1.0f, 1.2f, alto, 6, Color{ 44, 42, 52, 255 });
+            (DrawCylinder)({ x, -1.5f + alto, -9.0f - Hash01(i + 40) * 2.0f }, 0.9f, 1.0f, 0.15f, 6, Color{ 80, 74, 88, 255 });
+        }
     }
 
     for (int i = 0; i < 4; i++)
@@ -1319,8 +1329,12 @@ static void DibujarEscenarioVolcan(float t)
         float lado = i % 2 == 0 ? -1.0f : 1.0f;
         float z = i < 2 ? -3.5f : 3.5f;
         float alto = 2.0f + 2.5f * Hash01(i + 90);
-        DrawCylinder({ lado * 12.2f, -1.5f, z }, 0.8f, 1.0f, alto, 6, Color{ 44, 42, 52, 255 });
-        DrawSphere({ lado * 12.2f, -1.5f + alto + 0.3f, z }, 0.28f, Color{ 255, 140, 40, 255 });
+        if (!DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_COLUMNA_LLAMA,
+            {lado * 12.2f,-1.5f,z}, {1,alto / 4.0f,1}))
+        {
+            (DrawCylinder)({ lado * 12.2f, -1.5f, z }, 0.8f, 1.0f, alto, 6, Color{ 44, 42, 52, 255 });
+            (DrawSphere)({ lado * 12.2f, -1.5f + alto + 0.3f, z }, 0.28f, Color{ 255, 140, 40, 255 });
+        }
     }
 
     // Ceniza cayendo.
@@ -1331,7 +1345,11 @@ static void DibujarEscenarioVolcan(float t)
         float x = -16.0f + 32.0f * Hash01(i * 3 + 3) + 1.5f * std::sin(t + (float)i);
         float z = -12.0f + 22.0f * Hash01(i * 7 + 5);
 
-        DrawCube({ x, 14.0f - 15.0f * fase, z }, 0.09f, 0.09f, 0.09f, Color{ 190, 180, 176, 200 });
+        Vector3 p = {x,14.0f - 15.0f * fase,z};
+        Color color = ColorMaterialVoleaMagmaRetro3D(MODELO_VOLEA_CENIZA, 0);
+        color.a = 200;
+        if (!DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_CENIZA, p, {1,1,1}, color, 0, true))
+            (DrawCube)(p, 0.09f, 0.09f, 0.09f, Color{190,180,176,200});
     }
 }
 
@@ -1339,19 +1357,35 @@ static void DibujarEscenarioVolcan(float t)
 static void DibujarCancha(float t)
 {
     // Losa de obsidiana, zona de juego y lineas.
-    DrawCube({ 0.0f, -0.5f, 0.0f }, 2.0f * MITAD_CANCHA_X + 2.0f, 1.0f, 2.0f * MITAD_CANCHA_Z + 2.0f, Color{ 30, 26, 38, 255 });
-    DrawCube({ 0.0f, 0.01f, 0.0f }, 2.0f * MITAD_CANCHA_X, 0.02f, 2.0f * MITAD_CANCHA_Z, Color{ 50, 44, 62, 255 });
+    if (!DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_CANCHA, {0,0,0}))
+    {
+        (DrawCube)({ 0.0f, -0.5f, 0.0f }, 2.0f * MITAD_CANCHA_X + 2.0f, 1.0f, 2.0f * MITAD_CANCHA_Z + 2.0f, Color{ 30, 26, 38, 255 });
+        (DrawCube)({ 0.0f, 0.01f, 0.0f }, 2.0f * MITAD_CANCHA_X, 0.02f, 2.0f * MITAD_CANCHA_Z, Color{ 50, 44, 62, 255 });
 
-    Color linea = Color{ 255, 130, 50, 255 };
-    DrawCube({ 0.0f, 0.03f, -MITAD_CANCHA_Z }, 2.0f * MITAD_CANCHA_X, 0.03f, 0.14f, linea);
-    DrawCube({ 0.0f, 0.03f, MITAD_CANCHA_Z }, 2.0f * MITAD_CANCHA_X, 0.03f, 0.14f, linea);
-    DrawCube({ -MITAD_CANCHA_X, 0.03f, 0.0f }, 0.14f, 0.03f, 2.0f * MITAD_CANCHA_Z, linea);
-    DrawCube({ MITAD_CANCHA_X, 0.03f, 0.0f }, 0.14f, 0.03f, 2.0f * MITAD_CANCHA_Z, linea);
-    DrawCube({ 0.0f, 0.03f, 0.0f }, 0.14f, 0.03f, 2.0f * MITAD_CANCHA_Z, Color{ 255, 220, 120, 255 });
+        Color linea = Color{ 255, 130, 50, 255 };
+        (DrawCube)({ 0.0f, 0.03f, -MITAD_CANCHA_Z }, 2.0f * MITAD_CANCHA_X, 0.03f, 0.14f, linea);
+        (DrawCube)({ 0.0f, 0.03f, MITAD_CANCHA_Z }, 2.0f * MITAD_CANCHA_X, 0.03f, 0.14f, linea);
+        (DrawCube)({ -MITAD_CANCHA_X, 0.03f, 0.0f }, 0.14f, 0.03f, 2.0f * MITAD_CANCHA_Z, linea);
+        (DrawCube)({ MITAD_CANCHA_X, 0.03f, 0.0f }, 0.14f, 0.03f, 2.0f * MITAD_CANCHA_Z, linea);
+        (DrawCube)({ 0.0f, 0.03f, 0.0f }, 0.14f, 0.03f, 2.0f * MITAD_CANCHA_Z, Color{ 255, 220, 120, 255 });
+    }
+
+    // El borde modular completa el perimetro de la plataforma existente.
+    // Respaldo propio: no volver a dibujar la losa si solo falla este GLB.
+    if (!DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_BORDE, {0,0,0}))
+    {
+        for (int lado = -1; lado <= 1; lado += 2)
+        {
+            (DrawCube)({0,0.16f,lado * 5.9f},20,0.3f,0.22f,Color{53,51,64,255});
+            (DrawCube)({0,0.31f,lado * 5.9f},20,0.035f,0.12f,Color{255,152,55,255});
+            (DrawCube)({lado * 9.9f,0.16f,0},0.22f,0.3f,12,Color{53,51,64,255});
+            (DrawCube)({lado * 9.9f,0.31f,0},0.12f,0.035f,12,Color{255,152,55,255});
+        }
+    }
 
     // Marcas de cada mitad con el color del equipo.
-    DrawCube({ -MITAD_CANCHA_X * 0.5f, 0.025f, 0.0f }, MITAD_CANCHA_X - 0.6f, 0.02f, 2.0f * MITAD_CANCHA_Z - 0.6f, Fade(COLOR_EQUIPO_0, 0.12f));
-    DrawCube({ MITAD_CANCHA_X * 0.5f, 0.025f, 0.0f }, MITAD_CANCHA_X - 0.6f, 0.02f, 2.0f * MITAD_CANCHA_Z - 0.6f, Fade(COLOR_EQUIPO_1, 0.12f));
+    (DrawCube)({ -MITAD_CANCHA_X * 0.5f, 0.025f, 0.0f }, MITAD_CANCHA_X - 0.6f, 0.02f, 2.0f * MITAD_CANCHA_Z - 0.6f, Fade(COLOR_EQUIPO_0, 0.12f));
+    (DrawCube)({ MITAD_CANCHA_X * 0.5f, 0.025f, 0.0f }, MITAD_CANCHA_X - 0.6f, 0.02f, 2.0f * MITAD_CANCHA_Z - 0.6f, Fade(COLOR_EQUIPO_1, 0.12f));
 
     // Red de cadenas incandescentes.
     float brillo = 0.5f + 0.5f * std::sin(t * 4.0f);
@@ -1360,26 +1394,32 @@ static void DibujarCancha(float t)
     for (int lado = -1; lado <= 1; lado += 2)
     {
         float z = (float)lado * (MITAD_CANCHA_Z + 0.4f);
-        DrawCylinder({ 0.0f, 0.0f, z }, 0.14f, 0.18f, ALTURA_RED + 0.5f, 8, Color{ 20, 18, 26, 255 });
-        DrawSphere({ 0.0f, ALTURA_RED + 0.6f, z }, 0.22f, cadena);
+        if (!DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_POSTE, {0,0,z}, {1,1,1}, cadena))
+        {
+            (DrawCylinder)({ 0.0f, 0.0f, z }, 0.14f, 0.18f, ALTURA_RED + 0.5f, 8, Color{ 20, 18, 26, 255 });
+            (DrawSphere)({ 0.0f, ALTURA_RED + 0.6f, z }, 0.22f, cadena);
+        }
     }
 
     float z0 = -(MITAD_CANCHA_Z + 0.4f);
     float z1 = MITAD_CANCHA_Z + 0.4f;
 
-    for (int fila = 0; fila < 5; fila++)
+    if (!DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_RED, {0,0,0}, {1,1,1}, cadena))
     {
-        float y = 0.9f + 0.375f * (float)fila;
-        DrawCylinderEx({ 0.0f, y, z0 }, { 0.0f, y, z1 }, 0.045f, 0.045f, 6, cadena);
-    }
+        for (int fila = 0; fila < 5; fila++)
+        {
+            float y = 0.9f + 0.375f * (float)fila;
+            DrawCylinderEx({ 0.0f, y, z0 }, { 0.0f, y, z1 }, 0.045f, 0.045f, 6, cadena);
+        }
 
-    for (int k = 0; k <= 12; k++)
-    {
-        float z = z0 + (z1 - z0) * (float)k / 12.0f;
-        DrawCylinderEx({ 0.0f, 0.9f, z }, { 0.0f, ALTURA_RED, z }, 0.035f, 0.035f, 5, cadena);
-    }
+        for (int k = 0; k <= 12; k++)
+        {
+            float z = z0 + (z1 - z0) * (float)k / 12.0f;
+            DrawCylinderEx({ 0.0f, 0.9f, z }, { 0.0f, ALTURA_RED, z }, 0.035f, 0.035f, 5, cadena);
+        }
 
-    DrawCube({ 0.0f, ALTURA_RED, 0.0f }, 0.1f, 0.1f, z1 - z0, Color{ 255, 210, 110, 255 });
+        (DrawCube)({ 0.0f, ALTURA_RED, 0.0f }, 0.1f, 0.1f, z1 - z0, Color{ 255, 210, 110, 255 });
+    }
 }
 
 
@@ -1398,8 +1438,20 @@ static void DibujarCharcos(const MinijuegoVoleaMagma& m)
         float pulso = 0.5f + 0.5f * std::sin(m.tiempoAnimacion * 7.0f + (float)i);
         float alfa = restante < 0.25f ? restante / 0.25f : 1.0f;
 
-        DrawCylinder({ charco.x, 0.04f, charco.z }, RADIO_CHARCO, RADIO_CHARCO, 0.04f, 24, Fade(Color{ 255, (unsigned char)(70 + 50 * pulso), 20, 255 }, alfa));
-        DrawCylinder({ charco.x, 0.07f, charco.z }, RADIO_CHARCO * 0.6f, RADIO_CHARCO * 0.6f, 0.03f, 20, Fade(Color{ 255, 190, 60, 255 }, alfa));
+        Vector3 p = {charco.x,0,charco.z};
+        Color exterior = Fade(Color{255,(unsigned char)(70 + 50 * pulso),20,255},alfa);
+        if (DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_CHARCO, p, {1,1,1}, exterior, 0, true))
+        {
+            DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_CHARCO, p, {1,1,1}, Fade(Color{255,190,60,255},alfa), 1, true);
+            for (int j = 2; j < 4; j++)
+                DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_CHARCO, p, {1,1,1},
+                    Fade(ColorMaterialVoleaMagmaRetro3D(MODELO_VOLEA_CHARCO,j),alfa), j, true);
+        }
+        else
+        {
+            (DrawCylinder)({ charco.x, 0.04f, charco.z }, RADIO_CHARCO, RADIO_CHARCO, 0.04f, 24, exterior);
+            (DrawCylinder)({ charco.x, 0.07f, charco.z }, RADIO_CHARCO * 0.6f, RADIO_CHARCO * 0.6f, 0.03f, 20, Fade(Color{255,190,60,255},alfa));
+        }
     }
 }
 
@@ -1417,7 +1469,12 @@ static void DibujarPelota(const MinijuegoVoleaMagma& m)
 
     if (radioSombra < 0.3f) radioSombra = 0.3f;
 
-    DrawCylinder({ pelota.posicion.x, 0.045f, pelota.posicion.z }, radioSombra, radioSombra, 0.015f, 18, Color{ 8, 6, 10, 255 });
+    float escalaSombra = radioSombra / 0.48f;
+    // Disco local Y=.015..027: sumar .03 mantiene la altura del cilindro
+    // original (.045..060) y evita ocultarlo bajo las losas GLB (Y=.031).
+    if (!DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_SOMBRA,
+        {pelota.posicion.x,0.03f,pelota.posicion.z}, {escalaSombra,1,escalaSombra}))
+        (DrawCylinder)({ pelota.posicion.x, 0.045f, pelota.posicion.z }, radioSombra, radioSombra, 0.015f, 18, Color{8,6,10,255});
 
     if (pelota.estado == PELOTA_VOLEA_EN_JUEGO)
     {
@@ -1429,28 +1486,51 @@ static void DibujarPelota(const MinijuegoVoleaMagma& m)
         if (std::fabs(x) < MITAD_CANCHA_X + 3.0f && std::fabs(z) < MITAD_CANCHA_Z + 3.0f)
         {
             float pulso = 0.5f + 0.5f * std::sin(t * 9.0f);
-            DrawCircle3D({ x, 0.07f, z }, 0.55f + 0.1f * pulso, { 1.0f, 0.0f, 0.0f }, 90.0f, Color{ 255, 240, 160, 255 });
-            DrawCircle3D({ x, 0.07f, z }, 0.3f, { 1.0f, 0.0f, 0.0f }, 90.0f, Color{ 255, 120, 60, 255 });
+            float escala = (0.55f + 0.1f * pulso) / 0.60f;
+            // Solo el aro exterior y sus cuatro luces pulsan; aro interior fijo.
+            bool modelo = DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_INDICADOR, {x,0,z}, {escala,1,escala}, WHITE, 0);
+            if (modelo)
+            {
+                DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_INDICADOR, {x,0,z}, {1,1,1}, WHITE, 1);
+                DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_INDICADOR, {x,0,z}, {escala,1,escala}, WHITE, 2);
+            }
+            else
+            {
+                DrawCircle3D({ x, 0.07f, z }, 0.55f + 0.1f * pulso, { 1.0f, 0.0f, 0.0f }, 90.0f, Color{ 255, 240, 160, 255 });
+                DrawCircle3D({ x, 0.07f, z }, 0.3f, { 1.0f, 0.0f, 0.0f }, 90.0f, Color{ 255, 120, 60, 255 });
+            }
         }
     }
 
     for (int k = LARGO_ESTELA_VOLEA - 1; k >= 1; k--)
     {
         float f = 1.0f - (float)k / (float)LARGO_ESTELA_VOLEA;
-        DrawSphere(pelota.estela[k], RADIO_PELOTA * (0.25f + 0.55f * f), Fade(color, 0.5f * f));
+        float radio = RADIO_PELOTA * (0.25f + 0.55f * f);
+        float escala = radio / 0.18f;
+        Color ascua = Fade(color,0.5f * f);
+        if (DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_ESTELA, pelota.estela[k], {escala,escala,escala}, ascua, 0, true))
+            DibujarModeloVoleaMagmaRetro3D(MODELO_VOLEA_ESTELA, pelota.estela[k], {escala,escala,escala},
+                Fade(ColorMaterialVoleaMagmaRetro3D(MODELO_VOLEA_ESTELA,1),0.5f * f), 1, true);
+        else
+            (DrawSphere)(pelota.estela[k], radio, ascua);
     }
 
     if (caliente)
     {
-        DrawSphere(pelota.posicion, RADIO_PELOTA * 1.5f, Color{ 255, 150, 40, (unsigned char)(50 + 40 * (0.5f + 0.5f * std::sin(t * 10.0f))) });
+        // Halo conservado; no agrega otra sombra ademas de sombra_pelota.
+        (DrawSphere)(pelota.posicion, RADIO_PELOTA * 1.5f, Color{ 255, 150, 40, (unsigned char)(50 + 40 * (0.5f + 0.5f * std::sin(t * 10.0f))) });
     }
 
-    DrawSphere(pelota.posicion, RADIO_PELOTA, color);
-    DrawSphere(
-        { pelota.posicion.x + 0.12f, pelota.posicion.y + 0.14f, pelota.posicion.z + 0.1f },
-        RADIO_PELOTA * 0.38f,
-        Color{ (unsigned char)(color.r * 0.55f), (unsigned char)(color.g * 0.45f), (unsigned char)(color.b * 0.4f), 255 }
-    );
+    if (!DibujarModeloVoleaMagmaRetro3D(caliente ? MODELO_VOLEA_ROCA_CALIENTE : MODELO_VOLEA_ROCA,
+        pelota.posicion, {1,1,1}, color))
+    {
+        (DrawSphere)(pelota.posicion, RADIO_PELOTA, color);
+        (DrawSphere)(
+            { pelota.posicion.x + 0.12f, pelota.posicion.y + 0.14f, pelota.posicion.z + 0.1f },
+            RADIO_PELOTA * 0.38f,
+            Color{ (unsigned char)(color.r * 0.55f), (unsigned char)(color.g * 0.45f), (unsigned char)(color.b * 0.4f), 255 }
+        );
+    }
 }
 
 

@@ -486,6 +486,57 @@ static_assert(sizeof(RUTAS_MODELOS_DESCENSO_NUBES_3D) /
     "Las rutas deben coincidir con los IDs del paquete Descenso en Nubes");
 
 //==================================================
+// PAQUETE DE VOLEA DE MAGMA
+//==================================================
+
+enum ModeloVoleaMagma3D
+{
+    MODELO_VOLEA_LAGO,
+    MODELO_VOLEA_CANCHA,
+    MODELO_VOLEA_BORDE,
+    MODELO_VOLEA_POSTE,
+    MODELO_VOLEA_RED,
+    MODELO_VOLEA_VOLCAN_MENOR,
+    MODELO_VOLEA_VOLCAN_MAYOR,
+    MODELO_VOLEA_COLUMNA,
+    MODELO_VOLEA_COLUMNA_LLAMA,
+    MODELO_VOLEA_ROCA,
+    MODELO_VOLEA_ROCA_CALIENTE,
+    MODELO_VOLEA_CHARCO,
+    MODELO_VOLEA_SOMBRA,
+    MODELO_VOLEA_INDICADOR,
+    MODELO_VOLEA_BURBUJA,
+    MODELO_VOLEA_CENIZA,
+    MODELO_VOLEA_ESTELA,
+    CANTIDAD_MODELOS_VOLEA_MAGMA_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_VOLEA_MAGMA_3D[] =
+{
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/lago_lava.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/cancha_obsidiana.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/borde_cancha.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/poste_red.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/red_cadenas.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/volcan_menor.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/volcan_mayor.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/columna_basalto.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/columna_con_llama.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/roca_magma.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/roca_sobrecalentada.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/charco_lava.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/sombra_pelota.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/indicador_caida.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/burbuja_lava.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/ceniza.glb",
+    "Assets/Modelos/Escenarios/Volea_de_Magma/GLB/estela_ascua.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_VOLEA_MAGMA_3D) /
+    sizeof(RUTAS_MODELOS_VOLEA_MAGMA_3D[0]) == CANTIDAD_MODELOS_VOLEA_MAGMA_3D,
+    "Las rutas deben coincidir con los IDs del paquete Volea de Magma");
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 

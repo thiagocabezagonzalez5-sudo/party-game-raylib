@@ -75,6 +75,7 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D racimoToxico[CANTIDAD_MODELOS_RACIMO_TOXICO_3D];
     RecursoModeloEscenarioRetro3D tesoreroCercado[CANTIDAD_MODELOS_TESORERO_CERCADO_3D];
     RecursoModeloEscenarioRetro3D descensoNubes[CANTIDAD_MODELOS_DESCENSO_NUBES_3D];
+    RecursoModeloEscenarioRetro3D voleaMagma[CANTIDAD_MODELOS_VOLEA_MAGMA_3D];
     AlasDescensoNubesRetro3D alasNubes;
     bool inicializados = false;
 };
@@ -777,6 +778,71 @@ inline bool DibujarAveDescensoNubesRetro3D(Vector3 posicion, float aleteo)
     return true;
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteVoleaMagmaRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_VOLEA_MAGMA_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_VOLEA_MAGMA_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_VOLEA_MAGMA_3D[i];
+        // El paquete no tiene COLOR_DINAMICO. Son los materiales de las
+        // primitives que ya cambiaban en C++: roca/lava, cadena y burbuja.
+        // Se resuelve el indice real por meshMaterial; el resto queda intacto.
+        definiciones[MODELO_VOLEA_ROCA].mallaColor = 0;
+        definiciones[MODELO_VOLEA_ROCA_CALIENTE].mallaColor = 0;
+        definiciones[MODELO_VOLEA_RED].mallaColor = 0;
+        definiciones[MODELO_VOLEA_POSTE].mallaColor = 3;
+        definiciones[MODELO_VOLEA_BURBUJA].mallaColor = 0;
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().voleaMagma,
+        definiciones, CANTIDAD_MODELOS_VOLEA_MAGMA_3D };
+}
+
+inline void CargarPaqueteVoleaMagmaRetro3D()
+{
+    PaqueteModelosEscenarioRetro3D paquete = ObtenerPaqueteVoleaMagmaRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    const int mallasEsperadas[] = {3,8,3,5,4,6,6,3,5,4,4,4,2,3,3,1,2};
+    for (int i = 0; i < paquete.cantidad; i++)
+    {
+        RecursoModeloEscenarioRetro3D& recurso = paquete.recursos[i];
+        if (!recurso.cargado || recurso.modelo.meshCount == mallasEsperadas[i]) continue;
+        UnloadModel(recurso.modelo);
+        recurso.modelo = {};
+        recurso.cargado = false;
+        TraceLog(LOG_WARNING, "Primitives inesperadas en escenario; se usan primitivas: %s", recurso.ruta);
+    }
+}
+
+inline Color ColorMaterialVoleaMagmaRetro3D(ModeloVoleaMagma3D pieza, int malla)
+{
+    const RecursoModeloEscenarioRetro3D& recurso = ObtenerModelosEscenariosRetro3D().voleaMagma[pieza];
+    if (!recurso.cargado || malla < 0 || malla >= recurso.modelo.meshCount) return WHITE;
+    return recurso.modelo.materials[recurso.modelo.meshMaterial[malla]].maps[MATERIAL_MAP_DIFFUSE].color;
+}
+
+inline bool DibujarModeloVoleaMagmaRetro3D(
+    ModeloVoleaMagma3D pieza, Vector3 posicion, Vector3 escala = {1,1,1},
+    Color colorEstado = WHITE, int malla = -1, bool materialEfecto = false)
+{
+    RecursoModeloEscenarioRetro3D& recurso = ObtenerModelosEscenariosRetro3D().voleaMagma[pieza];
+    if (!recurso.cargado) return false;
+    RecursoModeloEscenarioRetro3D vista = recurso;
+    if (malla >= 0)
+    {
+        if (malla >= recurso.modelo.meshCount) return false;
+        vista.modelo.meshCount = 1;
+        vista.modelo.meshes = &recurso.modelo.meshes[malla];
+        vista.modelo.meshMaterial = &recurso.modelo.meshMaterial[malla];
+        // Vistas sin propiedad: permiten desvanecer solo el efecto elegido
+        // sin duplicar mallas, alterar herrajes ni dejar un material modificado.
+        vista.materialColor = materialEfecto ? recurso.modelo.meshMaterial[malla] : -1;
+    }
+    return DibujarModeloEscenarioRetro3D(vista, posicion, {0,1,0}, 0, escala, colorEstado);
+}
+
 inline void InicializarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -861,6 +927,8 @@ inline void DescargarModelosEscenariosRetro3D()
     DescargarSlotModeloEscenarioRetro3D(recursos.montanaLava);
     DescargarAlasDescensoNubesRetro3D();
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.descensoNubes)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.voleaMagma)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.ultimoAsiento)
         DescargarSlotModeloEscenarioRetro3D(recurso);
