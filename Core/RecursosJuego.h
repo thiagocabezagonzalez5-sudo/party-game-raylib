@@ -602,6 +602,58 @@ static_assert(sizeof(RUTAS_MODELOS_PAREJAS_GLACIAR_3D) /
     "Las rutas deben coincidir con los IDs del paquete Parejas Glaciares");
 
 //==================================================
+// PAQUETE DE ESFERAS DEL CANON
+//==================================================
+
+enum ModeloEsferasCanon3D
+{
+    MODELO_ESFERAS_PISTA_1, MODELO_ESFERAS_PARED_IZQUIERDA_1, MODELO_ESFERAS_PARED_DERECHA_1,
+    MODELO_ESFERAS_PISTA_2, MODELO_ESFERAS_PARED_IZQUIERDA_2, MODELO_ESFERAS_PARED_DERECHA_2,
+    MODELO_ESFERAS_PISTA_3, MODELO_ESFERAS_PARED_IZQUIERDA_3, MODELO_ESFERAS_PARED_DERECHA_3,
+    MODELO_ESFERAS_PISTA_4, MODELO_ESFERAS_PARED_IZQUIERDA_4, MODELO_ESFERAS_PARED_DERECHA_4,
+    MODELO_ESFERAS_PUENTE_1, MODELO_ESFERAS_PUENTE_2, MODELO_ESFERAS_PUENTE_3,
+    MODELO_ESFERAS_RAMPA, MODELO_ESFERAS_ARCO_NATURAL, MODELO_ESFERAS_MESA,
+    MODELO_ESFERAS_CACTUS, MODELO_ESFERAS_ROCA, MODELO_ESFERAS_CHECKPOINT,
+    MODELO_ESFERAS_SALIDA, MODELO_ESFERAS_META, MODELO_ESFERAS_ESFERA,
+    MODELO_ESFERAS_ARO, MODELO_ESFERAS_SUELO,
+    CANTIDAD_MODELOS_ESFERAS_CANON_3D
+};
+
+inline constexpr const char* RUTAS_MODELOS_ESFERAS_CANON_3D[] =
+{
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/tramo_pista_1.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/pared_izquierda_1.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/pared_derecha_1.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/tramo_pista_2.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/pared_izquierda_2.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/pared_derecha_2.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/tramo_pista_3.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/pared_izquierda_3.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/pared_derecha_3.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/tramo_pista_4.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/pared_izquierda_4.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/pared_derecha_4.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/puente_roto_1.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/puente_roto_2.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/puente_roto_3.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/rampa_atajo.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/arco_natural.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/mesa_lejana.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/cactus.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/roca_caida.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/banderin_checkpoint.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/arco_salida.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/arco_meta.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/esfera_piedra.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/aro_jugador.glb",
+    "Assets/Modelos/Escenarios/Esferas_del_Canon/GLB/suelo_desertico.glb"
+};
+
+static_assert(sizeof(RUTAS_MODELOS_ESFERAS_CANON_3D) /
+    sizeof(RUTAS_MODELOS_ESFERAS_CANON_3D[0]) == CANTIDAD_MODELOS_ESFERAS_CANON_3D,
+    "Las rutas deben coincidir con los IDs del paquete Esferas del Canon");
+
+//==================================================
 // TEXTURAS GENERALES
 //==================================================
 

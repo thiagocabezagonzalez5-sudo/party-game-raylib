@@ -77,6 +77,7 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D descensoNubes[CANTIDAD_MODELOS_DESCENSO_NUBES_3D];
     RecursoModeloEscenarioRetro3D voleaMagma[CANTIDAD_MODELOS_VOLEA_MAGMA_3D];
     RecursoModeloEscenarioRetro3D parejasGlaciar[CANTIDAD_MODELOS_PAREJAS_GLACIAR_3D];
+    RecursoModeloEscenarioRetro3D esferasCanon[CANTIDAD_MODELOS_ESFERAS_CANON_3D];
     AlasDescensoNubesRetro3D alasNubes;
     bool inicializados = false;
 };
@@ -910,6 +911,31 @@ inline bool DibujarModeloParejasGlaciarRetro3D(
     return true;
 }
 
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteEsferasCanonRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_ESFERAS_CANON_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_ESFERAS_CANON_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_ESFERAS_CANON_3D[i];
+        // Unico COLOR_DINAMICO: primitive 0 del aro, via meshMaterial.
+        definiciones[MODELO_ESFERAS_ARO].mallaColor = 0;
+        definidas = true;
+    }
+    return { ObtenerModelosEscenariosRetro3D().esferasCanon,
+        definiciones, CANTIDAD_MODELOS_ESFERAS_CANON_3D };
+}
+
+inline bool DibujarModeloEsferasCanonRetro3D(
+    ModeloEsferasCanon3D pieza, Vector3 posicion, float anguloGrados = 0.0f,
+    Vector3 eje = {0,1,0}, Vector3 escala = {1,1,1}, Color colorEstado = WHITE)
+{
+    return DibujarModeloEscenarioRetro3D(
+        ObtenerModelosEscenariosRetro3D().esferasCanon[pieza],
+        posicion, eje, anguloGrados, escala, colorEstado);
+}
+
 inline void InicializarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -998,6 +1024,8 @@ inline void DescargarModelosEscenariosRetro3D()
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.voleaMagma)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.parejasGlaciar)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.esferasCanon)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.ultimoAsiento)
         DescargarSlotModeloEscenarioRetro3D(recurso);

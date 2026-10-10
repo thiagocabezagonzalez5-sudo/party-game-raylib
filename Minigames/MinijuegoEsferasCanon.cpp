@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/MecanicasJugador.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
@@ -990,6 +991,7 @@ void MinijuegoEsferasCanon::Reiniciar(
     }
 
     partidaValida = true;
+    CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteEsferasCanonRetro3D());
 
     for (int k = 0; k < cantidad; k++)
     {
@@ -1367,56 +1369,86 @@ static Vector3 PuntoSobrePistaEsferas(
 }
 
 
+// En el fallback conservar la tangente promedio de los vertices originales;
+// interpolar solo donde una frontera del paquete corta un segmento.
+static Vector3 BordeFallbackEsferas(const MinijuegoEsferasCanon& minijuego,
+    float s, int vertice, float lateral, float altura)
+{
+    if (std::fabs(s - minijuego.puntosS[vertice]) < 0.0001f)
+        return BordePistaEsferas(minijuego, vertice, lateral, altura);
+    return PuntoSobrePistaEsferas(minijuego, s, lateral, altura);
+}
+
+
 // Canon desertico: lecho seco, paredes estratificadas, grietas con puentes
 // rotos, arena, rampa, cactus, rocas, banderas de checkpoint y meta.
-// MODELO FUTURO: tramos de pista y paredes de roca estratificada, arcos
-// naturales, mesas lejanas, cactus, rocas caidas, puentes colgantes rotos,
-// rampa de atajo, banderas de checkpoint y arco de meta (.glb).
+// GLB globales ensamblados sin mover sus pivotes; fallback por pieza.
+// (DrawCube), (DrawSphere) y (DrawCylinder) evitan los macros de sombras
+// humanas de SombrasRetro: el canon desciende bajo Y=0 y su suelo no es plano.
 static void DibujarPistaEsferas(const MinijuegoEsferasCanon& minijuego)
 {
     int n = PUNTOS_PISTA_ESFERAS;
     float ancho = MITAD_ANCHO_PISTA_ESFERAS;
+    const float limites[6] = {0,40,74,96,130,minijuego.longitudPista};
+    bool pistas[5]{}, paredes[5][2]{};
+    for (int tramo = 0; tramo < 4; tramo++)
+    {
+        pistas[tramo] = DibujarModeloEsferasCanonRetro3D((ModeloEsferasCanon3D)(tramo * 3), {0,0,0});
+        for (int lado = 0; lado < 2; lado++)
+            paredes[tramo][lado] = DibujarModeloEsferasCanonRetro3D(
+                (ModeloEsferasCanon3D)(tramo * 3 + 1 + lado), {0,0,0});
+    }
+    // El arte acaba en S=130; conservar el resto de la pista logica (142.23).
+    if (!DibujarModeloEsferasCanonRetro3D(MODELO_ESFERAS_SUELO, {0,0,0}))
+        (DrawCube)({0,-24,-65},110,0.5f,180,Color{152,83,62,255});
 
     // Lecho del rio seco.
     for (int i = 0; i < n - 1; i++)
     {
-        Color color = i % 2 == 0 ? Color{ 196, 122, 80, 255 } : Color{ 186, 112, 72, 255 };
-        DibujarCuadroEsferas(
-            BordePistaEsferas(minijuego, i, -ancho, 0.0f),
-            BordePistaEsferas(minijuego, i, ancho, 0.0f),
-            BordePistaEsferas(minijuego, i + 1, ancho, 0.0f),
-            BordePistaEsferas(minijuego, i + 1, -ancho, 0.0f),
-            color
-        );
-
-        // Arena suelta.
-        float medio = 0.5f * (minijuego.puntosS[i] + minijuego.puntosS[i + 1]);
-
-        if (EnArenaEsferas(medio))
+        for (int tramo = 0; tramo < 5; tramo++)
         {
+            if (pistas[tramo]) continue;
+            float s0 = std::fmax(minijuego.puntosS[i], limites[tramo]);
+            float s1 = std::fmin(minijuego.puntosS[i + 1], limites[tramo + 1]);
+            if (s1 <= s0) continue;
+            Color color = i % 2 == 0 ? Color{ 196, 122, 80, 255 } : Color{ 186, 112, 72, 255 };
             DibujarCuadroEsferas(
-                BordePistaEsferas(minijuego, i, -ancho + 0.2f, 0.03f),
-                BordePistaEsferas(minijuego, i, ancho - 0.2f, 0.03f),
-                BordePistaEsferas(minijuego, i + 1, ancho - 0.2f, 0.03f),
-                BordePistaEsferas(minijuego, i + 1, -ancho + 0.2f, 0.03f),
-                Color{ 238, 214, 150, 255 }
+                BordeFallbackEsferas(minijuego, s0, i, -ancho, 0.0f),
+                BordeFallbackEsferas(minijuego, s0, i, ancho, 0.0f),
+                BordeFallbackEsferas(minijuego, s1, i + 1, ancho, 0.0f),
+                BordeFallbackEsferas(minijuego, s1, i + 1, -ancho, 0.0f),
+                color
             );
-        }
 
-        // Grietas (oscuras) salvo el puente seguro.
-        for (int g = 0; g < CANTIDAD_GRIETAS_ESFERAS; g++)
-        {
-            const GrietaEsferas& grieta = GRIETAS_ESFERAS[g];
+            // Arena suelta.
+            float medio = 0.5f * (s0 + s1);
 
-            if (medio >= grieta.s0 - 0.6f && medio <= grieta.s1 + 0.6f)
+            if (EnArenaEsferas(medio))
             {
                 DibujarCuadroEsferas(
-                    BordePistaEsferas(minijuego, i, -ancho, 0.04f),
-                    BordePistaEsferas(minijuego, i, ancho, 0.04f),
-                    BordePistaEsferas(minijuego, i + 1, ancho, 0.04f),
-                    BordePistaEsferas(minijuego, i + 1, -ancho, 0.04f),
-                    Color{ 18, 10, 10, 255 }
+                    BordeFallbackEsferas(minijuego, s0, i, -ancho + 0.2f, 0.03f),
+                    BordeFallbackEsferas(minijuego, s0, i, ancho - 0.2f, 0.03f),
+                    BordeFallbackEsferas(minijuego, s1, i + 1, ancho - 0.2f, 0.03f),
+                    BordeFallbackEsferas(minijuego, s1, i + 1, -ancho + 0.2f, 0.03f),
+                    Color{ 238, 214, 150, 255 }
                 );
+            }
+
+            // Grietas (oscuras) salvo el puente seguro.
+            for (int g = 0; g < CANTIDAD_GRIETAS_ESFERAS; g++)
+            {
+                const GrietaEsferas& grieta = GRIETAS_ESFERAS[g];
+
+                if (medio >= grieta.s0 - 0.6f && medio <= grieta.s1 + 0.6f)
+                {
+                    DibujarCuadroEsferas(
+                        BordeFallbackEsferas(minijuego, s0, i, -ancho, 0.04f),
+                        BordeFallbackEsferas(minijuego, s0, i, ancho, 0.04f),
+                        BordeFallbackEsferas(minijuego, s1, i + 1, ancho, 0.04f),
+                        BordeFallbackEsferas(minijuego, s1, i + 1, -ancho, 0.04f),
+                        Color{ 18, 10, 10, 255 }
+                    );
+                }
             }
         }
     }
@@ -1425,11 +1457,12 @@ static void DibujarPistaEsferas(const MinijuegoEsferasCanon& minijuego)
     for (int g = 0; g < CANTIDAD_GRIETAS_ESFERAS; g++)
     {
         const GrietaEsferas& grieta = GRIETAS_ESFERAS[g];
+        if (DibujarModeloEsferasCanonRetro3D((ModeloEsferasCanon3D)(MODELO_ESFERAS_PUENTE_1 + g), {0,0,0})) continue;
 
         for (float s = grieta.s0; s <= grieta.s1; s += 0.7f)
         {
             Vector3 p = PuntoSobrePistaEsferas(minijuego, s, grieta.centroSeguro, 0.07f);
-            DrawCube(p, grieta.mitadSegura * 2.0f, 0.1f, 0.5f, Color{ 128, 88, 50, 255 });
+            (DrawCube)(p, grieta.mitadSegura * 2.0f, 0.1f, 0.5f, Color{ 128, 88, 50, 255 });
         }
 
         Vector3 izquierda = PuntoSobrePistaEsferas(minijuego, 0.5f * (grieta.s0 + grieta.s1), -ancho, 1.0f);
@@ -1444,30 +1477,38 @@ static void DibujarPistaEsferas(const MinijuegoEsferasCanon& minijuego)
 
         for (int lado = -1; lado <= 1; lado += 2)
         {
-            float l = (float)lado * (ancho + 0.2f);
-            Vector3 a0 = BordePistaEsferas(minijuego, i, l, -0.3f);
-            Vector3 b0 = BordePistaEsferas(minijuego, j, l, -0.3f);
-
-            static const float ALTURAS[4] = { 0.0f, 2.4f, 4.4f, 7.0f };
-            static const Color BANDAS[3] =
+            for (int tramo = 0; tramo < 5; tramo++)
             {
-                Color{ 120, 52, 40, 255 }, Color{ 188, 96, 56, 255 }, Color{ 214, 160, 100, 255 }
-            };
+                if (paredes[tramo][lado < 0 ? 0 : 1]) continue;
+                float s0 = std::fmax(minijuego.puntosS[i], limites[tramo]);
+                float s1 = std::fmin(minijuego.puntosS[j], limites[tramo + 1]);
+                if (s1 <= s0) continue;
+                float l = (float)lado * (ancho + 0.2f);
+                Vector3 a0 = BordeFallbackEsferas(minijuego, s0, i, l, -0.3f);
+                Vector3 b0 = BordeFallbackEsferas(minijuego, s1, j, l, -0.3f);
 
-            for (int b = 0; b < 3; b++)
-            {
-                DibujarCuadroEsferas(
-                    { a0.x, a0.y + ALTURAS[b], a0.z },
-                    { b0.x, b0.y + ALTURAS[b], b0.z },
-                    { b0.x, b0.y + ALTURAS[b + 1], b0.z },
-                    { a0.x, a0.y + ALTURAS[b + 1], a0.z },
-                    BANDAS[b]
-                );
+                static const float ALTURAS[4] = { 0.0f, 2.4f, 4.4f, 7.0f };
+                static const Color BANDAS[3] =
+                {
+                    Color{ 120, 52, 40, 255 }, Color{ 188, 96, 56, 255 }, Color{ 214, 160, 100, 255 }
+                };
+
+                for (int b = 0; b < 3; b++)
+                {
+                    DibujarCuadroEsferas(
+                        { a0.x, a0.y + ALTURAS[b], a0.z },
+                        { b0.x, b0.y + ALTURAS[b], b0.z },
+                        { b0.x, b0.y + ALTURAS[b + 1], b0.z },
+                        { a0.x, a0.y + ALTURAS[b + 1], a0.z },
+                        BANDAS[b]
+                    );
+                }
             }
         }
     }
 
     // Rampa de atajo.
+    if (!DibujarModeloEsferasCanonRetro3D(MODELO_ESFERAS_RAMPA, {0,0,0}))
     {
         Vector3 a = PuntoSobrePistaEsferas(minijuego, RAMPA_S0_ESFERAS, RAMPA_LAT0_ESFERAS, 0.05f);
         Vector3 b = PuntoSobrePistaEsferas(minijuego, RAMPA_S0_ESFERAS, RAMPA_LAT1_ESFERAS, 0.05f);
@@ -1485,8 +1526,14 @@ static void DibujarPistaEsferas(const MinijuegoEsferasCanon& minijuego)
         for (int lado = -1; lado <= 1; lado += 2)
         {
             Vector3 base = PuntoSobrePistaEsferas(minijuego, CHECKPOINTS_ESFERAS[k], (float)lado * (ancho - 0.3f), 0.0f);
-            DrawCube({ base.x, base.y + 1.6f, base.z }, 0.12f, 3.2f, 0.12f, Color{ 90, 60, 36, 255 });
-            DrawCube({ base.x - (float)lado * 0.4f, base.y + 2.8f, base.z }, 0.8f, 0.6f, 0.05f, Color{ 90, 210, 120, 255 });
+            float tx = 0, tz = 0, x = 0, z = 0;
+            PuntoPistaEsferas(minijuego, CHECKPOINTS_ESFERAS[k], 0, x, z, tx, tz);
+            // Raylib gira +X hacia -Z: el signo del yaw es opuesto al atan2
+            // del visor. La bandera apunta hacia dentro en ambos lados.
+            float yaw = -std::atan2(tx, -tz) * RAD2DEG + (lado > 0 ? 180.0f : 0.0f);
+            if (DibujarModeloEsferasCanonRetro3D(MODELO_ESFERAS_CHECKPOINT, base, yaw)) continue;
+            (DrawCube)({ base.x, base.y + 1.6f, base.z }, 0.12f, 3.2f, 0.12f, Color{ 90, 60, 36, 255 });
+            (DrawCube)({ base.x - (float)lado * 0.4f, base.y + 2.8f, base.z }, 0.8f, 0.6f, 0.05f, Color{ 90, 210, 120, 255 });
         }
     }
 
@@ -1494,6 +1541,10 @@ static void DibujarPistaEsferas(const MinijuegoEsferasCanon& minijuego)
     for (int m = 0; m < 2; m++)
     {
         float s = m == 0 ? S_SALIDA_ESFERAS - 1.2f : LONGITUD_META_ESFERAS;
+        float tx = 0, tz = 0, x = 0, z = 0;
+        PuntoPistaEsferas(minijuego, s, 0, x, z, tx, tz);
+        if (DibujarModeloEsferasCanonRetro3D(m == 0 ? MODELO_ESFERAS_SALIDA : MODELO_ESFERAS_META,
+            {x,ElevacionPistaEsferas(s),z}, -std::atan2(tx,-tz) * RAD2DEG)) continue;
 
         for (int c = 0; c < 8; c++)
         {
@@ -1511,11 +1562,11 @@ static void DibujarPistaEsferas(const MinijuegoEsferasCanon& minijuego)
         for (int lado = -1; lado <= 1; lado += 2)
         {
             Vector3 base = PuntoSobrePistaEsferas(minijuego, s, (float)lado * (ancho - 0.2f), 0.0f);
-            DrawCube({ base.x, base.y + 2.4f, base.z }, 0.5f, 4.8f, 0.5f, Color{ 200, 150, 100, 255 });
+            (DrawCube)({ base.x, base.y + 2.4f, base.z }, 0.5f, 4.8f, 0.5f, Color{ 200, 150, 100, 255 });
         }
 
         Vector3 centro = PuntoSobrePistaEsferas(minijuego, s, 0.0f, 4.8f);
-        DrawCube(centro, ancho * 2.2f, 0.6f, 0.5f, m == 0 ? Color{ 90, 210, 120, 255 } : Color{ 230, 60, 50, 255 });
+        (DrawCube)(centro, ancho * 2.2f, 0.6f, 0.5f, m == 0 ? Color{ 90, 210, 120, 255 } : Color{ 230, 60, 50, 255 });
     }
 
     // Cactus y rocas decorativas fuera de la pista, sobre las paredes.
@@ -1524,9 +1575,11 @@ static void DibujarPistaEsferas(const MinijuegoEsferasCanon& minijuego)
         float s = 4.0f + Ruido01Esferas(i, 5) * (LONGITUD_META_ESFERAS - 6.0f);
         float lado = i % 2 == 0 ? -1.0f : 1.0f;
         Vector3 p = PuntoSobrePistaEsferas(minijuego, s, lado * (ancho + 1.0f), 7.0f);
+        if (DibujarModeloEsferasCanonRetro3D(MODELO_ESFERAS_CACTUS, p, 0, {0,1,0},
+            {0.65f,1.3f / 1.7f,0.65f})) continue;
 
-        DrawCylinder({ p.x, p.y, p.z }, 0.2f, 0.2f, 1.3f, 6, Color{ 70, 130, 70, 255 });
-        DrawCylinder({ p.x + 0.35f, p.y + 0.5f, p.z }, 0.12f, 0.12f, 0.6f, 6, Color{ 70, 130, 70, 255 });
+        (DrawCylinder)({ p.x, p.y, p.z }, 0.2f, 0.2f, 1.3f, 6, Color{ 70, 130, 70, 255 });
+        (DrawCylinder)({ p.x + 0.35f, p.y + 0.5f, p.z }, 0.12f, 0.12f, 0.6f, 6, Color{ 70, 130, 70, 255 });
     }
 
     // Mesas lejanas.
@@ -1536,32 +1589,38 @@ static void DibujarPistaEsferas(const MinijuegoEsferasCanon& minijuego)
         float z = -(float)i * 14.0f;
         float altura = 8.0f + Ruido01Esferas(i, 9) * 8.0f;
         float x = lado * (20.0f + Ruido01Esferas(i, 8) * 10.0f);
+        if (DibujarModeloEsferasCanonRetro3D(MODELO_ESFERAS_MESA,
+            {x,ElevacionPistaEsferas(-z) - 2.0f,z}, 0, {0,1,0}, {1,altura / 10.0f,1})) continue;
 
-        DrawCube({ x, ElevacionPistaEsferas(-z) + altura * 0.5f - 2.0f, z }, 7.0f, altura, 6.0f, Color{ 172, 86, 58, 255 });
-        DrawCube({ x, ElevacionPistaEsferas(-z) + altura - 1.7f, z }, 7.4f, 0.8f, 6.4f, Color{ 206, 130, 84, 255 });
+        (DrawCube)({ x, ElevacionPistaEsferas(-z) + altura * 0.5f - 2.0f, z }, 7.0f, altura, 6.0f, Color{ 172, 86, 58, 255 });
+        (DrawCube)({ x, ElevacionPistaEsferas(-z) + altura - 1.7f, z }, 7.4f, 0.8f, 6.4f, Color{ 206, 130, 84, 255 });
     }
 
     // Arco natural cerca de la salida.
+    if (!DibujarModeloEsferasCanonRetro3D(MODELO_ESFERAS_ARCO_NATURAL, {0,0,0}))
     {
         Vector3 izquierda = PuntoSobrePistaEsferas(minijuego, 12.0f, -ancho - 0.6f, 0.0f);
         Vector3 derecha = PuntoSobrePistaEsferas(minijuego, 12.0f, ancho + 0.6f, 0.0f);
-        DrawCube({ izquierda.x, izquierda.y + 2.8f, izquierda.z }, 1.6f, 5.6f, 1.6f, Color{ 150, 76, 52, 255 });
-        DrawCube({ derecha.x, derecha.y + 2.8f, derecha.z }, 1.6f, 5.6f, 1.6f, Color{ 150, 76, 52, 255 });
-        DrawCube({ 0.5f * (izquierda.x + derecha.x), izquierda.y + 5.9f, izquierda.z }, ancho * 2.0f + 3.4f, 1.0f, 1.8f, Color{ 170, 88, 58, 255 });
+        (DrawCube)({ izquierda.x, izquierda.y + 2.8f, izquierda.z }, 1.6f, 5.6f, 1.6f, Color{ 150, 76, 52, 255 });
+        (DrawCube)({ derecha.x, derecha.y + 2.8f, derecha.z }, 1.6f, 5.6f, 1.6f, Color{ 150, 76, 52, 255 });
+        (DrawCube)({ 0.5f * (izquierda.x + derecha.x), izquierda.y + 5.9f, izquierda.z }, ancho * 2.0f + 3.4f, 1.0f, 1.8f, Color{ 170, 88, 58, 255 });
     }
 }
 
 
 static void DibujarObstaculoEsferas(const ObstaculoEsferas& obstaculo, float elevacion)
 {
+    float escala = obstaculo.cactus ? 1.0f : obstaculo.radio / 0.9f;
+    if (DibujarModeloEsferasCanonRetro3D(obstaculo.cactus ? MODELO_ESFERAS_CACTUS : MODELO_ESFERAS_ROCA,
+        {obstaculo.x,elevacion,obstaculo.z}, 0, {0,1,0}, {escala,escala,escala})) return;
     if (obstaculo.cactus)
     {
         Color verde = Color{ 62, 150, 78, 255 };
 
-        DrawCylinder({ obstaculo.x, elevacion, obstaculo.z }, 0.35f, 0.35f, 1.6f, 8, verde);
-        DrawCylinder({ obstaculo.x + 0.45f, elevacion + 0.7f, obstaculo.z }, 0.2f, 0.2f, 0.8f, 8, verde);
-        DrawCylinder({ obstaculo.x - 0.45f, elevacion + 0.5f, obstaculo.z }, 0.2f, 0.2f, 0.7f, 8, verde);
-        DrawSphere({ obstaculo.x, elevacion + 1.6f, obstaculo.z }, 0.35f, verde);
+        (DrawCylinder)({ obstaculo.x, elevacion, obstaculo.z }, 0.35f, 0.35f, 1.6f, 8, verde);
+        (DrawCylinder)({ obstaculo.x + 0.45f, elevacion + 0.7f, obstaculo.z }, 0.2f, 0.2f, 0.8f, 8, verde);
+        (DrawCylinder)({ obstaculo.x - 0.45f, elevacion + 0.5f, obstaculo.z }, 0.2f, 0.2f, 0.7f, 8, verde);
+        (DrawSphere)({ obstaculo.x, elevacion + 1.6f, obstaculo.z }, 0.35f, verde);
     }
     else
     {
@@ -1577,38 +1636,43 @@ static void DibujarEsferaEsferas(
     Color colorJugador
 )
 {
-    DrawSphereEx(centro, RADIO_ESFERA, 12, 12, Color{ 150, 134, 120, 255 });
-
-    // Manchas que giran con la esfera (rotacion de Rodrigues).
-    static const Vector3 BASE[6] =
+    if (!DibujarModeloEsferasCanonRetro3D(MODELO_ESFERAS_ESFERA, centro,
+        estado.giro * RAD2DEG, {estado.ejeX,0,estado.ejeZ}))
     {
-        { 1.0f, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f },
-        { 0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }
-    };
+        DrawSphereEx(centro, RADIO_ESFERA, 12, 12, Color{ 150, 134, 120, 255 });
 
-    float c = std::cos(estado.giro);
-    float s = std::sin(estado.giro);
-
-    for (int k = 0; k < 6; k++)
-    {
-        Vector3 v = BASE[k];
-        float punto = estado.ejeX * v.x + estado.ejeZ * v.z;
-        Vector3 cruz = { -estado.ejeZ * v.y, estado.ejeZ * v.x - estado.ejeX * v.z, estado.ejeX * v.y };
-        Vector3 r =
+        // Manchas que giran con la esfera (rotacion de Rodrigues).
+        static const Vector3 BASE[6] =
         {
-            v.x * c + cruz.x * s + estado.ejeX * punto * (1.0f - c),
-            v.y * c + cruz.y * s,
-            v.z * c + cruz.z * s + estado.ejeZ * punto * (1.0f - c)
+            { 1.0f, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f },
+            { 0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, -1.0f }
         };
 
-        DrawSphere(
-            { centro.x + r.x * RADIO_ESFERA * 0.96f, centro.y + r.y * RADIO_ESFERA * 0.96f, centro.z + r.z * RADIO_ESFERA * 0.96f },
-            0.2f,
-            Color{ 84, 72, 64, 255 }
-        );
-    }
+        float c = std::cos(estado.giro);
+        float s = std::sin(estado.giro);
 
-    DrawCircle3D({ centro.x, centro.y - RADIO_ESFERA + 0.03f, centro.z }, RADIO_ESFERA + 0.15f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(colorJugador, 0.7f));
+        for (int k = 0; k < 6; k++)
+        {
+            Vector3 v = BASE[k];
+            float punto = estado.ejeX * v.x + estado.ejeZ * v.z;
+            Vector3 cruz = { -estado.ejeZ * v.y, estado.ejeZ * v.x - estado.ejeX * v.z, estado.ejeX * v.y };
+            Vector3 r =
+            {
+                v.x * c + cruz.x * s + estado.ejeX * punto * (1.0f - c),
+                v.y * c + cruz.y * s,
+                v.z * c + cruz.z * s + estado.ejeZ * punto * (1.0f - c)
+            };
+
+            (DrawSphere)(
+                { centro.x + r.x * RADIO_ESFERA * 0.96f, centro.y + r.y * RADIO_ESFERA * 0.96f, centro.z + r.z * RADIO_ESFERA * 0.96f },
+                0.2f,
+                Color{ 84, 72, 64, 255 }
+            );
+        }
+    }
+    if (!DibujarModeloEsferasCanonRetro3D(MODELO_ESFERAS_ARO,
+        {centro.x,centro.y - RADIO_ESFERA,centro.z}, 0, {0,1,0}, {1,1,1}, Fade(colorJugador,0.7f)))
+        DrawCircle3D({ centro.x, centro.y - RADIO_ESFERA + 0.03f, centro.z }, RADIO_ESFERA + 0.15f, { 1.0f, 0.0f, 0.0f }, 90.0f, Fade(colorJugador, 0.7f));
 }
 
 
