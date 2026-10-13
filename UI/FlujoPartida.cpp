@@ -1,8 +1,12 @@
 #include "UI/FlujoPartida.h"
 
 #include "Systems/Input.h"
+#include "UI/EstiloUIGlobal.h"
+
+#include "rlgl.h"
 
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 
 
@@ -315,8 +319,370 @@ EntradaFlujo LectorEntradaFlujo::Leer(
 
 
 //==================================================
+// ESTILO "CARTELES DE PLAYA" (tablero y configuracion)
+//==================================================
+//
+// SeleccionTablero y ConfiguracionPartida se presentan como la
+// preparacion de un viaje en el muelle: una carta de rumbo con los
+// carteles de destino y una bitacora de zarpe con la tripulacion y la
+// ruta. Usan la instancia compartida de EstiloUI; las posiciones van en
+// unidades de referencia (1280x720) y se convierten con RectRef / Px.
+
+// Color que recibe un bot al completarse la partida
+// (CompletarParticipantesConBots).
+static const Color COLOR_BOT_TRIPULACION = { 145, 145, 152, 255 };
+
+// Contorno oscuro de los dibujos hechos con primitivas.
+static const Color CONTORNO_DIBUJO = { 58, 36, 24, 255 };
+
+
+// Punto en unidades de referencia -> pixeles.
+static Vector2 PuntoRef(
+    float x,
+    float y
+)
+{
+    Rectangle rect = RectRef(x, y, 0.0f, 0.0f);
+
+    return Vector2{ rect.x, rect.y };
+}
+
+
+// Velo calido: deja ver la isla del HUB y oscurece hacia abajo.
+static void DibujarVeloPlaya(
+    float aparicion
+)
+{
+    const Color sombra = { 24, 14, 30, 255 };
+
+    DrawRectangleGradientV(
+        0,
+        0,
+        GetScreenWidth(),
+        GetScreenHeight(),
+        Fade(sombra, 0.40f * aparicion),
+        Fade(sombra, 0.72f * aparicion)
+    );
+}
+
+
+// Titulo pintado sobre el mundo (unica excepcion al texto sobre placa).
+static void DibujarTituloPlaya(
+    const char* texto,
+    float aparicion
+)
+{
+    Vector2 posicion = PuntoRef(640.0f, 22.0f);
+
+    DibujarTextoMundo(
+        texto,
+        posicion.x,
+        posicion.y,
+        UI_TEXTO_TITULO,
+        Fade(UI_TEXTO_MUNDO, aparicion)
+    );
+}
+
+
+// Rotulo pequeno de seccion sobre la placa clara.
+static void DibujarRotulo(
+    const char* texto,
+    float x,
+    float y,
+    float alfa = 1.0f
+)
+{
+    DibujarTextoTinta(texto, x, y, UI_TEXTO_PEQUENO, Fade(UI_TINTA_SUAVE, alfa));
+}
+
+
+// Cinta del color del tablero (no lleva texto encima).
+static void DibujarCintaTema(
+    float x,
+    float y,
+    float ancho,
+    Color tema
+)
+{
+    Rectangle cinta = { x, y, ancho, Px(6.0f) };
+
+    DrawRectangleRec(cinta, tema);
+    DrawRectangleLinesEx(cinta, 1.0f, CONTORNO_DIBUJO);
+}
+
+
+// Sello de goma: texto en tinta dentro de un recuadro de color.
+static float MedirSello(
+    const char* texto
+)
+{
+    return (float)MeasureText(texto, TamanoTexto(UI_TEXTO_PEQUENO)) + Px(16.0f);
+}
+
+
+static void DibujarSello(
+    const char* texto,
+    float x,
+    float y,
+    Color borde,
+    float alfa = 1.0f
+)
+{
+    const int tamano = TamanoTexto(UI_TEXTO_PEQUENO);
+
+    Rectangle rect =
+    {
+        x,
+        y,
+        MedirSello(texto),
+        (float)tamano + Px(10.0f)
+    };
+
+    DrawRectangleRec(rect, Fade(borde, 0.20f * alfa));
+    DrawRectangleLinesEx(rect, Px(2.0f), Fade(borde, alfa));
+
+    DrawText(
+        texto,
+        (int)(x + Px(8.0f)),
+        (int)(y + Px(5.0f)),
+        tamano,
+        Fade(UI_TINTA, alfa)
+    );
+}
+
+
+// Flecha triangular. direccion: -1 izquierda, +1 derecha.
+static void DibujarFlechaPlaya(
+    Vector2 centro,
+    float medio,
+    int direccion,
+    Color color
+)
+{
+    Vector2 punta = { centro.x + direccion * medio, centro.y };
+    Vector2 a = { centro.x - direccion * medio, centro.y - medio * 1.2f };
+    Vector2 b = { centro.x - direccion * medio, centro.y + medio * 1.2f };
+
+    // DrawTriangle exige sentido antihorario.
+    if (direccion > 0)
+    {
+        DrawTriangle(a, b, punta, color);
+    }
+    else
+    {
+        DrawTriangle(b, a, punta, color);
+    }
+}
+
+
+// Marco de madera (9-slice del estilo) alrededor de una vista 3D.
+static void DibujarMarcoMadera(
+    const EstiloUI& estilo,
+    Rectangle rect
+)
+{
+    DrawRectangleRec(
+        Rectangle{ rect.x + Px(4.0f), rect.y + Px(5.0f), rect.width, rect.height },
+        Fade(BLACK, 0.25f)
+    );
+
+    DibujarNueveCortes(estilo.madera, 12, rect, EscalaUI(), WHITE);
+}
+
+
+// Banderin de un tripulante: mastil de madera y bandera de su color.
+// (x, y) es la punta del mastil, en pixeles.
+static void DibujarBanderin(
+    float x,
+    float y,
+    Color color,
+    float alfa
+)
+{
+    DrawLineEx(
+        Vector2{ x, y },
+        Vector2{ x, y + Px(56.0f) },
+        Px(4.0f),
+        Fade(UI_MADERA_OSCURA, alfa)
+    );
+
+    DrawCircleV(Vector2{ x, y }, Px(4.0f), Fade(UI_MADERA_OSCURA, alfa));
+
+    Vector2 a = { x + Px(2.0f), y + Px(4.0f) };
+    Vector2 b = { x + Px(2.0f), y + Px(32.0f) };
+    Vector2 punta = { x + Px(42.0f), y + Px(18.0f) };
+
+    DrawTriangle(a, b, punta, Fade(color, alfa));
+    DrawTriangleLines(a, b, punta, Fade(CONTORNO_DIBUJO, alfa));
+}
+
+
+// Mascara (1 << ControlParticipante) de los humanos que lee
+// LectorEntradaFlujo: activos, no bots y conectados.
+static int ObtenerControlesAyuda(
+    const Participante participantes[],
+    int cantidad
+)
+{
+    int mascara = 0;
+
+    for (int i = 0; i < cantidad; i++)
+    {
+        const Participante& participante = participantes[i];
+
+        if (participante.activo && !participante.esBot && participante.conectado)
+        {
+            mascara |= 1 << participante.control;
+        }
+    }
+
+    return mascara;
+}
+
+
+// Barra de ayuda con las teclas que acepta HOY la entrada del flujo
+// (LeerInputSeleccionParticipante): teclado completo y WASD confirman con
+// ESPACIO y vuelven con RETROCESO; flechas usan ENTER y SHIFT DER; el
+// mando A y B. ESC siempre vuelve. Sin humanos conectados el teclado
+// acepta ENTER o ESPACIO.
+static void DibujarAyudaFlujo(
+    const EstiloUI& estilo,
+    int controles,
+    const char* accionMover,
+    const char* accionConfirmar
+)
+{
+    const bool espacio =
+        (controles & (1 << CONTROL_TECLADO_COMPLETO)) ||
+        (controles & (1 << CONTROL_TECLADO_WASD));
+    const bool flechas = (controles & (1 << CONTROL_TECLADO_FLECHAS)) != 0;
+    const bool mando = (controles & (1 << CONTROL_GAMEPAD)) != 0;
+
+    char confirmar[64] = "";
+    char volver[64] = "ESC";
+
+    if (controles == 0)
+    {
+        std::snprintf(confirmar, sizeof(confirmar), "ENTER / ESPACIO");
+    }
+    else
+    {
+        std::snprintf(
+            confirmar,
+            sizeof(confirmar),
+            "%s%s%s",
+            espacio ? "ESPACIO" : "",
+            flechas ? (espacio ? " / ENTER" : "ENTER") : "",
+            mando ? ((espacio || flechas) ? " / A" : "A") : ""
+        );
+
+        std::snprintf(
+            volver,
+            sizeof(volver),
+            "ESC%s%s%s",
+            espacio ? " / RETROCESO" : "",
+            flechas ? " / SHIFT DER" : "",
+            mando ? " / B" : ""
+        );
+    }
+
+    // Con muchos controles a la vez se acortan los separadores para que
+    // el texto quepa en la barra.
+    const char* separadores[2] = { "   |   ", "  |  " };
+    char texto[256] = "";
+
+    for (int i = 0; i < 2; i++)
+    {
+        std::snprintf(
+            texto,
+            sizeof(texto),
+            "IZQ / DER: %s%s%s: %s%s%s: ATRAS",
+            accionMover,
+            separadores[i],
+            confirmar,
+            accionConfirmar,
+            separadores[i],
+            volver
+        );
+
+        if (MeasureText(texto, TamanoTexto(UI_TEXTO_PEQUENO)) <= (int)Px(976.0f))
+        {
+            break;
+        }
+    }
+
+    DibujarAyudaUI(estilo, texto);
+}
+
+
+//==================================================
 // SELECCION DE TABLERO
 //==================================================
+
+// Carta de rumbo (unidades de referencia).
+static const Rectangle PANEL_SELECCION_TABLERO = { 40.0f, 92.0f, 1200.0f, 568.0f };
+static const Rectangle MARCO_VISTA_TABLERO = { 70.0f, 120.0f, 696.0f, 404.0f };
+static const Rectangle RIEL_CARTELES_TABLERO = { 70.0f, 546.0f, 696.0f, 12.0f };
+static const float X_INFO_TABLERO = 796.0f;
+static const float ANCHO_INFO_TABLERO = 410.0f;
+
+
+static int ObtenerCantidadCartelesTablero()
+{
+    const int total = ObtenerCantidadTableros();
+
+    return total < CANTIDAD_TABLEROS ? total : CANTIDAD_TABLEROS;
+}
+
+
+// Carteles de destino colgados del riel, centrados bajo la vista.
+static Rectangle RectCartelTablero(
+    int indice,
+    int total
+)
+{
+    const float separacion = 20.0f;
+    float ancho = (RIEL_CARTELES_TABLERO.width - separacion * (total - 1)) / total;
+
+    if (ancho > 300.0f)
+    {
+        ancho = 300.0f;
+    }
+
+    const float anchoTotal = ancho * total + separacion * (total - 1);
+    const float x0 =
+        RIEL_CARTELES_TABLERO.x + (RIEL_CARTELES_TABLERO.width - anchoTotal) * 0.5f;
+
+    // El ancla de la cuerda (UI_LARGO_CUERDA arriba) cae sobre el riel.
+    const float y =
+        RIEL_CARTELES_TABLERO.y + RIEL_CARTELES_TABLERO.height * 0.5f + UI_LARGO_CUERDA;
+
+    return Rectangle{ x0 + indice * (ancho + separacion), y, ancho, 50.0f };
+}
+
+
+static void ActualizarPresentacionTablero(
+    SeleccionTablero& seleccion,
+    float deltaTime
+)
+{
+    const EstiloUI& estilo = ObtenerEstiloUI();
+
+    ActualizarPanelUI(seleccion.panel, estilo, deltaTime);
+
+    const int total = ObtenerCantidadCartelesTablero();
+
+    for (int i = 0; i < total; i++)
+    {
+        const bool elegido = i == seleccion.indice;
+
+        seleccion.carteles[i].activo = elegido;
+        ActualizarBotonUI(seleccion.carteles[i], estilo, deltaTime, elegido);
+    }
+
+    seleccion.destelloCambio = Limitar01(seleccion.destelloCambio - deltaTime / 0.35f);
+}
+
 
 void SeleccionTablero::Inicializar()
 {
@@ -330,6 +696,22 @@ void SeleccionTablero::Inicializar()
     )
     {
         indice = 0;
+    }
+
+    // Presentacion: la carta cae y despues los carteles de destino.
+    panel.Iniciar(PANEL_SELECCION_TABLERO, 0.0f);
+    destelloCambio = 0.0f;
+
+    const int total = ObtenerCantidadCartelesTablero();
+
+    for (int i = 0; i < total; i++)
+    {
+        carteles[i].Iniciar(
+            RectCartelTablero(i, total),
+            ObtenerNombreTablero((IdTablero)i),
+            (i % 2 == 0) ? -1.5f : 1.5f,
+            0.45f + i * UI_T_ESCALONADO
+        );
     }
 
     // Un stick mantenido al entrar no cuenta como movimiento.
@@ -352,6 +734,10 @@ void SeleccionTablero::Actualizar(
 {
     tiempo += deltaTime;
 
+    ActualizarPresentacionTablero(*this, deltaTime);
+
+    controlesAyuda = ObtenerControlesAyuda(participantes, cantidad);
+
     EntradaFlujo entrada = lector.Leer(participantes, cantidad);
 
     if (tiempo < BLOQUEO_ENTRADA_FLUJO)
@@ -369,6 +755,12 @@ void SeleccionTablero::Actualizar(
     if (entrada.confirmar)
     {
         confirmado = true;
+
+        if (indice >= 0 && indice < ObtenerCantidadCartelesTablero())
+        {
+            carteles[indice].colgado.Pulsar();
+        }
+
         audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
         return;
     }
@@ -382,6 +774,7 @@ void SeleccionTablero::Actualizar(
     if (cambio != 0 && total > 1)
     {
         indice = (indice + cambio + total) % total;
+        destelloCambio = 1.0f;
         audio.ReproducirSonido(SONIDO_UI_MOVER);
     }
 }
@@ -389,118 +782,356 @@ void SeleccionTablero::Actualizar(
 
 void SeleccionTablero::Dibujar() const
 {
-    const int ancho = GetScreenWidth();
-    const int alto = GetScreenHeight();
+    const EstiloUI& estilo = ObtenerEstiloUI();
 
     const IdTablero id = ObtenerIdElegido();
     const Color tema = ObtenerColorTemaTablero(id);
     const float aparicion = Aparicion(tiempo, 0.0f, 0.30f);
+    const int total = ObtenerCantidadCartelesTablero();
 
-    DibujarVelo(0.80f * aparicion);
+    DibujarVeloPlaya(aparicion);
+    DibujarTituloPlaya("ELEGI EL DESTINO", aparicion);
 
-    DibujarTitulo("ELEGI EL TABLERO", Fade(RAYWHITE, aparicion));
+    DibujarPanelUI(estilo, panel);
 
-    Rectangle vista =
+    if (!estilo.cargado || panel.colgado.retraso > 0.0f)
     {
-        40.0f,
-        100.0f,
-        ancho * 0.56f,
-        (float)(alto - 100 - 100)
-    };
+        return;
+    }
 
-    DrawRectangleRec(vista, Fade(BLACK, 0.6f * aparicion));
+    // Todo el contenido acompana la caida y el rebote de la carta.
+    const float dy = panel.colgado.caida.valor;
 
+    //------------------------------
+    // VISTA DEL DESTINO (catalejo)
+    //------------------------------
+
+    Rectangle marco = RectRef(
+        MARCO_VISTA_TABLERO.x,
+        MARCO_VISTA_TABLERO.y + dy,
+        MARCO_VISTA_TABLERO.width,
+        MARCO_VISTA_TABLERO.height
+    );
+
+    DibujarMarcoMadera(estilo, marco);
+
+    Rectangle vista = RectRef(
+        MARCO_VISTA_TABLERO.x + 12.0f,
+        MARCO_VISTA_TABLERO.y + 12.0f + dy,
+        MARCO_VISTA_TABLERO.width - 24.0f,
+        MARCO_VISTA_TABLERO.height - 24.0f
+    );
+
+    DrawRectangleRec(vista, BLACK);
     DibujarVistaPreviaTablero(id, vista, tiempo);
 
-    DrawRectangleLinesEx(vista, 4.0f, Fade(tema, aparicion));
-
-    const int total = ObtenerCantidadTableros();
+    // Destello del color del destino al cambiar de tablero.
+    if (destelloCambio > 0.0f)
+    {
+        DrawRectangleRec(vista, Fade(tema, 0.35f * destelloCambio));
+    }
 
     if (total > 1)
     {
-        const int centroY = (int)(vista.y + vista.height / 2.0f);
+        const float centroY = vista.y + vista.height * 0.5f;
+        const float radio = Px(20.0f);
 
-        DrawText("<", (int)vista.x + 14, centroY - 20, 40, Fade(RAYWHITE, 0.9f));
-        DrawText(
-            ">",
-            (int)(vista.x + vista.width) - 34,
-            centroY - 20,
-            40,
-            Fade(RAYWHITE, 0.9f)
-        );
+        for (int lado = -1; lado <= 1; lado += 2)
+        {
+            Vector2 centro =
+            {
+                lado < 0 ? vista.x + Px(30.0f) : vista.x + vista.width - Px(30.0f),
+                centroY
+            };
+
+            DrawCircleV(centro, radio, UI_PLACA_CLARA);
+            DrawCircleLinesV(centro, radio, CONTORNO_DIBUJO);
+            DibujarFlechaPlaya(
+                Vector2{ centro.x + lado * Px(2.0f), centro.y },
+                Px(8.0f),
+                lado,
+                UI_TINTA
+            );
+        }
     }
 
-    // Panel de informacion.
-    const int xInfo = (int)(vista.x + vista.width) + 30;
-    const int anchoInfo = ancho - xInfo - 40;
-    int y = 108;
+    //------------------------------
+    // CARTELES DE DESTINO
+    //------------------------------
 
-    DrawText(ObtenerNombreTablero(id), xInfo, y, 36, tema);
-    y += 56;
-
-    y = DibujarParrafo(
-        ObtenerHistoriaTablero(id),
-        xInfo,
-        y,
-        anchoInfo,
-        20,
-        RAYWHITE
+    DibujarNueveCortes(
+        estilo.madera,
+        12,
+        RectRef(
+            RIEL_CARTELES_TABLERO.x,
+            RIEL_CARTELES_TABLERO.y + dy,
+            RIEL_CARTELES_TABLERO.width,
+            RIEL_CARTELES_TABLERO.height
+        ),
+        EscalaUI(),
+        WHITE
     );
-
-    y += 14;
-    DrawText("OBJETIVO", xInfo, y, 16, GRAY);
-    y += 22;
-
-    y = DibujarParrafo(
-        ObtenerObjetivoTablero(id),
-        xInfo,
-        y,
-        anchoInfo,
-        20,
-        GOLD
-    );
-
-    y += 14;
-    DrawText("GIMMICK", xInfo, y, 16, GRAY);
-    y += 22;
-
-    y = DibujarParrafo(
-        ObtenerGimmickTablero(id),
-        xInfo,
-        y,
-        anchoInfo,
-        20,
-        RAYWHITE
-    );
-
-    y += 14;
-    DrawText("DIFICULTAD", xInfo, y, 16, GRAY);
-    y += 22;
-
-    DrawText(ObtenerDificultadTablero(id), xInfo, y, 22, tema);
-
-    // Indicador de pagina.
-    const int separacionPuntos = 26;
-    const int xPuntos =
-        ancho / 2 - (total - 1) * separacionPuntos / 2;
 
     for (int i = 0; i < total; i++)
     {
-        DrawCircle(
-            xPuntos + i * separacionPuntos,
-            alto - 66,
-            i == indice ? 8.0f : 5.0f,
-            i == indice ? tema : GRAY
-        );
+        BotonUI cartel = carteles[i];
+        cartel.ref.y += dy;
+
+        DibujarBotonUI(estilo, cartel, i == indice);
     }
 
-    DibujarAyuda("IZQ / DER: CAMBIAR   |   ESPACIO / A: ELEGIR   |   ESC / B: ATRAS");
+    //------------------------------
+    // BITACORA DEL DESTINO
+    //------------------------------
+
+    Vector2 origen = PuntoRef(X_INFO_TABLERO, 122.0f + dy);
+    const float x = origen.x;
+    const int anchoTexto = (int)Px(ANCHO_INFO_TABLERO);
+    const int tamanoTexto = TamanoTexto(UI_TEXTO);
+    float y = origen.y;
+
+    DibujarRotulo(TextFormat("DESTINO %d DE %d", indice + 1, ObtenerCantidadTableros()), x, y);
+    y += Px(22.0f);
+
+    DibujarTextoTinta(ObtenerNombreTablero(id), x, y, UI_TEXTO_GRANDE, UI_TINTA);
+    y += TamanoTexto(UI_TEXTO_GRANDE) + Px(8.0f);
+
+    DibujarCintaTema(x, y, Px(ANCHO_INFO_TABLERO), tema);
+    y += Px(20.0f);
+
+    y = (float)DibujarParrafo(
+        ObtenerHistoriaTablero(id),
+        (int)x,
+        (int)y,
+        anchoTexto,
+        tamanoTexto,
+        UI_TINTA
+    );
+
+    y += Px(12.0f);
+    DibujarRotulo("OBJETIVO", x, y);
+    y += Px(22.0f);
+
+    y = (float)DibujarParrafo(
+        ObtenerObjetivoTablero(id),
+        (int)x,
+        (int)y,
+        anchoTexto,
+        tamanoTexto,
+        UI_TINTA
+    );
+
+    y += Px(12.0f);
+    DibujarRotulo("GIMMICK", x, y);
+    y += Px(22.0f);
+
+    y = (float)DibujarParrafo(
+        ObtenerGimmickTablero(id),
+        (int)x,
+        (int)y,
+        anchoTexto,
+        tamanoTexto,
+        UI_TINTA
+    );
+
+    y += Px(12.0f);
+    DibujarRotulo("DIFICULTAD", x, y);
+    y += Px(22.0f);
+
+    DibujarSello(ObtenerDificultadTablero(id), x, y, tema);
+
+    if (controlesAyuda >= 0)
+    {
+        DibujarAyudaFlujo(estilo, controlesAyuda, "CAMBIAR DESTINO", "ELEGIR");
+    }
 }
 
 
 //==================================================
 // CONFIGURACION DE PARTIDA
 //==================================================
+
+// Bitacora de zarpe (unidades de referencia).
+static const Rectangle PANEL_CONFIGURACION = { 40.0f, 92.0f, 1200.0f, 500.0f };
+static const float X_TRIPULACION = 76.0f;
+static const float X_FIN_TRIPULACION = 610.0f;
+static const float X_DIVISOR = 638.0f;
+static const float X_VIAJE = 664.0f;
+static const float ANCHO_VIAJE = 550.0f;
+
+// Ruta del muelle a la isla; las boyas marcan las rondas.
+static const float X_MUELLE = 676.0f;
+static const float X_INICIO_RUTA = 720.0f;
+static const float X_FIN_RUTA = 1144.0f;
+static const float X_ISLA = 1186.0f;
+static const float Y_AGUA_RUTA = 450.0f;
+
+// El barco sale del muelle cuando la bitacora ya cayo.
+static const float RETRASO_BARCO = 0.45f;
+
+
+static const char* NOMBRES_DURACION[CANTIDAD_OPCIONES_RONDAS] =
+{
+    "CORTA",
+    "MEDIA",
+    "LARGA"
+};
+
+
+static float XBoyaRondas(
+    int opcion
+)
+{
+    const float maximo =
+        (float)OPCIONES_RONDAS_PARTIDA[CANTIDAD_OPCIONES_RONDAS - 1];
+
+    return
+        X_INICIO_RUTA +
+        (X_FIN_RUTA - X_INICIO_RUTA) * OPCIONES_RONDAS_PARTIDA[opcion] / maximo;
+}
+
+
+static void ActualizarPresentacionConfiguracion(
+    ConfiguracionPartida& configuracion,
+    float deltaTime
+)
+{
+    const EstiloUI& estilo = ObtenerEstiloUI();
+
+    ActualizarPanelUI(configuracion.panel, estilo, deltaTime);
+    ActualizarSelectorUI(configuracion.selectorRondas, estilo, deltaTime);
+    ActualizarBotonUI(configuracion.cartelZarpar, estilo, deltaTime, false);
+
+    // El barco amarra justo antes de la boya elegida.
+    const float objetivo = XBoyaRondas(configuracion.opcionRondas) - 40.0f;
+
+    if (estilo.reducirMovimiento)
+    {
+        configuracion.barco = ResorteUI{};
+        configuracion.barco.valor = objetivo;
+        return;
+    }
+
+    if (configuracion.tiempo >= RETRASO_BARCO)
+    {
+        // Amortiguacion critica: llega a la boya sin pasarse.
+        configuracion.barco.Actualizar(objetivo, deltaTime, 30.0f, 11.0f);
+    }
+}
+
+
+// Barco de vela pequeno. base = centro de la linea de flotacion (px).
+static void DibujarBarco(
+    Vector2 base,
+    float angulo,
+    Color bandera
+)
+{
+    const float u = EscalaUI();
+
+    rlPushMatrix();
+    rlTranslatef(base.x, base.y, 0.0f);
+    rlRotatef(angulo, 0.0f, 0.0f, 1.0f);
+
+    // Casco (trapecio).
+    Vector2 arribaIzq = { -22.0f * u, -10.0f * u };
+    Vector2 arribaDer = { 22.0f * u, -10.0f * u };
+    Vector2 abajoIzq = { -15.0f * u, 0.0f };
+    Vector2 abajoDer = { 15.0f * u, 0.0f };
+
+    DrawTriangle(arribaIzq, abajoIzq, abajoDer, UI_MADERA_MEDIA);
+    DrawTriangle(arribaIzq, abajoDer, arribaDer, UI_MADERA_MEDIA);
+    DrawLineEx(arribaIzq, arribaDer, 2.0f * u, CONTORNO_DIBUJO);
+    DrawLineEx(arribaIzq, abajoIzq, 2.0f * u, CONTORNO_DIBUJO);
+    DrawLineEx(abajoIzq, abajoDer, 2.0f * u, CONTORNO_DIBUJO);
+    DrawLineEx(abajoDer, arribaDer, 2.0f * u, CONTORNO_DIBUJO);
+
+    // Mastil, vela y bandera del destino.
+    DrawLineEx(
+        Vector2{ 0.0f, -10.0f * u },
+        Vector2{ 0.0f, -46.0f * u },
+        3.0f * u,
+        UI_MADERA_OSCURA
+    );
+
+    Vector2 velaA = { 3.0f * u, -42.0f * u };
+    Vector2 velaB = { 3.0f * u, -14.0f * u };
+    Vector2 velaC = { 24.0f * u, -14.0f * u };
+
+    DrawTriangle(velaA, velaB, velaC, UI_PLACA_CLARA);
+    DrawTriangleLines(velaA, velaB, velaC, CONTORNO_DIBUJO);
+
+    Vector2 banderaA = { -2.0f * u, -46.0f * u };
+    Vector2 banderaB = { -2.0f * u, -37.0f * u };
+    Vector2 banderaC = { -15.0f * u, -41.5f * u };
+
+    DrawTriangle(banderaB, banderaA, banderaC, bandera);
+
+    rlPopMatrix();
+}
+
+
+// Boya roja y blanca. centro en pixeles.
+static void DibujarBoya(
+    Vector2 centro,
+    float radio,
+    bool elegida
+)
+{
+    if (elegida)
+    {
+        DrawCircleV(centro, radio + Px(5.0f), Fade(UI_FOCO, 0.55f));
+    }
+
+    DrawCircleV(centro, radio, RAYWHITE);
+    DrawCircleSector(centro, radio, 180.0f, 360.0f, 16, UI_PELIGRO);
+    DrawCircleLinesV(centro, radio, CONTORNO_DIBUJO);
+}
+
+
+// Isla de destino con la bandera del tablero.
+static void DibujarIslaDestino(
+    Vector2 base,
+    Color tema
+)
+{
+    const float u = EscalaUI();
+
+    DrawCircleSector(base, 26.0f * u, 180.0f, 360.0f, 24, Color{ 196, 154, 92, 255 });
+    DrawCircleSectorLines(base, 26.0f * u, 180.0f, 360.0f, 24, CONTORNO_DIBUJO);
+    DrawCircleSector(
+        Vector2{ base.x + 4.0f * u, base.y },
+        15.0f * u,
+        180.0f,
+        360.0f,
+        16,
+        Color{ 88, 160, 92, 255 }
+    );
+    DrawLineEx(
+        Vector2{ base.x - 30.0f * u, base.y },
+        Vector2{ base.x + 30.0f * u, base.y },
+        2.0f * u,
+        CONTORNO_DIBUJO
+    );
+
+    // Mastil con la bandera del destino.
+    Vector2 punta = { base.x - 8.0f * u, base.y - 50.0f * u };
+
+    DrawLineEx(
+        Vector2{ punta.x, base.y - 14.0f * u },
+        punta,
+        2.5f * u,
+        UI_MADERA_OSCURA
+    );
+
+    Vector2 a = { punta.x + 1.0f * u, punta.y };
+    Vector2 b = { punta.x + 1.0f * u, punta.y + 12.0f * u };
+    Vector2 c = { punta.x + 20.0f * u, punta.y + 6.0f * u };
+
+    DrawTriangle(a, b, c, tema);
+    DrawTriangleLines(a, b, c, CONTORNO_DIBUJO);
+}
+
 
 void ConfiguracionPartida::Inicializar(
     IdTablero idTablero
@@ -518,6 +1149,36 @@ void ConfiguracionPartida::Inicializar(
     {
         opcionRondas = 0;
     }
+
+    // Presentacion: la bitacora cae, despues el selector y el cartel de
+    // zarpe; el barco espera en el muelle.
+    panel.Iniciar(PANEL_CONFIGURACION, 0.0f);
+
+    selectorRondas.Iniciar(
+        Rectangle{ X_VIAJE, 510.0f, ANCHO_VIAJE, UI_ALTO_FILA },
+        "RONDAS",
+        0.45f
+    );
+
+    // Cuelga de DETRAS de la bitacora: el ancla queda oculta tras el marco
+    // inferior (activo lo baja otras 6 unidades) y el cartel asoma por
+    // debajo. Asi deja ~18 unidades de aire sobre la barra de ayuda (674).
+    const float yCartel =
+        PANEL_CONFIGURACION.y + PANEL_CONFIGURACION.height - 20.0f + UI_LARGO_CUERDA;
+
+    cartelZarpar.Iniciar(
+        Rectangle{ X_VIAJE + ANCHO_VIAJE * 0.5f - 110.0f, yCartel, 220.0f, 44.0f },
+        "ZARPAR",
+        1.5f,
+        0.55f
+    );
+    cartelZarpar.activo = true;
+
+    // Balanceo de llegada mas corto: la esquina baja no se acerca a la ayuda.
+    cartelZarpar.colgado.intensidad = 0.5f;
+
+    barco = ResorteUI{};
+    barco.valor = X_MUELLE + 40.0f;    // amarrado al muelle
 
     lector.Reiniciar();
 }
@@ -538,6 +1199,8 @@ void ConfiguracionPartida::Actualizar(
 {
     tiempo += deltaTime;
 
+    ActualizarPresentacionConfiguracion(*this, deltaTime);
+
     EntradaFlujo entrada = lector.Leer(participantes, cantidad);
 
     if (tiempo < BLOQUEO_ENTRADA_FLUJO)
@@ -555,6 +1218,7 @@ void ConfiguracionPartida::Actualizar(
     if (entrada.confirmar)
     {
         confirmado = true;
+        cartelZarpar.colgado.Pulsar();
         audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
         return;
     }
@@ -569,6 +1233,7 @@ void ConfiguracionPartida::Actualizar(
             (opcionRondas + cambio + CANTIDAD_OPCIONES_RONDAS) %
             CANTIDAD_OPCIONES_RONDAS;
 
+        GolpearSelectorUI(selectorRondas, cambio);
         audio.ReproducirSonido(SONIDO_UI_MOVER);
     }
 }
@@ -579,133 +1244,268 @@ void ConfiguracionPartida::Dibujar(
     int cantidad
 ) const
 {
-    const int ancho = GetScreenWidth();
-    const int alto = GetScreenHeight();
+    const EstiloUI& estilo = ObtenerEstiloUI();
+
     const Color tema = ObtenerColorTemaTablero(tablero);
     const float aparicion = Aparicion(tiempo, 0.0f, 0.30f);
 
-    DibujarVelo(0.80f * aparicion);
+    DibujarVeloPlaya(aparicion);
+    DibujarTituloPlaya("PREPARAR EL VIAJE", aparicion);
 
-    DibujarTitulo("CANTIDAD DE RONDAS", Fade(RAYWHITE, aparicion));
+    // Cartel de zarpe ANTES que la bitacora: durante la entrada sale de
+    // detras de ella sin taparla. Solo acompana a la bitacora hacia arriba;
+    // el rebote hacia abajo lo cubre la propia bitacora y no lo acerca a
+    // la barra de ayuda.
+    BotonUI zarpar = cartelZarpar;
+    zarpar.ref.y += std::fmin(panel.colgado.caida.valor, 0.0f);
 
-    DibujarCentrado(
-        ObtenerNombreTablero(tablero),
-        ancho / 2,
-        78,
-        24,
-        Fade(tema, aparicion)
+    DibujarBotonUI(estilo, zarpar, false);
+
+    DibujarPanelUI(estilo, panel);
+
+    if (!estilo.cargado || panel.colgado.retraso > 0.0f)
+    {
+        return;
+    }
+
+    // Todo el contenido acompana la caida y el rebote de la bitacora.
+    const float dy = panel.colgado.caida.valor;
+
+    //------------------------------
+    // TRIPULACION (solo informacion: se elige con los personajes)
+    //------------------------------
+
+    int humanos = 0;
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (i < cantidad && participantes[i].activo && !participantes[i].esBot)
+        {
+            humanos++;
+        }
+    }
+
+    const int bots = MAX_PARTICIPANTES - humanos;
+
+    Vector2 cabecera = PuntoRef(X_TRIPULACION, 120.0f + dy);
+
+    DibujarTextoTinta("TRIPULACION", cabecera.x, cabecera.y, UI_TEXTO_GRANDE, UI_TINTA);
+
+    const char* resumen = TextFormat(
+        "%d %s  /  %d %s",
+        humanos,
+        humanos == 1 ? "HUMANO" : "HUMANOS",
+        bots,
+        bots == 1 ? "BOT" : "BOTS"
     );
 
-    static const char* nombres[CANTIDAD_OPCIONES_RONDAS] =
+    const int tamanoPequeno = TamanoTexto(UI_TEXTO_PEQUENO);
+    Vector2 finCabecera = PuntoRef(X_FIN_TRIPULACION, 128.0f + dy);
+
+    DibujarRotulo(
+        resumen,
+        finCabecera.x - (float)MeasureText(resumen, tamanoPequeno),
+        finCabecera.y
+    );
+
+    const float altoFila = 88.0f;
+    const float yPrimeraFila = 166.0f;
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        "CORTA",
-        "MEDIA",
-        "LARGA"
-    };
+        const bool humano =
+            i < cantidad && participantes[i].activo && !participantes[i].esBot;
 
-    const float anchoTarjeta = 210.0f;
-    const float altoTarjeta = 190.0f;
-    const float separacion = 28.0f;
+        const bool desconectado = humano && !participantes[i].conectado;
 
-    const float total =
-        CANTIDAD_OPCIONES_RONDAS * anchoTarjeta +
-        (CANTIDAD_OPCIONES_RONDAS - 1) * separacion;
+        // Las filas se pegan una a una en la bitacora (solo opacidad).
+        const float alfa = estilo.reducirMovimiento
+            ? 1.0f
+            : Aparicion(tiempo, 0.35f + i * UI_T_ESCALONADO, 0.25f);
 
-    const float x0 = (ancho - total) / 2.0f;
-    const float yTarjetas = alto / 2.0f - altoTarjeta / 2.0f - 20.0f;
+        const float yFila = yPrimeraFila + i * altoFila + dy;
+
+        Vector2 mastil = PuntoRef(X_TRIPULACION + 22.0f, yFila + 14.0f);
+
+        DibujarBanderin(
+            mastil.x,
+            mastil.y,
+            humano ? participantes[i].color : COLOR_BOT_TRIPULACION,
+            alfa
+        );
+
+        Vector2 nombre = PuntoRef(X_TRIPULACION + 84.0f, yFila + 12.0f);
+
+        DibujarTextoTinta(
+            TextFormat("J%d", i + 1),
+            nombre.x,
+            nombre.y,
+            UI_TEXTO_GRANDE,
+            Fade(UI_TINTA, alfa)
+        );
+
+        // Rol en tinta y detalle (control o puesto libre) en tinta suave.
+        Vector2 rol = PuntoRef(X_TRIPULACION + 84.0f, yFila + 50.0f);
+        const char* textoRol = humano ? "HUMANO" : "BOT";
+        const char* detalle =
+            desconectado ? "SIN CONEXION: PASARA A BOT"
+            : (humano ? ObtenerEtiquetaControl(participantes[i]) : "PUESTO LIBRE");
+
+        DibujarTextoTinta(textoRol, rol.x, rol.y, UI_TEXTO, Fade(UI_TINTA, alfa));
+
+        DibujarTextoTinta(
+            detalle,
+            rol.x + (float)MeasureText(textoRol, TamanoTexto(UI_TEXTO)) + Px(14.0f),
+            rol.y + Px(3.0f),
+            UI_TEXTO_PEQUENO,
+            Fade(UI_TINTA_SUAVE, alfa)
+        );
+
+        // Sello de estado a la derecha.
+        const char* sello =
+            desconectado ? "SIN CONEXION" : (humano ? "A BORDO" : "BOT");
+
+        const Color colorSello =
+            desconectado ? UI_PELIGRO : (humano ? UI_POSITIVO : UI_MADERA_MEDIA);
+
+        Vector2 finFila = PuntoRef(X_FIN_TRIPULACION, yFila + 24.0f);
+
+        DibujarSello(sello, finFila.x - MedirSello(sello), finFila.y, colorSello, alfa);
+
+        // Separador entre tripulantes.
+        if (i < MAX_PARTICIPANTES - 1)
+        {
+            Vector2 a = PuntoRef(X_TRIPULACION, yFila + altoFila - 6.0f);
+            Vector2 b = PuntoRef(X_FIN_TRIPULACION, yFila + altoFila - 6.0f);
+
+            DrawLineEx(a, b, Px(1.5f), Fade(UI_TINTA_SUAVE, 0.45f * alfa));
+        }
+    }
+
+    Vector2 nota = PuntoRef(X_TRIPULACION, 524.0f + dy);
+
+    DibujarRotulo("LA TRIPULACION SE ARMA AL ELEGIR PERSONAJES", nota.x, nota.y);
+
+    // Divisor: una cuerda vertical entre tripulacion y viaje.
+    DibujarCuerdaUI(
+        estilo,
+        PuntoRef(X_DIVISOR, 116.0f + dy),
+        PuntoRef(X_DIVISOR, 570.0f + dy)
+    );
+
+    //------------------------------
+    // DESTINO
+    //------------------------------
+
+    Vector2 destino = PuntoRef(X_VIAJE, 120.0f + dy);
+
+    DibujarRotulo("DESTINO", destino.x, destino.y);
+    DibujarTextoTinta(
+        ObtenerNombreTablero(tablero),
+        destino.x,
+        destino.y + Px(20.0f),
+        UI_TEXTO_GRANDE,
+        UI_TINTA
+    );
+
+    DibujarCintaTema(
+        destino.x,
+        destino.y + Px(20.0f) + TamanoTexto(UI_TEXTO_GRANDE) + Px(6.0f),
+        Px(ANCHO_VIAJE),
+        tema
+    );
+
+    Rectangle marco = RectRef(X_VIAJE, 190.0f + dy, ANCHO_VIAJE, 162.0f);
+
+    DibujarMarcoMadera(estilo, marco);
+
+    Rectangle vista = RectRef(X_VIAJE + 10.0f, 200.0f + dy, ANCHO_VIAJE - 20.0f, 142.0f);
+
+    DrawRectangleRec(vista, BLACK);
+    DibujarVistaPreviaTablero(tablero, vista, tiempo);
+
+    //------------------------------
+    // RUTA: muelle -> boyas (rondas) -> isla
+    //------------------------------
+
+    Vector2 rotuloRuta = PuntoRef(X_VIAJE, 364.0f + dy);
+
+    DibujarRotulo("DURACION DEL VIAJE", rotuloRuta.x, rotuloRuta.y);
+
+    const float yAgua = Y_AGUA_RUTA + dy;
+
+    // Muelle: un tablon del estilo.
+    DibujarNueveCortes(
+        estilo.madera,
+        12,
+        RectRef(X_MUELLE - 16.0f, yAgua - 6.0f, 44.0f, 20.0f),
+        EscalaUI(),
+        WHITE
+    );
+
+    // La cuerda de la ruta une el muelle con la isla.
+    DibujarCuerdaUI(
+        estilo,
+        PuntoRef(X_MUELLE + 28.0f, yAgua + 4.0f),
+        PuntoRef(X_ISLA - 26.0f, yAgua + 4.0f)
+    );
+
+    const int tamanoNumero = TamanoTexto(UI_TEXTO);
 
     for (int i = 0; i < CANTIDAD_OPCIONES_RONDAS; i++)
     {
         const bool elegida = i == opcionRondas;
+        Vector2 centro = PuntoRef(XBoyaRondas(i), yAgua + 4.0f);
 
-        Rectangle tarjeta =
-        {
-            x0 + i * (anchoTarjeta + separacion),
-            yTarjetas - (elegida ? 10.0f : 0.0f),
-            anchoTarjeta,
-            altoTarjeta + (elegida ? 20.0f : 0.0f)
-        };
+        DibujarBoya(centro, Px(elegida ? 10.0f : 8.0f), elegida);
 
-        DrawRectangleRec(
-            tarjeta,
-            Fade(elegida ? Color{ 40, 46, 62, 255 } : Color{ 26, 29, 40, 255 }, aparicion)
-        );
+        const char* numero = TextFormat("%d", OPCIONES_RONDAS_PARTIDA[i]);
 
-        DrawRectangleLinesEx(
-            tarjeta,
-            elegida ? 5.0f : 2.0f,
-            Fade(elegida ? tema : GRAY, aparicion)
-        );
-
-        DibujarCentrado(
-            TextFormat("%d", OPCIONES_RONDAS_PARTIDA[i]),
-            (int)(tarjeta.x + tarjeta.width / 2.0f),
-            (int)tarjeta.y + 34,
-            72,
-            Fade(elegida ? RAYWHITE : LIGHTGRAY, aparicion)
-        );
-
-        DibujarCentrado(
-            "RONDAS",
-            (int)(tarjeta.x + tarjeta.width / 2.0f),
-            (int)tarjeta.y + 118,
-            20,
-            Fade(GRAY, aparicion)
-        );
-
-        DibujarCentrado(
-            nombres[i],
-            (int)(tarjeta.x + tarjeta.width / 2.0f),
-            (int)tarjeta.y + 148,
-            22,
-            Fade(elegida ? tema : LIGHTGRAY, aparicion)
+        DrawText(
+            numero,
+            (int)(centro.x - MeasureText(numero, tamanoNumero) * 0.5f),
+            (int)(centro.y + Px(16.0f)),
+            tamanoNumero,
+            elegida ? UI_TINTA : UI_TINTA_SUAVE
         );
     }
 
-    // Resumen de jugadores: humanos activos y bots que ocuparan el resto.
-    const float anchoChip = 150.0f;
-    const float totalChips =
-        MAX_PARTICIPANTES * anchoChip + (MAX_PARTICIPANTES - 1) * 12.0f;
+    DibujarIslaDestino(PuntoRef(X_ISLA, yAgua + 4.0f), tema);
 
-    const float xChips = (ancho - totalChips) / 2.0f;
-    const float yChips = yTarjetas + altoTarjeta + 52.0f;
+    // El barco se inclina un poco mientras navega y se endereza al llegar.
+    float inclinacion = -barco.velocidad * 0.05f;
 
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    if (inclinacion > 10.0f)
     {
-        const bool humano = i < cantidad && participantes[i].activo;
-
-        Rectangle chip =
-        {
-            xChips + i * (anchoChip + 12.0f),
-            yChips,
-            anchoChip,
-            52.0f
-        };
-
-        const Color color =
-            humano ? participantes[i].color : GRAY;
-
-        DrawRectangleRec(chip, Fade(color, 0.28f * aparicion));
-        DrawRectangleLinesEx(chip, 2.0f, Fade(color, aparicion));
-
-        DrawText(
-            TextFormat("J%d", i + 1),
-            (int)chip.x + 10,
-            (int)chip.y + 8,
-            22,
-            Fade(RAYWHITE, aparicion)
-        );
-
-        DrawText(
-            humano ? "HUMANO" : "BOT",
-            (int)chip.x + 10,
-            (int)chip.y + 32,
-            16,
-            Fade(humano ? RAYWHITE : LIGHTGRAY, aparicion)
-        );
+        inclinacion = 10.0f;
+    }
+    else if (inclinacion < -10.0f)
+    {
+        inclinacion = -10.0f;
     }
 
-    DibujarAyuda("IZQ / DER: CAMBIAR   |   ESPACIO / A: COMENZAR   |   ESC / B: ATRAS");
+    DibujarBarco(PuntoRef(barco.valor, yAgua - 6.0f), inclinacion, tema);
+
+    //------------------------------
+    // SELECTOR DE RONDAS (el cartel de zarpe se dibuja antes del panel)
+    //------------------------------
+
+    SelectorUI selector = selectorRondas;
+    selector.ref.y += dy;
+
+    DibujarSelectorUI(
+        estilo,
+        selector,
+        TextFormat("%d - %s", ObtenerRondas(), NOMBRES_DURACION[opcionRondas]),
+        true
+    );
+
+    DibujarAyudaFlujo(
+        estilo,
+        ObtenerControlesAyuda(participantes, cantidad),
+        "RONDAS",
+        "ZARPAR"
+    );
 }
 
 

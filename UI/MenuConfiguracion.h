@@ -5,6 +5,7 @@
 #include "Core/WindowUtils.h"
 #include "Core/ConfiguracionJuego.h"
 #include "Systems/Audio.h"
+#include "UI/EstiloUI.h"
 
 
 enum CategoriaConfiguracion
@@ -46,10 +47,16 @@ enum OpcionConfiguracion
 
     OPCION_JUEGO_RESTAURAR,
 
-    OPCION_ACCESIBILIDAD_MOVIMIENTO
+    OPCION_ACCESIBILIDAD_MOVIMIENTO,
+
+    CANTIDAD_OPCIONES_CONFIGURACION
 };
 
 
+// Menu con el estilo "Carteles de playa" (UI/EstiloUI): panel colgado,
+// pestanas-cartel y filas (selector, palanca, interruptor). Usa la
+// instancia compartida ObtenerEstiloUI(); los balanceos se apagan solos
+// cuando config.reducirMovimiento esta activo.
 struct MenuConfiguracion
 {
     //------------------------------
@@ -59,6 +66,7 @@ struct MenuConfiguracion
     int categoriaActual =
         CATEGORIA_VIDEO;
 
+    // Foco por categoria: 0..n-1 = opciones, n = boton VOLVER.
     int opcionSeleccionada[CANTIDAD_CATEGORIAS_CONFIGURACION] =
         {};
 
@@ -83,26 +91,42 @@ struct MenuConfiguracion
     // TRANSICIONES
     //------------------------------
 
-    float alphaGeneral =
-        0.0f;
-
-    float alphaContenido =
-        1.0f;
-
+    // Al salir, los carteles se recogen hacia arriba durante este tiempo.
     bool saliendo =
         false;
 
-    bool cambiandoCategoria =
-        false;
-
-    int categoriaDestino =
-        CATEGORIA_VIDEO;
+    float tiempoSalida =
+        0.0f;
 
     const float DURACION_TRANSICION =
         0.25f;
 
-    const float DURACION_TRANSICION_CONTENIDO =
-        0.12f;
+    // En la entrada, las filas aparecen cuando las pestanas dejan de
+    // balancearse (asi el cartel que entra nunca tapa la primera fila).
+    // Al cambiar de pestana se crean enseguida con una caida corta.
+    bool filasListas =
+        false;
+
+
+    //------------------------------
+    // COMPONENTES DEL ESTILO UI
+    //------------------------------
+
+    PanelUI panel;
+    ColgadoUI colgadoTitulo;
+    BotonUI pestanas[CANTIDAD_CATEGORIAS_CONFIGURACION];
+    BotonUI botonAnterior;      // LB: pestana anterior (click)
+    BotonUI botonSiguiente;     // RB: pestana siguiente (click)
+    BotonUI botonVolver;
+    BotonUI botonRestaurar;
+
+    // Una fila por opcion; cada opcion usa solo el arreglo de su tipo.
+    SelectorUI selectores[CANTIDAD_OPCIONES_CONFIGURACION];
+    PalancaUI palancas[CANTIDAD_OPCIONES_CONFIGURACION];
+    InterruptorUI interruptores[CANTIDAD_OPCIONES_CONFIGURACION];
+
+    // Tarjetas bajo las filas (controles, resumen, notas).
+    ColgadoUI colgadoExtra;
 
 
     //------------------------------
@@ -162,6 +186,18 @@ struct MenuConfiguracion
 
     const float DURACION_CONFIRMACION =
         10.0f;
+
+    // Cartel de confirmacion: se inicia (cae) al abrirse.
+    bool modalIniciado =
+        false;
+
+    // Boton con foco en el cartel: 0 = MANTENER, 1 = REVERTIR.
+    int focoModal =
+        0;
+
+    PanelUI panelModal;
+    BotonUI botonMantener;
+    BotonUI botonRevertir;
 
 
     //------------------------------

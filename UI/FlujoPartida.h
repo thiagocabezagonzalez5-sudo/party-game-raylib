@@ -4,6 +4,7 @@
 #include "Core/Participante.h"
 #include "Gameplay/PartidaTablero.h"
 #include "Systems/Audio.h"
+#include "UI/EstiloUI.h"
 
 #include "raylib.h"
 
@@ -81,6 +82,17 @@ struct SeleccionTablero
 
     LectorEntradaFlujo lector;
 
+    // Presentacion "carta de rumbo" (EstiloUI). Dibujar es const, asi que
+    // la animacion avanza en Actualizar. No influye en la eleccion.
+    PanelUI panel;
+    BotonUI carteles[CANTIDAD_TABLEROS];
+    float destelloCambio = 0.0f;    // 1 al cambiar de tablero, baja a 0
+
+    // Controles de los humanos activos (mascara de ControlParticipante),
+    // leidos en Actualizar para que la ayuda muestre sus teclas reales.
+    // -1 = todavia sin leer.
+    int controlesAyuda = -1;
+
     void Inicializar();
 
     void Actualizar(
@@ -113,6 +125,13 @@ struct ConfiguracionPartida
     bool volver = false;
 
     LectorEntradaFlujo lector;
+
+    // Presentacion "bitacora de zarpe" (EstiloUI): tripulacion, destino y
+    // ruta con el barco en la boya de las rondas elegidas.
+    PanelUI panel;
+    SelectorUI selectorRondas;
+    BotonUI cartelZarpar;
+    ResorteUI barco;                // posicion X del barco (unidades ref)
 
     void Inicializar(
         IdTablero idTablero

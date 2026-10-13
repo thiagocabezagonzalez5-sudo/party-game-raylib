@@ -1,4 +1,5 @@
 #include "UI/MenuConfiguracion.h"
+#include "UI/EstiloUIGlobal.h"
 #include "Systems/Input.h"
 
 #include <cmath>
@@ -8,15 +9,11 @@
 
 
 //==================================================
-// COLORES (mismos paneles que HUB y FlujoPartida)
+// COLORES
 //==================================================
 
-static const Color COLOR_ACENTO = { 255, 120, 20, 255 };
+// Velo sobre el HUB 3D; el resto de colores son tokens de UI/EstiloUI.h.
 static const Color COLOR_VELO = { 10, 12, 18, 255 };
-static const Color COLOR_PANEL = { 24, 27, 36, 240 };
-static const Color COLOR_FILA = { 34, 38, 50, 255 };
-static const Color COLOR_FILA_SEL = { 48, 54, 74, 255 };
-static const Color COLOR_BARRA = { 14, 16, 22, 255 };
 
 
 //==================================================
@@ -177,7 +174,7 @@ static const char* DescripcionOpcion(
             return "Inclinacion del stick que se ignora (todos los mandos). Subela si el personaje se mueve solo.";
 
         case OPCION_ACCESIBILIDAD_MOVIMIENTO:
-            return "Quita los temblores de camara en minijuegos.";
+            return "Quita los temblores de camara en minijuegos y el balanceo de los carteles del menu.";
 
         case OPCION_JUEGO_RESTAURAR:
             return "Devuelve video, graficos, audio y controles a sus valores originales (pide confirmar).";
@@ -293,17 +290,6 @@ static float LimitarFloat(
 }
 
 
-static int TamanoFuente(
-    float base,
-    float escala
-)
-{
-    int tamano = (int)(base * escala);
-
-    return tamano < 13 ? 13 : tamano;
-}
-
-
 // Dibuja el texto reduciendo la fuente hasta que quepa en maxAncho.
 static void DibujarTextoAjustado(
     const char* texto,
@@ -402,206 +388,6 @@ static void Sonido(
 )
 {
     audio.ReproducirSonido(tipo);
-}
-
-
-//==================================================
-// DISPOSICION (compartida por Actualizar y Dibujar)
-//==================================================
-
-struct DisposicionConfig
-{
-    float escala;
-    Rectangle panel;
-    Rectangle pestanas[CANTIDAD_CATEGORIAS_CONFIGURACION];
-    Rectangle botonLB;
-    Rectangle botonRB;
-    Rectangle filas[MAX_FILAS];
-    Rectangle zonaExtra;
-    Rectangle info;
-    Rectangle botonVolver;
-    Rectangle ayuda;
-    Rectangle modal;
-    Rectangle modalMantener;
-    Rectangle modalRevertir;
-};
-
-
-static DisposicionConfig CalcularDisposicion(
-    float desplazamientoY
-)
-{
-    DisposicionConfig d{};
-
-    const float w = (float)GetScreenWidth();
-    const float h = (float)GetScreenHeight();
-
-    float s = w / 1280.0f;
-
-    if (h / 720.0f < s)
-    {
-        s = h / 720.0f;
-    }
-
-    s = LimitarFloat(s, 0.55f, 2.2f);
-    d.escala = s;
-
-    float anchoPanel = 1040.0f * s;
-
-    if (anchoPanel > w - 24.0f)
-    {
-        anchoPanel = w - 24.0f;
-    }
-
-    const float altoPanel = 600.0f * s;
-
-    d.panel =
-    {
-        (w - anchoPanel) / 2.0f,
-        (h - altoPanel) / 2.0f + desplazamientoY,
-        anchoPanel,
-        altoPanel
-    };
-
-    const float margen = 28.0f * s;
-    const float interior = d.panel.width - margen * 2.0f;
-
-    // Pestanas con los botones LB / RB a los costados.
-    const float yPestanas = d.panel.y + 78.0f * s;
-    const float altoPestana = 44.0f * s;
-    const float anchoBoton = 46.0f * s;
-    const float hueco = 6.0f * s;
-
-    d.botonLB = { d.panel.x + margen, yPestanas, anchoBoton, altoPestana };
-    d.botonRB =
-    {
-        d.panel.x + d.panel.width - margen - anchoBoton,
-        yPestanas,
-        anchoBoton,
-        altoPestana
-    };
-
-    const float xInicio = d.botonLB.x + anchoBoton + hueco;
-    const float xFin = d.botonRB.x - hueco;
-    const float anchoPestana =
-        (xFin - xInicio - hueco * (CANTIDAD_CATEGORIAS_CONFIGURACION - 1)) /
-        CANTIDAD_CATEGORIAS_CONFIGURACION;
-
-    for (int i = 0; i < CANTIDAD_CATEGORIAS_CONFIGURACION; i++)
-    {
-        d.pestanas[i] =
-        {
-            xInicio + i * (anchoPestana + hueco),
-            yPestanas,
-            anchoPestana,
-            altoPestana
-        };
-    }
-
-    const float yFilas = d.panel.y + 142.0f * s;
-    const float altoFila = 54.0f * s;
-    const float pasoFila = 64.0f * s;
-
-    for (int i = 0; i < MAX_FILAS; i++)
-    {
-        d.filas[i] =
-        {
-            d.panel.x + margen,
-            yFilas + i * pasoFila,
-            interior,
-            altoFila
-        };
-    }
-
-    // Zona bajo la primera fila (tarjetas de controles, resumen, notas).
-    d.zonaExtra =
-    {
-        d.panel.x + margen,
-        yFilas + pasoFila,
-        interior,
-        d.panel.y + 456.0f * s - (yFilas + pasoFila)
-    };
-
-    d.info =
-    {
-        d.panel.x + margen,
-        d.panel.y + 462.0f * s,
-        interior,
-        38.0f * s
-    };
-
-    d.botonVolver =
-    {
-        d.panel.x + d.panel.width - margen - 150.0f * s,
-        d.panel.y + 514.0f * s,
-        150.0f * s,
-        40.0f * s
-    };
-
-    d.ayuda =
-    {
-        d.panel.x + margen,
-        d.panel.y + 512.0f * s,
-        interior - 170.0f * s,
-        60.0f * s
-    };
-
-    d.modal =
-    {
-        (w - 560.0f * s) / 2.0f,
-        (h - 240.0f * s) / 2.0f,
-        560.0f * s,
-        240.0f * s
-    };
-
-    d.modalMantener =
-    {
-        d.modal.x + 30.0f * s,
-        d.modal.y + d.modal.height - 70.0f * s,
-        240.0f * s,
-        44.0f * s
-    };
-
-    d.modalRevertir =
-    {
-        d.modal.x + d.modal.width - 30.0f * s - 240.0f * s,
-        d.modal.y + d.modal.height - 70.0f * s,
-        240.0f * s,
-        44.0f * s
-    };
-
-    return d;
-}
-
-
-static Rectangle ControlDeFila(
-    Rectangle fila
-)
-{
-    return
-    {
-        fila.x + fila.width * 0.46f,
-        fila.y,
-        fila.width * 0.54f - 14.0f,
-        fila.height
-    };
-}
-
-
-static Rectangle BarraDeFila(
-    Rectangle fila,
-    float escala
-)
-{
-    Rectangle control = ControlDeFila(fila);
-
-    return
-    {
-        control.x,
-        fila.y + fila.height / 2.0f - 8.0f * escala,
-        control.width - 78.0f * escala,
-        16.0f * escala
-    };
 }
 
 
@@ -987,34 +773,6 @@ static EntradaConfig LeerEntrada(
 // ACCIONES
 //==================================================
 
-static void IniciarSalida(
-    MenuConfiguracion& menu
-)
-{
-    menu.saliendo = true;
-    menu.opcionArrastrada = OPCION_NINGUNA;
-}
-
-
-static void IrACategoria(
-    MenuConfiguracion& menu,
-    int categoria
-)
-{
-    categoria = Envolver(categoria, CANTIDAD_CATEGORIAS_CONFIGURACION);
-
-    if (categoria == menu.categoriaActual)
-    {
-        return;
-    }
-
-    menu.categoriaDestino = categoria;
-    menu.cambiandoCategoria = true;
-    menu.opcionArrastrada = OPCION_NINGUNA;
-    menu.restaurarArmado = false;
-}
-
-
 static void RestaurarPredeterminados(
     MenuConfiguracion& menu,
     ConfiguracionJuego& config,
@@ -1032,6 +790,7 @@ static void RestaurarPredeterminados(
     config.vsync = base.vsync;
     config.reducirMovimiento = base.reducirMovimiento;
     EstablecerReducirMovimientoMinijuegos(config.reducirMovimiento);
+    ObtenerEstiloUI().reducirMovimiento = config.reducirMovimiento;
     config.volumenMusica = base.volumenMusica;
     config.volumenSonidos = base.volumenSonidos;
     config.modoTeclado = base.modoTeclado;
@@ -1216,6 +975,7 @@ static void AplicarPaso(
         {
             config.reducirMovimiento = !config.reducirMovimiento;
             EstablecerReducirMovimientoMinijuegos(config.reducirMovimiento);
+            ObtenerEstiloUI().reducirMovimiento = config.reducirMovimiento;
             menu.configuracionCambiada = true;
             Sonido(audio, SONIDO_UI_MOVER);
             break;
@@ -1253,6 +1013,448 @@ static void AplicarPaso(
 
 
 //==================================================
+// DISPOSICION (unidades de referencia 1280x720)
+//==================================================
+//
+// Todo se ubica en unidades de referencia y se pasa a pixeles con
+// RectRef (UI/EstiloUI): asi escala igual que la demo del estilo.
+
+static const Rectangle REF_TITULO = { 450.0f, 22.0f, 380.0f, 60.0f };
+static const Rectangle REF_PANEL = { 110.0f, 100.0f, 1060.0f, 560.0f };
+
+// Pestanas: ancho = texto (fuente UI_TEXTO a escala 1) + 32 de marco.
+static const float ANCHO_PESTANA[CANTIDAD_CATEGORIAS_CONFIGURACION] =
+{
+    96.0f, 136.0f, 94.0f, 156.0f, 98.0f, 192.0f
+};
+
+static const float REPOSO_PESTANA[CANTIDAD_CATEGORIAS_CONFIGURACION] =
+{
+    1.2f, -1.0f, 1.4f, -1.2f, 1.0f, -1.4f
+};
+
+static const float Y_PESTANAS = 144.0f;
+static const float ALTO_PESTANA = 46.0f;
+static const float ANCHO_BOTON_LB = 56.0f;
+static const float HUECO_PESTANAS = 12.0f;
+
+static const float X_FILAS = 160.0f;
+static const float ANCHO_FILAS = 960.0f;
+static const float Y_FILAS = 214.0f;
+static const float PASO_FILAS = 58.0f;
+static const float Y_FIN_CONTENIDO = 494.0f;
+static const float Y_INFO = 508.0f;
+
+static const Rectangle REF_RESTAURAR = { 430.0f, 240.0f, 420.0f, 52.0f };
+static const Rectangle REF_VOLVER = { 530.0f, 572.0f, 220.0f, UI_ALTO_BOTON };
+
+static const Rectangle REF_MODAL = { 300.0f, 220.0f, 680.0f, 280.0f };
+static const Rectangle REF_MANTENER = { 335.0f, 386.0f, 290.0f, UI_ALTO_BOTON };
+static const Rectangle REF_REVERTIR = { 655.0f, 386.0f, 290.0f, UI_ALTO_BOTON };
+
+
+// x inicial de la tira LB + pestanas + RB, centrada en 1280.
+static float InicioTiraPestanas()
+{
+    float total = ANCHO_BOTON_LB * 2.0f + HUECO_PESTANAS * 2.0f;
+
+    for (int i = 0; i < CANTIDAD_CATEGORIAS_CONFIGURACION; i++)
+    {
+        total += ANCHO_PESTANA[i];
+    }
+
+    total += HUECO_PESTANAS * (CANTIDAD_CATEGORIAS_CONFIGURACION - 1);
+
+    return (UI_REF_ANCHO - total) * 0.5f;
+}
+
+
+static Rectangle RefPestana(
+    int categoria
+)
+{
+    float x = InicioTiraPestanas() + ANCHO_BOTON_LB + HUECO_PESTANAS;
+
+    for (int i = 0; i < categoria; i++)
+    {
+        x += ANCHO_PESTANA[i] + HUECO_PESTANAS;
+    }
+
+    return Rectangle{ x, Y_PESTANAS, ANCHO_PESTANA[categoria], ALTO_PESTANA };
+}
+
+
+static Rectangle RefBotonAnterior()
+{
+    return Rectangle{ InicioTiraPestanas(), Y_PESTANAS, ANCHO_BOTON_LB, ALTO_PESTANA };
+}
+
+
+static Rectangle RefBotonSiguiente()
+{
+    Rectangle ultima = RefPestana(CANTIDAD_CATEGORIAS_CONFIGURACION - 1);
+
+    return Rectangle{
+        ultima.x + ultima.width + HUECO_PESTANAS,
+        Y_PESTANAS,
+        ANCHO_BOTON_LB,
+        ALTO_PESTANA
+    };
+}
+
+
+static Rectangle RefFila(
+    int fila
+)
+{
+    return Rectangle{ X_FILAS, Y_FILAS + fila * PASO_FILAS, ANCHO_FILAS, UI_ALTO_FILA };
+}
+
+
+// Zona de las filas o del boton de la opcion (en referencia).
+static Rectangle RefControlOpcion(
+    int categoria,
+    int fila
+)
+{
+    if (EsAccion(TABLA_OPCIONES[categoria][fila]))
+    {
+        return REF_RESTAURAR;
+    }
+
+    return RefFila(fila);
+}
+
+
+static Rectangle EnPantalla(
+    Rectangle ref
+)
+{
+    return RectRef(ref.x, ref.y, ref.width, ref.height);
+}
+
+
+// Rectangulo en pixeles de un elemento con su desplazamiento de caida.
+static Rectangle EnPantallaColgado(
+    Rectangle ref,
+    const ColgadoUI& colgado
+)
+{
+    Rectangle r = EnPantalla(ref);
+    r.y += colgado.caida.valor * EscalaUI();
+
+    return r;
+}
+
+
+// Riel de una palanca en pixeles (mismas proporciones que DibujarPalancaUI).
+static void RielPalanca(
+    Rectangle fila,
+    float& x0,
+    float& x1
+)
+{
+    x0 = fila.x + fila.width * 0.42f;
+    x1 = fila.x + fila.width - Px(84.0f);
+}
+
+
+//==================================================
+// TEXTO DEL SELECTOR
+//==================================================
+
+static const char* TextoValorSelector(
+    const ConfiguracionJuego& config,
+    int opcion,
+    Resolucion resoluciones[],
+    int opcionesFPS[]
+)
+{
+    switch (opcion)
+    {
+        case OPCION_VIDEO_MODO:
+            return NombreModoVentana(config.modoVentana);
+
+        case OPCION_VIDEO_RESOLUCION:
+            return TextoResolucion(config, resoluciones);
+
+        case OPCION_VIDEO_FPS:
+            return TextFormat("%d", opcionesFPS[config.indiceFPS]);
+
+        case OPCION_GRAFICO_PRESET:
+            return NombrePresetGrafico(config.presetGrafico);
+
+        case OPCION_GRAFICO_PARTICULAS:
+            return NombreNivelCalidad(config.calidadParticulas);
+
+        case OPCION_GRAFICO_DECORACION:
+            return NombreNivelCalidad(config.calidadDecoracion);
+
+        case OPCION_GRAFICO_EFECTOS:
+            return NombreNivelCalidad(config.calidadEfectos);
+
+        case OPCION_GRAFICO_SOMBRAS:
+            return NombreNivelCalidad(config.calidadSombras);
+
+        case OPCION_CONTROL_MODO_TECLADO:
+            return NombreModoTeclado(config.modoTeclado);
+    }
+
+    return "";
+}
+
+
+static bool ValorInterruptor(
+    const ConfiguracionJuego& config,
+    int opcion
+)
+{
+    if (opcion == OPCION_VIDEO_MOSTRAR_FPS)
+    {
+        return config.mostrarFPS;
+    }
+
+    if (opcion == OPCION_VIDEO_VSYNC)
+    {
+        return config.vsync;
+    }
+
+    return config.reducirMovimiento;
+}
+
+
+//==================================================
+// COMPONENTES: INICIO Y ANIMACION
+//==================================================
+
+// Al cambiar de pestana las filas caen enseguida y desde poco: con esta
+// distancia la primera fila nunca sube hasta la tira de pestanas.
+static const float PASO_FILAS_PESTANA = 0.035f;
+static const float CAIDA_FILAS_PESTANA = 14.0f;
+
+
+// Acorta la caida de una fila recien iniciada (unidades de referencia).
+static void AcortarCaida(
+    ColgadoUI& colgado,
+    float distancia
+)
+{
+    colgado.distanciaCaida = distancia;
+    colgado.caida.valor = -distancia;
+}
+
+
+// Crea las filas de la categoria actual; caen escalonadas (paso) desde
+// retrasoBase, cada una desde distanciaCaida unidades mas arriba. Los
+// valores se copian de config.
+static void IniciarFilasCategoria(
+    MenuConfiguracion& menu,
+    const ConfiguracionJuego& config,
+    float retrasoBase,
+    float paso = UI_T_ESCALONADO,
+    float distanciaCaida = 40.0f
+)
+{
+    const int cantidad = CantidadOpciones(menu.categoriaActual);
+
+    for (int fila = 0; fila < cantidad; fila++)
+    {
+        const int opcion = TABLA_OPCIONES[menu.categoriaActual][fila];
+        const float retraso = retrasoBase + fila * paso;
+        const Rectangle ref = RefFila(fila);
+
+        if (EsSlider(opcion))
+        {
+            menu.palancas[opcion].Iniciar(ref, EtiquetaOpcion(opcion), ValorSlider(config, opcion), retraso);
+            AcortarCaida(menu.palancas[opcion].colgado, distanciaCaida);
+        }
+        else if (EsInterruptor(opcion))
+        {
+            menu.interruptores[opcion].Iniciar(ref, EtiquetaOpcion(opcion), ValorInterruptor(config, opcion), retraso);
+            AcortarCaida(menu.interruptores[opcion].colgado, distanciaCaida);
+        }
+        else if (EsAccion(opcion))
+        {
+            menu.botonRestaurar.Iniciar(REF_RESTAURAR, "RESTAURAR TODO", -1.0f, retraso);
+        }
+        else
+        {
+            menu.selectores[opcion].Iniciar(ref, EtiquetaOpcion(opcion), retraso);
+            AcortarCaida(menu.selectores[opcion].colgado, distanciaCaida);
+        }
+    }
+
+    menu.colgadoExtra.Iniciar(0.0f, retrasoBase + cantidad * paso, distanciaCaida, 0.0f);
+}
+
+
+// true mientras alguna pestana aun cae o se balancea mucho.
+static bool PestanasAgitadas(
+    const MenuConfiguracion& menu
+)
+{
+    for (int i = 0; i < CANTIDAD_CATEGORIAS_CONFIGURACION; i++)
+    {
+        const ColgadoUI& c = menu.pestanas[i].colgado;
+
+        if (
+            c.retraso > 0.0f ||
+            !c.aterrizo ||
+            std::fabs(c.angulo - c.reposo) > 2.5f ||
+            std::fabs(c.velocidad) > 15.0f
+        )
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+static void IniciarModal(
+    MenuConfiguracion& menu
+)
+{
+    menu.panelModal.Iniciar(REF_MODAL, 0.0f);
+    menu.botonMantener.Iniciar(REF_MANTENER, "MANTENER (ENTER / A)", -1.0f, 0.30f);
+    menu.botonRevertir.Iniciar(REF_REVERTIR, "REVERTIR (ESC / B)", 1.0f, 0.37f);
+    menu.modalIniciado = true;
+    menu.focoModal = 0;
+}
+
+
+static void ActualizarAnimaciones(
+    MenuConfiguracion& menu,
+    const ConfiguracionJuego& config,
+    float deltaTime
+)
+{
+    const EstiloUI& estilo = ObtenerEstiloUI();
+    const int cantidad = CantidadOpciones(menu.categoriaActual);
+    const int seleccion = menu.opcionSeleccionada[menu.categoriaActual];
+
+    ActualizarPanelUI(menu.panel, estilo, deltaTime);
+    menu.colgadoTitulo.Actualizar(estilo, deltaTime, false);
+
+    // La pestana activa recibe el "foco": se balancea al activarse.
+    for (int i = 0; i < CANTIDAD_CATEGORIAS_CONFIGURACION; i++)
+    {
+        menu.pestanas[i].activo = i == menu.categoriaActual;
+        ActualizarBotonUI(menu.pestanas[i], estilo, deltaTime, i == menu.categoriaActual);
+    }
+
+    ActualizarBotonUI(menu.botonAnterior, estilo, deltaTime, false);
+    ActualizarBotonUI(menu.botonSiguiente, estilo, deltaTime, false);
+
+    if (!menu.filasListas && !PestanasAgitadas(menu))
+    {
+        IniciarFilasCategoria(menu, config, 0.0f);
+        menu.filasListas = true;
+    }
+
+    // Los componentes siguen a config (restaurar, arrastre, otra pestana).
+    for (int i = 0; i < cantidad; i++)
+    {
+        const int opcion = TABLA_OPCIONES[menu.categoriaActual][i];
+
+        if (EsSlider(opcion))
+        {
+            menu.palancas[opcion].valor = ValorSlider(config, opcion);
+            ActualizarPalancaUI(menu.palancas[opcion], estilo, deltaTime);
+        }
+        else if (EsInterruptor(opcion))
+        {
+            menu.interruptores[opcion].activo = ValorInterruptor(config, opcion);
+            ActualizarInterruptorUI(menu.interruptores[opcion], estilo, deltaTime);
+        }
+        else if (EsAccion(opcion))
+        {
+            menu.botonRestaurar.texto =
+                menu.restaurarArmado
+                    ? "PULSA OTRA VEZ PARA CONFIRMAR"
+                    : "RESTAURAR TODO";
+
+            ActualizarBotonUI(
+                menu.botonRestaurar,
+                estilo,
+                deltaTime,
+                menu.filasListas && seleccion == i && !menu.confirmandoVideo
+            );
+        }
+        else
+        {
+            ActualizarSelectorUI(menu.selectores[opcion], estilo, deltaTime);
+        }
+    }
+
+    menu.colgadoExtra.Actualizar(estilo, deltaTime, false);
+
+    ActualizarBotonUI(
+        menu.botonVolver,
+        estilo,
+        deltaTime,
+        seleccion == cantidad && !menu.confirmandoVideo
+    );
+
+    // Cartel de confirmacion de video.
+    if (menu.confirmandoVideo && !menu.modalIniciado)
+    {
+        IniciarModal(menu);
+    }
+    else if (!menu.confirmandoVideo)
+    {
+        menu.modalIniciado = false;
+    }
+
+    if (menu.modalIniciado)
+    {
+        ActualizarPanelUI(menu.panelModal, estilo, deltaTime);
+        ActualizarBotonUI(menu.botonMantener, estilo, deltaTime, menu.focoModal == 0);
+        ActualizarBotonUI(menu.botonRevertir, estilo, deltaTime, menu.focoModal == 1);
+    }
+}
+
+
+// Salida: todos los carteles suben juntos (se "recogen"). desplazamiento
+// en unidades de referencia (negativo = hacia arriba).
+static void RecogerCarteles(
+    MenuConfiguracion& menu,
+    float desplazamiento
+)
+{
+    ColgadoUI* colgados[] =
+    {
+        &menu.panel.colgado,
+        &menu.colgadoTitulo,
+        &menu.botonAnterior.colgado,
+        &menu.botonSiguiente.colgado,
+        &menu.botonVolver.colgado,
+        &menu.botonRestaurar.colgado,
+        &menu.colgadoExtra
+    };
+
+    for (ColgadoUI* c : colgados)
+    {
+        c->caida.valor = desplazamiento;
+        c->caida.velocidad = 0.0f;
+    }
+
+    for (int i = 0; i < CANTIDAD_CATEGORIAS_CONFIGURACION; i++)
+    {
+        menu.pestanas[i].colgado.caida.valor = desplazamiento;
+    }
+
+    for (int i = 0; i < CANTIDAD_OPCIONES_CONFIGURACION; i++)
+    {
+        menu.selectores[i].colgado.caida.valor = desplazamiento;
+        menu.palancas[i].colgado.caida.valor = desplazamiento;
+        menu.interruptores[i].colgado.caida.valor = desplazamiento;
+    }
+}
+
+
+//==================================================
 // INICIALIZAR
 //==================================================
 
@@ -1269,11 +1471,9 @@ void MenuConfiguracion::Inicializar()
     volver = false;
     configuracionCambiada = false;
 
-    alphaGeneral = 0.0f;
-    alphaContenido = 1.0f;
     saliendo = false;
-    cambiandoCategoria = false;
-    categoriaDestino = CATEGORIA_VIDEO;
+    tiempoSalida = 0.0f;
+    filasListas = false;
 
     bloqueoEntrada = 0.15f;
     direccionPrevia = 0;
@@ -1288,17 +1488,437 @@ void MenuConfiguracion::Inicializar()
 
     confirmandoVideo = false;
     tiempoConfirmacion = 0.0f;
+    modalIniciado = false;
+    focoModal = 0;
     restaurarArmado = false;
     tiempoRestaurar = 0.0f;
     aviso = "";
     tiempoAviso = 0.0f;
     vsyncSincronizado = false;
+
+    // Entrada escalonada: panel, titulo, pestanas y boton volver. Las
+    // filas se crean cuando las pestanas se asientan.
+    panel.Iniciar(REF_PANEL, 0.0f);
+    colgadoTitulo.Iniciar(-1.0f, 0.30f, 120.0f, 1.0f);
+
+    botonAnterior.Iniciar(RefBotonAnterior(), "LB", 1.5f, 0.30f);
+    botonSiguiente.Iniciar(RefBotonSiguiente(), "RB", -1.5f, 0.30f + CANTIDAD_CATEGORIAS_CONFIGURACION * 0.05f);
+
+    for (int i = 0; i < CANTIDAD_CATEGORIAS_CONFIGURACION; i++)
+    {
+        pestanas[i].Iniciar(
+            RefPestana(i),
+            NOMBRES_CATEGORIAS[i],
+            REPOSO_PESTANA[i],
+            0.35f + i * 0.05f
+        );
+        pestanas[i].activo = i == categoriaActual;
+    }
+
+    botonVolver.Iniciar(REF_VOLVER, "VOLVER", -1.2f, 0.70f);
 }
 
 
 //==================================================
 // ACTUALIZAR
 //==================================================
+
+static void IrACategoria(
+    MenuConfiguracion& menu,
+    const ConfiguracionJuego& config,
+    int categoria
+)
+{
+    categoria = Envolver(categoria, CANTIDAD_CATEGORIAS_CONFIGURACION);
+
+    if (categoria == menu.categoriaActual)
+    {
+        return;
+    }
+
+    menu.categoriaActual = categoria;
+    menu.opcionArrastrada = OPCION_NINGUNA;
+    menu.restaurarArmado = false;
+
+    // Las filas nuevas caen ya, escalonadas y desde poco, sin esperar a
+    // que la pestana deje de balancearse. Durante la entrada (filas aun
+    // no listas) se crean cuando las pestanas se asientan, como antes.
+    if (menu.filasListas)
+    {
+        IniciarFilasCategoria(menu, config, 0.0f, PASO_FILAS_PESTANA, CAIDA_FILAS_PESTANA);
+    }
+}
+
+
+static void IniciarSalida(
+    MenuConfiguracion& menu
+)
+{
+    menu.saliendo = true;
+    menu.tiempoSalida = 0.0f;
+    menu.opcionArrastrada = OPCION_NINGUNA;
+}
+
+
+// Teclado, mando y mouse. Las animaciones se actualizan despues.
+static void ProcesarEntrada(
+    MenuConfiguracion& menu,
+    ConfiguracionJuego& config,
+    Resolucion resoluciones[],
+    int cantidadResoluciones,
+    int opcionesFPS[],
+    int cantidadOpcionesFPS,
+    AudioJuego& audio,
+    float deltaTime
+)
+{
+    const Vector2 mouse = GetMousePosition();
+    const bool click = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    const bool mouseMovido =
+        std::fabs(mouse.x - menu.mouseAnterior.x) +
+        std::fabs(mouse.y - menu.mouseAnterior.y) > 0.5f;
+
+    menu.mouseAnterior = mouse;
+
+    EntradaConfig entrada = LeerEntrada(menu, deltaTime);
+
+    if (menu.bloqueoEntrada > 0.0f)
+    {
+        entrada = EntradaConfig{};
+    }
+
+    //------------------------------
+    // CONFIRMACION DE VIDEO
+    //------------------------------
+
+    if (menu.confirmandoVideo)
+    {
+        menu.tiempoConfirmacion -= deltaTime;
+
+        // Foco entre MANTENER y REVERTIR: flechas/cruceta o mouse.
+        int focoNuevo = menu.focoModal;
+
+        if (entrada.horizontalPulso != 0)
+        {
+            focoNuevo = entrada.horizontalPulso < 0 ? 0 : 1;
+        }
+        else if (entrada.vertical != 0)
+        {
+            focoNuevo = 1 - menu.focoModal;
+        }
+        else if (mouseMovido && CheckCollisionPointRec(mouse, EnPantalla(REF_MANTENER)))
+        {
+            focoNuevo = 0;
+        }
+        else if (mouseMovido && CheckCollisionPointRec(mouse, EnPantalla(REF_REVERTIR)))
+        {
+            focoNuevo = 1;
+        }
+
+        if (focoNuevo != menu.focoModal)
+        {
+            menu.focoModal = focoNuevo;
+            Sonido(audio, SONIDO_UI_MOVER);
+        }
+
+        // Aceptar ejecuta el boton con foco; ESC/B siempre revierte.
+        bool mantener =
+            (entrada.confirmar && menu.focoModal == 0) ||
+            (click && CheckCollisionPointRec(mouse, EnPantalla(REF_MANTENER)));
+
+        bool revertir =
+            (entrada.confirmar && menu.focoModal == 1) ||
+            entrada.cancelar ||
+            menu.tiempoConfirmacion <= 0.0f ||
+            (click && CheckCollisionPointRec(mouse, EnPantalla(REF_REVERTIR)));
+
+        if (mantener)
+        {
+            menu.confirmandoVideo = false;
+            menu.configuracionCambiada = true;
+            Sonido(audio, SONIDO_UI_CONFIRMAR);
+        }
+        else if (revertir)
+        {
+            RevertirVideo(menu, config, resoluciones);
+            Sonido(audio, SONIDO_UI_CANCELAR);
+        }
+
+        return;
+    }
+
+    //------------------------------
+    // SALIR
+    //------------------------------
+
+    if (
+        entrada.cancelar ||
+        (click && CheckCollisionPointRec(mouse, EnPantalla(REF_VOLVER)))
+    )
+    {
+        menu.botonVolver.colgado.Pulsar();
+        IniciarSalida(menu);
+        return;
+    }
+
+    //------------------------------
+    // CATEGORIAS
+    //------------------------------
+
+    menu.categoriaHover = -1;
+
+    for (int i = 0; i < CANTIDAD_CATEGORIAS_CONFIGURACION; i++)
+    {
+        if (CheckCollisionPointRec(mouse, EnPantalla(RefPestana(i))))
+        {
+            menu.categoriaHover = i;
+        }
+    }
+
+    if (entrada.categoria != 0)
+    {
+        IrACategoria(menu, config, menu.categoriaActual + entrada.categoria);
+        Sonido(audio, SONIDO_UI_MOVER);
+        return;
+    }
+
+    if (click)
+    {
+        if (CheckCollisionPointRec(mouse, EnPantalla(RefBotonAnterior())))
+        {
+            menu.botonAnterior.colgado.Pulsar();
+            IrACategoria(menu, config, menu.categoriaActual - 1);
+            Sonido(audio, SONIDO_UI_MOVER);
+            return;
+        }
+
+        if (CheckCollisionPointRec(mouse, EnPantalla(RefBotonSiguiente())))
+        {
+            menu.botonSiguiente.colgado.Pulsar();
+            IrACategoria(menu, config, menu.categoriaActual + 1);
+            Sonido(audio, SONIDO_UI_MOVER);
+            return;
+        }
+
+        if (menu.categoriaHover >= 0 && menu.categoriaHover != menu.categoriaActual)
+        {
+            IrACategoria(menu, config, menu.categoriaHover);
+            Sonido(audio, SONIDO_UI_MOVER);
+            return;
+        }
+    }
+
+    //------------------------------
+    // FOCO (opciones + VOLVER)
+    //------------------------------
+
+    const int categoria = menu.categoriaActual;
+    const int cantidad = CantidadOpciones(categoria);
+    int& seleccion = menu.opcionSeleccionada[categoria];
+
+    if (entrada.vertical != 0)
+    {
+        seleccion = Envolver(seleccion + entrada.vertical, cantidad + 1);
+        menu.restaurarArmado = false;
+        Sonido(audio, SONIDO_UI_MOVER);
+    }
+
+    int filaHover = -1;
+
+    if (menu.filasListas)
+    {
+        for (int i = 0; i < cantidad; i++)
+        {
+            if (CheckCollisionPointRec(mouse, EnPantalla(RefControlOpcion(categoria, i))))
+            {
+                filaHover = i;
+            }
+        }
+    }
+
+    if (CheckCollisionPointRec(mouse, EnPantalla(REF_VOLVER)))
+    {
+        filaHover = cantidad;
+    }
+
+    if (
+        filaHover >= 0 &&
+        filaHover != seleccion &&
+        (mouseMovido || click) &&
+        menu.opcionArrastrada == OPCION_NINGUNA
+    )
+    {
+        seleccion = filaHover;
+        menu.restaurarArmado = false;
+    }
+
+    if (seleccion == cantidad)
+    {
+        if (entrada.confirmar)
+        {
+            menu.botonVolver.colgado.Pulsar();
+            IniciarSalida(menu);
+        }
+
+        return;
+    }
+
+    // Las opciones solo cambian cuando sus filas estan a la vista.
+    if (!menu.filasListas)
+    {
+        return;
+    }
+
+    const int opcion = TABLA_OPCIONES[categoria][seleccion];
+
+    //------------------------------
+    // ARRASTRE DE PALANCAS (mouse)
+    //------------------------------
+
+    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+    {
+        menu.opcionArrastrada = OPCION_NINGUNA;
+    }
+
+    if (click)
+    {
+        for (int i = 0; i < cantidad; i++)
+        {
+            int op = TABLA_OPCIONES[categoria][i];
+
+            if (!EsSlider(op))
+            {
+                continue;
+            }
+
+            Rectangle fila = EnPantalla(RefFila(i));
+            float x0, x1;
+            RielPalanca(fila, x0, x1);
+
+            Rectangle zona = { x0 - Px(12.0f), fila.y, x1 - x0 + Px(24.0f), fila.height };
+
+            if (CheckCollisionPointRec(mouse, zona))
+            {
+                menu.opcionArrastrada = op;
+                seleccion = i;
+            }
+        }
+    }
+
+    if (menu.opcionArrastrada != OPCION_NINGUNA)
+    {
+        int fila = 0;
+
+        for (int i = 0; i < cantidad; i++)
+        {
+            if (TABLA_OPCIONES[categoria][i] == menu.opcionArrastrada)
+            {
+                fila = i;
+            }
+        }
+
+        float x0, x1;
+        RielPalanca(EnPantalla(RefFila(fila)), x0, x1);
+
+        float valor = LimitarFloat((mouse.x - x0) / (x1 - x0), 0.0f, 1.0f);
+
+        valor = std::round(valor * 100.0f) / 100.0f;
+
+        if (menu.opcionArrastrada == OPCION_CONTROL_ZONA_MUERTA)
+        {
+            int pasos = (int)std::lround(
+                valor *
+                (ZONA_MUERTA_STICK_MAXIMA - ZONA_MUERTA_STICK_MINIMA) /
+                ZONA_MUERTA_STICK_PASO
+            );
+
+            CambiarZonaMuerta(
+                menu,
+                config,
+                audio,
+                ZONA_MUERTA_STICK_MINIMA + pasos * ZONA_MUERTA_STICK_PASO
+            );
+        }
+        else if (menu.opcionArrastrada == OPCION_AUDIO_SONIDOS)
+        {
+            CambiarVolumenSonidos(menu, config, audio, valor);
+        }
+        else
+        {
+            CambiarVolumenMusica(menu, config, audio, valor);
+        }
+
+        return;
+    }
+
+    //------------------------------
+    // CAMBIAR EL VALOR
+    //------------------------------
+
+    // Teclado / mando: izquierda-derecha cambia el valor.
+    int paso = EsSlider(opcion) ? entrada.horizontalRepetido : entrada.horizontalPulso;
+
+    bool activar = entrada.confirmar;
+
+    if (click && filaHover == seleccion)
+    {
+        Rectangle fila = EnPantalla(RefControlOpcion(categoria, seleccion));
+
+        // Selector: click en la mitad izquierda del valor = anterior.
+        float xIzq = fila.x + fila.width * 0.55f;
+        float xDer = fila.x + fila.width - Px(28.0f);
+
+        if (EsSlider(opcion))
+        {
+            // El click sobre el riel ya se resolvio arriba.
+        }
+        else if (
+            !EsInterruptor(opcion) &&
+            !EsAccion(opcion) &&
+            mouse.x >= xIzq - Px(20.0f) &&
+            mouse.x < (xIzq + xDer) * 0.5f
+        )
+        {
+            paso = -1;
+        }
+        else
+        {
+            activar = true;
+        }
+    }
+
+    // La accion (restaurar) solo responde a aceptar.
+    if (EsAccion(opcion))
+    {
+        paso = 0;
+    }
+
+    if (paso == 0 && activar && !EsSlider(opcion))
+    {
+        paso = 1;
+    }
+
+    if (paso == 0)
+    {
+        return;
+    }
+
+    AplicarPaso(
+        menu, config, opcion, paso,
+        resoluciones, cantidadResoluciones,
+        opcionesFPS, cantidadOpcionesFPS, audio
+    );
+
+    if (EsAccion(opcion))
+    {
+        menu.botonRestaurar.colgado.Pulsar();
+    }
+    else if (!EsSlider(opcion) && !EsInterruptor(opcion))
+    {
+        GolpearSelectorUI(menu.selectores[opcion], paso);
+    }
+}
+
 
 void MenuConfiguracion::Actualizar(
     ConfiguracionJuego& config,
@@ -1350,30 +1970,29 @@ void MenuConfiguracion::Actualizar(
     }
 
     //------------------------------
-    // TRANSICION GENERAL
+    // SALIDA: los carteles se recogen
     //------------------------------
 
     if (saliendo)
     {
-        alphaGeneral -= deltaTime / DURACION_TRANSICION;
+        tiempoSalida += deltaTime;
 
-        if (alphaGeneral <= 0.0f)
+        float t = LimitarFloat(tiempoSalida / DURACION_TRANSICION, 0.0f, 1.0f);
+
+        // Con movimiento reducido se sale sin animacion.
+        if (ObtenerEstiloUI().reducirMovimiento)
         {
-            alphaGeneral = 0.0f;
+            t = 1.0f;
+        }
+
+        RecogerCarteles(*this, -t * t * UI_REF_ALTO);
+
+        if (t >= 1.0f)
+        {
             volver = true;
         }
 
         return;
-    }
-
-    if (alphaGeneral < 1.0f)
-    {
-        alphaGeneral += deltaTime / DURACION_TRANSICION;
-
-        if (alphaGeneral > 1.0f)
-        {
-            alphaGeneral = 1.0f;
-        }
     }
 
     if (bloqueoEntrada > 0.0f)
@@ -1381,308 +2000,20 @@ void MenuConfiguracion::Actualizar(
         bloqueoEntrada -= deltaTime;
     }
 
-    const DisposicionConfig d = CalcularDisposicion(0.0f);
-    const Vector2 mouse = GetMousePosition();
-    const bool click = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
-    const bool mouseMovido =
-        std::fabs(mouse.x - mouseAnterior.x) +
-        std::fabs(mouse.y - mouseAnterior.y) > 0.5f;
+    ProcesarEntrada(
+        *this,
+        config,
+        resoluciones,
+        cantidadResoluciones,
+        opcionesFPS,
+        cantidadOpcionesFPS,
+        audio,
+        deltaTime
+    );
 
-    mouseAnterior = mouse;
-
-    EntradaConfig entrada = LeerEntrada(*this, deltaTime);
-
-    if (bloqueoEntrada > 0.0f)
+    if (!saliendo)
     {
-        entrada = EntradaConfig{};
-    }
-
-    //------------------------------
-    // CONFIRMACION DE VIDEO
-    //------------------------------
-
-    if (confirmandoVideo)
-    {
-        tiempoConfirmacion -= deltaTime;
-
-        bool mantener =
-            entrada.confirmar ||
-            (click && CheckCollisionPointRec(mouse, d.modalMantener));
-
-        bool revertir =
-            entrada.cancelar ||
-            tiempoConfirmacion <= 0.0f ||
-            (click && CheckCollisionPointRec(mouse, d.modalRevertir));
-
-        if (mantener)
-        {
-            confirmandoVideo = false;
-            configuracionCambiada = true;
-            Sonido(audio, SONIDO_UI_CONFIRMAR);
-        }
-        else if (revertir)
-        {
-            RevertirVideo(*this, config, resoluciones);
-            Sonido(audio, SONIDO_UI_CANCELAR);
-        }
-
-        return;
-    }
-
-    //------------------------------
-    // CAMBIO DE CATEGORIA (fundido)
-    //------------------------------
-
-    if (cambiandoCategoria)
-    {
-        // Las pulsaciones durante el fundido se acumulan en el destino.
-        if (entrada.categoria != 0)
-        {
-            categoriaDestino = Envolver(
-                categoriaDestino + entrada.categoria,
-                CANTIDAD_CATEGORIAS_CONFIGURACION
-            );
-        }
-
-        alphaContenido -= deltaTime / DURACION_TRANSICION_CONTENIDO;
-
-        if (alphaContenido <= 0.0f)
-        {
-            alphaContenido = 0.0f;
-            categoriaActual = categoriaDestino;
-            cambiandoCategoria = false;
-        }
-
-        return;
-    }
-
-    if (alphaContenido < 1.0f)
-    {
-        alphaContenido += deltaTime / DURACION_TRANSICION_CONTENIDO;
-
-        if (alphaContenido > 1.0f)
-        {
-            alphaContenido = 1.0f;
-        }
-    }
-
-    //------------------------------
-    // SALIR
-    //------------------------------
-
-    if (
-        entrada.cancelar ||
-        (click && CheckCollisionPointRec(mouse, d.botonVolver))
-    )
-    {
-        IniciarSalida(*this);
-        return;
-    }
-
-    //------------------------------
-    // CATEGORIAS
-    //------------------------------
-
-    categoriaHover = -1;
-
-    for (int i = 0; i < CANTIDAD_CATEGORIAS_CONFIGURACION; i++)
-    {
-        if (CheckCollisionPointRec(mouse, d.pestanas[i]))
-        {
-            categoriaHover = i;
-        }
-    }
-
-    if (entrada.categoria != 0)
-    {
-        IrACategoria(*this, categoriaActual + entrada.categoria);
-        Sonido(audio, SONIDO_UI_MOVER);
-        return;
-    }
-
-    if (click)
-    {
-        if (CheckCollisionPointRec(mouse, d.botonLB))
-        {
-            IrACategoria(*this, categoriaActual - 1);
-            Sonido(audio, SONIDO_UI_MOVER);
-            return;
-        }
-
-        if (CheckCollisionPointRec(mouse, d.botonRB))
-        {
-            IrACategoria(*this, categoriaActual + 1);
-            Sonido(audio, SONIDO_UI_MOVER);
-            return;
-        }
-
-        if (categoriaHover >= 0 && categoriaHover != categoriaActual)
-        {
-            IrACategoria(*this, categoriaHover);
-            Sonido(audio, SONIDO_UI_MOVER);
-            return;
-        }
-    }
-
-    //------------------------------
-    // OPCIONES DE LA CATEGORIA
-    //------------------------------
-
-    const int cantidad = CantidadOpciones(categoriaActual);
-
-    if (cantidad == 0)
-    {
-        return;
-    }
-
-    int& seleccion = opcionSeleccionada[categoriaActual];
-
-    if (entrada.vertical != 0)
-    {
-        seleccion = Envolver(seleccion + entrada.vertical, cantidad);
-        restaurarArmado = false;
-        Sonido(audio, SONIDO_UI_MOVER);
-    }
-
-    int filaHover = -1;
-
-    for (int i = 0; i < cantidad; i++)
-    {
-        if (CheckCollisionPointRec(mouse, d.filas[i]))
-        {
-            filaHover = i;
-        }
-    }
-
-    if (
-        filaHover >= 0 &&
-        filaHover != seleccion &&
-        (mouseMovido || click) &&
-        opcionArrastrada == OPCION_NINGUNA
-    )
-    {
-        seleccion = filaHover;
-        restaurarArmado = false;
-    }
-
-    const int opcion = TABLA_OPCIONES[categoriaActual][seleccion];
-
-    // Arrastre de sliders con el mouse.
-    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT))
-    {
-        opcionArrastrada = OPCION_NINGUNA;
-    }
-
-    if (click)
-    {
-        for (int i = 0; i < cantidad; i++)
-        {
-            int op = TABLA_OPCIONES[categoriaActual][i];
-
-            if (!EsSlider(op))
-            {
-                continue;
-            }
-
-            Rectangle barra = BarraDeFila(d.filas[i], d.escala);
-            barra.y -= 10.0f * d.escala;
-            barra.height += 20.0f * d.escala;
-
-            if (CheckCollisionPointRec(mouse, barra))
-            {
-                opcionArrastrada = op;
-                seleccion = i;
-            }
-        }
-    }
-
-    if (opcionArrastrada != OPCION_NINGUNA)
-    {
-        int fila = 0;
-
-        for (int i = 0; i < cantidad; i++)
-        {
-            if (TABLA_OPCIONES[categoriaActual][i] == opcionArrastrada)
-            {
-                fila = i;
-            }
-        }
-
-        Rectangle barra = BarraDeFila(d.filas[fila], d.escala);
-        float valor = LimitarFloat((mouse.x - barra.x) / barra.width, 0.0f, 1.0f);
-
-        valor = std::round(valor * 100.0f) / 100.0f;
-
-        if (opcionArrastrada == OPCION_CONTROL_ZONA_MUERTA)
-        {
-            int pasos = (int)std::lround(
-                valor *
-                (ZONA_MUERTA_STICK_MAXIMA - ZONA_MUERTA_STICK_MINIMA) /
-                ZONA_MUERTA_STICK_PASO
-            );
-
-            CambiarZonaMuerta(
-                *this,
-                config,
-                audio,
-                ZONA_MUERTA_STICK_MINIMA + pasos * ZONA_MUERTA_STICK_PASO
-            );
-        }
-        else if (opcionArrastrada == OPCION_AUDIO_SONIDOS)
-        {
-            CambiarVolumenSonidos(*this, config, audio, valor);
-        }
-        else
-        {
-            CambiarVolumenMusica(*this, config, audio, valor);
-        }
-
-        return;
-    }
-
-    // Teclado / mando: izquierda-derecha cambia el valor.
-    int paso = EsSlider(opcion) ? entrada.horizontalRepetido : entrada.horizontalPulso;
-
-    bool activar = entrada.confirmar;
-
-    if (click && filaHover == seleccion)
-    {
-        Rectangle control = ControlDeFila(d.filas[seleccion]);
-
-        if (EsSlider(opcion))
-        {
-            // El click sobre la barra ya se resolvio arriba.
-        }
-        else if (
-            !EsInterruptor(opcion) &&
-            !EsAccion(opcion) &&
-            CheckCollisionPointRec(mouse, control) &&
-            mouse.x < control.x + control.width / 2.0f
-        )
-        {
-            paso = -1;
-        }
-        else
-        {
-            activar = true;
-        }
-    }
-
-    if (paso != 0 && (EsSlider(opcion) || !EsAccion(opcion)))
-    {
-        AplicarPaso(
-            *this, config, opcion, paso,
-            resoluciones, cantidadResoluciones,
-            opcionesFPS, cantidadOpcionesFPS, audio
-        );
-    }
-    else if (activar && !EsSlider(opcion))
-    {
-        AplicarPaso(
-            *this, config, opcion, 1,
-            resoluciones, cantidadResoluciones,
-            opcionesFPS, cantidadOpcionesFPS, audio
-        );
+        ActualizarAnimaciones(*this, config, deltaTime);
     }
 }
 
@@ -1691,345 +2022,199 @@ void MenuConfiguracion::Actualizar(
 // DIBUJO: PIEZAS
 //==================================================
 
-static void DibujarFlecha(
-    float centroX,
-    float centroY,
-    float tamano,
-    int sentido,
-    Color color
+// La palanca de la zona muerta recorre 5..35 %: se tapa el porcentaje
+// 0..100 que dibuja DibujarPalancaUI y se escribe el valor real. La placa
+// es de color plano, asi que el parche no se nota.
+static void DibujarValorPalanca(
+    const PalancaUI& palanca,
+    const char* texto
 )
 {
-    Vector2 a, b, c;
-
-    if (sentido < 0)
+    if (palanca.colgado.retraso > 0.0f)
     {
-        a = { centroX + tamano / 2.0f, centroY - tamano };
-        b = { centroX - tamano / 2.0f, centroY };
-        c = { centroX + tamano / 2.0f, centroY + tamano };
-    }
-    else
-    {
-        a = { centroX - tamano / 2.0f, centroY - tamano };
-        b = { centroX - tamano / 2.0f, centroY + tamano };
-        c = { centroX + tamano / 2.0f, centroY };
+        return;
     }
 
-    DrawTriangle(a, b, c, color);
-}
+    Rectangle fila = EnPantallaColgado(palanca.ref, palanca.colgado);
 
-
-static void DibujarFila(
-    const DisposicionConfig& d,
-    Rectangle fila,
-    int opcion,
-    bool seleccionada,
-    bool bloqueada,
-    const ConfiguracionJuego& config,
-    Resolucion resoluciones[],
-    int opcionesFPS[],
-    const MenuConfiguracion& menu,
-    float alfa
-)
-{
-    const float s = d.escala;
-    const float pulso = seleccionada ? 1.0f + 0.5f * std::sin((float)GetTime() * 6.0f) : 0.0f;
-
-    Rectangle r = fila;
-
-    if (seleccionada)
-    {
-        float crece = (3.0f + pulso) * s;
-        r.x -= crece;
-        r.y -= crece / 2.0f;
-        r.width += crece * 2.0f;
-        r.height += crece;
-    }
-
-    DrawRectangleRec(r, Fade(seleccionada ? COLOR_FILA_SEL : COLOR_FILA, 0.92f * alfa));
-    DrawRectangleLinesEx(
-        r,
-        seleccionada ? 3.0f * s : 1.5f,
-        Fade(seleccionada ? COLOR_ACENTO : GRAY, (seleccionada ? 1.0f : 0.5f) * alfa)
+    DrawRectangleRec(
+        Rectangle{
+            fila.x + fila.width - Px(72.0f),
+            fila.y + Px(6.0f),
+            Px(66.0f),
+            fila.height - Px(12.0f)
+        },
+        UI_PLACA_CLARA
     );
 
-    if (seleccionada)
-    {
-        DrawRectangle((int)r.x, (int)r.y, (int)(6.0f * s), (int)r.height, Fade(COLOR_ACENTO, alfa));
-    }
+    const int tamano = TamanoTexto(UI_TEXTO);
+    const int ancho = MeasureText(texto, tamano);
 
-    const Color colorTexto = bloqueada ? Fade(GRAY, alfa) : Fade(RAYWHITE, alfa);
-    const int fuente = TamanoFuente(24.0f, s);
-
-    DibujarTextoAjustado(
-        EtiquetaOpcion(opcion),
-        fila.x + 22.0f * s,
-        fila.y + fila.height / 2.0f - fuente / 2.0f,
-        fuente,
-        fila.width * 0.42f - 22.0f * s,
-        colorTexto,
-        false
-    );
-
-    const Rectangle control = ControlDeFila(fila);
-    const Color acento = Fade(seleccionada ? COLOR_ACENTO : LIGHTGRAY, alfa);
-
-    if (EsSlider(opcion))
-    {
-        float valor = ValorSlider(config, opcion);
-        Rectangle barra = BarraDeFila(fila, s);
-
-        DrawRectangleRec(barra, Fade(COLOR_BARRA, alfa));
-        DrawRectangle(
-            (int)barra.x + 2,
-            (int)barra.y + 2,
-            (int)((barra.width - 4.0f) * valor),
-            (int)barra.height - 4,
-            Fade(seleccionada ? COLOR_ACENTO : RAYWHITE, alfa)
-        );
-        DrawRectangleLinesEx(barra, 2.0f, Fade(seleccionada ? COLOR_ACENTO : GRAY, alfa));
-
-        DrawCircle(
-            (int)(barra.x + barra.width * valor),
-            (int)(barra.y + barra.height / 2.0f),
-            9.0f * s,
-            Fade(RAYWHITE, alfa)
-        );
-
-        const char* texto = TextFormat("%d%%", PorcentajeSlider(config, opcion));
-
-        DrawText(
-            texto,
-            (int)(barra.x + barra.width + 16.0f * s),
-            (int)(fila.y + fila.height / 2.0f - fuente / 2.0f),
-            fuente,
-            colorTexto
-        );
-
-        return;
-    }
-
-    if (EsInterruptor(opcion))
-    {
-        bool activo =
-            opcion == OPCION_VIDEO_MOSTRAR_FPS ? config.mostrarFPS :
-            (opcion == OPCION_VIDEO_VSYNC ? config.vsync : config.reducirMovimiento);
-
-        Rectangle pastilla =
-        {
-            control.x,
-            fila.y + fila.height / 2.0f - 14.0f * s,
-            64.0f * s,
-            28.0f * s
-        };
-
-        DrawRectangleRounded(
-            pastilla,
-            1.0f,
-            8,
-            Fade(activo ? Color{ 70, 190, 90, 255 } : Color{ 70, 74, 90, 255 }, alfa)
-        );
-
-        DrawCircle(
-            (int)(activo ? pastilla.x + pastilla.width - 14.0f * s : pastilla.x + 14.0f * s),
-            (int)(pastilla.y + pastilla.height / 2.0f),
-            11.0f * s,
-            Fade(RAYWHITE, alfa)
-        );
-
-        DrawText(
-            activo ? "SI" : "NO",
-            (int)(pastilla.x + pastilla.width + 16.0f * s),
-            (int)(fila.y + fila.height / 2.0f - fuente / 2.0f),
-            fuente,
-            colorTexto
-        );
-
-        return;
-    }
-
-    if (EsAccion(opcion))
-    {
-        const char* texto = menu.restaurarArmado ? "PULSA OTRA VEZ: RESTAURA TODO" : "RESTAURAR";
-        Rectangle boton =
-        {
-            control.x,
-            fila.y + 8.0f * s,
-            control.width * 0.8f,
-            fila.height - 16.0f * s
-        };
-
-        DrawRectangleRec(
-            boton,
-            Fade(menu.restaurarArmado ? Color{ 200, 60, 50, 255 } : Color{ 60, 66, 88, 255 }, alfa)
-        );
-        DrawRectangleLinesEx(boton, 2.0f, acento);
-
-        DibujarTextoAjustado(
-            texto,
-            boton.x + boton.width / 2.0f,
-            boton.y + boton.height / 2.0f - fuente / 2.0f,
-            fuente,
-            boton.width - 16.0f * s,
-            Fade(RAYWHITE, alfa),
-            true
-        );
-
-        return;
-    }
-
-    // Selector con flechas.
-    const char* texto = "";
-
-    switch (opcion)
-    {
-        case OPCION_VIDEO_MODO:
-            texto = NombreModoVentana(config.modoVentana);
-            break;
-
-        case OPCION_VIDEO_RESOLUCION:
-            texto = TextoResolucion(config, resoluciones);
-            break;
-
-        case OPCION_VIDEO_FPS:
-            texto = TextFormat("%d", opcionesFPS[config.indiceFPS]);
-            break;
-
-        case OPCION_GRAFICO_PRESET:
-            texto = NombrePresetGrafico(config.presetGrafico);
-            break;
-
-        case OPCION_GRAFICO_PARTICULAS:
-            texto = NombreNivelCalidad(config.calidadParticulas);
-            break;
-
-        case OPCION_GRAFICO_DECORACION:
-            texto = NombreNivelCalidad(config.calidadDecoracion);
-            break;
-
-        case OPCION_GRAFICO_EFECTOS:
-            texto = NombreNivelCalidad(config.calidadEfectos);
-            break;
-
-        case OPCION_GRAFICO_SOMBRAS:
-            texto = NombreNivelCalidad(config.calidadSombras);
-            break;
-
-        case OPCION_CONTROL_MODO_TECLADO:
-            texto = NombreModoTeclado(config.modoTeclado);
-            break;
-    }
-
-    const Color colorFlecha = bloqueada ? Fade(DARKGRAY, alfa) : acento;
-    const float centroY = fila.y + fila.height / 2.0f;
-    const float izq = control.x + 14.0f * s;
-    const float der = control.x + control.width * 0.9f - 14.0f * s;
-
-    DibujarFlecha(izq, centroY, 8.0f * s, -1, colorFlecha);
-    DibujarFlecha(der, centroY, 8.0f * s, 1, colorFlecha);
-
-    DibujarTextoAjustado(
+    DrawText(
         texto,
-        (izq + der) / 2.0f,
-        centroY - fuente / 2.0f,
-        fuente,
-        der - izq - 40.0f * s,
-        colorTexto,
-        true
+        (int)(fila.x + fila.width - Px(UI_RELLENO + 4.0f) - ancho),
+        (int)(fila.y + (fila.height - tamano) * 0.5f),
+        tamano,
+        UI_TINTA
     );
 }
 
 
+// Tarjeta clara (placa con sombra) con titulo en tinta.
 static void DibujarTarjeta(
+    const EstiloUI& estilo,
     Rectangle r,
-    const char* titulo,
-    float s,
-    float alfa
+    const char* titulo
 )
 {
-    DrawRectangleRec(r, Fade(COLOR_FILA, 0.85f * alfa));
-    DrawRectangleLinesEx(r, 1.5f, Fade(GRAY, 0.5f * alfa));
+    DrawRectangleRec(
+        Rectangle{ r.x + Px(3.0f), r.y + Px(4.0f), r.width, r.height },
+        Fade(BLACK, 0.18f)
+    );
+
+    DibujarNueveCortes(estilo.placa, 8, r, EscalaUI(), WHITE);
 
     DrawText(
         titulo,
-        (int)(r.x + 16.0f * s),
-        (int)(r.y + 12.0f * s),
-        TamanoFuente(20.0f, s),
-        Fade(COLOR_ACENTO, alfa)
+        (int)(r.x + Px(14.0f)),
+        (int)(r.y + Px(9.0f)),
+        TamanoTexto(UI_TEXTO_PEQUENO),
+        UI_TINTA
+    );
+
+    DrawRectangleRec(
+        Rectangle{ r.x + Px(14.0f), r.y + Px(28.0f), r.width - Px(28.0f), Px(2.0f) },
+        Fade(UI_MADERA_OSCURA, 0.45f)
     );
 }
 
 
+// Linea "etiqueta  valor" dentro de una tarjeta. Devuelve la y siguiente.
 static float DibujarLinea(
     const char* etiqueta,
     const char* valor,
     Rectangle r,
-    float y,
-    float s,
-    float alfa
+    float y
 )
 {
-    const int fuente = TamanoFuente(16.0f, s);
-    const float ancho = r.width - 32.0f * s;
+    const int fuente = TamanoTexto(UI_TEXTO_PEQUENO);
+    const float ancho = r.width - Px(28.0f);
 
-    DibujarTextoAjustado(etiqueta, r.x + 16.0f * s, y, fuente, ancho * 0.40f, Fade(LIGHTGRAY, alfa), false);
-    DibujarTextoAjustado(valor, r.x + 16.0f * s + ancho * 0.44f, y, fuente, ancho * 0.56f, Fade(RAYWHITE, alfa), false);
+    DibujarTextoAjustado(etiqueta, r.x + Px(14.0f), y, fuente, ancho * 0.42f, UI_TINTA_SUAVE, false);
+    DibujarTextoAjustado(valor, r.x + Px(14.0f) + ancho * 0.45f, y, fuente, ancho * 0.55f, UI_TINTA, false);
 
-    return y + fuente + 7.0f * s;
+    return y + fuente + Px(5.0f);
+}
+
+
+// Vista previa en vivo del stick: circulo = inclinacion maxima, disco
+// sombreado = zona muerta, punto = stick sin filtrar del primer mando.
+static void DibujarVistaStick(
+    Rectangle zona
+)
+{
+    int gamepad = -1;
+
+    for (int g = 0; g < 4 && gamepad < 0; g++)
+    {
+        if (IsGamepadAvailable(g))
+        {
+            gamepad = g;
+        }
+    }
+
+    const int fuente = TamanoTexto(UI_TEXTO_PEQUENO);
+    const float radio = std::fmin(
+        zona.width * 0.5f - Px(8.0f),
+        (zona.height - fuente - Px(12.0f)) * 0.5f
+    );
+
+    if (radio < Px(16.0f))
+    {
+        return;
+    }
+
+    const Vector2 centro = { zona.x + zona.width * 0.5f, zona.y + radio + Px(2.0f) };
+    const float zonaMuerta = ObtenerZonaMuertaStick();
+
+    DrawCircleV(centro, radio, Color{ 214, 186, 136, 255 });
+    DrawLineEx(Vector2{ centro.x - radio, centro.y }, Vector2{ centro.x + radio, centro.y }, Px(1.0f), Fade(UI_TINTA_SUAVE, 0.45f));
+    DrawLineEx(Vector2{ centro.x, centro.y - radio }, Vector2{ centro.x, centro.y + radio }, Px(1.0f), Fade(UI_TINTA_SUAVE, 0.45f));
+    DrawRing(centro, radio - Px(2.0f), radio, 0.0f, 360.0f, 48, UI_TINTA);
+
+    // Zona muerta: el juego ignora toda inclinacion dentro de este disco.
+    DrawCircleV(centro, radio * zonaMuerta, Fade(UI_MADERA_OSCURA, 0.45f));
+    DrawRing(centro, radio * zonaMuerta - Px(1.5f), radio * zonaMuerta, 0.0f, 360.0f, 36, UI_MADERA_OSCURA);
+
+    const Vector2 crudo = LeerStickIzquierdoCrudo(gamepad);
+    const Vector2 filtrado = LeerStickIzquierdo(gamepad);
+    const bool moviendo = filtrado.x != 0.0f || filtrado.y != 0.0f;
+    const Vector2 punto = { centro.x + crudo.x * radio, centro.y + crudo.y * radio };
+
+    if (moviendo)
+    {
+        DrawLineEx(centro, punto, Px(2.0f), UI_PELIGRO);
+    }
+
+    DrawCircleV(punto, Px(6.0f), moviendo ? UI_PELIGRO : UI_TINTA);
+    DrawCircleLinesV(punto, Px(6.0f), UI_TINTA);
+
+    const char* estado =
+        gamepad < 0
+            ? "SIN MANDO: en reposo"
+            : TextFormat("MANDO %d: %s", gamepad + 1, moviendo ? "se mueve" : "zona muerta");
+
+    DibujarTextoAjustado(estado, centro.x, centro.y + radio + Px(6.0f), fuente, zona.width, UI_TINTA, true);
 }
 
 
 static void DibujarContenidoExtra(
-    const DisposicionConfig& d,
+    const MenuConfiguracion& menu,
     const ConfiguracionJuego& config,
     Resolucion resoluciones[],
-    int opcionesFPS[],
-    int categoria,
-    float alfa
+    int opcionesFPS[]
 )
 {
-    const float s = d.escala;
-    const float hueco = 14.0f * s;
+    const EstiloUI& estilo = ObtenerEstiloUI();
+    const ColgadoUI& colgado = menu.colgadoExtra;
+    const int categoria = menu.categoriaActual;
 
-    // La zona extra empieza bajo la ULTIMA fila de opciones de la categoria
-    // (CalcularDisposicion la deja bajo la primera; las filas avanzan de a
-    // 64 px en escala 1).
-    Rectangle z = d.zonaExtra;
-    const float filasExtra = (float)(CantidadOpciones(categoria) - 1) * 64.0f * s;
-
-    if (filasExtra > 0.0f)
+    if (colgado.retraso > 0.0f)
     {
-        z.y += filasExtra;
-        z.height -= filasExtra;
+        return;
     }
 
     if (categoria == CATEGORIA_CONTROLES)
     {
-        const float mitad = (z.width - hueco) / 2.0f;
-        Rectangle teclado = { z.x, z.y + 6.0f * s, mitad, z.height - 6.0f * s };
-        Rectangle mando = { z.x + mitad + hueco, teclado.y, mitad, teclado.height };
+        // Bajo las dos filas: tarjeta de teclado y tarjeta de mando.
+        const float yRef = Y_FILAS + CantidadOpciones(categoria) * PASO_FILAS;
+        const float altoRef = Y_FIN_CONTENIDO - yRef;
 
-        DibujarTarjeta(teclado, "TECLADO", s, alfa);
-        DibujarTarjeta(mando, "MANDO (GAMEPAD)", s, alfa);
+        Rectangle teclado = EnPantallaColgado(Rectangle{ X_FILAS, yRef, 440.0f, altoRef }, colgado);
+        Rectangle mando = EnPantallaColgado(Rectangle{ X_FILAS + 456.0f, yRef, ANCHO_FILAS - 456.0f, altoRef }, colgado);
 
-        float y = teclado.y + 40.0f * s;
+        DibujarTarjeta(estilo, teclado, "TECLADO");
+        DibujarTarjeta(estilo, mando, "MANDO (GAMEPAD)");
+
+        float y = teclado.y + Px(36.0f);
 
         if (config.modoTeclado == TECLADO_COMPLETO)
         {
-            y = DibujarLinea("Jugador 1", "Teclado completo", teclado, y, s, alfa);
-            y = DibujarLinea("Mover", "WASD o Flechas", teclado, y, s, alfa);
-            y = DibujarLinea("Saltar / Aceptar", "ESPACIO", teclado, y, s, alfa);
-            y = DibujarLinea("Accion", "E", teclado, y, s, alfa);
-            y = DibujarLinea("Cancelar", "RETROCESO", teclado, y, s, alfa);
-            y = DibujarLinea("Pausa / Salir", "ESC", teclado, y, s, alfa);
+            y = DibujarLinea("Jugador 1", "Teclado completo", teclado, y);
+            y = DibujarLinea("Mover", "WASD o Flechas", teclado, y);
+            y = DibujarLinea("Saltar / Aceptar", "ESPACIO", teclado, y);
+            y = DibujarLinea("Accion", "E", teclado, y);
+            y = DibujarLinea("Cancelar", "RETROCESO", teclado, y);
+            DibujarLinea("Pausa / Salir", "ESC", teclado, y);
         }
         else
         {
-            y = DibujarLinea("J1 Mover", "WASD", teclado, y, s, alfa);
-            y = DibujarLinea("J1 Saltar / Accion", "ESPACIO / E", teclado, y, s, alfa);
-            y = DibujarLinea("J2 Mover", "Flechas", teclado, y, s, alfa);
-            y = DibujarLinea("J2 Saltar / Accion", "ENTER / SHIFT DER.", teclado, y, s, alfa);
-            y = DibujarLinea("Cancelar", "J1 RETROCESO, J2 SHIFT DER.", teclado, y, s, alfa);
-            y = DibujarLinea("Pausa / Salir", "ESC", teclado, y, s, alfa);
+            y = DibujarLinea("J1 Mover", "WASD", teclado, y);
+            y = DibujarLinea("J1 Saltar / Accion", "ESPACIO / E", teclado, y);
+            y = DibujarLinea("J2 Mover", "Flechas", teclado, y);
+            y = DibujarLinea("J2 Saltar / Accion", "ENTER / SHIFT DER.", teclado, y);
+            y = DibujarLinea("Cancelar", "J1 RETROCESO, J2 SHIFT DER.", teclado, y);
+            DibujarLinea("Pausa / Salir", "ESC", teclado, y);
         }
 
         int conectados = 0;
@@ -2042,117 +2227,174 @@ static void DibujarContenidoExtra(
             }
         }
 
-        // Columna izquierda: botones. Columna derecha: vista previa del stick.
-        Rectangle columnaLineas = mando;
-        columnaLineas.width = mando.width * 0.62f;
+        // Columna izquierda: botones. Columna derecha: vista del stick.
+        Rectangle columna = mando;
+        columna.width = mando.width * 0.58f;
 
-        float ym = mando.y + 40.0f * s;
+        float ym = mando.y + Px(36.0f);
 
-        ym = DibujarLinea("Mover", "Stick o cruceta", columnaLineas, ym, s, alfa);
-        ym = DibujarLinea("Saltar, aceptar", "A", columnaLineas, ym, s, alfa);
-        ym = DibujarLinea("Accion", "X", columnaLineas, ym, s, alfa);
-        ym = DibujarLinea("Volver", "B", columnaLineas, ym, s, alfa);
-        ym = DibujarLinea("Pausa", "START", columnaLineas, ym, s, alfa);
-        DibujarLinea("Conectados", TextFormat("%d", conectados), columnaLineas, ym, s, alfa);
+        ym = DibujarLinea("Mover", "Stick o cruceta", columna, ym);
+        ym = DibujarLinea("Saltar, aceptar", "A", columna, ym);
+        ym = DibujarLinea("Accion", "X", columna, ym);
+        ym = DibujarLinea("Volver", "B", columna, ym);
+        ym = DibujarLinea("Pausa", "START", columna, ym);
+        DibujarLinea("Conectados", TextFormat("%d", conectados), columna, ym);
 
-        // Vista previa del stick: circulo exterior = inclinacion maxima,
-        // disco interior = zona muerta. El punto (stick sin filtrar) se
-        // pinta con el acento cuando sale de la zona: ese es el momento en
-        // que el juego empieza a recibir movimiento.
-        int gamepad = -1;
-
-        for (int g = 0; g < 4 && gamepad < 0; g++)
-        {
-            if (IsGamepadAvailable(g))
-            {
-                gamepad = g;
+        DibujarVistaStick(
+            Rectangle{
+                mando.x + columna.width,
+                mando.y + Px(36.0f),
+                mando.width - columna.width - Px(10.0f),
+                mando.height - Px(40.0f)
             }
-        }
-
-        const int fuentePrevia = TamanoFuente(14.0f, s);
-        const Rectangle previa = {
-            mando.x + columnaLineas.width,
-            mando.y + 36.0f * s,
-            mando.width - columnaLineas.width - 12.0f * s,
-            mando.height - 36.0f * s - 8.0f * s
-        };
-
-        float radio = std::fmin(
-            previa.width / 2.0f - 8.0f * s,
-            (previa.height - fuentePrevia * 2.0f - 14.0f * s) / 2.0f
         );
-
-        if (radio > 16.0f * s)
-        {
-            const float zona = ObtenerZonaMuertaStick();
-            const Vector2 centro = {
-                previa.x + previa.width / 2.0f,
-                previa.y + radio + 4.0f * s
-            };
-
-            DrawCircleV(centro, radio, Fade(COLOR_BARRA, alfa));
-            DrawCircleLinesV(centro, radio, Fade(GRAY, alfa));
-            DrawLineV(Vector2{ centro.x - radio, centro.y }, Vector2{ centro.x + radio, centro.y }, Fade(GRAY, 0.35f * alfa));
-            DrawLineV(Vector2{ centro.x, centro.y - radio }, Vector2{ centro.x, centro.y + radio }, Fade(GRAY, 0.35f * alfa));
-            DrawCircleV(centro, radio * zona, Fade(COLOR_ACENTO, 0.22f * alfa));
-            DrawCircleLinesV(centro, radio * zona, Fade(COLOR_ACENTO, 0.9f * alfa));
-
-            Vector2 crudo = LeerStickIzquierdoCrudo(gamepad);
-            Vector2 filtrado = LeerStickIzquierdo(gamepad);
-            bool activo = filtrado.x != 0.0f || filtrado.y != 0.0f;
-
-            DrawCircleV(
-                Vector2{ centro.x + crudo.x * radio, centro.y + crudo.y * radio },
-                5.0f * s,
-                Fade(activo ? COLOR_ACENTO : RAYWHITE, alfa)
-            );
-
-            const char* estadoStick =
-                gamepad < 0
-                    ? "Conecta un mando"
-                    : (activo ? "Moviendo" : "En zona muerta");
-
-            DibujarTextoAjustado(
-                gamepad < 0 ? "SIN MANDO" : TextFormat("MANDO %d", gamepad + 1),
-                centro.x,
-                centro.y + radio + 6.0f * s,
-                fuentePrevia,
-                previa.width,
-                Fade(gamepad < 0 ? DARKGRAY : LIGHTGRAY, alfa),
-                true
-            );
-
-            DibujarTextoAjustado(
-                estadoStick,
-                centro.x,
-                centro.y + radio + 8.0f * s + fuentePrevia,
-                fuentePrevia,
-                previa.width,
-                Fade(activo ? COLOR_ACENTO : LIGHTGRAY, alfa),
-                true
-            );
-        }
 
         return;
     }
 
     if (categoria == CATEGORIA_JUEGO)
     {
-        Rectangle tarjeta = { z.x, z.y + 6.0f * s, z.width, z.height - 6.0f * s };
+        const float yRef = REF_RESTAURAR.y + REF_RESTAURAR.height + 26.0f;
+        Rectangle tarjeta = EnPantallaColgado(Rectangle{ 300.0f, yRef, 680.0f, Y_FIN_CONTENIDO - yRef }, colgado);
 
-        DibujarTarjeta(tarjeta, "RESUMEN ACTUAL", s, alfa);
+        DibujarTarjeta(estilo, tarjeta, "RESUMEN ACTUAL");
 
-        float y = tarjeta.y + 44.0f * s;
+        float y = tarjeta.y + Px(36.0f);
 
-        y = DibujarLinea("Pantalla", NombreModoVentana(config.modoVentana), tarjeta, y, s, alfa);
-        y = DibujarLinea("Resolucion", TextoResolucion(config, resoluciones), tarjeta, y, s, alfa);
-        y = DibujarLinea("FPS", TextFormat("%d%s", opcionesFPS[config.indiceFPS], config.vsync ? " (VSync)" : ""), tarjeta, y, s, alfa);
-        y = DibujarLinea("Musica / Efectos", TextFormat("%d%% / %d%%", (int)std::lround(config.volumenMusica * 100.0f), (int)std::lround(config.volumenSonidos * 100.0f)), tarjeta, y, s, alfa);
-        y = DibujarLinea("Teclado", NombreModoTeclado(config.modoTeclado), tarjeta, y, s, alfa);
-        DibujarLinea("Guardado", "Automatico al aplicar cada cambio", tarjeta, y, s, alfa);
+        y = DibujarLinea("Pantalla", NombreModoVentana(config.modoVentana), tarjeta, y);
+        y = DibujarLinea("Resolucion", TextoResolucion(config, resoluciones), tarjeta, y);
+        y = DibujarLinea("FPS", TextFormat("%d%s", opcionesFPS[config.indiceFPS], config.vsync ? " (VSync)" : ""), tarjeta, y);
+        y = DibujarLinea("Musica / Efectos", TextFormat("%d%% / %d%%", (int)std::lround(config.volumenMusica * 100.0f), (int)std::lround(config.volumenSonidos * 100.0f)), tarjeta, y);
+        y = DibujarLinea("Teclado", NombreModoTeclado(config.modoTeclado), tarjeta, y);
+        DibujarLinea("Guardado", "Automatico al aplicar cada cambio", tarjeta, y);
 
         return;
     }
+
+    if (categoria == CATEGORIA_ACCESIBILIDAD)
+    {
+        const float yRef = Y_FILAS + PASO_FILAS + 10.0f;
+        Rectangle tarjeta = EnPantallaColgado(Rectangle{ 300.0f, yRef, 680.0f, 100.0f }, colgado);
+
+        DibujarTarjeta(estilo, tarjeta, "QUE CAMBIA");
+
+        float y = tarjeta.y + Px(36.0f);
+
+        y = DibujarLinea("Minijuegos", "Sin temblores de camara", tarjeta, y);
+        y = DibujarLinea("Menus", "Carteles quietos, sin caidas ni balanceo", tarjeta, y);
+        DibujarLinea("Estado", config.reducirMovimiento ? "ACTIVADO" : "Desactivado", tarjeta, y);
+    }
+}
+
+
+// Altura (referencia) de los ganchos del cartel de confirmacion: entre la
+// tira de pestanas y la primera fila, asi sus sogas no cruzan ningun texto.
+static const float Y_GANCHOS_MODAL = 206.0f;
+
+
+// Como DibujarPanelUI, pero las sogas salen de dos ganchos clavados en el
+// panel bajo las pestanas en lugar del borde superior de la pantalla.
+static void DibujarPanelModal(
+    const EstiloUI& estilo,
+    const MenuConfiguracion& menu
+)
+{
+    const PanelUI& panel = menu.panelModal;
+
+    if (!estilo.cargado || panel.colgado.retraso > 0.0f)
+    {
+        return;
+    }
+
+    const float escala = EscalaUI();
+    Rectangle rect = EnPantallaColgado(panel.ref, panel.colgado);
+
+    const float yGancho =
+        EnPantalla(Rectangle{ 0.0f, Y_GANCHOS_MODAL, 0.0f, 0.0f }).y +
+        menu.panel.colgado.caida.valor * escala;
+    const float inset = Px(46.0f);
+
+    for (int lado = 0; lado < 2; lado++)
+    {
+        const float x = lado == 0 ? rect.x + inset : rect.x + rect.width - inset;
+
+        if (rect.y > yGancho)
+        {
+            DibujarCuerdaUI(estilo, Vector2{ x, yGancho }, Vector2{ x, rect.y + Px(4.0f) });
+        }
+
+        DrawCircleV(Vector2{ x, yGancho }, Px(4.0f), UI_TINTA);
+        DrawCircleV(Vector2{ x, yGancho }, Px(2.5f), UI_MADERA_OSCURA);
+    }
+
+    DrawRectangleRec(
+        Rectangle{ rect.x + Px(6.0f), rect.y + Px(8.0f), rect.width, rect.height },
+        Fade(BLACK, 0.30f)
+    );
+
+    DibujarNueveCortes(estilo.madera, 12, rect, escala, WHITE);
+
+    const float margen = Px(14.0f);
+    Rectangle interior = {
+        rect.x + margen, rect.y + margen,
+        rect.width - margen * 2.0f, rect.height - margen * 2.0f
+    };
+
+    DibujarNueveCortes(estilo.placa, 8, interior, escala, WHITE);
+}
+
+
+static void DibujarModal(
+    const MenuConfiguracion& menu
+)
+{
+    const EstiloUI& estilo = ObtenerEstiloUI();
+
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(COLOR_VELO, 0.5f));
+
+    DibujarPanelModal(estilo, menu);
+
+    Rectangle interior = EnPantallaColgado(AreaInteriorPanelUI(menu.panelModal), menu.panelModal.colgado);
+    const float centroX = interior.x + interior.width * 0.5f;
+
+    DibujarTextoAjustado(
+        "Mantener esta configuracion de video?",
+        centroX,
+        interior.y + Px(22.0f),
+        TamanoTexto(UI_TEXTO_GRANDE),
+        interior.width - Px(40.0f),
+        UI_TINTA,
+        true
+    );
+
+    DibujarTextoAjustado(
+        TextFormat("Se revertira automaticamente en %d s", (int)std::ceil(menu.tiempoConfirmacion)),
+        centroX,
+        interior.y + Px(66.0f),
+        TamanoTexto(UI_TEXTO),
+        interior.width - Px(40.0f),
+        UI_TINTA_SUAVE,
+        true
+    );
+
+    // Cuenta atras: mismo riel que las palancas.
+    Rectangle riel = {
+        interior.x + Px(40.0f),
+        interior.y + Px(100.0f),
+        interior.width - Px(80.0f),
+        Px(10.0f)
+    };
+
+    float fraccion = LimitarFloat(menu.tiempoConfirmacion / menu.DURACION_CONFIRMACION, 0.0f, 1.0f);
+
+    DrawRectangleRec(riel, UI_TINTA);
+    DrawRectangleRec(
+        Rectangle{ riel.x + Px(1.0f), riel.y + Px(1.0f), (riel.width - Px(2.0f)) * fraccion, riel.height - Px(2.0f) },
+        UI_MADERA_MEDIA
+    );
+
+    DibujarBotonUI(estilo, menu.botonMantener, menu.focoModal == 0);
+    DibujarBotonUI(estilo, menu.botonRevertir, menu.focoModal == 1);
 }
 
 
@@ -2166,81 +2408,34 @@ void MenuConfiguracion::Dibujar(
     int opcionesFPS[]
 )
 {
-    const float alfa = alphaGeneral;
-    const float alfaContenidoActual = alfa * alphaContenido;
+    const EstiloUI& estilo = ObtenerEstiloUI();
+    const float salida = saliendo ? LimitarFloat(tiempoSalida / DURACION_TRANSICION, 0.0f, 1.0f) : 0.0f;
 
-    const DisposicionConfig d = CalcularDisposicion((1.0f - alfa) * 18.0f);
-    const float s = d.escala;
-
-    // Velo sobre el HUB 3D que ya se dibujo de fondo.
+    // Velo suave sobre el HUB 3D que ya se dibujo de fondo.
     DrawRectangle(
         0, 0, GetScreenWidth(), GetScreenHeight(),
-        Fade(COLOR_VELO, 0.72f * alfa)
+        Fade(COLOR_VELO, 0.35f * (1.0f - salida))
     );
 
-    DrawRectangleRec(d.panel, Fade(COLOR_PANEL, alfa));
-    DrawRectangleLinesEx(d.panel, 2.0f, Fade(GRAY, 0.6f * alfa));
-    DrawRectangle(
-        (int)d.panel.x, (int)d.panel.y,
-        (int)d.panel.width, (int)(6.0f * s),
-        Fade(COLOR_ACENTO, alfa)
-    );
-
-    DrawText(
-        "CONFIGURACION",
-        (int)(d.panel.x + 28.0f * s),
-        (int)(d.panel.y + 22.0f * s),
-        TamanoFuente(38.0f, s),
-        Fade(RAYWHITE, alfa)
-    );
+    DibujarTituloUI(estilo, colgadoTitulo, "CONFIGURACION", REF_TITULO);
+    DibujarPanelUI(estilo, panel);
 
     //------------------------------
     // PESTANAS
     //------------------------------
 
-    const int fuenteHint = TamanoFuente(18.0f, s);
+    const bool hoverAnterior = CheckCollisionPointRec(GetMousePosition(), EnPantalla(RefBotonAnterior()));
+    const bool hoverSiguiente = CheckCollisionPointRec(GetMousePosition(), EnPantalla(RefBotonSiguiente()));
 
-    Rectangle botones[2] = { d.botonLB, d.botonRB };
-    const char* textosBoton[2] = { "LB", "RB" };
-
-    for (int i = 0; i < 2; i++)
-    {
-        DrawRectangleRec(botones[i], Fade(COLOR_FILA, alfa));
-        DrawRectangleLinesEx(botones[i], 1.5f, Fade(GRAY, 0.7f * alfa));
-        DibujarTextoAjustado(
-            textosBoton[i],
-            botones[i].x + botones[i].width / 2.0f,
-            botones[i].y + botones[i].height / 2.0f - fuenteHint / 2.0f,
-            fuenteHint,
-            botones[i].width - 6.0f,
-            Fade(LIGHTGRAY, alfa),
-            true
-        );
-    }
+    DibujarBotonUI(estilo, botonAnterior, hoverAnterior && !confirmandoVideo);
+    DibujarBotonUI(estilo, botonSiguiente, hoverSiguiente && !confirmandoVideo);
 
     for (int i = 0; i < CANTIDAD_CATEGORIAS_CONFIGURACION; i++)
     {
-        const bool activa = (cambiandoCategoria ? categoriaDestino : categoriaActual) == i;
-        const bool hover = categoriaHover == i;
-        Rectangle r = d.pestanas[i];
-
-        DrawRectangleRec(r, Fade(activa ? COLOR_ACENTO : COLOR_FILA, (activa ? 0.95f : 0.85f) * alfa));
-        DrawRectangleLinesEx(
-            r,
-            activa || hover ? 2.5f : 1.5f,
-            Fade(activa ? RAYWHITE : (hover ? COLOR_ACENTO : GRAY), alfa)
-        );
-
-        const int fuente = TamanoFuente(20.0f, s);
-
-        DibujarTextoAjustado(
-            NOMBRES_CATEGORIAS[i],
-            r.x + r.width / 2.0f,
-            r.y + r.height / 2.0f - fuente / 2.0f,
-            fuente,
-            r.width - 12.0f * s,
-            Fade(activa ? BLACK : RAYWHITE, alfa),
-            true
+        DibujarBotonUI(
+            estilo,
+            pestanas[i],
+            categoriaHover == i && i != categoriaActual && !confirmandoVideo
         );
     }
 
@@ -2249,192 +2444,125 @@ void MenuConfiguracion::Dibujar(
     //------------------------------
 
     const int cantidad = CantidadOpciones(categoriaActual);
+    const int seleccion = opcionSeleccionada[categoriaActual];
 
-    for (int i = 0; i < cantidad; i++)
+    if (filasListas)
     {
-        const int opcion = TABLA_OPCIONES[categoriaActual][i];
-        const bool bloqueada =
-            opcion == OPCION_VIDEO_RESOLUCION &&
-            config.modoVentana == MODO_SIN_BORDES;
-
-        DibujarFila(
-            d,
-            d.filas[i],
-            opcion,
-            opcionSeleccionada[categoriaActual] == i,
-            bloqueada,
-            config,
-            resoluciones,
-            opcionesFPS,
-            *this,
-            alfaContenidoActual
-        );
-    }
-
-    DibujarContenidoExtra(d, config, resoluciones, opcionesFPS, categoriaActual, alfaContenidoActual);
-
-    //------------------------------
-    // INFO / AVISO
-    //------------------------------
-
-    DrawRectangleRec(d.info, Fade(COLOR_FILA, 0.7f * alfa));
-
-    const char* textoInfo = "";
-
-    if (tiempoAviso > 0.0f)
-    {
-        textoInfo = aviso;
-    }
-    else if (restaurarArmado)
-    {
-        textoInfo = "Restaura TODO, incluida la pantalla (modo y resolucion). Pulsa otra vez para confirmar.";
-    }
-    else if (cantidad > 0)
-    {
-        textoInfo = DescripcionOpcion(TABLA_OPCIONES[categoriaActual][opcionSeleccionada[categoriaActual]]);
-    }
-
-    DibujarTextoAjustado(
-        textoInfo,
-        d.info.x + 14.0f * s,
-        d.info.y + d.info.height / 2.0f - TamanoFuente(18.0f, s) / 2.0f,
-        TamanoFuente(18.0f, s),
-        d.info.width - 28.0f * s,
-        Fade(tiempoAviso > 0.0f ? COLOR_ACENTO : LIGHTGRAY, alfa),
-        false
-    );
-
-    //------------------------------
-    // AYUDA Y BOTON VOLVER
-    //------------------------------
-
-    const int fuenteAyuda = TamanoFuente(15.0f, s);
-
-    DibujarTextoAjustado(
-        "TECLADO: Flechas/WASD elegir y cambiar | Q/E categoria | ENTER aceptar | ESC volver",
-        d.ayuda.x,
-        d.ayuda.y + 4.0f * s,
-        fuenteAyuda,
-        d.ayuda.width,
-        Fade(LIGHTGRAY, alfa),
-        false
-    );
-
-    DibujarTextoAjustado(
-        "MANDO: Cruceta/stick elegir y cambiar | LB/RB categoria | A aceptar | B volver",
-        d.ayuda.x,
-        d.ayuda.y + 6.0f * s + fuenteAyuda + 4.0f * s,
-        fuenteAyuda,
-        d.ayuda.width,
-        Fade(GRAY, alfa),
-        false
-    );
-
-    DibujarTextoAjustado(
-        "Los cambios se guardan automaticamente.",
-        d.ayuda.x,
-        d.ayuda.y + 8.0f * s + (fuenteAyuda + 4.0f * s) * 2.0f,
-        fuenteAyuda,
-        d.ayuda.width,
-        Fade(Color{ 110, 160, 120, 255 }, alfa),
-        false
-    );
-
-    {
-        const bool hover = CheckCollisionPointRec(GetMousePosition(), d.botonVolver);
-        const int fuente = TamanoFuente(22.0f, s);
-
-        DrawRectangleRec(d.botonVolver, Fade(hover ? COLOR_ACENTO : COLOR_FILA, alfa));
-        DrawRectangleLinesEx(d.botonVolver, 2.0f, Fade(hover ? RAYWHITE : GRAY, alfa));
-        DibujarTextoAjustado(
-            "VOLVER",
-            d.botonVolver.x + d.botonVolver.width / 2.0f,
-            d.botonVolver.y + d.botonVolver.height / 2.0f - fuente / 2.0f,
-            fuente,
-            d.botonVolver.width - 12.0f * s,
-            Fade(hover ? BLACK : RAYWHITE, alfa),
-            true
-        );
-    }
-
-    //------------------------------
-    // MODAL DE CONFIRMACION
-    //------------------------------
-
-    if (confirmandoVideo)
-    {
-        DrawRectangle(
-            0, 0, GetScreenWidth(), GetScreenHeight(),
-            Fade(COLOR_VELO, 0.6f)
-        );
-
-        DrawRectangleRec(d.modal, COLOR_PANEL);
-        DrawRectangleLinesEx(d.modal, 3.0f, COLOR_ACENTO);
-
-        DibujarTextoAjustado(
-            "Mantener esta configuracion de video?",
-            d.modal.x + d.modal.width / 2.0f,
-            d.modal.y + 28.0f * s,
-            TamanoFuente(28.0f, s),
-            d.modal.width - 40.0f * s,
-            RAYWHITE,
-            true
-        );
-
-        DibujarTextoAjustado(
-            TextFormat("Se revertira automaticamente en %d s", (int)std::ceil(tiempoConfirmacion)),
-            d.modal.x + d.modal.width / 2.0f,
-            d.modal.y + 84.0f * s,
-            TamanoFuente(20.0f, s),
-            d.modal.width - 40.0f * s,
-            LIGHTGRAY,
-            true
-        );
-
-        Rectangle barra =
+        for (int i = 0; i < cantidad; i++)
         {
-            d.modal.x + 30.0f * s,
-            d.modal.y + 124.0f * s,
-            d.modal.width - 60.0f * s,
-            14.0f * s
-        };
+            const int opcion = TABLA_OPCIONES[categoriaActual][i];
+            const bool foco = seleccion == i && !confirmandoVideo;
 
-        DrawRectangleRec(barra, COLOR_BARRA);
-        DrawRectangle(
-            (int)barra.x + 2,
-            (int)barra.y + 2,
-            (int)((barra.width - 4.0f) * LimitarFloat(tiempoConfirmacion / DURACION_CONFIRMACION, 0.0f, 1.0f)),
-            (int)barra.height - 4,
-            COLOR_ACENTO
-        );
+            if (EsSlider(opcion))
+            {
+                DibujarPalancaUI(estilo, palancas[opcion], foco);
 
-        const Vector2 mouse = GetMousePosition();
-        const bool hoverMantener = CheckCollisionPointRec(mouse, d.modalMantener);
-        const bool hoverRevertir = CheckCollisionPointRec(mouse, d.modalRevertir);
-        const int fuente = TamanoFuente(20.0f, s);
+                if (opcion == OPCION_CONTROL_ZONA_MUERTA)
+                {
+                    DibujarValorPalanca(palancas[opcion], TextFormat("%d%%", PorcentajeSlider(config, opcion)));
+                }
+            }
+            else if (EsInterruptor(opcion))
+            {
+                DibujarInterruptorUI(estilo, interruptores[opcion], foco);
+            }
+            else if (EsAccion(opcion))
+            {
+                DibujarBotonUI(estilo, botonRestaurar, foco);
+            }
+            else
+            {
+                DibujarSelectorUI(
+                    estilo,
+                    selectores[opcion],
+                    TextoValorSelector(config, opcion, resoluciones, opcionesFPS),
+                    foco
+                );
+            }
+        }
 
-        DrawRectangleRec(d.modalMantener, hoverMantener ? COLOR_ACENTO : Color{ 60, 150, 80, 255 });
-        DrawRectangleLinesEx(d.modalMantener, 2.0f, RAYWHITE);
+        DibujarContenidoExtra(*this, config, resoluciones, opcionesFPS);
+    }
+
+    //------------------------------
+    // INFO / AVISO (sobre la placa del panel)
+    //------------------------------
+
+    const float desplazamientoPanel = panel.colgado.caida.valor * EscalaUI();
+    const int fuenteInfo = TamanoTexto(UI_TEXTO_PEQUENO);
+
+    if (filasListas)
+    {
+        const char* textoInfo = "";
+        bool esAviso = false;
+
+        if (tiempoAviso > 0.0f)
+        {
+            textoInfo = aviso;
+            esAviso = true;
+        }
+        else if (restaurarArmado)
+        {
+            textoInfo = "Restaura TODO, incluida la pantalla (modo y resolucion). Pulsa otra vez para confirmar.";
+            esAviso = true;
+        }
+        else if (seleccion == cantidad)
+        {
+            textoInfo = "Vuelve al menu principal.";
+        }
+        else
+        {
+            textoInfo = DescripcionOpcion(TABLA_OPCIONES[categoriaActual][seleccion]);
+        }
+
+        Rectangle info = EnPantalla(Rectangle{ X_FILAS, Y_INFO, ANCHO_FILAS, 20.0f });
+        info.y += desplazamientoPanel;
+
+        // Aviso: marca roja a la izquierda; el texto sigue en tinta.
+        if (esAviso)
+        {
+            DrawCircleV(
+                Vector2{ info.x + Px(6.0f), info.y + fuenteInfo * 0.5f },
+                Px(5.0f),
+                UI_PELIGRO
+            );
+        }
+
         DibujarTextoAjustado(
-            "MANTENER (ENTER / A)",
-            d.modalMantener.x + d.modalMantener.width / 2.0f,
-            d.modalMantener.y + d.modalMantener.height / 2.0f - fuente / 2.0f,
-            fuente,
-            d.modalMantener.width - 12.0f * s,
-            BLACK,
-            true
+            textoInfo,
+            info.x + Px(20.0f),
+            info.y,
+            fuenteInfo,
+            info.width - Px(20.0f),
+            esAviso ? UI_TINTA : UI_TINTA_SUAVE,
+            false
         );
+    }
 
-        DrawRectangleRec(d.modalRevertir, hoverRevertir ? COLOR_ACENTO : COLOR_FILA);
-        DrawRectangleLinesEx(d.modalRevertir, 2.0f, GRAY);
+    {
+        Rectangle nota = EnPantalla(Rectangle{ X_FILAS, 592.0f, 330.0f, 20.0f });
+        nota.y += desplazamientoPanel;
+
         DibujarTextoAjustado(
-            "REVERTIR (ESC / B)",
-            d.modalRevertir.x + d.modalRevertir.width / 2.0f,
-            d.modalRevertir.y + d.modalRevertir.height / 2.0f - fuente / 2.0f,
-            fuente,
-            d.modalRevertir.width - 12.0f * s,
-            hoverRevertir ? BLACK : RAYWHITE,
-            true
+            "Los cambios se guardan automaticamente.",
+            nota.x,
+            nota.y,
+            fuenteInfo,
+            nota.width,
+            UI_TINTA_SUAVE,
+            false
         );
+    }
+
+    DibujarBotonUI(estilo, botonVolver, seleccion == cantidad && !confirmandoVideo);
+
+    DibujarAyudaUI(
+        estilo,
+        "FLECHAS/WASD O CRUCETA: ELEGIR Y CAMBIAR   ENTER/A: ACEPTAR   Q-E / LB-RB: PESTANAS   ESC/B: VOLVER"
+    );
+
+    if (confirmandoVideo && modalIniciado)
+    {
+        DibujarModal(*this);
     }
 }
