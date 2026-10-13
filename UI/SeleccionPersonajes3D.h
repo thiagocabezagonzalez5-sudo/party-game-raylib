@@ -70,3 +70,7 @@ void DibujarEscenaSeleccion(
     int cantidad,
     float intensidadConfeti
 );
+
+
+// Libera la textura de arena de la escena (se carga al primer dibujo).
+void DescargarEscenaSeleccion();

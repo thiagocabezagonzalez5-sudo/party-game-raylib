@@ -1666,8 +1666,11 @@ void SeleccionPersonajes::Dibujar(
 
 void SeleccionPersonajes::Descargar()
 {
-    // No hay recursos propios: el modelo 3D es el compartido, que
-    // descarga main.cpp con DescargarModeloJugadorCompartido().
+    // El modelo 3D es el compartido, que descarga main.cpp con
+    // DescargarModeloJugadorCompartido(). Solo la escena posee la
+    // textura de arena.
+    DescargarEscenaSeleccion();
+
     recursosCargados =
         false;
 }
