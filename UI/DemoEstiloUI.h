@@ -8,14 +8,16 @@
 //==================================================
 //
 // Muestra todos los componentes de UI/EstiloUI en una pantalla de
-// configuracion de ejemplo (3 pestanas). No toca el flujo del juego:
-// se ejecuta con Tests/DemoEstiloUI.ps1.
+// configuracion de ejemplo (4 pestanas, una tarjeta y dos avisos
+// modales). No toca el flujo del juego: se ejecuta con
+// Tests/DemoEstiloUI.ps1.
 //
 // Controles: arriba/abajo cambia de elemento, izquierda/derecha ajusta,
-// aceptar confirma, Q/E (LB/RB) cambia de pestana, volver sale.
+// aceptar confirma, Q/E (LB/RB) cambia de pestana, volver pregunta si
+// salir.
 //==================================================
 
-inline constexpr int DEMO_PESTANAS = 3;
+inline constexpr int DEMO_PESTANAS = 4;
 inline constexpr int DEMO_FILAS = 3;
 
 
@@ -29,16 +31,23 @@ struct DemoEstiloUI
     int pestanaActiva = 0;
 
     // Filas reutilizadas por pestana.
-    SelectorUI selectores[2];
-    PalancaUI palancas[3];
+    SelectorUI selectores[3];
+    PalancaUI palancas[4];
     InterruptorUI interruptores[4];
+    TarjetaUI tarjeta;
 
-    int opcionSelector[2] = {};
+    int opcionSelector[3] = {};
 
     BotonUI botonVolver;
     BotonUI botonAplicar;
 
-    // Foco: 0..DEMO_FILAS-1 = filas, DEMO_FILAS = fila de botones.
+    // Avisos: salir sin aplicar (VOLVER / Esc) y confirmar con cuenta
+    // atras (APLICAR).
+    ModalUI modalSalir;
+    ModalUI modalAplicar;
+    float tiempoConfirmacion = 0.0f;
+
+    // Foco: 0..filas con foco - 1 = filas, el siguiente = fila de botones.
     EnfoqueUI enfoque;
     int botonConFoco = 0;
 
@@ -49,7 +58,7 @@ struct DemoEstiloUI
     bool salir = false;
     float tiempo = 0.0f;
 
-    void Inicializar();
+    void Inicializar(bool reducirMovimiento = false);
     void Actualizar(float deltaTime, const EntradaUI& entrada);
     void Dibujar() const;
     void Descargar();

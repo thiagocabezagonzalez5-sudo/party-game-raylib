@@ -680,6 +680,97 @@ void DibujarMarcoFoco(Rectangle rect)
 }
 
 
+void DibujarFlechaUI(
+    float cx,
+    float cy,
+    float medio,
+    int direccion,
+    Color color
+)
+{
+    Vector2 punta = { cx + direccion * medio, cy };
+    Vector2 a = { cx - direccion * medio, cy - medio * 1.2f };
+    Vector2 b = { cx - direccion * medio, cy + medio * 1.2f };
+
+    // DrawTriangle exige sentido antihorario.
+    if (direccion > 0)
+    {
+        DrawTriangle(a, b, punta, color);
+    }
+    else
+    {
+        DrawTriangle(b, a, punta, color);
+    }
+}
+
+
+//==================================================
+// TEXTO AJUSTADO AL ANCHO
+//==================================================
+
+// raylib no dibuja la fuente por defecto por debajo de 10 px.
+static const int TAMANO_TEXTO_MINIMO = 10;
+
+
+int TamanoTextoAjustadoUI(
+    const char* texto,
+    int tokenTexto,
+    float anchoMaximo
+)
+{
+    int tamano = TamanoTexto(tokenTexto);
+
+    while (tamano > TAMANO_TEXTO_MINIMO && (float)MeasureText(texto, tamano) > anchoMaximo)
+    {
+        tamano--;
+    }
+
+    return tamano;
+}
+
+
+void DibujarTextoAjustadoUI(
+    const char* texto,
+    float x,
+    float y,
+    int tokenTexto,
+    float anchoMaximo,
+    Color color,
+    bool centrado
+)
+{
+    int tamano = TamanoTextoAjustadoUI(texto, tokenTexto, anchoMaximo);
+
+    if (centrado)
+    {
+        x -= (float)MeasureText(texto, tamano) * 0.5f;
+    }
+
+    DrawText(texto, (int)x, (int)y, tamano, color);
+}
+
+
+// Margen horizontal de un cartel a cada lado del texto: 10 de marco de
+// madera + 6 de aire (unidades de referencia).
+static const float MARGEN_TEXTO_CARTEL = 16.0f;
+
+
+float AnchoNecesarioBotonUI(
+    const char* texto,
+    int tokenTexto
+)
+{
+    // La fuente pixel no escala de forma exactamente lineal (el espaciado
+    // es entero): se mide a escala 1 y a la escala actual y se toma el
+    // mayor, para que el texto quepa en ambas.
+    float aEscala1 = (float)MeasureText(texto, tokenTexto);
+    float aEscalaActual = (float)MeasureText(texto, TamanoTexto(tokenTexto)) / EscalaUI();
+    float anchoTexto = aEscala1 > aEscalaActual ? aEscala1 : aEscalaActual;
+
+    return std::ceil(anchoTexto + MARGEN_TEXTO_CARTEL * 2.0f);
+}
+
+
 //==================================================
 // CARTEL COLGADO (base de boton, pestana y titulo)
 //==================================================
@@ -748,7 +839,9 @@ static void DibujarCartelColgado(
         DibujarMarcoFoco(local);
     }
 
-    int tamano = TamanoTexto(tokenTexto);
+    // Si el texto no cabe dentro del marco (10 px de madera por lado), la
+    // fuente se reduce; si cabe, queda exactamente igual.
+    int tamano = TamanoTextoAjustadoUI(texto, tokenTexto, local.width - Px(20.0f));
     int anchoTexto = MeasureText(texto, tamano);
 
     DrawText(
@@ -960,6 +1053,7 @@ void SelectorUI::Iniciar(Rectangle rectRef, const char* textoEtiqueta, float ret
     etiqueta = textoEtiqueta;
     golpeIzquierda = 0.0f;
     golpeDerecha = 0.0f;
+    habilitado = true;
     colgado.Iniciar(0.0f, retraso, 40.0f, 0.0f);
 }
 
@@ -975,6 +1069,11 @@ void ActualizarSelectorUI(SelectorUI& selector, const EstiloUI& estilo, float dt
 
 void GolpearSelectorUI(SelectorUI& selector, int direccion)
 {
+    if (!selector.habilitado)
+    {
+        return;
+    }
+
     if (direccion < 0)
     {
         selector.golpeIzquierda = 1.0f;
@@ -986,21 +1085,17 @@ void GolpearSelectorUI(SelectorUI& selector, int direccion)
 }
 
 
-static void DibujarFlecha(float cx, float cy, float medio, int direccion, Color color)
+// Flecha solo contorneada: indica que el selector no se puede cambiar.
+static void DibujarFlechaInactiva(float cx, float cy, float medio, int direccion, Color color)
 {
     Vector2 punta = { cx + direccion * medio, cy };
     Vector2 a = { cx - direccion * medio, cy - medio * 1.2f };
     Vector2 b = { cx - direccion * medio, cy + medio * 1.2f };
+    float grosor = Px(1.5f);
 
-    // DrawTriangle exige sentido antihorario.
-    if (direccion > 0)
-    {
-        DrawTriangle(a, b, punta, color);
-    }
-    else
-    {
-        DrawTriangle(b, a, punta, color);
-    }
+    DrawLineEx(a, b, grosor, color);
+    DrawLineEx(b, punta, grosor, color);
+    DrawLineEx(punta, a, grosor, color);
 }
 
 
@@ -1018,21 +1113,100 @@ void DibujarSelectorUI(
         return;
     }
 
-    DibujarEtiquetaFila(selector.etiqueta, rect);
-
     float centroY = rect.y + rect.height * 0.5f;
     float medio = Px(7.0f);
     float xIzq = rect.x + rect.width * 0.55f;
     float xDer = rect.x + rect.width - Px(28.0f);
+    float centroValor = (xIzq + xDer) * 0.5f;
+    int tamano = TamanoTexto(UI_TEXTO);
+    int ancho = MeasureText(valorTexto, tamano);
+
+    if (!selector.habilitado)
+    {
+        // Atenuado: rayado diagonal muy suave (sin texto encima), flechas
+        // solo contorneadas y texto en tinta suave (~4,7:1 sobre la placa).
+        // Cada raya va de (x, abajo) a (x + alto, arriba) a 45 grados; se
+        // recorta a mano a los bordes izquierdo y derecho (sin scissor,
+        // para no pisar uno que tenga activo la pantalla).
+        float pasoRayas = Px(14.0f);
+        float inset = Px(2.0f);
+        float izquierda = rect.x + inset;
+        float derecha = rect.x + rect.width - inset;
+        float abajo = rect.y + rect.height - inset;
+        float alto = rect.height - inset * 2.0f;
+
+        for (float x = izquierda - alto; x < derecha; x += pasoRayas)
+        {
+            float t0 = Limitar((izquierda - x) / alto, 0.0f, 1.0f);
+            float t1 = Limitar((derecha - x) / alto, 0.0f, 1.0f);
+
+            if (t1 <= t0)
+            {
+                continue;
+            }
+
+            DrawLineEx(
+                Vector2{ x + alto * t0, abajo - alto * t0 },
+                Vector2{ x + alto * t1, abajo - alto * t1 },
+                Px(2.0f),
+                Fade(UI_MADERA_OSCURA, 0.08f)
+            );
+        }
+
+        // El rayado no pasa por debajo de etiqueta y valor: se repinta la
+        // placa lisa detras de cada texto.
+        int tamanoEtiqueta = TamanoTexto(UI_TEXTO);
+        float xEtiqueta = rect.x + Px(UI_RELLENO + 4.0f);
+
+        DrawRectangleRec(
+            Rectangle{
+                xEtiqueta - Px(4.0f),
+                centroY - tamanoEtiqueta * 0.5f - Px(3.0f),
+                (float)MeasureText(selector.etiqueta, tamanoEtiqueta) + Px(8.0f),
+                tamanoEtiqueta + Px(6.0f)
+            },
+            UI_PLACA_CLARA
+        );
+
+        DrawRectangleRec(
+            Rectangle{
+                centroValor - ancho * 0.5f - Px(4.0f),
+                centroY - tamano * 0.5f - Px(3.0f),
+                ancho + Px(8.0f),
+                tamano + Px(6.0f)
+            },
+            UI_PLACA_CLARA
+        );
+
+        DrawText(
+            selector.etiqueta,
+            (int)xEtiqueta,
+            (int)(rect.y + (rect.height - tamanoEtiqueta) * 0.5f),
+            tamanoEtiqueta,
+            UI_TINTA_SUAVE
+        );
+
+        DibujarFlechaInactiva(xIzq, centroY, medio, -1, Fade(UI_TINTA_SUAVE, 0.55f));
+        DibujarFlechaInactiva(xDer, centroY, medio, 1, Fade(UI_TINTA_SUAVE, 0.55f));
+
+        DrawText(
+            valorTexto,
+            (int)(centroValor - ancho * 0.5f),
+            (int)(centroY - tamano * 0.5f),
+            tamano,
+            UI_TINTA_SUAVE
+        );
+
+        return;
+    }
+
+    DibujarEtiquetaFila(selector.etiqueta, rect);
+
     float golpeI = selector.golpeIzquierda * Px(6.0f);
     float golpeD = selector.golpeDerecha * Px(6.0f);
 
-    DibujarFlecha(xIzq - golpeI, centroY, medio, -1, UI_MADERA_OSCURA);
-    DibujarFlecha(xDer + golpeD, centroY, medio, 1, UI_MADERA_OSCURA);
-
-    int tamano = TamanoTexto(UI_TEXTO);
-    int ancho = MeasureText(valorTexto, tamano);
-    float centroValor = (xIzq + xDer) * 0.5f;
+    DibujarFlechaUI(xIzq - golpeI, centroY, medio, -1, UI_MADERA_OSCURA);
+    DibujarFlechaUI(xDer + golpeD, centroY, medio, 1, UI_MADERA_OSCURA);
 
     DrawText(
         valorTexto,
@@ -1093,10 +1267,30 @@ void AjustarPalancaUI(PalancaUI& palanca, int direccion)
 }
 
 
+float ValorRealPalancaUI(const PalancaUI& palanca)
+{
+    return palanca.minimo + palanca.valor * (palanca.maximo - palanca.minimo);
+}
+
+
+void RielPalancaUI(
+    const PalancaUI& palanca,
+    float& x0,
+    float& x1
+)
+{
+    Rectangle rect = RectRef(palanca.ref.x, palanca.ref.y, palanca.ref.width, palanca.ref.height);
+
+    x0 = rect.x + rect.width * 0.42f;
+    x1 = rect.x + rect.width - Px(palanca.anchoValor);
+}
+
+
 void DibujarPalancaUI(
     const EstiloUI& estilo,
     const PalancaUI& palanca,
-    bool foco
+    bool foco,
+    const char* textoValor
 )
 {
     Rectangle rect;
@@ -1109,7 +1303,7 @@ void DibujarPalancaUI(
     DibujarEtiquetaFila(palanca.etiqueta, rect);
 
     float x0 = rect.x + rect.width * 0.42f;
-    float x1 = rect.x + rect.width - Px(84.0f);
+    float x1 = rect.x + rect.width - Px(palanca.anchoValor);
     float yRiel = rect.y + rect.height * 0.62f;
     float grosor = Px(8.0f);
 
@@ -1142,14 +1336,34 @@ void DibujarPalancaUI(
     DrawCircleLinesV(Vector2{ xPerilla, yRiel - Px(18.0f) }, Px(9.0f), CONTORNO_MADERA);
     DrawCircleV(Vector2{ xPerilla - Px(3.0f), yRiel - Px(21.0f) }, Px(2.5f), Fade(WHITE, 0.8f));
 
-    char porcentaje[16];
-    snprintf(porcentaje, sizeof porcentaje, "%d%%", (int)(palanca.valor * 100.0f + 0.5f));
-
+    char texto[48];
     int tamano = TamanoTexto(UI_TEXTO);
-    int ancho = MeasureText(porcentaje, tamano);
+
+    if (textoValor != nullptr || palanca.formatoValor != nullptr)
+    {
+        if (textoValor != nullptr)
+        {
+            snprintf(texto, sizeof texto, "%s", textoValor);
+        }
+        else
+        {
+            snprintf(texto, sizeof texto, palanca.formatoValor, ValorRealPalancaUI(palanca));
+        }
+
+        // Cabe entre la bola de la perilla (en x1) y el borde derecho.
+        float anchoMaximo = Px(palanca.anchoValor - UI_RELLENO - 4.0f - 12.0f);
+        tamano = TamanoTextoAjustadoUI(texto, UI_TEXTO, anchoMaximo);
+    }
+    else
+    {
+        // Por defecto: 0..100 % (igual que siempre).
+        snprintf(texto, sizeof texto, "%d%%", (int)(palanca.valor * 100.0f + 0.5f));
+    }
+
+    int ancho = MeasureText(texto, tamano);
 
     DrawText(
-        porcentaje,
+        texto,
         (int)(rect.x + rect.width - Px(UI_RELLENO + 4.0f) - ancho),
         (int)(rect.y + (rect.height - tamano) * 0.5f),
         tamano,
@@ -1251,6 +1465,450 @@ void DibujarInterruptorUI(
         tamano,
         UI_TINTA
     );
+}
+
+
+//==================================================
+// TARJETA
+//==================================================
+
+// Medidas de la tarjeta en unidades de referencia.
+static const float MARCO_TARJETA = 7.0f;            // madera visible
+static const float RELLENO_TARJETA = 12.0f;
+static const float ALTO_TITULO_TARJETA = 34.0f;     // texto + aire + divisor
+static const float PASO_LINEA_TARJETA = 24.0f;
+
+
+void TarjetaUI::Iniciar(Rectangle rectRef, const char* textoTitulo, float retraso)
+{
+    ref = rectRef;
+    titulo = textoTitulo;
+    colgado.Iniciar(0.0f, retraso, 40.0f, 0.0f);
+}
+
+
+void ActualizarTarjetaUI(TarjetaUI& tarjeta, const EstiloUI& estilo, float dt)
+{
+    tarjeta.colgado.Actualizar(estilo, dt, false);
+}
+
+
+Rectangle AreaContenidoTarjetaUI(const TarjetaUI& tarjeta)
+{
+    float margen = MARCO_TARJETA + RELLENO_TARJETA;
+    float arriba = margen - 4.0f;
+
+    if (tarjeta.titulo != nullptr)
+    {
+        arriba += ALTO_TITULO_TARJETA;
+    }
+
+    return Rectangle{
+        tarjeta.ref.x + margen,
+        tarjeta.ref.y + arriba,
+        tarjeta.ref.width - margen * 2.0f,
+        tarjeta.ref.height - arriba - margen + 4.0f
+    };
+}
+
+
+void DibujarTarjetaUI(const EstiloUI& estilo, const TarjetaUI& tarjeta)
+{
+    if (!estilo.cargado || tarjeta.colgado.retraso > 0.0f)
+    {
+        return;
+    }
+
+    float escala = EscalaUI();
+    Rectangle rect = RectRef(tarjeta.ref.x, tarjeta.ref.y, tarjeta.ref.width, tarjeta.ref.height);
+    rect.y += tarjeta.colgado.caida.valor * escala;
+
+    DrawRectangleRec(
+        Rectangle{ rect.x + Px(4.0f), rect.y + Px(5.0f), rect.width, rect.height },
+        Fade(BLACK, 0.22f)
+    );
+
+    // Marco de madera fino (la misma textura del panel, a media escala)
+    // y la placa clara encima: el texto solo va sobre la placa.
+    DibujarNueveCortes(estilo.madera, 12, rect, escala * 0.6f, WHITE);
+
+    float marco = Px(MARCO_TARJETA);
+    Rectangle placa = {
+        rect.x + marco, rect.y + marco,
+        rect.width - marco * 2.0f, rect.height - marco * 2.0f
+    };
+
+    DibujarNueveCortes(estilo.placa, 8, placa, escala, WHITE);
+
+    if (tarjeta.titulo == nullptr)
+    {
+        return;
+    }
+
+    float relleno = Px(RELLENO_TARJETA);
+    float anchoUtil = placa.width - relleno * 2.0f;
+
+    DibujarTextoAjustadoUI(
+        tarjeta.titulo,
+        placa.x + relleno,
+        placa.y + Px(8.0f),
+        UI_TEXTO,
+        anchoUtil,
+        UI_TINTA,
+        false
+    );
+
+    DrawRectangleRec(
+        Rectangle{ placa.x + relleno, placa.y + Px(32.0f), anchoUtil, Px(2.0f) },
+        Fade(UI_MADERA_OSCURA, 0.45f)
+    );
+}
+
+
+void DibujarLineaTarjetaUI(
+    const TarjetaUI& tarjeta,
+    int linea,
+    const char* etiqueta,
+    const char* valor
+)
+{
+    if (tarjeta.colgado.retraso > 0.0f)
+    {
+        return;
+    }
+
+    Rectangle area = AreaContenidoTarjetaUI(tarjeta);
+    Rectangle rect = RectRef(area.x, area.y + linea * PASO_LINEA_TARJETA, area.width, PASO_LINEA_TARJETA);
+    rect.y += tarjeta.colgado.caida.valor * EscalaUI();
+
+    float y = rect.y + (rect.height - TamanoTexto(UI_TEXTO_PEQUENO)) * 0.5f;
+
+    DibujarTextoAjustadoUI(etiqueta, rect.x, y, UI_TEXTO_PEQUENO, rect.width * 0.42f, UI_TINTA_SUAVE, false);
+    DibujarTextoAjustadoUI(valor, rect.x + rect.width * 0.45f, y, UI_TEXTO_PEQUENO, rect.width * 0.55f, UI_TINTA, false);
+}
+
+
+//==================================================
+// MODAL / AVISO
+//==================================================
+
+// Velo oscuro sobre la escena (el mismo de Configuracion).
+static const Color COLOR_VELO_MODAL = { 10, 12, 18, 255 };
+
+static const float T_APARICION_VELO = 0.18f;
+static const float MARGEN_MODAL = 14.0f;            // madera del cartel
+static const float HUECO_BOTONES_MODAL = 30.0f;
+
+
+void ModalUI::Abrir(
+    Rectangle rectRef,
+    const char* textoMensaje,
+    const char* textoBoton0,
+    const char* textoBoton1,
+    int focoInicial
+)
+{
+    ref = rectRef;
+    mensaje = textoMensaje;
+    foco = focoInicial == 1 ? 1 : 0;
+    abierto = true;
+    aparicion = 0.0f;
+
+    // Cae poco (desde apenas encima de los ganchos) y no se balancea.
+    colgado.Iniciar(0.0f, 0.0f, largoSogas + 18.0f, 0.0f);
+
+    // Botones al pie, con el ancho que pidan sus textos (+40 de aire,
+    // minimo 180) sin pasarse del cartel; si aun asi no cabe, el texto se
+    // reduce solo.
+    const char* textos[2] = { textoBoton0, textoBoton1 };
+    float ancho = 180.0f;
+
+    for (int i = 0; i < 2; i++)
+    {
+        float necesario = AnchoNecesarioBotonUI(textos[i]) + 40.0f;
+        ancho = necesario > ancho ? necesario : ancho;
+    }
+
+    float anchoMaximo = (ref.width - MARGEN_MODAL * 2.0f - HUECO_BOTONES_MODAL * 3.0f) * 0.5f;
+    ancho = ancho < anchoMaximo ? ancho : anchoMaximo;
+
+    float x0 = ref.x + (ref.width - ancho * 2.0f - HUECO_BOTONES_MODAL) * 0.5f;
+    float y = ref.y + ref.height - MARGEN_MODAL - 18.0f - UI_ALTO_BOTON;
+    const float reposos[2] = { -1.0f, 1.0f };
+
+    for (int i = 0; i < 2; i++)
+    {
+        botones[i].Iniciar(
+            Rectangle{ x0 + i * (ancho + HUECO_BOTONES_MODAL), y, ancho, UI_ALTO_BOTON },
+            textos[i],
+            reposos[i],
+            0.12f + i * UI_T_ESCALONADO
+        );
+
+        // Caida corta: acompanan al cartel en lugar de bajar desde arriba.
+        botones[i].colgado.Iniciar(reposos[i], 0.12f + i * UI_T_ESCALONADO, 24.0f, 1.0f);
+    }
+}
+
+
+void ModalUI::Cerrar()
+{
+    abierto = false;
+    aparicion = 0.0f;
+}
+
+
+int ActualizarModalUI(
+    ModalUI& modal,
+    const EstiloUI& estilo,
+    float dt,
+    const EntradaUI& entrada
+)
+{
+    if (!modal.abierto)
+    {
+        return -1;
+    }
+
+    modal.aparicion = Limitar(modal.aparicion + dt / T_APARICION_VELO, 0.0f, 1.0f);
+
+    // Los botones estan uno al lado del otro: izquierda/derecha van al de
+    // ese lado; arriba/abajo alternan (para mandos que solo usan el stick
+    // vertical en los menus).
+    if (entrada.izquierda)
+    {
+        modal.foco = 0;
+    }
+    else if (entrada.derecha)
+    {
+        modal.foco = 1;
+    }
+    else if (entrada.arriba || entrada.abajo)
+    {
+        modal.foco = 1 - modal.foco;
+    }
+
+    modal.colgado.Actualizar(estilo, dt, false);
+
+    for (int i = 0; i < 2; i++)
+    {
+        ActualizarBotonUI(modal.botones[i], estilo, dt, modal.foco == i);
+    }
+
+    int respuesta = -1;
+
+    if (entrada.aceptar)
+    {
+        respuesta = modal.foco;
+    }
+    else if (entrada.volver)
+    {
+        respuesta = modal.botonCancelar == 0 ? 0 : 1;
+    }
+
+    if (respuesta >= 0)
+    {
+        modal.botones[respuesta].colgado.Pulsar();
+        modal.Cerrar();
+    }
+
+    return respuesta;
+}
+
+
+// Parte `texto` en lineas que quepan en anchoMaximo y las dibuja
+// centradas. Devuelve la y siguiente a la ultima linea.
+static float DibujarParrafoCentrado(
+    const char* texto,
+    float centroX,
+    float y,
+    int tamano,
+    float anchoMaximo,
+    Color color
+)
+{
+    char linea[256];
+    char prueba[256];
+    int largoLinea = 0;
+    const char* p = texto;
+
+    linea[0] = '\0';
+
+    while (*p != '\0')
+    {
+        // Siguiente palabra (hasta el espacio).
+        const char* fin = p;
+
+        while (*fin != '\0' && *fin != ' ')
+        {
+            fin++;
+        }
+
+        int largoPalabra = (int)(fin - p);
+
+        snprintf(
+            prueba,
+            sizeof prueba,
+            "%s%s%.*s",
+            linea,
+            largoLinea > 0 ? " " : "",
+            largoPalabra,
+            p
+        );
+
+        if (largoLinea > 0 && (float)MeasureText(prueba, tamano) > anchoMaximo)
+        {
+            DrawText(linea, (int)(centroX - MeasureText(linea, tamano) * 0.5f), (int)y, tamano, color);
+            y += tamano + Px(6.0f);
+
+            snprintf(linea, sizeof linea, "%.*s", largoPalabra, p);
+        }
+        else
+        {
+            snprintf(linea, sizeof linea, "%s", prueba);
+        }
+
+        largoLinea = (int)TextLength(linea);
+        p = *fin == ' ' ? fin + 1 : fin;
+    }
+
+    if (largoLinea > 0)
+    {
+        DrawText(linea, (int)(centroX - MeasureText(linea, tamano) * 0.5f), (int)y, tamano, color);
+        y += tamano + Px(6.0f);
+    }
+
+    return y;
+}
+
+
+void DibujarModalUI(
+    const EstiloUI& estilo,
+    const ModalUI& modal,
+    const char* detalle,
+    float progreso
+)
+{
+    if (!modal.abierto || !estilo.cargado)
+    {
+        return;
+    }
+
+    DrawRectangle(
+        0,
+        0,
+        GetScreenWidth(),
+        GetScreenHeight(),
+        Fade(COLOR_VELO_MODAL, 0.55f * modal.aparicion)
+    );
+
+    float escala = EscalaUI();
+    Rectangle fijo = RectRef(modal.ref.x, modal.ref.y, modal.ref.width, modal.ref.height);
+    Rectangle rect = fijo;
+    rect.y += modal.colgado.caida.valor * escala;
+
+    // Ganchos clavados por encima del cartel (no se mueven) y sogas
+    // cortas hasta el borde superior.
+    if (modal.largoSogas > 0.0f)
+    {
+        float yGancho = fijo.y - Px(modal.largoSogas);
+        float inset = Px(modal.ref.width * 0.2f < 46.0f ? modal.ref.width * 0.2f : 46.0f);
+
+        for (int lado = 0; lado < 2; lado++)
+        {
+            float x = lado == 0 ? rect.x + inset : rect.x + rect.width - inset;
+
+            if (rect.y > yGancho)
+            {
+                DibujarCuerdaUI(estilo, Vector2{ x, yGancho }, Vector2{ x, rect.y + Px(4.0f) });
+            }
+
+            DrawCircleV(Vector2{ x, yGancho }, Px(4.0f), UI_TINTA);
+            DrawCircleV(Vector2{ x, yGancho }, Px(2.5f), UI_MADERA_OSCURA);
+        }
+    }
+
+    DrawRectangleRec(
+        Rectangle{ rect.x + Px(6.0f), rect.y + Px(8.0f), rect.width, rect.height },
+        Fade(BLACK, 0.30f)
+    );
+
+    DibujarNueveCortes(estilo.madera, 12, rect, escala, WHITE);
+
+    float margen = Px(MARGEN_MODAL);
+    Rectangle interior = {
+        rect.x + margen, rect.y + margen,
+        rect.width - margen * 2.0f, rect.height - margen * 2.0f
+    };
+
+    DibujarNueveCortes(estilo.placa, 8, interior, escala, WHITE);
+
+    // Mensaje (grande) y detalle (partido en lineas).
+    float centroX = interior.x + interior.width * 0.5f;
+    float anchoTexto = interior.width - Px(40.0f);
+    float y = interior.y + Px(20.0f);
+
+    DibujarTextoAjustadoUI(modal.mensaje, centroX, y, UI_TEXTO_GRANDE, anchoTexto, UI_TINTA, true);
+    y += TamanoTexto(UI_TEXTO_GRANDE) + Px(14.0f);
+
+    if (detalle != nullptr && detalle[0] != '\0')
+    {
+        y = DibujarParrafoCentrado(detalle, centroX, y, TamanoTexto(UI_TEXTO), anchoTexto, UI_TINTA_SUAVE);
+    }
+
+    // Riel de cuenta atras (mismo aspecto que el de las palancas).
+    if (progreso >= 0.0f)
+    {
+        Rectangle riel = {
+            interior.x + Px(40.0f),
+            y + Px(4.0f),
+            interior.width - Px(80.0f),
+            Px(10.0f)
+        };
+
+        DrawRectangleRec(riel, UI_TINTA);
+        DrawRectangleRec(
+            Rectangle{
+                riel.x + Px(1.0f),
+                riel.y + Px(1.0f),
+                (riel.width - Px(2.0f)) * Limitar(progreso, 0.0f, 1.0f),
+                riel.height - Px(2.0f)
+            },
+            UI_MADERA_MEDIA
+        );
+    }
+
+    // Los botones acompanan la caida del cartel.
+    for (int i = 0; i < 2; i++)
+    {
+        BotonUI boton = modal.botones[i];
+        boton.ref.y += modal.colgado.caida.valor;
+
+        DibujarBotonUI(estilo, boton, modal.foco == i);
+    }
+}
+
+
+int BotonModalBajoMouseUI(const ModalUI& modal)
+{
+    if (!modal.abierto)
+    {
+        return -1;
+    }
+
+    Vector2 mouse = GetMousePosition();
+
+    for (int i = 0; i < 2; i++)
+    {
+        const Rectangle& r = modal.botones[i].ref;
+
+        if (CheckCollisionPointRec(mouse, RectRef(r.x, r.y, r.width, r.height)))
+        {
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 

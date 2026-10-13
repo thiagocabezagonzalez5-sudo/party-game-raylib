@@ -273,6 +273,49 @@ void DibujarTextoMundo(
 // Marco dorado de foco alrededor de un rectangulo en pixeles.
 void DibujarMarcoFoco(Rectangle rect);
 
+// Flecha triangular centrada en (cx, cy), en pixeles. `medio` es la mitad
+// de su ancho; direccion: -1 izquierda, +1 derecha.
+void DibujarFlechaUI(
+    float cx,
+    float cy,
+    float medio,
+    int direccion,
+    Color color
+);
+
+
+//==================================================
+// TEXTO AJUSTADO AL ANCHO
+//==================================================
+
+// Tamano de fuente (pixeles) del token, reducido de a 1 px hasta que el
+// texto quepa en anchoMaximo pixeles. Nunca baja de 10 px: si ni asi
+// cabe, el texto se dibuja entero (nunca se corta).
+int TamanoTextoAjustadoUI(
+    const char* texto,
+    int tokenTexto,
+    float anchoMaximo
+);
+
+// Como DibujarTextoTinta, pero reduce la fuente si el texto no cabe en
+// anchoMaximo pixeles. Con centrado = true, x es el centro del texto.
+void DibujarTextoAjustadoUI(
+    const char* texto,
+    float x,
+    float y,
+    int tokenTexto,
+    float anchoMaximo,
+    Color color,
+    bool centrado
+);
+
+// Ancho en unidades de referencia que necesita un boton o pestana para
+// mostrar su texto sin reducirlo (texto + marco de madera + relleno).
+float AnchoNecesarioBotonUI(
+    const char* texto,
+    int tokenTexto = UI_TEXTO
+);
+
 
 //==================================================
 // COMPONENTES
@@ -307,6 +350,8 @@ void DibujarTituloUI(
 
 
 // ---- Boton / pestana: cartel colgado ----
+// Si el texto no cabe en el cartel, la fuente se reduce sola (sin cortar).
+// Para dimensionar el cartel segun su texto: AnchoNecesarioBotonUI.
 
 struct BotonUI
 {
@@ -348,6 +393,12 @@ struct SelectorUI
     const char* etiqueta = "";
     float golpeIzquierda = 0.0f;    // flecha que "golpea" al cambiar
     float golpeDerecha = 0.0f;
+
+    // false = deshabilitado: placa atenuada, flechas solo contorneadas
+    // y GolpearSelectorUI no hace nada. Iniciar lo vuelve a true. La
+    // pantalla decide si deja enfocarlo (el marco de foco se dibuja igual).
+    bool habilitado = true;
+
     ColgadoUI colgado;
 
     void Iniciar(Rectangle rectRef, const char* textoEtiqueta, float retraso);
@@ -359,7 +410,7 @@ void ActualizarSelectorUI(
     float dt
 );
 
-// direccion: -1 izquierda, +1 derecha.
+// direccion: -1 izquierda, +1 derecha. Ignorado si no esta habilitado.
 void GolpearSelectorUI(SelectorUI& selector, int direccion);
 
 void DibujarSelectorUI(
@@ -377,6 +428,19 @@ struct PalancaUI
     float valor = 0.5f;             // 0..1
     float valorMostrado = 0.5f;     // la perilla llega suave
     float paso = 0.05f;
+
+    // Texto del valor (opcional). Por defecto se muestra 0..100 %. Con
+    // formatoValor != nullptr se muestra ValorRealPalancaUI() con ese
+    // formato printf de UN float, p. ej. "%.0f %%" con minimo 5 y
+    // maximo 35 muestra "5 %".."35 %". Iniciar NO toca estos campos.
+    float minimo = 0.0f;
+    float maximo = 100.0f;
+    const char* formatoValor = nullptr;
+
+    // Zona reservada a la derecha para el texto del valor (unidades de
+    // referencia). Agrandarla acorta el riel; ver RielPalancaUI.
+    float anchoValor = 84.0f;
+
     ColgadoUI colgado;
 
     void Iniciar(
@@ -396,10 +460,25 @@ void ActualizarPalancaUI(
 // direccion: -1 / +1.
 void AjustarPalancaUI(PalancaUI& palanca, int direccion);
 
+// minimo + valor * (maximo - minimo).
+float ValorRealPalancaUI(const PalancaUI& palanca);
+
+// Extremos del riel en pixeles (x0 = valor 0, x1 = valor 1), por ejemplo
+// para arrastrar la perilla con el mouse.
+void RielPalancaUI(
+    const PalancaUI& palanca,
+    float& x0,
+    float& x1
+);
+
+// textoValor (opcional) reemplaza el texto del valor, p. ej. "60 FPS";
+// se reduce si no cabe en anchoValor. Prioridad: textoValor,
+// formatoValor y por ultimo el 0..100 % por defecto.
 void DibujarPalancaUI(
     const EstiloUI& estilo,
     const PalancaUI& palanca,
-    bool foco
+    bool foco,
+    const char* textoValor = nullptr
 );
 
 
@@ -430,6 +509,99 @@ void DibujarInterruptorUI(
     const InterruptorUI& interruptor,
     bool foco
 );
+
+
+// ---- Tarjeta: bloque de informacion (sin sogas) ----
+// Placa clara con marco fino de madera (9-slice) y titulo opcional. Como
+// las filas, aparece cayendo un poco (escalonada) y despues queda fija.
+// No es interactiva: no tiene foco.
+
+struct TarjetaUI
+{
+    Rectangle ref = {};             // unidades de referencia
+    const char* titulo = nullptr;   // nullptr = sin titulo
+    ColgadoUI colgado;
+
+    void Iniciar(Rectangle rectRef, const char* textoTitulo, float retraso);
+};
+
+void ActualizarTarjetaUI(
+    TarjetaUI& tarjeta,
+    const EstiloUI& estilo,
+    float dt
+);
+
+void DibujarTarjetaUI(const EstiloUI& estilo, const TarjetaUI& tarjeta);
+
+// Zona clara bajo el titulo, en unidades de referencia (sin la caida de
+// entrada: sumar colgado.caida.valor si se dibuja a mano).
+Rectangle AreaContenidoTarjetaUI(const TarjetaUI& tarjeta);
+
+// Linea "etiqueta   valor" numero `linea` (0, 1, ...) del contenido.
+// Etiqueta en tinta suave, valor en tinta; ambos se reducen si no caben.
+void DibujarLineaTarjetaUI(
+    const TarjetaUI& tarjeta,
+    int linea,
+    const char* etiqueta,
+    const char* valor
+);
+
+
+// ---- Modal / aviso: cartel colgado sobre un velo oscuro ----
+// Cuelga de dos ganchos clavados `largoSogas` unidades por encima del
+// cartel (sogas cortas: no cruzan el contenido de arriba). Tiene un
+// mensaje, un detalle opcional y dos botones con foco propio:
+// izquierda/derecha van al boton de ese lado, arriba/abajo alternan,
+// aceptar ejecuta el boton enfocado y volver ejecuta botonCancelar. Respeta
+// reducirMovimiento (sin caida ni balanceo).
+
+struct ModalUI
+{
+    Rectangle ref = {};             // cartel, unidades de referencia
+    const char* mensaje = "";
+    BotonUI botones[2];
+    int foco = 0;                   // boton enfocado (0 o 1)
+    int botonCancelar = 1;          // el que ejecuta "volver"
+
+    float largoSogas = 22.0f;       // 0 = sin ganchos ni sogas
+    bool abierto = false;
+    float aparicion = 0.0f;         // 0..1, opacidad del velo
+    ColgadoUI colgado;
+
+    // Abre el modal y coloca los botones al pie del cartel, con el
+    // ancho que pidan sus textos (sin pasarse del cartel).
+    void Abrir(
+        Rectangle rectRef,
+        const char* textoMensaje,
+        const char* textoBoton0,
+        const char* textoBoton1,
+        int focoInicial = 0
+    );
+
+    void Cerrar();
+};
+
+// Devuelve el indice del boton elegido (0 o 1) en el frame en que se
+// acepta o se vuelve, y -1 si no hubo respuesta. Al responder el modal se
+// cierra solo. Con el modal cerrado no hace nada (devuelve -1).
+int ActualizarModalUI(
+    ModalUI& modal,
+    const EstiloUI& estilo,
+    float dt,
+    const EntradaUI& entrada
+);
+
+// detalle (opcional): texto secundario, se parte en lineas. progreso
+// (opcional, 0..1): riel de cuenta atras; < 0 no se dibuja.
+void DibujarModalUI(
+    const EstiloUI& estilo,
+    const ModalUI& modal,
+    const char* detalle = nullptr,
+    float progreso = -1.0f
+);
+
+// Boton del modal bajo el puntero del mouse (0 o 1), o -1.
+int BotonModalBajoMouseUI(const ModalUI& modal);
 
 
 // ---- Ayuda de controles: tira clara al pie de la pantalla ----

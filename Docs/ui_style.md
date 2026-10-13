@@ -33,6 +33,9 @@ Reglas comunes a ambas direcciones:
 - Tokens únicos: paleta, tamaños en unidades relativas a 720p, duraciones.
 - Respetar `reducirMovimiento` de la configuración: sin balanceo ni sacudidas.
 - Contraste mínimo del texto 4.5:1 sobre su fondo.
+- Textos de UI en español rioplatense con voseo (elegí, confirmá, volvé); nunca tuteo.
+  En mayúsculas se escriben las tildes de Á, É, Ó, Ú («CONFIRMÁ», «VOLVÉ»), pero nunca
+  la Í mayúscula, porque la fuente pixel la dibuja como una í minúscula («ELEGI»).
 
 ---
 
@@ -184,9 +187,17 @@ el audio existente).
 ## Como ejecutar la demo
 
 ```
-powershell -File Tests/DemoEstiloUI.ps1
-build/DemoEstiloUI.exe --captura 1920 1080 docs/img
+powershell -File Tests/DemoEstiloUI.ps1                 # compila y abre la demo
+powershell -File Tests/DemoEstiloUI.ps1 -SoloCompilar   # solo compila
+build/DemoEstiloUI.exe --captura 1920 1080 build/capturas/estiloui_v2
+build/DemoEstiloUI.exe --captura 1280 720 build/capturas/estiloui_v2/reducido --reducir-movimiento
 ```
+
+La demo tiene 4 pestanas: VIDEO (palanca con texto propio «60 FPS»), AUDIO
+(palancas 0..100 % por defecto), JUEGO (interruptor «Reducir movimiento») y
+CONTROLES (palanca con rango 5..35 %, selector deshabilitado y tarjeta). VOLVER
+o Esc abren el aviso «¿Salir sin aplicar?»; APLICAR abre un aviso con cuenta
+atras.
 
 ## Componentes y API (`UI/EstiloUI.h`)
 
@@ -202,12 +213,16 @@ del propio struct.
 | Animacion | `ResorteUI`, `ColgadoUI` | `ResorteUI::Actualizar`, `ColgadoUI::Iniciar/Actualizar/Pulsar/EnMovimiento` |
 | Panel | `PanelUI` | `Iniciar(rect, retraso)`, `ActualizarPanelUI`, `DibujarPanelUI`, `AreaInteriorPanelUI` |
 | Titulo | — | `DibujarTituloUI(estilo, colgado, texto, rect)` |
-| Boton / pestana | `BotonUI` | `Iniciar(rect, texto, reposo, retraso)`, `ActualizarBotonUI(b, estilo, dt, foco)`, `DibujarBotonUI(estilo, b, foco)`; `colgado.Pulsar()` al aceptar; `activo` marca la pestana actual |
-| Selector `< valor >` | `SelectorUI` | `Iniciar`, `ActualizarSelectorUI`, `GolpearSelectorUI(dir)`, `DibujarSelectorUI(estilo, s, textoValor, foco)` |
-| Palanca (slider) | `PalancaUI` | `Iniciar(rect, etiqueta, valor, retraso)`, `ActualizarPalancaUI`, `AjustarPalancaUI(dir)`, `DibujarPalancaUI`; `valor` 0..1, `paso` |
+| Boton / pestana | `BotonUI` | `Iniciar(rect, texto, reposo, retraso)`, `ActualizarBotonUI(b, estilo, dt, foco)`, `DibujarBotonUI(estilo, b, foco)`; `colgado.Pulsar()` al aceptar; `activo` marca la pestana actual. Si el texto no cabe, la fuente se reduce sola (sin cortar) |
+| Ancho segun texto | — | `AnchoNecesarioBotonUI(texto, token = UI_TEXTO)`: ancho en unidades de referencia (texto + marco + aire) para dimensionar botones y pestanas |
+| Selector `< valor >` | `SelectorUI` | `Iniciar`, `ActualizarSelectorUI`, `GolpearSelectorUI(dir)`, `DibujarSelectorUI(estilo, s, textoValor, foco)`; `habilitado = false`: placa rayada, flechas solo contorneadas, texto en `UI_TINTA_SUAVE` (~4,7:1) y `GolpearSelectorUI` no hace nada. `Iniciar` lo repone a `true` |
+| Palanca (slider) | `PalancaUI` | `Iniciar(rect, etiqueta, valor, retraso)`, `ActualizarPalancaUI`, `AjustarPalancaUI(dir)`, `DibujarPalancaUI(estilo, p, foco, textoValor = nullptr)`; `valor` 0..1, `paso`. Valor mostrado: `textoValor` (p. ej. «60 FPS») o `formatoValor` printf sobre `ValorRealPalancaUI` (= `minimo + valor * (maximo - minimo)`, p. ej. `"%.0f %%"` con 5..35) o, por defecto, 0..100 %. `anchoValor` reserva la zona del texto; `RielPalancaUI(p, x0, x1)` da el riel en pixeles. `Iniciar` no toca `minimo/maximo/formatoValor/anchoValor` |
 | Interruptor (toggle) | `InterruptorUI` | `Iniciar`, `ActualizarInterruptorUI`, `DibujarInterruptorUI`; campo `activo` |
+| Tarjeta (bloque de informacion) | `TarjetaUI` | `Iniciar(rect, titulo o nullptr, retraso)`, `ActualizarTarjetaUI`, `DibujarTarjetaUI`, `AreaContenidoTarjetaUI`, `DibujarLineaTarjetaUI(t, linea, etiqueta, valor)`. Placa clara con marco fino de madera, sin sogas ni foco |
+| Modal / aviso | `ModalUI` | `Abrir(rect, mensaje, boton0, boton1, focoInicial)`, `Cerrar()`, `ActualizarModalUI(m, estilo, dt, entrada)` → indice del boton elegido o -1 (al responder se cierra solo), `DibujarModalUI(estilo, m, detalle = nullptr, progreso = -1)`, `BotonModalBajoMouseUI`. Campos: `botonCancelar` (lo ejecuta volver), `largoSogas` (ganchos fijos a esa distancia sobre el cartel; 0 = sin sogas). Velo oscuro; izq/der eligen boton, arriba/abajo alternan; respeta `reducirMovimiento` |
 | Ayuda de controles | — | `DibujarAyudaUI(estilo, texto)` |
-| Bajo nivel | — | `DibujarNueveCortes`, `DibujarCuerdaUI`, `DibujarMarcoFoco`, `DibujarTextoTinta`, `DibujarTextoMundo` |
+| Texto ajustado | — | `TamanoTextoAjustadoUI(texto, token, anchoMax)`, `DibujarTextoAjustadoUI(texto, x, y, token, anchoMax, color, centrado)`: reducen la fuente de a 1 px (minimo 10 px) hasta que el texto quepa; nunca lo cortan |
+| Bajo nivel | — | `DibujarNueveCortes`, `DibujarCuerdaUI`, `DibujarMarcoFoco`, `DibujarFlechaUI(cx, cy, medio, dir, color)`, `DibujarTextoTinta`, `DibujarTextoMundo` |
 
 **Tokens** (todos en `EstiloUI.h`): colores `UI_FOCO`, `UI_TINTA`, `UI_TINTA_SUAVE`,
 `UI_PLACA_CLARA`, `UI_MADERA_OSCURA`, `UI_MADERA_MEDIA`, `UI_CUERDA`, `UI_POSITIVO`,
@@ -236,6 +251,16 @@ DescargarEstiloUI(estilo);
 
 ## Capturas de la demo
 
-`docs/img/ui_demo_{1280x720,1920x1080}_*.png`: 01 mitad de caida del panel,
-02 rebote, 03 reposo, 04 palanca ajustada, 05 cambio de pestana a mitad de balanceo,
-06 pestana en reposo, 07 boton con foco a mitad de balanceo, 08 boton pulsado, 09 final.
+`docs/img/ui_demo_{1280x720,1920x1080}_*.png` (primera version, 3 pestanas): 01 mitad
+de caida del panel, 02 rebote, 03 reposo, 04 palanca ajustada, 05 cambio de pestana a
+mitad de balanceo, 06 pestana en reposo, 07 boton con foco a mitad de balanceo,
+08 boton pulsado, 09 final.
+
+Version 2 (componentes nuevos), en `build/capturas/estiloui_v2/` (no versionadas;
+se regeneran con los comandos de arriba): 01 mitad de caida, 02 rebote,
+03 reposo con pestanas dimensionadas por su texto, 04 palanca con texto propio
+(120 FPS), 05 cambio de pestana a mitad, 06 palancas 0..100 %, 07 pestana CONTROLES
+con tarjeta, 08 palanca con rango (17 %) y selector deshabilitado con foco,
+09 entrada del aviso, 10 aviso en reposo, 11 foco movido a SALIR a mitad de
+balanceo, 12 aviso cancelado con volver, 13 aviso con cuenta atras. La carpeta
+`reducido/` repite la secuencia con `reducirMovimiento` activado.
