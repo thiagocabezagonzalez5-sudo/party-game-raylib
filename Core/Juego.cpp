@@ -8,6 +8,7 @@
 #include "Systems/Input.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
 #include "Systems/CalidadGrafica.h"
+#include "UI/EstiloUIGlobal.h"
 
 
 //==================================================
@@ -374,6 +375,52 @@ static void DibujarTableroVacio()
 }
 
 
+// Ventana de tamano exacto para capturas (--ventana W H). Si no entra
+// con barra de titulo, se quita el borde y se pega a la esquina del
+// monitor para que el area de dibujo mida exactamente W x H.
+static void AplicarVentanaForzada(
+    int ancho,
+    int alto
+)
+{
+    int monitor = GetCurrentMonitor();
+    int anchoMonitor = GetMonitorWidth(monitor);
+    int altoMonitor = GetMonitorHeight(monitor);
+
+    bool entraConBorde =
+        ancho <= anchoMonitor - 16 &&
+        alto <= altoMonitor - 96;
+
+    if (!entraConBorde)
+    {
+        SetWindowState(FLAG_WINDOW_UNDECORATED);
+    }
+
+    SetWindowSize(ancho, alto);
+
+    if (entraConBorde)
+    {
+        CentrarVentana(ancho, alto);
+    }
+    else
+    {
+        Vector2 posicionMonitor = GetMonitorPosition(monitor);
+
+        SetWindowPosition(
+            (int)posicionMonitor.x,
+            (int)posicionMonitor.y
+        );
+    }
+
+    TraceLog(
+        LOG_INFO,
+        "Ventana forzada por argumento: %dx%d (no se guarda en config)",
+        ancho,
+        alto
+    );
+}
+
+
 //==================================================
 // INICIALIZAR
 //==================================================
@@ -444,17 +491,28 @@ void Juego::Inicializar()
 
     SetTargetFPS(opcionesFPS[config.indiceFPS]);
 
-    ModoVentana modoActual = MODO_VENTANA;
+    if (anchoVentanaForzada > 0 && altoVentanaForzada > 0)
+    {
+        // Depuracion (--ventana W H): la config no se toca, asi que al
+        // guardarla no persiste este tamano.
+        AplicarVentanaForzada(anchoVentanaForzada, altoVentanaForzada);
+    }
+    else
+    {
+        ModoVentana modoActual = MODO_VENTANA;
 
-    AplicarModoVentana(
-        modoActual,
-        config.modoVentana,
-        resoluciones[config.indiceResolucion]
-    );
+        AplicarModoVentana(
+            modoActual,
+            config.modoVentana,
+            resoluciones[config.indiceResolucion]
+        );
 
-    config.modoVentana = modoActual;
+        config.modoVentana = modoActual;
+    }
+
     AplicarVSync(config.vsync);
     EstablecerReducirMovimientoMinijuegos(config.reducirMovimiento);
+    ObtenerEstiloUI().reducirMovimiento = config.reducirMovimiento;
     EstablecerZonaMuertaStick(config.zonaMuertaStick / 100.0f);
     EstablecerOpcionesCalidadGrafica(ObtenerOpcionesCalidadDesdeConfiguracion(config));
 
@@ -576,6 +634,12 @@ void Juego::Actualizar(
 )
 {
     const EstadoJuego estadoAlEntrar = estado;
+
+    // Estilo UI compartido: se copia la config cada frame para seguir
+    // los cambios del menu de configuracion.
+    EstiloUI& estiloUI = ObtenerEstiloUI();
+    estiloUI.reducirMovimiento = config.reducirMovimiento;
+    ActualizarEstiloUI(estiloUI, deltaTime);
 
     audio.SeleccionarMusica(ObtenerCategoriaMusicaEstado(estado));
     audio.Actualizar();
@@ -1632,4 +1696,5 @@ void Juego::Descargar()
     audio.Descargar();
     pantallaLogo.Descargar();
     menuPrincipal.Descargar();
+    DescargarEstiloUIGlobal();
 }

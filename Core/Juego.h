@@ -94,6 +94,11 @@ struct Juego
     float tiempoSalida = 0.0f;
     LectorEntradaFlujo lectorSalida;
 
+    // Depuracion: --ventana W H fuerza modo ventana con ese tamano sin
+    // escribirlo en config.ini. 0 = usar la configuracion guardada.
+    int anchoVentanaForzada = 0;
+    int altoVentanaForzada = 0;
+
     void Inicializar();
     void InicializarResoluciones();
 
