@@ -25,7 +25,7 @@ static const int MAX_FILAS = 5;
 static const char* NOMBRES_CATEGORIAS[CANTIDAD_CATEGORIAS_CONFIGURACION] =
 {
     "VIDEO",
-    "GRAFICOS",
+    "GRÁFICOS",
     "AUDIO",
     "CONTROLES",
     "JUEGO",
@@ -104,21 +104,21 @@ static const char* EtiquetaOpcion(
     switch (opcion)
     {
         case OPCION_VIDEO_MODO: return "Modo de pantalla";
-        case OPCION_VIDEO_RESOLUCION: return "Resolucion";
-        case OPCION_VIDEO_FPS: return "Limite de FPS";
+        case OPCION_VIDEO_RESOLUCION: return "Resolución";
+        case OPCION_VIDEO_FPS: return "Límite de FPS";
         case OPCION_VIDEO_MOSTRAR_FPS: return "Mostrar FPS";
         case OPCION_VIDEO_VSYNC: return "VSync";
-        case OPCION_GRAFICO_PRESET: return "Preset grafico";
-        case OPCION_GRAFICO_PARTICULAS: return "Particulas";
-        case OPCION_GRAFICO_DECORACION: return "Decoracion";
+        case OPCION_GRAFICO_PRESET: return "Preset gráfico";
+        case OPCION_GRAFICO_PARTICULAS: return "Partículas";
+        case OPCION_GRAFICO_DECORACION: return "Decoración";
         case OPCION_GRAFICO_EFECTOS: return "Efectos";
         case OPCION_GRAFICO_SOMBRAS: return "Sombras";
         case OPCION_AUDIO_SONIDOS: return "Efectos de sonido";
-        case OPCION_AUDIO_MUSICA: return "Musica";
+        case OPCION_AUDIO_MUSICA: return "Música";
         case OPCION_CONTROL_MODO_TECLADO: return "Modo de teclado";
         case OPCION_CONTROL_ZONA_MUERTA: return "Zona muerta del stick";
         case OPCION_JUEGO_RESTAURAR: return "Restaurar predeterminados";
-        case OPCION_ACCESIBILIDAD_MOVIMIENTO: return "Reducir movimiento de camara";
+        case OPCION_ACCESIBILIDAD_MOVIMIENTO: return "Reducir movimiento de cámara";
     }
 
     return "";
@@ -132,13 +132,13 @@ static const char* DescripcionOpcion(
     switch (opcion)
     {
         case OPCION_VIDEO_MODO:
-            return "Ventana, pantalla completa o ventana sin bordes. Pide confirmacion al cambiar.";
+            return "Ventana, pantalla completa o ventana sin bordes. Pide confirmación al cambiar.";
 
         case OPCION_VIDEO_RESOLUCION:
-            return "Tamano de la imagen. En ventana sin bordes se usa la del monitor (bloqueada).";
+            return "Tamaño de la imagen. En ventana sin bordes se usa la del monitor (bloqueada).";
 
         case OPCION_VIDEO_FPS:
-            return "Tope de cuadros por segundo. Con VSync activo el monitor tambien limita.";
+            return "Tope de cuadros por segundo. Con VSync activo el monitor también limita.";
 
         case OPCION_VIDEO_MOSTRAR_FPS:
             return "Muestra un contador de FPS en la esquina durante todo el juego.";
@@ -150,10 +150,10 @@ static const char* DescripcionOpcion(
             return "Fija las cuatro opciones a la vez. Cambiar una individual pasa a PERSONALIZADO.";
 
         case OPCION_GRAFICO_PARTICULAS:
-            return "Menos particulas ambientales (petalos, brasas, humo, chispas) en tableros y minijuegos.";
+            return "Menos partículas ambientales (pétalos, brasas, humo, chispas) en tableros y minijuegos.";
 
         case OPCION_GRAFICO_DECORACION:
-            return "Menos props decorativos y elementos lejanos fuera del area jugable.";
+            return "Menos props decorativos y elementos lejanos fuera del área jugable.";
 
         case OPCION_GRAFICO_EFECTOS:
             return "Menos efectos secundarios: agua animada, destellos y haces de luz.";
@@ -165,19 +165,19 @@ static const char* DescripcionOpcion(
             return "Volumen de los efectos. Al cambiarlo suena una muestra.";
 
         case OPCION_AUDIO_MUSICA:
-            return "Volumen de la musica de fondo. 0% la silencia.";
+            return "Volumen de la música de fondo. 0% la silencia.";
 
         case OPCION_CONTROL_MODO_TECLADO:
             return "1 jugador: un teclado completo. 2 jugadores: WASD (J1) y flechas (J2).";
 
         case OPCION_CONTROL_ZONA_MUERTA:
-            return "Inclinacion del stick que se ignora (todos los mandos). Subela si el personaje se mueve solo.";
+            return "Inclinación del stick que se ignora (todos los mandos). Subila si el personaje se mueve solo.";
 
         case OPCION_ACCESIBILIDAD_MOVIMIENTO:
-            return "Quita los temblores de camara en minijuegos y el balanceo de los carteles del menu.";
+            return "Quita los temblores de cámara en minijuegos y el balanceo de los carteles del menú.";
 
         case OPCION_JUEGO_RESTAURAR:
-            return "Devuelve video, graficos, audio y controles a sus valores originales (pide confirmar).";
+            return "Devuelve video, gráficos, audio y controles a sus valores originales (pide confirmar).";
     }
 
     return "";
@@ -855,7 +855,7 @@ static void AplicarPaso(
         {
             if (config.modoVentana == MODO_SIN_BORDES)
             {
-                menu.aviso = "La ventana sin bordes usa la resolucion del monitor.";
+                menu.aviso = "La ventana sin bordes usa la resolución del monitor.";
                 menu.tiempoAviso = 2.5f;
                 Sonido(audio, SONIDO_UI_CANCELAR);
                 break;
@@ -1372,7 +1372,7 @@ static void ActualizarAnimaciones(
         {
             menu.botonRestaurar.texto =
                 menu.restaurarArmado
-                    ? "PULSA OTRA VEZ PARA CONFIRMAR"
+                    ? "PULSÁ OTRA VEZ PARA CONFIRMAR"
                     : "RESTAURAR TODO";
 
             ActualizarBotonUI(
@@ -2203,16 +2203,16 @@ static void DibujarContenidoExtra(
             y = DibujarLinea("Jugador 1", "Teclado completo", teclado, y);
             y = DibujarLinea("Mover", "WASD o Flechas", teclado, y);
             y = DibujarLinea("Saltar / Aceptar", "ESPACIO", teclado, y);
-            y = DibujarLinea("Accion", "E", teclado, y);
+            y = DibujarLinea("Acción", "E", teclado, y);
             y = DibujarLinea("Cancelar", "RETROCESO", teclado, y);
             DibujarLinea("Pausa / Salir", "ESC", teclado, y);
         }
         else
         {
             y = DibujarLinea("J1 Mover", "WASD", teclado, y);
-            y = DibujarLinea("J1 Saltar / Accion", "ESPACIO / E", teclado, y);
+            y = DibujarLinea("J1 Saltar / Acción", "ESPACIO / E", teclado, y);
             y = DibujarLinea("J2 Mover", "Flechas", teclado, y);
-            y = DibujarLinea("J2 Saltar / Accion", "ENTER / SHIFT DER.", teclado, y);
+            y = DibujarLinea("J2 Saltar / Acción", "ENTER / SHIFT DER.", teclado, y);
             y = DibujarLinea("Cancelar", "J1 RETROCESO, J2 SHIFT DER.", teclado, y);
             DibujarLinea("Pausa / Salir", "ESC", teclado, y);
         }
@@ -2235,7 +2235,7 @@ static void DibujarContenidoExtra(
 
         ym = DibujarLinea("Mover", "Stick o cruceta", columna, ym);
         ym = DibujarLinea("Saltar, aceptar", "A", columna, ym);
-        ym = DibujarLinea("Accion", "X", columna, ym);
+        ym = DibujarLinea("Acción", "X", columna, ym);
         ym = DibujarLinea("Volver", "B", columna, ym);
         ym = DibujarLinea("Pausa", "START", columna, ym);
         DibujarLinea("Conectados", TextFormat("%d", conectados), columna, ym);
@@ -2262,11 +2262,11 @@ static void DibujarContenidoExtra(
         float y = tarjeta.y + Px(36.0f);
 
         y = DibujarLinea("Pantalla", NombreModoVentana(config.modoVentana), tarjeta, y);
-        y = DibujarLinea("Resolucion", TextoResolucion(config, resoluciones), tarjeta, y);
+        y = DibujarLinea("Resolución", TextoResolucion(config, resoluciones), tarjeta, y);
         y = DibujarLinea("FPS", TextFormat("%d%s", opcionesFPS[config.indiceFPS], config.vsync ? " (VSync)" : ""), tarjeta, y);
-        y = DibujarLinea("Musica / Efectos", TextFormat("%d%% / %d%%", (int)std::lround(config.volumenMusica * 100.0f), (int)std::lround(config.volumenSonidos * 100.0f)), tarjeta, y);
+        y = DibujarLinea("Música / Efectos", TextFormat("%d%% / %d%%", (int)std::lround(config.volumenMusica * 100.0f), (int)std::lround(config.volumenSonidos * 100.0f)), tarjeta, y);
         y = DibujarLinea("Teclado", NombreModoTeclado(config.modoTeclado), tarjeta, y);
-        DibujarLinea("Guardado", "Automatico al aplicar cada cambio", tarjeta, y);
+        DibujarLinea("Guardado", "Automático al aplicar cada cambio", tarjeta, y);
 
         return;
     }
@@ -2276,12 +2276,12 @@ static void DibujarContenidoExtra(
         const float yRef = Y_FILAS + PASO_FILAS + 10.0f;
         Rectangle tarjeta = EnPantallaColgado(Rectangle{ 300.0f, yRef, 680.0f, 100.0f }, colgado);
 
-        DibujarTarjeta(estilo, tarjeta, "QUE CAMBIA");
+        DibujarTarjeta(estilo, tarjeta, "QUÉ CAMBIA");
 
         float y = tarjeta.y + Px(36.0f);
 
-        y = DibujarLinea("Minijuegos", "Sin temblores de camara", tarjeta, y);
-        y = DibujarLinea("Menus", "Carteles quietos, sin caidas ni balanceo", tarjeta, y);
+        y = DibujarLinea("Minijuegos", "Sin temblores de cámara", tarjeta, y);
+        y = DibujarLinea("Menús", "Carteles quietos, sin caídas ni balanceo", tarjeta, y);
         DibujarLinea("Estado", config.reducirMovimiento ? "ACTIVADO" : "Desactivado", tarjeta, y);
     }
 }
@@ -2358,7 +2358,7 @@ static void DibujarModal(
     const float centroX = interior.x + interior.width * 0.5f;
 
     DibujarTextoAjustado(
-        "Mantener esta configuracion de video?",
+        "¿Mantener esta configuración de video?",
         centroX,
         interior.y + Px(22.0f),
         TamanoTexto(UI_TEXTO_GRANDE),
@@ -2368,7 +2368,7 @@ static void DibujarModal(
     );
 
     DibujarTextoAjustado(
-        TextFormat("Se revertira automaticamente en %d s", (int)std::ceil(menu.tiempoConfirmacion)),
+        TextFormat("Se revertirá automáticamente en %d s", (int)std::ceil(menu.tiempoConfirmacion)),
         centroX,
         interior.y + Px(66.0f),
         TamanoTexto(UI_TEXTO),
@@ -2417,7 +2417,7 @@ void MenuConfiguracion::Dibujar(
         Fade(COLOR_VELO, 0.35f * (1.0f - salida))
     );
 
-    DibujarTituloUI(estilo, colgadoTitulo, "CONFIGURACION", REF_TITULO);
+    DibujarTituloUI(estilo, colgadoTitulo, "CONFIGURACIÓN", REF_TITULO);
     DibujarPanelUI(estilo, panel);
 
     //------------------------------
@@ -2503,12 +2503,12 @@ void MenuConfiguracion::Dibujar(
         }
         else if (restaurarArmado)
         {
-            textoInfo = "Restaura TODO, incluida la pantalla (modo y resolucion). Pulsa otra vez para confirmar.";
+            textoInfo = "Restaura TODO, incluida la pantalla (modo y resolución). Pulsá otra vez para confirmar.";
             esAviso = true;
         }
         else if (seleccion == cantidad)
         {
-            textoInfo = "Vuelve al menu principal.";
+            textoInfo = "Vuelve al menú principal.";
         }
         else
         {
@@ -2544,7 +2544,7 @@ void MenuConfiguracion::Dibujar(
         nota.y += desplazamientoPanel;
 
         DibujarTextoAjustado(
-            "Los cambios se guardan automaticamente.",
+            "Los cambios se guardan automáticamente.",
             nota.x,
             nota.y,
             fuenteInfo,
@@ -2558,7 +2558,7 @@ void MenuConfiguracion::Dibujar(
 
     DibujarAyudaUI(
         estilo,
-        "FLECHAS/WASD O CRUCETA: ELEGIR Y CAMBIAR   ENTER/A: ACEPTAR   Q-E / LB-RB: PESTANAS   ESC/B: VOLVER"
+        "FLECHAS/WASD O CRUCETA: ELEGIR Y CAMBIAR   ENTER/A: ACEPTAR   Q-E / LB-RB: PESTAÑAS   ESC/B: VOLVER"
     );
 
     if (confirmandoVideo && modalIniciado)

@@ -384,7 +384,14 @@ InputSeleccionParticipante LeerInputSeleccionParticipante(
     }
     else if (usaWASD)
     {
-        entrada.confirmar = IsKeyPressed(KEY_SPACE);
+        // Con un solo teclado (modo completo) ENTER tambien confirma; en
+        // teclado dividido ENTER sigue siendo del jugador de flechas.
+        entrada.confirmar =
+            IsKeyPressed(KEY_SPACE) ||
+            (
+                participante.control == CONTROL_TECLADO_COMPLETO &&
+                IsKeyPressed(KEY_ENTER)
+            );
         entrada.cancelar = IsKeyPressed(KEY_BACKSPACE);
     }
 

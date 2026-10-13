@@ -158,8 +158,12 @@ static void ActualizarTodosListos(
         cantidadMaxima
     );
 
+    // Basta un humano: los puestos libres se completan con bots (mismo
+    // criterio que Juego.cpp). Si aqui se exigieran 2, con un solo humano
+    // la confirmacion final nunca quedaria habilitada.
     bool activosPreparados =
-        EsCantidadParticipantesValida(activos);
+        activos >= 1 &&
+        activos <= MAX_PARTICIPANTES;
 
     for (
         int i = 0;
@@ -1176,7 +1180,7 @@ static void DibujarPanelJugador(
             RevelacionBot(seleccion.tiempoComoBot[indice], indice);
 
         DrawText(
-            TextFormat("SERA BOT: %s", seleccion.personajes[indice].nombre),
+            TextFormat("SERÁ BOT: %s", seleccion.personajes[indice].nombre),
             xTexto,
             yFila3 + Px(22.0f),
             Px(12.0f),
@@ -1323,27 +1327,27 @@ static void ComponerAyuda(
 
     if (completo)
     {
-        AgregarAyuda(destino, capacidad, "TECLADO: WASD o FLECHAS, ESPACIO o ENTER = OK, RETROCESO o SHIFT DER = ATRAS");
+        AgregarAyuda(destino, capacidad, "TECLADO: WASD o FLECHAS, ESPACIO o ENTER = OK, RETROCESO = ATRÁS");
     }
 
     if (wasd)
     {
-        AgregarAyuda(destino, capacidad, "WASD + ESPACIO (ATRAS: RETROCESO)");
+        AgregarAyuda(destino, capacidad, "WASD + ESPACIO (ATRÁS: RETROCESO)");
     }
 
     if (flechas)
     {
-        AgregarAyuda(destino, capacidad, "FLECHAS + ENTER (ATRAS: SHIFT DER)");
+        AgregarAyuda(destino, capacidad, "FLECHAS + ENTER (ATRÁS: SHIFT DER)");
     }
 
     if (mando)
     {
-        AgregarAyuda(destino, capacidad, "MANDO: STICK/CRUZ + A (ATRAS: B)");
+        AgregarAyuda(destino, capacidad, "MANDO: STICK/CRUZ + A (ATRÁS: B)");
     }
 
     if (destino[0] == '\0')
     {
-        AgregarAyuda(destino, capacidad, "CONFIRMA CON TU TECLA O BOTON PARA UNIRTE");
+        AgregarAyuda(destino, capacidad, "CONFIRMÁ CON TU TECLA O BOTÓN PARA UNIRTE");
     }
 
     AgregarAyuda(destino, capacidad, "ESC: HUB");
@@ -1485,7 +1489,7 @@ void SeleccionPersonajes::Dibujar(
     //------------------------------
 
     DibujarTextoCentrado(
-        "ELIGE TU PERSONAJE",
+        "ELEGI TU PERSONAJE",
         ancho / 2,
         Px(12.0f),
         Px(34.0f),
@@ -1508,11 +1512,13 @@ void SeleccionPersonajes::Dibujar(
 
     const char* subtitulo =
         humanos < 1
-        ? "UNETE PARA EMPEZAR (LOS PUESTOS LIBRES SERAN BOTS)"
+        ? "UNITE PARA EMPEZAR (LOS PUESTOS LIBRES SERÁN BOTS)"
         : TextFormat(
-            "%d HUMANOS + %d BOTS",
+            "%d %s + %d %s",
             humanos,
-            MAX_PARTICIPANTES - humanos
+            humanos == 1 ? "HUMANO" : "HUMANOS",
+            MAX_PARTICIPANTES - humanos,
+            MAX_PARTICIPANTES - humanos == 1 ? "BOT" : "BOTS"
         );
 
     DibujarTextoCentrado(
@@ -1520,7 +1526,7 @@ void SeleccionPersonajes::Dibujar(
         ancho / 2,
         Px(52.0f),
         Px(16.0f),
-        humanos < 2 ? Color{ 255, 190, 90, 255 } : Color{ 235, 225, 245, 255 }
+        humanos < 1 ? Color{ 255, 190, 90, 255 } : Color{ 235, 225, 245, 255 }
     );
 
 
@@ -1570,7 +1576,7 @@ void SeleccionPersonajes::Dibujar(
             Px((20.0f + 1.5f * pulso) * (0.6f + 0.4f * entrada));
 
         const char* mensaje =
-            "TODOS LISTOS!  CONFIRMA PARA SEGUIR";
+            "TODOS LISTOS!  CONFIRMÁ PARA SEGUIR";
 
         int anchoMensaje =
             MeasureText(mensaje, tamano) + Px(40.0f);

@@ -541,10 +541,10 @@ static int ObtenerControlesAyuda(
 
 
 // Barra de ayuda con las teclas que acepta HOY la entrada del flujo
-// (LeerInputSeleccionParticipante): teclado completo y WASD confirman con
-// ESPACIO y vuelven con RETROCESO; flechas usan ENTER y SHIFT DER; el
-// mando A y B. ESC siempre vuelve. Sin humanos conectados el teclado
-// acepta ENTER o ESPACIO.
+// (LeerInputSeleccionParticipante): teclado completo confirma con ESPACIO
+// o ENTER y WASD solo con ESPACIO, y ambos vuelven con RETROCESO; flechas
+// usan ENTER y SHIFT DER; el mando A y B. ESC siempre vuelve. Sin humanos
+// conectados el teclado acepta ENTER o ESPACIO.
 static void DibujarAyudaFlujo(
     const EstiloUI& estilo,
     int controles,
@@ -552,10 +552,12 @@ static void DibujarAyudaFlujo(
     const char* accionConfirmar
 )
 {
+    const bool completo = (controles & (1 << CONTROL_TECLADO_COMPLETO)) != 0;
     const bool espacio =
-        (controles & (1 << CONTROL_TECLADO_COMPLETO)) ||
+        completo ||
         (controles & (1 << CONTROL_TECLADO_WASD));
     const bool flechas = (controles & (1 << CONTROL_TECLADO_FLECHAS)) != 0;
+    const bool enter = completo || flechas;
     const bool mando = (controles & (1 << CONTROL_GAMEPAD)) != 0;
 
     char confirmar[64] = "";
@@ -572,8 +574,8 @@ static void DibujarAyudaFlujo(
             sizeof(confirmar),
             "%s%s%s",
             espacio ? "ESPACIO" : "",
-            flechas ? (espacio ? " / ENTER" : "ENTER") : "",
-            mando ? ((espacio || flechas) ? " / A" : "A") : ""
+            enter ? (espacio ? " / ENTER" : "ENTER") : "",
+            mando ? ((espacio || enter) ? " / A" : "A") : ""
         );
 
         std::snprintf(
@@ -596,7 +598,7 @@ static void DibujarAyudaFlujo(
         std::snprintf(
             texto,
             sizeof(texto),
-            "IZQ / DER: %s%s%s: %s%s%s: ATRAS",
+            "IZQ / DER: %s%s%s: %s%s%s: ATRÁS",
             accionMover,
             separadores[i],
             confirmar,
@@ -1289,7 +1291,7 @@ void ConfiguracionPartida::Dibujar(
 
     Vector2 cabecera = PuntoRef(X_TRIPULACION, 120.0f + dy);
 
-    DibujarTextoTinta("TRIPULACION", cabecera.x, cabecera.y, UI_TEXTO_GRANDE, UI_TINTA);
+    DibujarTextoTinta("TRIPULACIÓN", cabecera.x, cabecera.y, UI_TEXTO_GRANDE, UI_TINTA);
 
     const char* resumen = TextFormat(
         "%d %s  /  %d %s",
@@ -1348,7 +1350,7 @@ void ConfiguracionPartida::Dibujar(
         Vector2 rol = PuntoRef(X_TRIPULACION + 84.0f, yFila + 50.0f);
         const char* textoRol = humano ? "HUMANO" : "BOT";
         const char* detalle =
-            desconectado ? "SIN CONEXION: PASARA A BOT"
+            desconectado ? "SIN CONEXIÓN: PASARÁ A BOT"
             : (humano ? ObtenerEtiquetaControl(participantes[i]) : "PUESTO LIBRE");
 
         DibujarTextoTinta(textoRol, rol.x, rol.y, UI_TEXTO, Fade(UI_TINTA, alfa));
@@ -1363,7 +1365,7 @@ void ConfiguracionPartida::Dibujar(
 
         // Sello de estado a la derecha.
         const char* sello =
-            desconectado ? "SIN CONEXION" : (humano ? "A BORDO" : "BOT");
+            desconectado ? "SIN CONEXIÓN" : (humano ? "A BORDO" : "BOT");
 
         const Color colorSello =
             desconectado ? UI_PELIGRO : (humano ? UI_POSITIVO : UI_MADERA_MEDIA);
@@ -1384,7 +1386,7 @@ void ConfiguracionPartida::Dibujar(
 
     Vector2 nota = PuntoRef(X_TRIPULACION, 524.0f + dy);
 
-    DibujarRotulo("LA TRIPULACION SE ARMA AL ELEGIR PERSONAJES", nota.x, nota.y);
+    DibujarRotulo("LA TRIPULACIÓN SE ARMA AL ELEGIR PERSONAJES", nota.x, nota.y);
 
     // Divisor: una cuerda vertical entre tripulacion y viaje.
     DibujarCuerdaUI(
@@ -1430,7 +1432,7 @@ void ConfiguracionPartida::Dibujar(
 
     Vector2 rotuloRuta = PuntoRef(X_VIAJE, 364.0f + dy);
 
-    DibujarRotulo("DURACION DEL VIAJE", rotuloRuta.x, rotuloRuta.y);
+    DibujarRotulo("DURACIÓN DEL VIAJE", rotuloRuta.x, rotuloRuta.y);
 
     const float yAgua = Y_AGUA_RUTA + dy;
 
@@ -1833,7 +1835,7 @@ void OrdenTurno::Dibujar(
     DibujarTitulo("ORDEN DE TURNO", tema);
 
     DibujarCentrado(
-        revelado ? "EL DADO MAS ALTO JUEGA PRIMERO" : "TIRANDO LOS DADOS...",
+        revelado ? "EL DADO MÁS ALTO JUEGA PRIMERO" : "TIRANDO LOS DADOS...",
         ancho / 2,
         78,
         22,
@@ -2378,7 +2380,7 @@ void ResultadosPartida::Dibujar(
         {
             "MISMO TABLERO, JUGADORES Y RONDAS",
             "ELEGIR JUGADORES Y TABLERO DE NUEVO",
-            "VOLVER AL MENU PRINCIPAL"
+            "VOLVER AL MENÚ PRINCIPAL"
         };
 
         const float anchoBoton = 250.0f;
