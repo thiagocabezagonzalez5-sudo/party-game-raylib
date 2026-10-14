@@ -1,16 +1,17 @@
 #include "Minigames/MinijuegoIslaFuego.h"
 
 #include "Minigames/BotsMinijuegos1v3.h"
+#include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/CalidadGrafica.h"
 
 #include <cmath>
+#include <cstdio>
 
 
 static const float DURACION_PREPARACION_ISLA = 3.0f;
 static const float ESCALA_DIFICULTAD_ISLA = 30.0f;
-static const float DURACION_TEXTO_YA_ISLA = 0.75f;
 
 static const float RADIO_ISLA = 5.2f;
 static const float FUERZA_EXPLOSION_NORMAL = 5.8f;
@@ -1164,158 +1165,59 @@ void MinijuegoIslaFuego::Dibujar(
 
     EndMode3D();
 
-    const int ancho = GetScreenWidth();
-    const int alto = GetScreenHeight();
-    const float e = (float)alto / 720.0f;
-
-    DrawRectangle(0, 0, ancho, (int)(76 * e), Fade(BLACK, 0.55f));
-    DrawText("ISLA BAJO FUEGO", (int)(24 * e), (int)(10 * e), (int)(30 * e), RAYWHITE);
-    DrawText(
-        "LA SOMBRA Y EL ANILLO MARCAN DONDE CAE LA BOMBA. QUE NO TE SAQUE DE LA ISLA",
-        (int)(24 * e),
-        (int)(46 * e),
-        (int)(18 * e),
-        Color{ 200, 224, 240, 255 }
+    // HUD comun (Minigames/HudMinijuego): solo lee el estado.
+    DatosHudMinijuego hud;
+    PrepararDatosHudMinijuego(
+        hud,
+        "ISLA BAJO FUEGO",
+        "LA SOMBRA Y EL ANILLO MARCAN DÓNDE CAE LA BOMBA. QUE NO TE SAQUE DE LA ISLA.",
+        resultado
     );
 
-    if (fase == FASE_ISLA_FUEGO_JUGANDO)
-    {
-        int intensidad = (int)std::lround(
-            ObtenerProgresoPartidaIsla(*this) * 100.0f
-        );
-        const char* textoIntensidad = TextFormat("INTENSIDAD %d%%", intensidad);
-        int tamanoIntensidad = (int)(24 * e);
-        DrawText(
-            textoIntensidad,
-            ancho - MeasureText(textoIntensidad, tamanoIntensidad) - (int)(30 * e),
-            (int)(24 * e),
-            tamanoIntensidad,
-            Color{ 255, 190, 90, 255 }
-        );
-    }
+    hud.fase = fase == FASE_ISLA_FUEGO_PREPARACION
+        ? HUD_MINIJUEGO_CUENTA
+        : (fase == FASE_ISLA_FUEGO_JUGANDO ? HUD_MINIJUEGO_JUGANDO : HUD_MINIJUEGO_FIN);
+    hud.cuentaRestante = tiempoPreparacion;
 
-    int cantidadTarjetas = 0;
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
-    {
-        if (resultado.participantes[i].participo) cantidadTarjetas++;
-    }
-
-    int anchoTarjeta = (int)(190 * e);
-    int altoTarjeta = (int)(44 * e);
-    int separacion = (int)(14 * e);
-    int xTarjeta = ancho / 2 - (cantidadTarjetas * anchoTarjeta + (cantidadTarjetas - 1) * separacion) / 2;
-    int yTarjeta = alto - altoTarjeta - (int)(18 * e);
+    // Sin limite de tiempo: el cartel central mide la intensidad.
+    hud.reloj = HUD_RELOJ_MEDIDOR;
+    hud.etiquetaMedidor = "INTENSIDAD";
+    hud.progresoMedidor = ObtenerProgresoPartidaIsla(*this);
+    std::snprintf(
+        hud.valorMedidor,
+        sizeof(hud.valorMedidor),
+        "%d%%",
+        (int)std::lround(hud.progresoMedidor * 100.0f)
+    );
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        if (!resultado.participantes[i].participo) continue;
+        JugadorHudMinijuego& jugador = hud.jugadores[i];
+        if (!jugador.visible) continue;
 
-        bool fuera = estadosJugadores[i].eliminado;
-        const char* estadoTexto = fuera
-            ? "FUERA"
-            : (estadosJugadores[i].impactoDirecto
-                ? "VOLANDO"
-                : (estadosJugadores[i].tiempoAturdido > 0.0f ? "ATURDIDO" : "EN JUEGO"));
+        const EstadoJugadorIslaFuego& estado = estadosJugadores[i];
+        jugador.eliminado = estado.eliminado;
 
-        DrawRectangle(xTarjeta, yTarjeta, anchoTarjeta, altoTarjeta, Fade(BLACK, fuera ? 0.40f : 0.62f));
-        DrawRectangle(xTarjeta, yTarjeta, (int)(8 * e), altoTarjeta, fuera ? GRAY : participantes[i].color);
-        DrawText(
-            TextFormat("J%d", participantes[i].numeroJugador),
-            xTarjeta + (int)(18 * e),
-            yTarjeta + (int)(11 * e),
-            (int)(22 * e),
-            fuera ? GRAY : participantes[i].color
-        );
-        DrawText(
-            estadoTexto,
-            xTarjeta + (int)(70 * e),
-            yTarjeta + (int)(14 * e),
-            (int)(17 * e),
-            fuera ? GRAY : RAYWHITE
-        );
-
-        xTarjeta += anchoTarjeta + separacion;
-    }
-
-    if (fase == FASE_ISLA_FUEGO_PREPARACION)
-    {
-        int numero = (int)std::ceil(tiempoPreparacion);
-        if (numero < 1) numero = 1;
-        const char* texto = TextFormat("%d", numero);
-        int tamano = (int)(96 * e);
-        int x = ancho / 2 - MeasureText(texto, tamano) / 2;
-        int y = alto / 2 - (int)(190 * e);
-        DrawText(texto, x + 4, y + 4, tamano, Fade(BLACK, 0.7f));
-        DrawText(texto, x, y, tamano, ORANGE);
-    }
-    else if (
-        fase == FASE_ISLA_FUEGO_JUGANDO &&
-        tiempoJugado < DURACION_TEXTO_YA_ISLA
-    )
-    {
-        const char* texto = "YA";
-        int tamano = (int)(96 * e);
-        int x = ancho / 2 - MeasureText(texto, tamano) / 2;
-        int y = alto / 2 - (int)(190 * e);
-        DrawText(texto, x + 4, y + 4, tamano, Fade(BLACK, 0.7f));
-        DrawText(texto, x, y, tamano, LIME);
-    }
-    else if (fase == FASE_ISLA_FUEGO_TERMINADO)
-    {
-        int anchoPanel = (int)(520 * e);
-        int altoPanel = (int)(220 * e);
-        int xPanel = ancho / 2 - anchoPanel / 2;
-        int yPanel = (int)(92 * e);
-        DrawRectangle(xPanel, yPanel, anchoPanel, altoPanel, Fade(BLACK, 0.82f));
-
-        int ganadores[MAX_PARTICIPANTES]{};
-        int cantidadGanadores = ObtenerIndicesGanadores(
-            resultado, ganadores, MAX_PARTICIPANTES
-        );
-        const char* titulo = resultado.desenlace == DESENLACE_EMPATE
-            ? "EMPATE"
-            : TextFormat(
-                "GANADOR: JUGADOR %d",
-                cantidadGanadores == 1
-                    ? participantes[ganadores[0]].numeroJugador
-                    : 0
-            );
-
-        DrawText(
-            titulo,
-            ancho / 2 - MeasureText(titulo, (int)(32 * e)) / 2,
-            yPanel + (int)(14 * e),
-            (int)(32 * e),
-            GOLD
-        );
-
-        int y = yPanel + (int)(62 * e);
-        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        if (estado.impactoDirecto)
         {
-            if (!resultado.participantes[i].participo) continue;
-            DrawText(
-                TextFormat(
-                    "J%d  POSICION %d  %.3f s",
-                    participantes[i].numeroJugador,
-                    resultado.participantes[i].posicionFinal,
-                    resultado.participantes[i].puntuacionMinijuego / 1000.0f
-                ),
-                xPanel + (int)(100 * e),
-                y,
-                (int)(21 * e),
-                participantes[i].color
-            );
-            y += (int)(27 * e);
+            std::snprintf(jugador.estado, sizeof(jugador.estado), "VOLANDO");
+        }
+        else if (estado.tiempoAturdido > 0.0f)
+        {
+            std::snprintf(jugador.estado, sizeof(jugador.estado), "ATURDIDO");
         }
 
-        DrawText(
-            TextoReinicioMinijuego(),
-            ancho / 2 - MeasureText(TextoReinicioMinijuego(), (int)(18 * e)) / 2,
-            yPanel + altoPanel - (int)(30 * e),
-            (int)(18 * e),
-            RAYWHITE
+        // Tiempo sobrevivido con coma decimal: "12,3 S".
+        std::snprintf(
+            jugador.detalleFinal,
+            sizeof(jugador.detalleFinal),
+            "%d,%d S",
+            resultado.participantes[i].puntuacionMinijuego / 1000,
+            (resultado.participantes[i].puntuacionMinijuego % 1000) / 100
         );
     }
+
+    DibujarHudMinijuego(hud, participantes);
 }
 
 

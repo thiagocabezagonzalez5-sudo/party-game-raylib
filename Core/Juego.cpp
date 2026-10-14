@@ -1126,7 +1126,8 @@ void Juego::Actualizar(
 
             seleccionMinijuegos.Actualizar(
                 deltaTime,
-                participantes[0]
+                participantes,
+                MAX_PARTICIPANTES
             );
 
             if (indiceAnterior != seleccionMinijuegos.indiceSeleccionado)
@@ -1294,7 +1295,9 @@ void Juego::Actualizar(
 
             ruletaMinijuegos.Actualizar(
                 deltaTime,
-                ConfirmarConParticipanteHumano(participantes)
+                ConfirmarConParticipanteHumano(participantes),
+                participantes,
+                MAX_PARTICIPANTES
             );
 
             if (ruletaMinijuegos.Termino())
@@ -1586,7 +1589,7 @@ void Juego::Dibujar()
 
         case ESTADO_SELECCION_MINIJUEGO:
             menuPrincipal.DibujarFondo();
-            seleccionMinijuegos.Dibujar(participantes[0]);
+            seleccionMinijuegos.Dibujar(participantes, MAX_PARTICIPANTES);
             break;
 
         case ESTADO_ZONA_PRUEBAS:
@@ -1605,7 +1608,7 @@ void Juego::Dibujar()
 
         case ESTADO_RULETA_MINIJUEGO:
             partidaTablero.Dibujar();
-            ruletaMinijuegos.Dibujar();
+            ruletaMinijuegos.Dibujar(participantes, MAX_PARTICIPANTES);
             break;
 
         case ESTADO_MINIJUEGO:
@@ -1693,6 +1696,8 @@ void Juego::Descargar()
     zonaPruebas.Descargar();
     DescargarVistaPreviaTableros();
     seleccionPersonajes.Descargar();
+    seleccionMinijuegos.Descargar();
+    ruletaMinijuegos.Descargar();
     audio.Descargar();
     pantallaLogo.Descargar();
     menuPrincipal.Descargar();

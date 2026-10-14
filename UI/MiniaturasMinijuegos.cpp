@@ -1,37 +1,198 @@
 #include "UI/MiniaturasMinijuegos.h"
 
+#include "rlgl.h"
+
 #include <cmath>
 
 
-void DibujarMiniaturaMinijuego(
-    IdMinijuego id,
-    Rectangle rect,
-    float escalaMaxima
+//==================================================
+// FORMATO Y JUGADORES
+//==================================================
+
+FormatoMinijuego ObtenerFormatoMinijuego(
+    IdMinijuego id
 )
 {
-    const DatosMinijuegoCatalogo& datos = ObtenerDatosMinijuego(id);
+    // Los formatos con equipos fijos de 2 se juegan solo con 2 o 4.
+    if (ObtenerDatosMinijuego(id).requiereParDeJugadores)
+    {
+        return FORMATO_DOS_CONTRA_DOS;
+    }
 
-    DrawRectangle(
-        (int)rect.x,
-        (int)rect.y,
-        (int)rect.width,
-        (int)rect.height,
-        Fade(datos.color, 0.25f)
+    switch (id)
+    {
+        // Equipos que se reparten 2 vs 2 (con 3 jugadores, 2 vs 1).
+        case MINIJUEGO_DEFENSA_NUCLEO:
+        case MINIJUEGO_VETA_CRISTAL:
+        case MINIJUEGO_VOLEA_MAGMA:
+        case MINIJUEGO_BALSAS_RAPIDO:
+            return FORMATO_DOS_CONTRA_DOS;
+
+        // Un solitario contra el trio.
+        case MINIJUEGO_REFUGIO_PINCHOS:
+        case MINIJUEGO_MIRADAS_CRUZADAS:
+        case MINIJUEGO_CANTERA_FUGA:
+        case MINIJUEGO_CUERDA_ACANTILADO:
+        case MINIJUEGO_CAJAS_PUERTO:
+        case MINIJUEGO_TESORERO_ACORRALADO:
+        case MINIJUEGO_GUARDIAN_RUINAS:
+            return FORMATO_UNO_CONTRA_TRES;
+
+        default:
+            break;
+    }
+
+    return FORMATO_TODOS_CONTRA_TODOS;
+}
+
+
+const char* ObtenerNombreFormatoMinijuego(
+    FormatoMinijuego formato
+)
+{
+    switch (formato)
+    {
+        case FORMATO_UNO_CONTRA_TRES:
+            return "1 VS 3";
+
+        case FORMATO_DOS_CONTRA_DOS:
+            return "2 VS 2";
+
+        case FORMATO_TODOS_CONTRA_TODOS:
+        case CANTIDAD_FORMATOS_MINIJUEGO:
+            break;
+    }
+
+    return "TODOS CONTRA TODOS";
+}
+
+
+Color ObtenerColorFormatoMinijuego(
+    FormatoMinijuego formato
+)
+{
+    switch (formato)
+    {
+        case FORMATO_UNO_CONTRA_TRES:
+            return Color{ 214, 78, 66, 255 };
+
+        case FORMATO_DOS_CONTRA_DOS:
+            return Color{ 66, 132, 210, 255 };
+
+        case FORMATO_TODOS_CONTRA_TODOS:
+        case CANTIDAD_FORMATOS_MINIJUEGO:
+            break;
+    }
+
+    return Color{ 236, 168, 40, 255 };
+}
+
+
+const char* ObtenerTextoJugadoresMinijuego(
+    IdMinijuego id
+)
+{
+    if (!MinijuegoAdmiteCantidadJugadores(id, 3))
+    {
+        return "2 O 4 JUGADORES";
+    }
+
+    return "2 A 4 JUGADORES";
+}
+
+
+// Ficha redonda de jugador con contorno de tinta.
+static void DibujarFichaFormato(
+    Vector2 centro,
+    float radio,
+    Color color,
+    float alfa
+)
+{
+    DrawCircleV(centro, radio, Fade(color, alfa));
+    DrawCircleLinesV(centro, radio, Fade(Color{ 58, 36, 24, 255 }, alfa));
+}
+
+
+void DibujarIconoFormatoMinijuego(
+    FormatoMinijuego formato,
+    Vector2 centro,
+    float alto,
+    float alfa
+)
+{
+    const Color rojo = { 214, 78, 66, 255 };
+    const Color azul = { 66, 132, 210, 255 };
+    const Color dorado = { 236, 168, 40, 255 };
+    const Color tinta = { 58, 36, 24, 255 };
+
+    float radio = alto * 0.32f;
+    float paso = radio * 2.3f;
+
+    if (formato == FORMATO_TODOS_CONTRA_TODOS)
+    {
+        // Cuatro fichas sueltas, cada una por su cuenta.
+        for (int i = 0; i < 4; i++)
+        {
+            DibujarFichaFormato(
+                Vector2{ centro.x + (i - 1.5f) * paso, centro.y },
+                radio,
+                dorado,
+                alfa
+            );
+        }
+
+        return;
+    }
+
+    int izquierda = formato == FORMATO_UNO_CONTRA_TRES ? 1 : 2;
+    int derecha = formato == FORMATO_UNO_CONTRA_TRES ? 3 : 2;
+    float hueco = paso * 1.1f;
+
+    // Fichas de cada bando, separadas por una raya vertical.
+    float anchoTotal = (izquierda + derecha - 1) * paso + hueco;
+    float x = centro.x - anchoTotal * 0.5f;
+
+    for (int i = 0; i < izquierda; i++)
+    {
+        DibujarFichaFormato(Vector2{ x, centro.y }, radio, rojo, alfa);
+        x += paso;
+    }
+
+    x += hueco - paso;
+
+    DrawLineEx(
+        Vector2{ x - hueco * 0.5f, centro.y - alto * 0.45f },
+        Vector2{ x - hueco * 0.5f, centro.y + alto * 0.45f },
+        std::fmax(1.0f, alto * 0.10f),
+        Fade(tinta, alfa)
     );
 
-    float cx = rect.x + rect.width / 2.0f;
-    float cy = rect.y + (rect.height - 36.0f) / 2.0f;
+    for (int i = 0; i < derecha; i++)
+    {
+        DibujarFichaFormato(Vector2{ x, centro.y }, radio, azul, alfa);
+        x += paso;
+    }
+}
 
-    // Las miniaturas conservan sus proporciones al agregar columnas.
-    float escala = std::fmin(
-        escalaMaxima,
-        std::fmin((rect.width - 8.0f) / 140.0f, (rect.height - 44.0f) / 118.0f)
-    );
-    Camera2D camaraMiniatura{};
-    camaraMiniatura.target = { cx, cy };
-    camaraMiniatura.offset = { cx, cy };
-    camaraMiniatura.zoom = std::fmax(escala, 0.1f);
-    BeginMode2D(camaraMiniatura);
+
+//==================================================
+// ILUSTRACION
+//==================================================
+
+// Espacio del dibujo de cada miniatura: centrado en (0, 0), cabe en
+// ANCHO_ARTE x ALTO_ARTE unidades. Se escala con la matriz de rlgl (no con
+// Camera2D) para que tambien funcione dentro de un cartel rotado.
+static const float ANCHO_ARTE = 140.0f;
+static const float ALTO_ARTE = 118.0f;
+
+
+static void DibujarArteMinijuego(
+    IdMinijuego id
+)
+{
+    const float cx = 0.0f;
+    const float cy = 0.0f;
 
     switch (id)
     {
@@ -1147,6 +1308,72 @@ void DibujarMiniaturaMinijuego(
         case CANTIDAD_MINIJUEGOS:
             break;
     }
+}
 
-    EndMode2D();
+
+static bool proyeccionInvertida = false;
+
+
+void EstablecerProyeccionInvertidaMiniaturas(
+    bool invertida
+)
+{
+    proyeccionInvertida = invertida;
+}
+
+
+void DibujarIlustracionMinijuego(
+    IdMinijuego id,
+    Rectangle rect,
+    bool recortar
+)
+{
+    const DatosMinijuegoCatalogo& datos = ObtenerDatosMinijuego(id);
+
+    // Fondo opaco: el color del minijuego apagado, para que el dibujo
+    // se lea igual sobre la placa clara que sobre el tablero.
+    DrawRectangleRec(rect, ColorLerp(Color{ 28, 30, 44, 255 }, datos.color, 0.32f));
+
+    // El dibujo llena el ancho del marco; lo que sobra arriba o abajo
+    // se recorta (solo si se pide: el recorte no acompana una rotacion).
+    float escala = std::fmax(
+        0.05f,
+        std::fmin(rect.width / ANCHO_ARTE, rect.height / (ALTO_ARTE * 0.86f))
+    );
+
+    if (recortar && proyeccionInvertida)
+    {
+        // Con la y hacia arriba la fila de la ventana coincide con la y
+        // del dibujo (BeginScissorMode la daria vuelta).
+        rlDrawRenderBatchActive();
+        rlEnableScissorTest();
+        rlScissor(
+            (int)std::floor(rect.x),
+            (int)std::floor(rect.y),
+            (int)std::ceil(rect.width),
+            (int)std::ceil(rect.height)
+        );
+    }
+    else if (recortar)
+    {
+        BeginScissorMode(
+            (int)std::floor(rect.x),
+            (int)std::floor(rect.y),
+            (int)std::ceil(rect.width),
+            (int)std::ceil(rect.height)
+        );
+    }
+
+    rlPushMatrix();
+    rlTranslatef(rect.x + rect.width * 0.5f, rect.y + rect.height * 0.5f, 0.0f);
+    rlScalef(escala, escala, 1.0f);
+
+    DibujarArteMinijuego(id);
+
+    rlPopMatrix();
+
+    if (recortar)
+    {
+        EndScissorMode();
+    }
 }

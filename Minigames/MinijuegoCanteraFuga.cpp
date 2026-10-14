@@ -1,5 +1,6 @@
 #include "Minigames/MinijuegoCanteraFuga.h"
 
+#include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/CalidadGrafica.h"
@@ -9,6 +10,7 @@
 #include "raymath.h"
 
 #include <cmath>
+#include <cstdio>
 
 
 static const float DURACION_PREPARACION_CANTERA = 2.5f;
@@ -822,139 +824,103 @@ void MinijuegoCanteraFuga::Dibujar(
 
     EndMode3D();
 
-    const int ancho = GetScreenWidth();
-    const int alto = GetScreenHeight();
-    const float e = (float)alto / 720.0f;
-
-    DrawRectangle(0, 0, ancho, (int)(94 * e), Fade(BLACK, 0.82f));
-    DrawText("CANTERA EN FUGA - 1 VS 3", (int)(24 * e), (int)(6 * e), (int)(30 * e), GOLD);
-
-    if (indiceSolo >= 0)
-    {
-        // Chip con el color del operador y texto blanco: el color solo no
-        // se lee sobre el fondo oscuro.
-        int yOperador = (int)(42 * e);
-        int tamanoOperador = (int)(18 * e);
-        DrawRectangle((int)(24 * e), yOperador, tamanoOperador, tamanoOperador, participantes[indiceSolo].color);
-        DrawRectangleLines((int)(24 * e), yOperador, tamanoOperador, tamanoOperador, RAYWHITE);
-        DrawText(
-            TextFormat(
-                "J%d CONTROLA LA TOLVA%s",
-                participantes[indiceSolo].numeroJugador,
-                participantes[indiceSolo].esBot ? " (BOT)" : ""
-            ),
-            (int)(24 * e) + tamanoOperador + (int)(8 * e),
-            yOperador,
-            tamanoOperador,
-            RAYWHITE
-        );
-    }
-
-    DrawText(
-        "OPERADOR: IZQ/DER MUEVEN LA TOLVA, E / SHIFT DER / B SUELTA ROCA   |   ESCALADORES: SUBE Y ESQUIVA",
-        (int)(24 * e),
-        (int)(68 * e),
-        (int)(15 * e),
-        LIGHTGRAY
+    // HUD comun (Minigames/HudMinijuego): solo lee el estado. El operador
+    // va a la izquierda del reloj y los escaladores a la derecha.
+    DatosHudMinijuego hud;
+    PrepararDatosHudMinijuego(
+        hud,
+        "CANTERA EN FUGA",
+        "1 VS 3: EL OPERADOR SUELTA ROCAS DESDE LA CIMA. LOS ESCALADORES SUBEN Y LAS ESQUIVAN.",
+        resultado
     );
 
-    if (fase == FASE_CANTERA_JUGANDO)
-    {
-        const char* reloj = TextFormat("%.1f", tiempoRestante);
-        int tamanoReloj = (int)(40 * e);
-        DrawText(
-            reloj,
-            ancho - MeasureText(reloj, tamanoReloj) - (int)(30 * e),
-            (int)(16 * e),
-            tamanoReloj,
-            tiempoRestante <= 5.0f ? Color{ 255, 90, 80, 255 } : GOLD
-        );
-    }
+    hud.fase = fase == FASE_CANTERA_PREPARACION
+        ? HUD_MINIJUEGO_CUENTA
+        : (fase == FASE_CANTERA_JUGANDO ? HUD_MINIJUEGO_JUGANDO : HUD_MINIJUEGO_FIN);
+    hud.cuentaRestante = tiempoPreparacion;
+    hud.reloj = HUD_RELOJ_CUENTA_ATRAS;
+    hud.tiempoRestante = tiempoRestante;
+    hud.tiempoTotal = DURACION_PARTIDA_CANTERA;
+    hud.segundosAlerta = 5.0f;
+    hud.finPorTiempo = tiempoRestante <= 0.0f;
 
-    // Tarjetas inferiores: progreso de cada escalador hacia la cima.
-    int cantidadTarjetas = 0;
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    if (fase == FASE_CANTERA_TERMINADO && resultado.estado == RESULTADO_MINIJUEGO_FINALIZADO && indiceSolo >= 0)
     {
-        if (resultado.participantes[i].participo && i != indiceSolo) cantidadTarjetas++;
+        hud.tituloFinal = resultado.participantes[indiceSolo].posicionFinal == 1
+            ? "¡GANA EL OPERADOR!"
+            : "¡GANAN LOS ESCALADORES!";
     }
-
-    int anchoTarjeta = (int)(210 * e);
-    int altoTarjeta = (int)(46 * e);
-    int separacion = (int)(14 * e);
-    int xTarjeta = ancho / 2 - (cantidadTarjetas * anchoTarjeta + (cantidadTarjetas - 1) * separacion) / 2;
-    int yTarjeta = alto - altoTarjeta - (int)(16 * e);
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        if (!resultado.participantes[i].participo || i == indiceSolo) continue;
+        JugadorHudMinijuego& jugador = hud.jugadores[i];
+        if (!jugador.visible) continue;
 
-        float proporcion = CalcularProgresoCantera(jugadores[i].posicion.z);
+        const Participante& participante = participantes[i];
 
-        DrawRectangle(xTarjeta, yTarjeta, anchoTarjeta, altoTarjeta, Fade(BLACK, 0.62f));
-        DrawRectangle(xTarjeta, yTarjeta, (int)(8 * e), altoTarjeta, participantes[i].color);
-        DrawText(
-            TextFormat("J%d", participantes[i].numeroJugador),
-            xTarjeta + (int)(18 * e),
-            yTarjeta + (int)(5 * e),
-            (int)(20 * e),
-            participantes[i].color
+        if (i == indiceSolo)
+        {
+            jugador.equipo = 0;
+            jugador.rol = "OPERADOR";
+            jugador.valorNumerico = impactosSolo;
+            std::snprintf(jugador.detalleFinal, sizeof(jugador.detalleFinal), "%d IMPACTOS", impactosSolo);
+
+            if (!participante.esBot)
+            {
+                // Tolva: solo izquierda/derecha. Roca: golpear (E / SHIFT DER / B).
+                const char* mover =
+                    participante.control == CONTROL_GAMEPAD ? "STICK"
+                    : (participante.control == CONTROL_TECLADO_FLECHAS ? "FLECHAS"
+                    : (participante.control == CONTROL_TECLADO_WASD ? "A D" : "A D / FLECHAS"));
+
+                std::snprintf(
+                    jugador.controles,
+                    sizeof(jugador.controles),
+                    "TOLVA: %s\nROCA: %s",
+                    mover,
+                    TextoBotonGolpeHud(participante)
+                );
+            }
+            continue;
+        }
+
+        // Mientras se juega, la altura actual. Al terminar, la etiqueta
+        // pasa a la altura maxima alcanzada: el mismo dato del tablon y de
+        // la puntuacion del escalador.
+        int maximo = (int)std::lround(estadosJugadores[i].progresoMaximo * 100.0f);
+        float proporcion = hud.fase == HUD_MINIJUEGO_FIN
+            ? estadosJugadores[i].progresoMaximo
+            : CalcularProgresoCantera(jugadores[i].posicion.z);
+
+        jugador.equipo = 1;
+        jugador.rol = "ESCALADOR";
+        jugador.valorNumerico = estadosJugadores[i].impactosRecibidos;
+        jugador.progreso = proporcion;
+        std::snprintf(
+            jugador.valor,
+            sizeof(jugador.valor),
+            "%d%%",
+            hud.fase == HUD_MINIJUEGO_FIN ? maximo : (int)(proporcion * 100.0f)
         );
-        const char* porcentaje = TextFormat("%d%%", (int)(proporcion * 100.0f));
-        DrawText(
-            porcentaje,
-            xTarjeta + anchoTarjeta - MeasureText(porcentaje, (int)(18 * e)) - (int)(12 * e),
-            yTarjeta + (int)(6 * e),
-            (int)(18 * e),
-            RAYWHITE
-        );
-        int xBarra = xTarjeta + (int)(18 * e);
-        int yBarra = yTarjeta + (int)(32 * e);
-        int anchoBarra = anchoTarjeta - (int)(32 * e);
-        DrawRectangle(xBarra, yBarra, anchoBarra, (int)(8 * e), Fade(WHITE, 0.25f));
-        DrawRectangle(xBarra, yBarra, (int)(anchoBarra * proporcion), (int)(8 * e), participantes[i].color);
+        std::snprintf(jugador.detalleFinal, sizeof(jugador.detalleFinal), "MÁX %d%%", maximo);
 
-        xTarjeta += anchoTarjeta + separacion;
+        if (estadosJugadores[i].tiempoAturdido > 0.0f)
+        {
+            std::snprintf(jugador.estado, sizeof(jugador.estado), "ATURDIDO");
+        }
+
+        if (!participante.esBot)
+        {
+            std::snprintf(
+                jugador.controles,
+                sizeof(jugador.controles),
+                "ESCALÁ Y ESQUIVÁ\n%s",
+                TextoMoverHud(participante)
+            );
+        }
     }
 
-    if (fase == FASE_CANTERA_PREPARACION)
-    {
-        int numero = (int)std::ceil(tiempoPreparacion);
-        if (numero < 1) numero = 1;
-        const char* texto = TextFormat("%d", numero);
-        int tamano = (int)(96 * e);
-        int x = ancho / 2 - MeasureText(texto, tamano) / 2;
-        int y = alto / 2 - (int)(190 * e);
-        DrawText(texto, x + 4, y + 4, tamano, Fade(BLACK, 0.7f));
-        DrawText(texto, x, y, tamano, GOLD);
-    }
-    else if (fase == FASE_CANTERA_TERMINADO && resultado.estado == RESULTADO_MINIJUEGO_FINALIZADO)
-    {
-        bool ganaSolo =
-            resultado.participantes[indiceSolo].posicionFinal == 1;
-        const char* titulo = ganaSolo
-            ? "GANA EL OPERADOR"
-            : "GANAN LOS ESCALADORES";
-
-        int anchoPanel = (int)(520 * e);
-        int altoPanel = (int)(120 * e);
-        int xPanel = ancho / 2 - anchoPanel / 2;
-        int yPanel = (int)(270 * e);
-        DrawRectangle(xPanel, yPanel, anchoPanel, altoPanel, Fade(BLACK, 0.82f));
-        DrawText(
-            titulo,
-            ancho / 2 - MeasureText(titulo, (int)(34 * e)) / 2,
-            yPanel + (int)(22 * e),
-            (int)(34 * e),
-            GOLD
-        );
-        DrawText(
-            TextoReinicioMinijuego(),
-            ancho / 2 - MeasureText(TextoReinicioMinijuego(), (int)(18 * e)) / 2,
-            yPanel + altoPanel - (int)(36 * e),
-            (int)(18 * e),
-            RAYWHITE
-        );
-    }
+    DibujarHudMinijuego(hud, participantes);
 }
 
 

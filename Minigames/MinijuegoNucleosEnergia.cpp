@@ -1,11 +1,13 @@
 #include "Minigames/MinijuegoNucleosEnergia.h"
 
 #include "Minigames/BotsMinijuegos1v3.h"
+#include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/Input.h"
 
 #include <cmath>
+#include <cstdio>
 
 
 static const float DURACION_PREPARACION_NUCLEOS = 3.0f;
@@ -1026,162 +1028,75 @@ void MinijuegoNucleosEnergia::Dibujar(
 
     EndMode3D();
 
-    const int ancho = GetScreenWidth();
-    const int alto = GetScreenHeight();
-    const float e = (float)alto / 720.0f;
-
-    DrawRectangle(0, 0, ancho, (int)(76 * e), Fade(BLACK, 0.55f));
-    DrawText("NUCLEOS DE ENERGIA", (int)(24 * e), (int)(10 * e), (int)(30 * e), RAYWHITE);
-    DrawText(
-        "PRIMERO A 15 PUNTOS O MAS PUNTOS EN 60 S. GOLPE: SUELTA 3. SALTO EN EL AIRE: GOLPE AL SUELO, SUELTA 5.",
-        (int)(24 * e),
-        (int)(46 * e),
-        (int)(18 * e),
-        Color{ 166, 195, 218, 255 }
+    // HUD comun (Minigames/HudMinijuego): solo lee el estado.
+    DatosHudMinijuego hud;
+    PrepararDatosHudMinijuego(
+        hud,
+        "NÚCLEOS DE ENERGIA",
+        "PRIMERO A 15 O EL QUE MÁS JUNTE EN 60 S. GOLPE: EL RIVAL SUELTA 3. GOLPE AL SUELO: SUELTA 5.",
+        resultado
     );
 
-    if (fase == FASE_NUCLEOS_JUGANDO)
-    {
-        const char* reloj = TextFormat("%.0f", tiempoRestante > 0.0f ? tiempoRestante : 0.0f);
-        int tamanoReloj = (int)(46 * e);
-        DrawText(
-            reloj,
-            ancho - MeasureText(reloj, tamanoReloj) - (int)(30 * e),
-            (int)(14 * e),
-            tamanoReloj,
-            tiempoRestante <= 10.0f ? Color{ 255, 90, 80, 255 } : RAYWHITE
-        );
-    }
-
-    int cantidadTarjetas = 0;
-    for (int i = 0; i < MAX_PARTICIPANTES; i++)
-    {
-        if (resultado.participantes[i].participo) cantidadTarjetas++;
-    }
-
-    int anchoTarjeta = (int)(220 * e);
-    int altoTarjeta = (int)(50 * e);
-    int separacion = (int)(14 * e);
-    int xTarjeta = ancho / 2 - (cantidadTarjetas * anchoTarjeta + (cantidadTarjetas - 1) * separacion) / 2;
-    int yTarjeta = alto - altoTarjeta - (int)(18 * e);
+    hud.fase = fase == FASE_NUCLEOS_PREPARACION
+        ? HUD_MINIJUEGO_CUENTA
+        : (fase == FASE_NUCLEOS_JUGANDO ? HUD_MINIJUEGO_JUGANDO : HUD_MINIJUEGO_FIN);
+    hud.cuentaRestante = tiempoPreparacion;
+    hud.reloj = HUD_RELOJ_CUENTA_ATRAS;
+    hud.tiempoRestante = tiempoRestante > 0.0f ? tiempoRestante : 0.0f;
+    hud.tiempoTotal = DURACION_PARTIDA_NUCLEOS;
+    hud.segundosAlerta = 10.0f;
+    hud.finPorTiempo = tiempoRestante <= 0.0f;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        if (!resultado.participantes[i].participo) continue;
+        JugadorHudMinijuego& jugador = hud.jugadores[i];
+        if (!jugador.visible) continue;
 
-        float proporcion = (float)puntuaciones[i] / (float)PUNTOS_OBJETIVO_NUCLEOS;
-        if (proporcion > 1.0f) proporcion = 1.0f;
-        if (proporcion < 0.0f) proporcion = 0.0f;
+        // La etiqueta muestra el avance hacia el objetivo y se planta en
+        // «15/15» aunque el ultimo frame sume de mas (el tablon final da
+        // los puntos reales).
+        int avance = puntuaciones[i] < PUNTOS_OBJETIVO_NUCLEOS ? puntuaciones[i] : PUNTOS_OBJETIVO_NUCLEOS;
+        std::snprintf(jugador.valor, sizeof(jugador.valor), "%d/%d", avance, PUNTOS_OBJETIVO_NUCLEOS);
+        jugador.valorNumerico = puntuaciones[i];
+        jugador.progreso = (float)puntuaciones[i] / (float)PUNTOS_OBJETIVO_NUCLEOS;
+        std::snprintf(jugador.detalleFinal, sizeof(jugador.detalleFinal), "%d PTS", puntuaciones[i]);
 
-        DrawRectangle(xTarjeta, yTarjeta, anchoTarjeta, altoTarjeta, Fade(BLACK, 0.62f));
-        DrawRectangle(xTarjeta, yTarjeta, (int)(8 * e), altoTarjeta, participantes[i].color);
-        DrawText(
-            TextFormat("J%d%s", participantes[i].numeroJugador, participantes[i].esBot ? " BOT" : ""),
-            xTarjeta + (int)(18 * e),
-            yTarjeta + (int)(6 * e),
-            (int)(20 * e),
-            participantes[i].color
-        );
-        if (fase == FASE_NUCLEOS_JUGANDO && !participantes[i].esBot)
+        // Empate en puntos (y en lo juntado antes del ultimo frame): el
+        // tablon muestra el desempate de MejorResultadoNucleos.
+        for (int j = 0; j < MAX_PARTICIPANTES; j++)
         {
-            const char* golpe = participantes[i].control == CONTROL_GAMEPAD
-                ? "B"
-                : (participantes[i].control == CONTROL_TECLADO_FLECHAS ? "SHIFT DER" : "E");
-            DrawText(
-                TextFormat("GOLPE: %s | AIRE+%s: SUELO", golpe, ObtenerTextoBotonPrincipal(participantes[i])),
-                xTarjeta,
-                yTarjeta - (int)(16 * e),
-                (int)(12 * e),
-                Fade(RAYWHITE, 0.85f)
-            );
+            if (
+                j != i &&
+                resultado.participantes[j].participo &&
+                puntuaciones[j] == puntuaciones[i] &&
+                puntuacionesPrevias[j] == puntuacionesPrevias[i]
+            )
+            {
+                std::snprintf(
+                    jugador.detalleDesempate,
+                    sizeof(jugador.detalleDesempate),
+                    golpesRecibidos[i] == 1 ? "%d GOLPE" : "%d GOLPES",
+                    golpesRecibidos[i]
+                );
+                hud.notaFinal = "EMPATE EN PUNTOS: QUEDA ARRIBA QUIEN RECIBIÓ MENOS GOLPES";
+                break;
+            }
         }
 
-        const char* puntos = TextFormat("%d / %d", puntuaciones[i], PUNTOS_OBJETIVO_NUCLEOS);
-        DrawText(
-            puntos,
-            xTarjeta + anchoTarjeta - MeasureText(puntos, (int)(20 * e)) - (int)(12 * e),
-            yTarjeta + (int)(6 * e),
-            (int)(20 * e),
-            RAYWHITE
-        );
-
-        int xBarra = xTarjeta + (int)(18 * e);
-        int yBarra = yTarjeta + (int)(35 * e);
-        int anchoBarra = anchoTarjeta - (int)(32 * e);
-        DrawRectangle(xBarra, yBarra, anchoBarra, (int)(8 * e), Fade(WHITE, 0.25f));
-        DrawRectangle(xBarra, yBarra, (int)(anchoBarra * proporcion), (int)(8 * e), participantes[i].color);
-
-        xTarjeta += anchoTarjeta + separacion;
-    }
-
-    if (fase == FASE_NUCLEOS_PREPARACION)
-    {
-        int numero = (int)std::ceil(tiempoPreparacion);
-        if (numero < 1) numero = 1;
-        const char* texto = TextFormat("%d", numero);
-        int tamano = (int)(96 * e);
-        int x = ancho / 2 - MeasureText(texto, tamano) / 2;
-        int y = alto / 2 - (int)(190 * e);
-        DrawText(texto, x + 4, y + 4, tamano, Fade(BLACK, 0.7f));
-        DrawText(texto, x, y, tamano, GOLD);
-    }
-    else if (fase == FASE_NUCLEOS_TERMINADO)
-    {
-        int ganadores[MAX_PARTICIPANTES]{};
-        int cantidadGanadores = ObtenerIndicesGanadores(
-            resultado, ganadores, MAX_PARTICIPANTES
-        );
-
-        const char* titulo = resultado.desenlace == DESENLACE_EMPATE
-            ? "EMPATE"
-            : TextFormat(
-                "GANADOR: JUGADOR %d",
-                cantidadGanadores == 1
-                    ? participantes[ganadores[0]].numeroJugador
-                    : 0
-            );
-
-        int anchoPanel = (int)(520 * e);
-        int altoPanel = (int)(220 * e);
-        int xPanel = ancho / 2 - anchoPanel / 2;
-        int yPanel = (int)(92 * e);
-        DrawRectangle(xPanel, yPanel, anchoPanel, altoPanel, Fade(BLACK, 0.82f));
-
-        DrawText(
-            titulo,
-            ancho / 2 - MeasureText(titulo, (int)(32 * e)) / 2,
-            yPanel + (int)(14 * e),
-            (int)(32 * e),
-            GOLD
-        );
-
-        int fila = yPanel + (int)(62 * e);
-        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        if (!participantes[i].esBot)
         {
-            if (!resultado.participantes[i].participo) continue;
-            DrawText(
-                TextFormat(
-                    "J%d  POS %d  %d pts",
-                    participantes[i].numeroJugador,
-                    resultado.participantes[i].posicionFinal,
-                    puntuaciones[i]
-                ),
-                xPanel + (int)(140 * e),
-                fila,
-                (int)(21 * e),
-                participantes[i].color
+            // Golpe: E / SHIFT DER / B. Golpe al suelo: saltar otra vez en el aire.
+            std::snprintf(
+                jugador.controles,
+                sizeof(jugador.controles),
+                "GOLPE: %s\nAIRE+%s: SUELO",
+                TextoBotonGolpeHud(participantes[i]),
+                ObtenerTextoBotonPrincipal(participantes[i])
             );
-            fila += (int)(27 * e);
         }
-
-        DrawText(
-            TextoReinicioMinijuego(),
-            ancho / 2 - MeasureText(TextoReinicioMinijuego(), (int)(18 * e)) / 2,
-            yPanel + altoPanel - (int)(30 * e),
-            (int)(18 * e),
-            RAYWHITE
-        );
     }
+
+    DibujarHudMinijuego(hud, participantes);
 }
 
 
