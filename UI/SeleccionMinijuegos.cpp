@@ -928,6 +928,11 @@ void SeleccionMinijuegos::Inicializar()
     progresoPanel = 0.0f;
     filaInicial = 0;
 
+    // La direccion que venga mantenida de la pantalla anterior no mueve
+    // el foco al entrar.
+    bloqueoHorizontal = true;
+    bloqueoVertical = true;
+
     vista = VISTA_TABLON_MINIJUEGOS;
     panelTablon.Iniciar(PANEL_TABLON, 0.0f);
 
@@ -972,6 +977,11 @@ static void AbrirPrevia(
 {
     seleccion.vista = VISTA_PREVIA_MINIJUEGO;
 
+    // Al volver al tablon (desde la previa o el minijuego), un empuje
+    // que siga mantenido no mueve el foco hasta soltarlo.
+    seleccion.bloqueoHorizontal = true;
+    seleccion.bloqueoVertical = true;
+
     IniciarPreviaMinijuego(
         seleccion.previa,
         ObtenerIdMinijuegoPorIndice(seleccion.indiceSeleccionado),
@@ -993,17 +1003,29 @@ static void ActualizarTablon(
     int filaPrevia = seleccion.filaInicial;
     bool abrir = false;
 
-    if (entrada.izquierda)
+    // El teclado dispara una vez por pulsacion; el mando usa bloqueos
+    // para que un empuje sea un solo paso (igual que SeleccionPersonajes).
+    const bool esGamepad = jugadorUno.control == CONTROL_GAMEPAD;
+    const bool puedeHorizontal = !esGamepad || !seleccion.bloqueoHorizontal;
+    const bool puedeVertical = !esGamepad || !seleccion.bloqueoVertical;
+
+    if (entrada.izquierda && puedeHorizontal)
         nuevoIndice = MoverIndice(nuevoIndice, -1, 0);
 
-    if (entrada.derecha)
+    if (entrada.derecha && puedeHorizontal)
         nuevoIndice = MoverIndice(nuevoIndice, 1, 0);
 
-    if (entrada.arriba)
+    if (entrada.arriba && puedeVertical)
         nuevoIndice = MoverIndice(nuevoIndice, 0, -1);
 
-    if (entrada.abajo)
+    if (entrada.abajo && puedeVertical)
         nuevoIndice = MoverIndice(nuevoIndice, 0, 1);
+
+    // El bloqueo queda puesto mientras haya direccion y se suelta al
+    // volver al centro. Un mando desconectado no da entrada, asi que
+    // el bloqueo se suelta solo y no queda pegado.
+    seleccion.bloqueoHorizontal = entrada.izquierda || entrada.derecha;
+    seleccion.bloqueoVertical = entrada.arriba || entrada.abajo;
 
     // La rueda desplaza la grilla sin cambiar la seleccion.
     int& filaInicial = seleccion.filaInicial;

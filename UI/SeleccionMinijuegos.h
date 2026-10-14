@@ -155,6 +155,12 @@ struct SeleccionMinijuegos
     // Primera fila visible de la grilla; permite mas minijuegos que filas.
     int filaInicial = 0;
 
+    // Con mando, la direccion se lee mantenida (cruceta o stick): estos
+    // bloqueos hacen que cada empuje mueva el foco un solo paso y se
+    // sueltan al volver al centro. El teclado ya dispara por pulsacion.
+    bool bloqueoHorizontal = true;
+    bool bloqueoVertical = true;
+
     VistaSeleccionMinijuegos vista = VISTA_TABLON_MINIJUEGOS;
 
     PanelUI panelTablon;

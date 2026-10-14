@@ -1636,7 +1636,7 @@ void Juego::Dibujar()
                         "RESULTADO | VUELTA AL TABLERO EN %d s (CONFIRMAR PARA SEGUIR YA)",
                         (int)std::ceil(std::fmax(0.0f, 7.0f - tiempoResultadoMinijuegoTablero))
                     )
-                    : "MINIJUEGO DE RONDA | JUEGA HASTA EL FINAL PARA VOLVER AL TABLERO";
+                    : "MINIJUEGO DE RONDA | JUGÁ HASTA EL FINAL PARA VOLVER AL TABLERO";
 
             DrawText(
                 texto,
