@@ -59,6 +59,10 @@ inline constexpr Color UI_PELIGRO =
 inline constexpr Color UI_TEXTO_MUNDO =
     { 255, 240, 210, 255 };
 
+// Velo que oscurece la escena detras de avisos y pausas (VeloUI).
+inline constexpr Color UI_VELO =
+    { 10, 12, 18, 255 };
+
 
 //--------------------------------------------------
 // TOKENS DE TAMANO (unidades de referencia a 1280x720)
@@ -607,3 +611,196 @@ int BotonModalBajoMouseUI(const ModalUI& modal);
 // ---- Ayuda de controles: tira clara al pie de la pantalla ----
 
 void DibujarAyudaUI(const EstiloUI& estilo, const char* texto);
+
+
+//==================================================
+// COMPONENTES (SEGUNDA TANDA)
+//==================================================
+//
+// Convencion: las POSICIONES que suelen salir de otro calculo (centro de
+// un jugador con GetWorldToScreen, un rectangulo ya convertido con
+// RectRef) van en PIXELES; los TAMANOS (radios, grosores, tokens de
+// texto) van en unidades de referencia y escalan con EscalaUI(). Los
+// componentes que ocupan un rectangulo fijo de la pantalla (banderin,
+// marco) reciben ese rectangulo en unidades de referencia, como el resto.
+
+
+// ---- Texto sobre el mundo con contorno ----
+// Como DibujarTextoMundo, pero con contorno oscuro y sombra dura cuyo
+// grosor crece con el tamano del texto (legible sobre cielo claro, nieve
+// o lava). alfa (0..1) funde texto, contorno y sombra juntos (pensado
+// para aparecer/desaparecer: a mitad del fundido el contorno se ve algo
+// mas denso que el texto). DibujarTextoMundo no cambia.
+
+void DibujarTextoMundoContornoUI(
+    const char* texto,
+    float centroX,
+    float y,
+    int tokenTexto,
+    Color color,
+    float alfa = 1.0f,
+    Color contorno = UI_TINTA
+);
+
+
+// ---- Etiqueta compacta rotable ----
+// Cartelito chico: placa clara con borde de color y texto en tinta. Para
+// rotulos sobre jugadores, postales o fichas. No tiene foco ni animacion.
+
+struct OpcionesEtiquetaUI
+{
+    int tokenTexto = UI_TEXTO_PEQUENO;
+    Color borde = UI_MADERA_MEDIA;  // p. ej. el color del jugador
+    float alfa = 1.0f;
+    bool pico = false;              // triangulo abajo que senala el objetivo
+};
+
+// centro en pixeles; rotacion en grados (sentido horario). Devuelve el
+// rectangulo de la placa en pixeles, SIN rotar (para apilar etiquetas).
+Rectangle DibujarEtiquetaUI(
+    const char* texto,
+    Vector2 centro,
+    float rotacionGrados = 0.0f,
+    const OpcionesEtiquetaUI& opciones = OpcionesEtiquetaUI{}
+);
+
+
+// ---- Parrafo con ajuste de linea ----
+// Parte el texto por palabras (y en cada '\n') para que quepa en
+// anchoMaximo pixeles. Una palabra mas larga que el ancho queda sola en su
+// linea (nunca se corta). Con altoMaximo > 0 la fuente se reduce de a
+// 1 px (minimo 10 px) hasta que el bloque quepa en ese alto.
+
+enum AlineacionUI
+{
+    UI_ALINEAR_IZQUIERDA = 0,
+    UI_ALINEAR_CENTRO,
+    UI_ALINEAR_DERECHA
+};
+
+struct MedidaParrafoUI
+{
+    float alto = 0.0f;      // pixeles ocupados (primera a ultima linea)
+    int lineas = 0;
+    int tamano = 0;         // fuente usada, en pixeles
+    bool cabe = true;       // false si ni a 10 px entra en altoMaximo
+};
+
+// Solo mide (no dibuja): sirve para reservar espacio antes de dibujar.
+MedidaParrafoUI MedirParrafoUI(
+    const char* texto,
+    int tokenTexto,
+    float anchoMaximo,
+    float altoMaximo = 0.0f
+);
+
+// x, y: esquina superior izquierda de la caja (pixeles); la alineacion
+// se aplica dentro de [x, x + anchoMaximo]. Devuelve lo que ocupo.
+MedidaParrafoUI DibujarParrafoUI(
+    const char* texto,
+    float x,
+    float y,
+    int tokenTexto,
+    float anchoMaximo,
+    Color color,
+    AlineacionUI alineacion = UI_ALINEAR_IZQUIERDA,
+    float altoMaximo = 0.0f
+);
+
+
+// ---- Sello / insignia ----
+// Sello de goma: forma de color con un disco claro al centro y el texto en
+// tinta (la fuente se reduce para entrar en el disco). Para "x2",
+// "NUEVO", "1º", etc.
+
+enum FormaSelloUI
+{
+    UI_SELLO_CIRCULO = 0,
+    UI_SELLO_ESTRELLA
+};
+
+// centro en pixeles; radio en unidades de referencia; rotacion en grados.
+void DibujarSelloUI(
+    const char* texto,
+    Vector2 centro,
+    float radioRef,
+    FormaSelloUI forma = UI_SELLO_CIRCULO,
+    Color color = UI_PELIGRO,
+    float rotacionGrados = 0.0f,
+    float alfa = 1.0f
+);
+
+
+// ---- Velo: oscurece toda la pantalla ----
+// Para dejar en segundo plano la escena detras de un aviso, una pausa o
+// un resultado. Se funde en `duracion` segundos; con reducirMovimiento
+// aparece y desaparece al instante.
+
+struct VeloUI
+{
+    bool visible = false;           // objetivo: mostrar u ocultar
+    float aparicion = 0.0f;         // 0..1, animada hacia `visible`
+    float opacidad = 0.55f;         // alfa con aparicion = 1 (el del modal)
+    float duracion = 0.18f;         // segundos de fundido
+    Color color = UI_VELO;
+
+    // Fija el estado sin fundido (p. ej. al entrar a una pantalla).
+    void Iniciar(bool visibleInicial);
+};
+
+void ActualizarVeloUI(VeloUI& velo, const EstiloUI& estilo, float dt);
+
+void DibujarVeloUI(const VeloUI& velo);
+
+// Version sin estado: rectangulo de pantalla completa con ese alfa.
+void DibujarVeloUI(float alfa, Color color = UI_VELO);
+
+
+// ---- Banderin con mastil ----
+// Mastil de madera con una bandera de color; el texto va en tinta sobre
+// una franja clara de la tela. Ondea con estilo.tiempo (requiere
+// ActualizarEstiloUI); con ondear = false o reducirMovimiento queda
+// quieta. `fase` desfasa banderines vecinos para que no ondeen al unisono.
+//
+// refBandera: la tela, en unidades de referencia (el mastil va pegado a
+// su borde izquierdo). altoMastilRef: largo del mastil desde el borde
+// superior de la tela hacia abajo.
+
+void DibujarBanderinUI(
+    const EstiloUI& estilo,
+    const char* texto,
+    Rectangle refBandera,
+    float altoMastilRef,
+    Color color = UI_PELIGRO,
+    bool ondear = true,
+    float fase = 0.0f
+);
+
+
+// ---- Marco de ilustracion con recorte ----
+// Marco de madera tipo cartel que recorta su contenido. Uso:
+//
+//   Rectangle area = ComenzarMarcoIlustracionUI(estilo, ref);
+//   ... dibujar lo que sea (en pixeles); lo que salga de `area` no se ve ...
+//   TerminarMarcoIlustracionUI(estilo, ref);
+//
+// Usa BeginScissorMode / EndScissorMode: no se puede anidar ni rotar, y
+// al terminar deja el recorte desactivado (si la pantalla tenia uno
+// propio, debe volver a activarlo). Llamar ambas con el mismo ref y
+// grosor. fondo (alfa > 0) pinta el interior antes del contenido.
+
+Rectangle ComenzarMarcoIlustracionUI(
+    const EstiloUI& estilo,
+    Rectangle ref,
+    float grosorMarcoRef = 10.0f,
+    Color fondo = UI_PLACA_CLARA
+);
+
+void TerminarMarcoIlustracionUI(
+    const EstiloUI& estilo,
+    Rectangle ref,
+    float grosorMarcoRef = 10.0f
+);
+
+// Area interior (pixeles enteros, la misma que recorta) sin dibujar nada.
+Rectangle AreaMarcoIlustracionUI(Rectangle ref, float grosorMarcoRef = 10.0f);

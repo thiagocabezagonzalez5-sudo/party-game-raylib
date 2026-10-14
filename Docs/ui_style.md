@@ -193,11 +193,13 @@ build/DemoEstiloUI.exe --captura 1920 1080 build/capturas/estiloui_v2
 build/DemoEstiloUI.exe --captura 1280 720 build/capturas/estiloui_v2/reducido --reducir-movimiento
 ```
 
-La demo tiene 4 pestanas: VIDEO (palanca con texto propio «60 FPS»), AUDIO
-(palancas 0..100 % por defecto), JUEGO (interruptor «Reducir movimiento») y
-CONTROLES (palanca con rango 5..35 %, selector deshabilitado y tarjeta). VOLVER
-o Esc abren el aviso «¿Salir sin aplicar?»; APLICAR abre un aviso con cuenta
-atras.
+La demo tiene 5 pestanas: VIDEO (palanca con texto propio «60 FPS»), AUDIO
+(palancas 0..100 % por defecto), JUEGO (interruptor «Reducir movimiento»),
+CONTROLES (palanca con rango 5..35 %, selector deshabilitado y tarjeta) y EXTRAS
+(segunda tanda: textos con contorno, banderines, marco con recorte, parrafo,
+sellos, etiquetas y velo; izquierda/derecha cambia la alineacion del parrafo y
+aceptar muestra u oculta el velo). VOLVER o Esc abren el aviso «¿Salir sin
+aplicar?»; APLICAR abre un aviso con cuenta atras.
 
 ## Componentes y API (`UI/EstiloUI.h`)
 
@@ -249,6 +251,172 @@ DibujarBotonUI(estilo, volver, enfoque.indice == 0);
 DescargarEstiloUI(estilo);
 ```
 
+## Segunda tanda de componentes
+
+Solo se agregaron funciones, structs y un token (`UI_VELO`); ninguna firma,
+valor por defecto ni aspecto de lo anterior cambio. Ninguno carga recursos
+propios: usan las texturas de `EstiloUI` (o ninguna).
+
+**Convencion de unidades.** Las *posiciones* que suelen salir de otro calculo
+(un centro obtenido con `GetWorldToScreen`, un rectangulo ya pasado por
+`RectRef`) van en **pixeles**; los *tamanos* (radios, grosores, tokens de
+texto) van en **unidades de referencia** y escalan con `EscalaUI()`. Los
+componentes que ocupan un lugar fijo de la pantalla (banderin, marco) reciben
+su rectangulo en unidades de referencia, como el resto del modulo. Para pasar
+un punto de referencia a pixeles: `RectRef(x, y, 0, 0)`.
+
+### 1. Texto sobre el mundo con contorno
+
+```cpp
+void DibujarTextoMundoContornoUI(const char* texto, float centroX, float y,
+    int tokenTexto, Color color, float alfa = 1.0f, Color contorno = UI_TINTA);
+```
+
+Como `DibujarTextoMundo` (que no cambia), pero con contorno oscuro y sombra dura
+**proporcionales al tamano** (≈ 1/16 y 1/10 de la fuente: 16 px → 1 y 2 px;
+54 px → 3 y 5 px). Usarlo para textos que van directo sobre la escena 3D y deben
+leerse sobre cualquier fondo (cielo claro, nieve, lava): «¡YA!», «RONDA 3»,
+puntos que saltan. `alfa` funde todo junto, pensado para aparecer/desaparecer
+(a mitad del fundido el contorno se ve algo mas denso que el texto).
+
+```cpp
+DibujarTextoMundoContornoUI("¡YA!", GetScreenWidth() * 0.5f, Px(120), UI_TEXTO_TITULO, UI_FOCO);
+```
+
+### 2. Etiqueta compacta rotable
+
+```cpp
+struct OpcionesEtiquetaUI { int tokenTexto = UI_TEXTO_PEQUENO; Color borde = UI_MADERA_MEDIA;
+                            float alfa = 1.0f; bool pico = false; };
+Rectangle DibujarEtiquetaUI(const char* texto, Vector2 centro, float rotacionGrados = 0.0f,
+    const OpcionesEtiquetaUI& opciones = OpcionesEtiquetaUI{});
+```
+
+Cartelito de placa clara con borde de color (p. ej. el del jugador) y texto en
+tinta. `centro` en pixeles; rotacion en grados, sentido horario. `pico = true`
+agrega un triangulo abajo que senala el objetivo. Devuelve el rectangulo de la
+placa en pixeles **sin rotar** (para apilar etiquetas). Sin foco ni animacion.
+Usarlo para rotulos sobre jugadores, fichas o postales.
+
+```cpp
+OpcionesEtiquetaUI op;  op.borde = colorJugador;  op.pico = true;
+DibujarEtiquetaUI("J1", Vector2{ pantalla.x, pantalla.y - Px(40) }, -5.0f, op);
+```
+
+### 3. Parrafo con ajuste de linea
+
+```cpp
+enum AlineacionUI { UI_ALINEAR_IZQUIERDA, UI_ALINEAR_CENTRO, UI_ALINEAR_DERECHA };
+struct MedidaParrafoUI { float alto; int lineas; int tamano; bool cabe; };
+MedidaParrafoUI MedirParrafoUI(const char* texto, int tokenTexto, float anchoMaximo,
+    float altoMaximo = 0.0f);
+MedidaParrafoUI DibujarParrafoUI(const char* texto, float x, float y, int tokenTexto,
+    float anchoMaximo, Color color, AlineacionUI alineacion = UI_ALINEAR_IZQUIERDA,
+    float altoMaximo = 0.0f);
+```
+
+Parte el texto por palabras (y en cada `\n`) para que quepa en `anchoMaximo`
+pixeles; una palabra mas larga que el ancho queda sola en su linea (nunca se
+corta). Con `altoMaximo > 0` la fuente baja de a 1 px (minimo 10) hasta que el
+bloque entre; si ni asi entra, `cabe = false` y se dibuja igual a 10 px. El
+interlineado es proporcional a la fuente. Devuelve el alto usado (primera a
+ultima linea), las lineas y la fuente final. `MedirParrafoUI` mide sin dibujar,
+para reservar espacio. Usarlo para descripciones de minijuegos, reglas y
+avisos largos (en lugar de varias `DrawText`).
+
+```cpp
+Rectangle caja = RectRef(560, 260, 260, 120);
+MedidaParrafoUI m = DibujarParrafoUI(descripcion, caja.x, caja.y, UI_TEXTO,
+    caja.width, UI_TINTA, UI_ALINEAR_CENTRO, caja.height);
+float ySiguiente = caja.y + m.alto + Px(UI_SEPARACION);
+```
+
+### 4. Sello / insignia
+
+```cpp
+enum FormaSelloUI { UI_SELLO_CIRCULO, UI_SELLO_ESTRELLA };
+void DibujarSelloUI(const char* texto, Vector2 centro, float radioRef,
+    FormaSelloUI forma = UI_SELLO_CIRCULO, Color color = UI_PELIGRO,
+    float rotacionGrados = 0.0f, float alfa = 1.0f);
+```
+
+Sello de goma: forma de color (circulo o estrella de 12 puntas) con contorno,
+disco claro al centro y el texto en tinta; la fuente se elige segun el radio y
+se reduce hasta entrar en el disco. `centro` en pixeles, `radioRef` en unidades
+de referencia. Para textos muy cortos: «x2», «NUEVO», «1º», «+5».
+
+```cpp
+DibujarSelloUI("x2", Vector2{ r.x + r.width, r.y }, 30.0f, UI_SELLO_ESTRELLA, UI_FOCO, -10.0f);
+```
+
+### 5. Velo de pantalla completa
+
+```cpp
+inline constexpr Color UI_VELO = { 10, 12, 18, 255 };
+struct VeloUI { bool visible = false; float aparicion = 0.0f; float opacidad = 0.55f;
+                float duracion = 0.18f; Color color = UI_VELO; void Iniciar(bool visibleInicial); };
+void ActualizarVeloUI(VeloUI& velo, const EstiloUI& estilo, float dt);
+void DibujarVeloUI(const VeloUI& velo);
+void DibujarVeloUI(float alfa, Color color = UI_VELO);
+```
+
+Oscurece toda la pantalla para dejar la escena en segundo plano detras de una
+pausa, un resultado o un aviso propio. Se cambia `visible` y `ActualizarVeloUI`
+anima `aparicion` en `duracion` segundos; con `reducirMovimiento` aparece y
+desaparece al instante. `Iniciar` fija el estado sin fundido. La version sin
+estado dibuja el rectangulo con ese alfa. Mismo color y opacidad que el velo
+de `ModalUI` (que sigue dibujando el suyo: no hace falta otro debajo).
+
+```cpp
+velo.visible = enPausa;                 // cada frame
+ActualizarVeloUI(velo, estilo, dt);
+... escena ...
+DibujarVeloUI(velo);                    // despues de la escena, antes del menu de pausa
+```
+
+### 6. Banderin con mastil
+
+```cpp
+void DibujarBanderinUI(const EstiloUI& estilo, const char* texto, Rectangle refBandera,
+    float altoMastilRef, Color color = UI_PELIGRO, bool ondear = true, float fase = 0.0f);
+```
+
+Mastil de madera con perilla dorada y una bandera de color con cola en V; el
+texto va en tinta sobre una franja clara de la tela. `refBandera` es la tela
+(unidades de referencia); el mastil va pegado a su borde izquierdo y mide
+`altoMastilRef` desde el borde superior hacia abajo. Ondea con `estilo.tiempo`
+(requiere `ActualizarEstiloUI`); con `ondear = false` o `reducirMovimiento`
+queda quieta. `fase` desfasa banderines vecinos. Usarlo para marcar salida/meta,
+equipos o la casilla de un evento.
+
+```cpp
+DibujarBanderinUI(estilo, "META", Rectangle{ 1080, 268, 150, 58 }, 330.0f, UI_POSITIVO, true, 1.7f);
+```
+
+### 7. Marco de ilustracion con recorte
+
+```cpp
+Rectangle ComenzarMarcoIlustracionUI(const EstiloUI& estilo, Rectangle ref,
+    float grosorMarcoRef = 10.0f, Color fondo = UI_PLACA_CLARA);
+void TerminarMarcoIlustracionUI(const EstiloUI& estilo, Rectangle ref, float grosorMarcoRef = 10.0f);
+Rectangle AreaMarcoIlustracionUI(Rectangle ref, float grosorMarcoRef = 10.0f);
+```
+
+Marco de madera tipo cartel cuyo interior recorta lo que se dibuje entre
+`Comenzar` y `Terminar` (con `BeginScissorMode` sobre el area interior en
+pixeles enteros, ya escalada). `Comenzar` dibuja sombra, marco y fondo (alfa 0 =
+sin fondo) y devuelve el area interior en pixeles; `Terminar` cierra el recorte
+y dibuja el canto interior encima del contenido. Usarlo para vistas previas de
+minijuegos, retratos o mapas. Limitaciones: no se anida, no rota, llamar ambas
+con el mismo `ref` y grosor, y al terminar el recorte queda desactivado (si la
+pantalla tenia uno propio, debe volver a activarlo).
+
+```cpp
+Rectangle area = ComenzarMarcoIlustracionUI(estilo, Rectangle{ 282, 222, 250, 172 });
+DrawTexturePro(vistaPrevia, origen, area, Vector2{}, 0.0f, WHITE);  // lo que sobre, no se ve
+TerminarMarcoIlustracionUI(estilo, Rectangle{ 282, 222, 250, 172 });
+```
+
 ## Capturas de la demo
 
 `docs/img/ui_demo_{1280x720,1920x1080}_*.png` (primera version, 3 pestanas): 01 mitad
@@ -264,3 +432,9 @@ con tarjeta, 08 palanca con rango (17 %) y selector deshabilitado con foco,
 09 entrada del aviso, 10 aviso en reposo, 11 foco movido a SALIR a mitad de
 balanceo, 12 aviso cancelado con volver, 13 aviso con cuenta atras. La carpeta
 `reducido/` repite la secuencia con `reducirMovimiento` activado.
+
+Segunda tanda, en `build/capturas/estiloui_tanda2/` (y `reducido/`), con la
+misma secuencia mas: 14 pestana EXTRAS en reposo, 15 parrafo centrado y
+banderines ondeando, 16 velo a mitad del fundido, 17 velo completo. Se
+regeneran con `build/DemoEstiloUI.exe --captura 1280 720 build/capturas/estiloui_tanda2`
+(y 1920 1080, y `--reducir-movimiento` hacia `reducido/`).

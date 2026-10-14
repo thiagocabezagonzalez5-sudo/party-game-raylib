@@ -63,7 +63,12 @@ static const PasoGuion GUION[] =
     { 500, "volver" },      // cancela (SEGUIR EDITANDO)
     // APLICAR -> aviso con cuenta atras.
     { 501, "derecha" },
-    { 502, "aceptar" }
+    { 502, "aceptar" },
+    // EXTRAS (segunda tanda): se cierra el aviso y se pasa a la pestana.
+    { 600, "volver" },      // REVERTIR
+    { 601, "pestana+" },
+    { 700, "derecha" },     // parrafo centrado
+    { 720, "aceptar" }      // velo
 };
 
 struct PasoCaptura
@@ -86,7 +91,11 @@ static const PasoCaptura CAPTURAS[] =
     { 455, "10_modal_reposo" },
     { 465, "11_modal_foco_mitad" },
     { 506, "12_modal_cerrado" },
-    { 585, "13_modal_cuenta_atras" }
+    { 585, "13_modal_cuenta_atras" },
+    { 690, "14_extras_reposo" },
+    { 712, "15_extras_centrado_ondeo" },
+    { 725, "16_velo_mitad" },
+    { 745, "17_velo_completo" }
 };
 
 
@@ -130,7 +139,7 @@ int main(int argc, char** argv)
 
     LectorEntradaUI lector;
     int frame = 0;
-    int ultimaCaptura = 590;
+    int ultimaCaptura = 750;
 
     while (!WindowShouldClose() && !demo.salir)
     {

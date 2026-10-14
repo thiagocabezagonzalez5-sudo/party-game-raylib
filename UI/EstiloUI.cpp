@@ -1937,3 +1937,752 @@ void DibujarAyudaUI(const EstiloUI& estilo, const char* texto)
         UI_TINTA
     );
 }
+
+
+//==================================================
+// SEGUNDA TANDA: UTILIDADES
+//==================================================
+
+// Triangulo relleno en cualquier orden de vertices: raylib descarta los
+// que no van en sentido antihorario, asi que se corrige el orden aqui.
+static void DibujarTrianguloUI(Vector2 a, Vector2 b, Vector2 c, Color color)
+{
+    // Area con signo en pantalla (y hacia abajo): > 0 = horario a la vista.
+    float area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+
+    if (area > 0.0f)
+    {
+        DrawTriangle(a, c, b, color);
+    }
+    else
+    {
+        DrawTriangle(a, b, c, color);
+    }
+}
+
+
+//==================================================
+// TEXTO SOBRE EL MUNDO CON CONTORNO
+//==================================================
+
+void DibujarTextoMundoContornoUI(
+    const char* texto,
+    float centroX,
+    float y,
+    int tokenTexto,
+    Color color,
+    float alfa,
+    Color contorno
+)
+{
+    alfa = Limitar(alfa, 0.0f, 1.0f);
+
+    if (alfa <= 0.0f)
+    {
+        return;
+    }
+
+    int tamano = TamanoTexto(tokenTexto);
+    int ancho = MeasureText(texto, tamano);
+
+    // Proporcionales al tamano: ~1/16 de contorno y ~1/10 de sombra
+    // (16 px -> 1 y 2; 30 px -> 2 y 3; 54 px -> 3 y 5).
+    int grosor = (int)(tamano / 16.0f + 0.5f);
+    int sombra = (int)(tamano / 10.0f + 0.5f);
+    grosor = grosor < 1 ? 1 : grosor;
+    sombra = sombra < 2 ? 2 : sombra;
+
+    int x = (int)centroX - ancho / 2;
+    int yTexto = (int)y;
+
+    // 8 copias desplazadas forman el contorno (el trazo de la fuente
+    // pixel siempre es mas ancho que el desplazamiento: no quedan huecos).
+    const int dx[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+    const int dy[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+
+    // Sombra dura: la silueta contorneada, desplazada abajo a la derecha.
+    Color colorSombra = Fade(BLACK, 0.45f * alfa);
+
+    for (int i = 0; i < 8; i++)
+    {
+        DrawText(texto, x + sombra + dx[i] * grosor, yTexto + sombra + dy[i] * grosor, tamano, colorSombra);
+    }
+
+    Color colorContorno = Fade(contorno, alfa);
+
+    for (int i = 0; i < 8; i++)
+    {
+        DrawText(texto, x + dx[i] * grosor, yTexto + dy[i] * grosor, tamano, colorContorno);
+    }
+
+    DrawText(texto, x, yTexto, tamano, Fade(color, alfa));
+}
+
+
+//==================================================
+// ETIQUETA COMPACTA
+//==================================================
+
+Rectangle DibujarEtiquetaUI(
+    const char* texto,
+    Vector2 centro,
+    float rotacionGrados,
+    const OpcionesEtiquetaUI& opciones
+)
+{
+    float alfa = Limitar(opciones.alfa, 0.0f, 1.0f);
+    int tamano = TamanoTexto(opciones.tokenTexto);
+    int anchoTexto = MeasureText(texto, tamano);
+
+    float borde = Px(2.5f);
+    float ancho = anchoTexto + Px(8.0f) * 2.0f + borde * 2.0f;
+    float alto = tamano + Px(4.0f) * 2.0f + borde * 2.0f;
+
+    Rectangle resultado = { centro.x - ancho * 0.5f, centro.y - alto * 0.5f, ancho, alto };
+
+    if (alfa <= 0.0f)
+    {
+        return resultado;
+    }
+
+    rlPushMatrix();
+    rlTranslatef(centro.x, centro.y, 0.0f);
+    rlRotatef(rotacionGrados, 0.0f, 0.0f, 1.0f);
+
+    // Coordenadas locales: el centro de la placa es el origen.
+    Rectangle local = { -ancho * 0.5f, -alto * 0.5f, ancho, alto };
+    float pico = Px(7.0f);
+
+    DrawRectangleRec(
+        Rectangle{ local.x + Px(2.0f), local.y + Px(3.0f), local.width, local.height },
+        Fade(BLACK, 0.25f * alfa)
+    );
+
+    if (opciones.pico)
+    {
+        DibujarTrianguloUI(
+            Vector2{ -pico - Px(1.5f), local.y + local.height - Px(1.0f) },
+            Vector2{ pico + Px(1.5f), local.y + local.height - Px(1.0f) },
+            Vector2{ 0.0f, local.y + local.height + pico + Px(1.5f) },
+            Fade(CONTORNO_MADERA, alfa)
+        );
+
+        DibujarTrianguloUI(
+            Vector2{ -pico, local.y + local.height - Px(1.0f) },
+            Vector2{ pico, local.y + local.height - Px(1.0f) },
+            Vector2{ 0.0f, local.y + local.height + pico - Px(1.0f) },
+            Fade(opciones.borde, alfa)
+        );
+    }
+
+    DrawRectangleRec(local, Fade(opciones.borde, alfa));
+    DrawRectangleRec(
+        Rectangle{ local.x + borde, local.y + borde, local.width - borde * 2.0f, local.height - borde * 2.0f },
+        Fade(UI_PLACA_CLARA, alfa)
+    );
+    DrawRectangleLinesEx(local, Px(1.0f), Fade(CONTORNO_MADERA, alfa));
+
+    DrawText(
+        texto,
+        (int)(-anchoTexto * 0.5f),
+        (int)(-tamano * 0.5f),
+        tamano,
+        Fade(UI_TINTA, alfa)
+    );
+
+    rlPopMatrix();
+
+    return resultado;
+}
+
+
+//==================================================
+// PARRAFO CON AJUSTE DE LINEA
+//==================================================
+
+// Espacio entre lineas, proporcional a la fuente (al reducirla, se
+// reduce tambien).
+static float InterlineadoParrafo(int tamano)
+{
+    float interlineado = tamano * 0.35f;
+
+    return interlineado < 2.0f ? 2.0f : interlineado;
+}
+
+
+// Recorre el texto linea por linea con la fuente `tamano`. Si dibujar es
+// true, dibuja cada linea alineada en [x, x + anchoMaximo] a partir de y.
+// Devuelve la cantidad de lineas.
+static int RecorrerParrafo(
+    const char* texto,
+    int tamano,
+    float anchoMaximo,
+    bool dibujar,
+    float x,
+    float y,
+    AlineacionUI alineacion,
+    Color color
+)
+{
+    if (texto == nullptr || texto[0] == '\0')
+    {
+        return 0;
+    }
+
+    char linea[512];
+    int lineas = 0;
+    float paso = tamano + InterlineadoParrafo(tamano);
+    const char* p = texto;
+
+    while (true)
+    {
+        // La linea es [inicio, fin): palabras enteras que caben.
+        const char* inicio = p;
+        const char* fin = p;
+        const char* q = p;
+
+        while (true)
+        {
+            const char* palabra = q;
+
+            while (*palabra == ' ')
+            {
+                palabra++;
+            }
+
+            if (*palabra == '\0' || *palabra == '\n')
+            {
+                q = palabra;
+                break;
+            }
+
+            const char* finPalabra = palabra;
+
+            while (*finPalabra != '\0' && *finPalabra != ' ' && *finPalabra != '\n')
+            {
+                finPalabra++;
+            }
+
+            int largo = (int)(finPalabra - inicio);
+            largo = largo < (int)sizeof linea - 1 ? largo : (int)sizeof linea - 1;
+            snprintf(linea, sizeof linea, "%.*s", largo, inicio);
+
+            // La primera palabra siempre entra (nunca se corta una palabra).
+            if (fin == inicio || (float)MeasureText(linea, tamano) <= anchoMaximo)
+            {
+                fin = finPalabra;
+                q = finPalabra;
+                continue;
+            }
+
+            // No cabe: la linea termina antes y la palabra abre la siguiente.
+            q = palabra;
+            break;
+        }
+
+        if (dibujar)
+        {
+            int largo = (int)(fin - inicio);
+            largo = largo < (int)sizeof linea - 1 ? largo : (int)sizeof linea - 1;
+            snprintf(linea, sizeof linea, "%.*s", largo, inicio);
+
+            float anchoLinea = (float)MeasureText(linea, tamano);
+            float xLinea = x;
+
+            if (alineacion == UI_ALINEAR_CENTRO)
+            {
+                xLinea = x + (anchoMaximo - anchoLinea) * 0.5f;
+            }
+            else if (alineacion == UI_ALINEAR_DERECHA)
+            {
+                xLinea = x + anchoMaximo - anchoLinea;
+            }
+
+            DrawText(linea, (int)xLinea, (int)(y + lineas * paso), tamano, color);
+        }
+
+        lineas++;
+
+        if (*q == '\0')
+        {
+            break;
+        }
+
+        // Salto de linea explicito: se consume; un ajuste por ancho no
+        // consume nada (q ya apunta a la palabra siguiente).
+        p = *q == '\n' ? q + 1 : q;
+    }
+
+    return lineas;
+}
+
+
+// Elige la fuente (reduciendo si hace falta) y mide el bloque.
+static MedidaParrafoUI CalcularParrafo(
+    const char* texto,
+    int tokenTexto,
+    float anchoMaximo,
+    float altoMaximo
+)
+{
+    MedidaParrafoUI medida;
+    int tamano = TamanoTexto(tokenTexto);
+
+    while (true)
+    {
+        int lineas = RecorrerParrafo(texto, tamano, anchoMaximo, false, 0.0f, 0.0f, UI_ALINEAR_IZQUIERDA, BLANK);
+
+        medida.lineas = lineas;
+        medida.tamano = tamano;
+        medida.alto = lineas > 0 ? lineas * (float)tamano + (lineas - 1) * InterlineadoParrafo(tamano) : 0.0f;
+        medida.cabe = altoMaximo <= 0.0f || medida.alto <= altoMaximo;
+
+        if (medida.cabe || tamano <= TAMANO_TEXTO_MINIMO)
+        {
+            return medida;
+        }
+
+        tamano--;
+    }
+}
+
+
+MedidaParrafoUI MedirParrafoUI(
+    const char* texto,
+    int tokenTexto,
+    float anchoMaximo,
+    float altoMaximo
+)
+{
+    return CalcularParrafo(texto, tokenTexto, anchoMaximo, altoMaximo);
+}
+
+
+MedidaParrafoUI DibujarParrafoUI(
+    const char* texto,
+    float x,
+    float y,
+    int tokenTexto,
+    float anchoMaximo,
+    Color color,
+    AlineacionUI alineacion,
+    float altoMaximo
+)
+{
+    MedidaParrafoUI medida = CalcularParrafo(texto, tokenTexto, anchoMaximo, altoMaximo);
+
+    RecorrerParrafo(texto, medida.tamano, anchoMaximo, true, x, y, alineacion, color);
+
+    return medida;
+}
+
+
+//==================================================
+// SELLO / INSIGNIA
+//==================================================
+
+// Estrella de `puntas` puntas centrada en el origen local.
+static void DibujarEstrellaSello(float radio, float radioInterior, int puntas, Color color)
+{
+    int vertices = puntas * 2;
+
+    for (int i = 0; i < vertices; i++)
+    {
+        float a0 = (float)i / vertices * 2.0f * PI - PI * 0.5f;
+        float a1 = (float)(i + 1) / vertices * 2.0f * PI - PI * 0.5f;
+        float r0 = i % 2 == 0 ? radio : radioInterior;
+        float r1 = i % 2 == 0 ? radioInterior : radio;
+
+        DibujarTrianguloUI(
+            Vector2{ 0.0f, 0.0f },
+            Vector2{ std::cos(a0) * r0, std::sin(a0) * r0 },
+            Vector2{ std::cos(a1) * r1, std::sin(a1) * r1 },
+            color
+        );
+    }
+}
+
+
+void DibujarSelloUI(
+    const char* texto,
+    Vector2 centro,
+    float radioRef,
+    FormaSelloUI forma,
+    Color color,
+    float rotacionGrados,
+    float alfa
+)
+{
+    alfa = Limitar(alfa, 0.0f, 1.0f);
+
+    if (alfa <= 0.0f)
+    {
+        return;
+    }
+
+    float radio = Px(radioRef);
+    float contorno = Px(2.0f);
+    float radioDisco = radio * 0.70f;
+    const int puntas = 12;
+
+    rlPushMatrix();
+    rlTranslatef(centro.x, centro.y, 0.0f);
+    rlRotatef(rotacionGrados, 0.0f, 0.0f, 1.0f);
+
+    Vector2 origen = { 0.0f, 0.0f };
+    Vector2 sombra = { Px(3.0f), Px(4.0f) };
+
+    if (forma == UI_SELLO_ESTRELLA)
+    {
+        rlPushMatrix();
+        rlTranslatef(sombra.x, sombra.y, 0.0f);
+        DibujarEstrellaSello(radio, radio * 0.80f, puntas, Fade(BLACK, 0.25f * alfa));
+        rlPopMatrix();
+
+        DibujarEstrellaSello(radio + contorno, (radio + contorno) * 0.80f, puntas, Fade(CONTORNO_MADERA, alfa));
+        DibujarEstrellaSello(radio, radio * 0.80f, puntas, Fade(color, alfa));
+    }
+    else
+    {
+        DrawCircleV(sombra, radio, Fade(BLACK, 0.25f * alfa));
+        DrawCircleV(origen, radio + contorno, Fade(CONTORNO_MADERA, alfa));
+        DrawCircleV(origen, radio, Fade(color, alfa));
+
+        // Aro claro fino de sello de goma.
+        DrawRing(origen, radio * 0.84f, radio * 0.84f + Px(1.5f), 0.0f, 360.0f, 48, Fade(UI_PLACA_CLARA, 0.7f * alfa));
+    }
+
+    // Disco claro con el texto en tinta (contraste del estilo).
+    DrawCircleV(origen, radioDisco + Px(1.0f), Fade(CONTORNO_MADERA, alfa));
+    DrawCircleV(origen, radioDisco, Fade(UI_PLACA_CLARA, alfa));
+
+    // Fuente a la medida del disco: arranca en ~0,6 del radio y se reduce
+    // hasta que el texto entre en la cuerda central.
+    int tamano = (int)(radio * 0.62f);
+    float anchoMaximo = radioDisco * 1.70f;
+
+    tamano = tamano < TAMANO_TEXTO_MINIMO ? TAMANO_TEXTO_MINIMO : tamano;
+
+    while (tamano > TAMANO_TEXTO_MINIMO && (float)MeasureText(texto, tamano) > anchoMaximo)
+    {
+        tamano--;
+    }
+
+    int anchoTexto = MeasureText(texto, tamano);
+
+    DrawText(
+        texto,
+        (int)(-anchoTexto * 0.5f),
+        (int)(-tamano * 0.5f),
+        tamano,
+        Fade(UI_TINTA, alfa)
+    );
+
+    rlPopMatrix();
+}
+
+
+//==================================================
+// VELO
+//==================================================
+
+void VeloUI::Iniciar(bool visibleInicial)
+{
+    visible = visibleInicial;
+    aparicion = visibleInicial ? 1.0f : 0.0f;
+}
+
+
+void ActualizarVeloUI(VeloUI& velo, const EstiloUI& estilo, float dt)
+{
+    float objetivo = velo.visible ? 1.0f : 0.0f;
+
+    // Sin fundido con movimiento reducido (o duracion nula).
+    if (estilo.reducirMovimiento || velo.duracion <= 0.0f)
+    {
+        velo.aparicion = objetivo;
+        return;
+    }
+
+    float paso = dt / velo.duracion;
+
+    if (velo.aparicion < objetivo)
+    {
+        velo.aparicion = Limitar(velo.aparicion + paso, 0.0f, objetivo);
+    }
+    else
+    {
+        velo.aparicion = Limitar(velo.aparicion - paso, objetivo, 1.0f);
+    }
+}
+
+
+void DibujarVeloUI(float alfa, Color color)
+{
+    alfa = Limitar(alfa, 0.0f, 1.0f);
+
+    if (alfa <= 0.0f)
+    {
+        return;
+    }
+
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(color, alfa));
+}
+
+
+void DibujarVeloUI(const VeloUI& velo)
+{
+    DibujarVeloUI(velo.opacidad * velo.aparicion, velo.color);
+}
+
+
+//==================================================
+// BANDERIN CON MASTIL
+//==================================================
+
+static const int SEGMENTOS_BANDERIN = 12;
+
+
+// Desplazamiento vertical de la tela en la posicion x (0 = mastil, 1 =
+// punta): el borde pegado al mastil no se mueve.
+static float OndaBanderin(float x01, float tiempo, float fase, float amplitud)
+{
+    return amplitud * x01 * std::sin(x01 * 2.0f * PI * 1.1f - tiempo * 4.2f + fase);
+}
+
+
+void DibujarBanderinUI(
+    const EstiloUI& estilo,
+    const char* texto,
+    Rectangle refBandera,
+    float altoMastilRef,
+    Color color,
+    bool ondear,
+    float fase
+)
+{
+    if (!estilo.cargado)
+    {
+        return;
+    }
+
+    Rectangle tela = RectRef(refBandera.x, refBandera.y, refBandera.width, refBandera.height);
+    bool mover = ondear && !estilo.reducirMovimiento;
+    float amplitud = mover ? Px(5.0f) : 0.0f;
+    float cola = tela.height * 0.32f;               // largo de la cola en V
+    float cuerpo = tela.width - cola;
+
+    // Mastil: palo de madera con contorno y una perilla dorada arriba.
+    float anchoMastil = Px(8.0f);
+    Rectangle mastil = {
+        tela.x - anchoMastil,
+        tela.y - Px(12.0f),
+        anchoMastil,
+        Px(altoMastilRef) + Px(12.0f)
+    };
+
+    DrawRectangleRec(
+        Rectangle{ mastil.x + Px(3.0f), mastil.y + Px(4.0f), mastil.width, mastil.height },
+        Fade(BLACK, 0.25f)
+    );
+    DrawRectangleRec(mastil, UI_MADERA_MEDIA);
+    DrawRectangleRec(Rectangle{ mastil.x + Px(1.5f), mastil.y, Px(2.0f), mastil.height }, Escalar(UI_MADERA_MEDIA, 1.18f));
+    DrawRectangleLinesEx(mastil, Px(1.5f), CONTORNO_MADERA);
+    DrawCircleV(Vector2{ mastil.x + anchoMastil * 0.5f, mastil.y }, Px(6.5f), CONTORNO_MADERA);
+    DrawCircleV(Vector2{ mastil.x + anchoMastil * 0.5f, mastil.y }, Px(5.0f), UI_FOCO);
+
+    // Bordes de la tela: arriba y abajo por columna (+ la cola).
+    Vector2 arriba[SEGMENTOS_BANDERIN + 1];
+    Vector2 abajo[SEGMENTOS_BANDERIN + 1];
+
+    for (int i = 0; i <= SEGMENTOS_BANDERIN; i++)
+    {
+        float t = (float)i / SEGMENTOS_BANDERIN;
+        float x = tela.x + cuerpo * t;
+        float onda = OndaBanderin((x - tela.x) / tela.width, estilo.tiempo, fase, amplitud);
+
+        arriba[i] = Vector2{ x, tela.y + onda };
+        abajo[i] = Vector2{ x, tela.y + tela.height + onda };
+    }
+
+    float ondaPunta = OndaBanderin(1.0f, estilo.tiempo, fase, amplitud);
+    float xMuesca = tela.x + cuerpo + cola * 0.45f;
+    float ondaMuesca = OndaBanderin((xMuesca - tela.x) / tela.width, estilo.tiempo, fase, amplitud);
+
+    Vector2 puntaArriba = { tela.x + tela.width, tela.y + ondaPunta };
+    Vector2 puntaAbajo = { tela.x + tela.width, tela.y + tela.height + ondaPunta };
+    Vector2 muesca = { xMuesca, tela.y + tela.height * 0.5f + ondaMuesca };
+
+    // Sombra, contorno (la misma tela un poco mas grande) y tela.
+    for (int capa = 0; capa < 3; capa++)
+    {
+        Vector2 d = { 0.0f, 0.0f };
+        float crecer = 0.0f;
+        Color c = color;
+
+        if (capa == 0)
+        {
+            d = Vector2{ Px(4.0f), Px(5.0f) };
+            c = Fade(BLACK, 0.25f);
+        }
+        else if (capa == 1)
+        {
+            crecer = Px(1.5f);
+            c = CONTORNO_MADERA;
+        }
+
+        for (int i = 0; i < SEGMENTOS_BANDERIN; i++)
+        {
+            Vector2 a0 = { arriba[i].x + d.x, arriba[i].y + d.y - crecer };
+            Vector2 a1 = { arriba[i + 1].x + d.x, arriba[i + 1].y + d.y - crecer };
+            Vector2 b0 = { abajo[i].x + d.x, abajo[i].y + d.y + crecer };
+            Vector2 b1 = { abajo[i + 1].x + d.x, abajo[i + 1].y + d.y + crecer };
+
+            DibujarTrianguloUI(a0, b0, b1, c);
+            DibujarTrianguloUI(a0, b1, a1, c);
+        }
+
+        Vector2 aN = { arriba[SEGMENTOS_BANDERIN].x + d.x, arriba[SEGMENTOS_BANDERIN].y + d.y - crecer };
+        Vector2 bN = { abajo[SEGMENTOS_BANDERIN].x + d.x, abajo[SEGMENTOS_BANDERIN].y + d.y + crecer };
+        Vector2 pa = { puntaArriba.x + d.x + crecer, puntaArriba.y + d.y - crecer };
+        Vector2 pb = { puntaAbajo.x + d.x + crecer, puntaAbajo.y + d.y + crecer };
+        Vector2 m = { muesca.x + d.x - crecer, muesca.y + d.y };
+
+        DibujarTrianguloUI(aN, m, pa, c);
+        DibujarTrianguloUI(bN, pb, m, c);
+        DibujarTrianguloUI(aN, bN, m, c);
+    }
+
+    // Franja clara para el texto (sigue la onda) y el texto en tinta,
+    // inclinado segun la pendiente de la tela en su centro.
+    float margenFranja = tela.height * 0.20f;
+    int desde = 1;
+    int hasta = SEGMENTOS_BANDERIN - 1;
+
+    for (int i = desde; i < hasta; i++)
+    {
+        Vector2 a0 = { arriba[i].x, arriba[i].y + margenFranja };
+        Vector2 a1 = { arriba[i + 1].x, arriba[i + 1].y + margenFranja };
+        Vector2 b0 = { abajo[i].x, abajo[i].y - margenFranja };
+        Vector2 b1 = { abajo[i + 1].x, abajo[i + 1].y - margenFranja };
+
+        DibujarTrianguloUI(a0, b0, b1, UI_PLACA_CLARA);
+        DibujarTrianguloUI(a0, b1, a1, UI_PLACA_CLARA);
+    }
+
+    float anchoFranja = arriba[hasta].x - arriba[desde].x;
+    float altoFranja = tela.height - margenFranja * 2.0f;
+    float centroX = (arriba[desde].x + arriba[hasta].x) * 0.5f;
+    float x01 = (centroX - tela.x) / tela.width;
+    float onda = OndaBanderin(x01, estilo.tiempo, fase, amplitud);
+    float delta = 0.01f;
+    float pendiente =
+        (OndaBanderin(x01 + delta, estilo.tiempo, fase, amplitud) - onda) / (delta * tela.width);
+
+    int tamano = TamanoTextoAjustadoUI(texto, UI_TEXTO, anchoFranja - Px(8.0f));
+
+    // Si la franja es baja, la fuente tampoco puede pasarse de su alto.
+    while (tamano > TAMANO_TEXTO_MINIMO && tamano > altoFranja - Px(4.0f))
+    {
+        tamano--;
+    }
+
+    int anchoTexto = MeasureText(texto, tamano);
+
+    rlPushMatrix();
+    rlTranslatef(centroX, tela.y + tela.height * 0.5f + onda, 0.0f);
+    rlRotatef(std::atan(pendiente) * RAD2DEG, 0.0f, 0.0f, 1.0f);
+    DrawText(texto, (int)(-anchoTexto * 0.5f), (int)(-tamano * 0.5f), tamano, UI_TINTA);
+    rlPopMatrix();
+}
+
+
+//==================================================
+// MARCO DE ILUSTRACION CON RECORTE
+//==================================================
+
+Rectangle AreaMarcoIlustracionUI(Rectangle ref, float grosorMarcoRef)
+{
+    Rectangle rect = RectRef(ref.x, ref.y, ref.width, ref.height);
+    float grosor = Px(grosorMarcoRef);
+
+    // Pixeles enteros hacia adentro: el recorte nunca pisa el marco.
+    float x0 = std::ceil(rect.x + grosor);
+    float y0 = std::ceil(rect.y + grosor);
+    float x1 = std::floor(rect.x + rect.width - grosor);
+    float y1 = std::floor(rect.y + rect.height - grosor);
+
+    return Rectangle{
+        x0,
+        y0,
+        x1 > x0 ? x1 - x0 : 0.0f,
+        y1 > y0 ? y1 - y0 : 0.0f
+    };
+}
+
+
+Rectangle ComenzarMarcoIlustracionUI(
+    const EstiloUI& estilo,
+    Rectangle ref,
+    float grosorMarcoRef,
+    Color fondo
+)
+{
+    Rectangle area = AreaMarcoIlustracionUI(ref, grosorMarcoRef);
+
+    if (estilo.cargado)
+    {
+        Rectangle rect = RectRef(ref.x, ref.y, ref.width, ref.height);
+
+        DrawRectangleRec(
+            Rectangle{ rect.x + Px(5.0f), rect.y + Px(6.0f), rect.width, rect.height },
+            Fade(BLACK, 0.28f)
+        );
+
+        // El 9-slice de madera tiene 12 texeles de borde: se escala para
+        // que el borde mida grosorMarcoRef.
+        DibujarNueveCortes(estilo.madera, 12, rect, EscalaUI() * grosorMarcoRef / 12.0f, WHITE);
+
+        if (fondo.a > 0)
+        {
+            DrawRectangleRec(area, fondo);
+        }
+    }
+
+    // Siempre se activa (aunque no haya estilo): asi Terminar es simetrico.
+    BeginScissorMode((int)area.x, (int)area.y, (int)area.width, (int)area.height);
+
+    return area;
+}
+
+
+void TerminarMarcoIlustracionUI(
+    const EstiloUI& estilo,
+    Rectangle ref,
+    float grosorMarcoRef
+)
+{
+    EndScissorMode();
+
+    if (!estilo.cargado)
+    {
+        return;
+    }
+
+    Rectangle area = AreaMarcoIlustracionUI(ref, grosorMarcoRef);
+
+    // Canto interior: sombra arriba (el contenido queda "hundido" en el
+    // marco) y filete oscuro alrededor.
+    float bisel = Px(6.0f);
+
+    DrawRectangleGradientV(
+        (int)area.x,
+        (int)area.y,
+        (int)area.width,
+        (int)bisel,
+        Fade(BLACK, 0.30f),
+        Fade(BLACK, 0.0f)
+    );
+
+    DrawRectangleLinesEx(area, Px(1.5f), CONTORNO_MADERA);
+}
