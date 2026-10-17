@@ -3,6 +3,8 @@
 #include "Minigames/EfectosVisualesMinijuegos.h"
 #include "Minigames/ModeloJugadorCompartido.h"
 #include "Systems/Input.h"
+#include "UI/EstiloUI.h"
+#include "UI/EstiloUIGlobal.h"
 
 #include "rlgl.h"
 
@@ -1707,341 +1709,2065 @@ static void DibujarRutaSeleccionadaTableroFinal(
 }
 
 
-static const char* ObtenerTextoFaseTableroFinal(
+//==================================================
+// HUD DEL TABLERO: «CARTELES DE PLAYA»
+//==================================================
+//
+// Misma familia que el HUD de minijuegos (Minigames/HudMinijuego.cpp):
+//  - arriba cruza una soga de la que cuelgan, con pinzas, las etiquetas
+//    de los jugadores en orden de turno (trofeos y monedas) y, en el
+//    medio, el cartel de la ronda. Del cartel de ronda cuelga una tira
+//    con el tablero, la zona y el estado del gimmick; mientras dura un
+//    aviso del gimmick, la tira se cambia por un cartel mas grande;
+//  - sobre la ficha activa flota el dado: gira mientras se espera la
+//    tirada, muestra el resultado y despues los pasos que quedan;
+//  - en una bifurcacion, etiquetas «RUTA 1 / RUTA 2» sobre cada camino;
+//  - abajo, el cartel del turno (quien juega y que pasa) y la ayuda con
+//    las teclas o botones reales del jugador que decide;
+//  - la compra del trofeo y el resultado final tienen tablon propio.
+// Los anuncios grandes («RONDA 2», «¡FIN DE LA RONDA!», el +3 de una
+// casilla) van sobre el mundo, en texto claro con contorno.
+//
+// El HUD SOLO LEE la partida. Como Dibujar es const, su estado de
+// animacion vive en este .cpp y avanza con el reloj del EstiloUI
+// compartido; respeta reducirMovimiento. Medidas en unidades de 1280x720.
+//==================================================
+
+static const float ANCHO_ETIQUETA_HUD = 168.0f;
+static const float ALTO_ETIQUETA_HUD = 64.0f;
+static const float SEPARACION_ETIQUETAS_HUD = 10.0f;
+static const float ANCHO_RONDA_HUD = 128.0f;
+static const float ALTO_RONDA_HUD = 76.0f;
+static const float SEPARACION_RONDA_HUD = 14.0f;
+
+static const float Y_SOGA_HUD = 14.0f;          // altura de la soga en los extremos
+static const float COMBA_SOGA_HUD = 6.0f;       // cuanto baja en el centro
+static const float SOGA_SOBRANTE_HUD = 30.0f;   // soga a cada lado de la fila
+static const float BAJADA_TURNO_HUD = 12.0f;    // la etiqueta del turno cuelga mas abajo
+
+static const float ANCHO_CARTEL_TURNO = 540.0f;
+static const float ALTO_CARTEL_TURNO = 56.0f;
+static const float Y_CARTEL_TURNO = 610.0f;     // anclado abajo (720 = borde)
+static const float ANCHO_TABLON_TROFEO = 560.0f;
+static const float ALTO_TABLON_TROFEO = 150.0f;
+static const float LADO_DADO_HUD = 56.0f;
+
+// Tiempos (segundos).
+static const float T_ANUNCIO_RONDA = 1.8f;
+static const float T_ANUNCIO_TROFEO = 1.8f;
+static const float T_SALTO_HUD = 0.28f;
+static const float T_DESTELLO_HUD = 0.6f;
+static const float T_DELTA_MONEDAS = 1.6f;
+static const float T_ENTRADA_TABLON = 0.30f;
+static const float T_EVENTO_CASILLA = 1.35f;    // duracion de la fase (ver Actualizar)
+
+// Colores locales. Las tintas van sobre placa clara (contraste >= 4.5:1).
+static const Color COLOR_TINTA_POSITIVA_HUD = { 20, 92, 48, 255 };
+static const Color COLOR_TINTA_ALERTA_HUD = { 160, 30, 24, 255 };
+static const Color COLOR_PLACA_ALERTA_HUD = { 255, 190, 170, 255 };
+static const Color COLOR_ORO_HUD = { 255, 200, 60, 255 };
+static const Color COLOR_ORO_OSCURO_HUD = { 200, 140, 30, 255 };
+static const Color COLOR_ORO_CLARO_HUD = { 255, 230, 130, 255 };
+static const Color COLOR_CARA_DADO_HUD = { 255, 248, 232, 255 };
+static const Color COLOR_MUNDO_POSITIVO_HUD = { 130, 235, 150, 255 };
+static const Color COLOR_MUNDO_NEGATIVO_HUD = { 255, 120, 100, 255 };
+
+
+//==================================================
+// ESTADO DE ANIMACION DEL HUD
+//==================================================
+
+struct EstadoHudTablero
+{
+    bool iniciado = false;
+    const PartidaTablero* partida = nullptr;
+    float reloj = 0.0f;                 // EstiloUI::tiempo del ultimo dibujo
+
+    int ronda = 0;
+    float tiempoRonda = 99.0f;          // desde que empezo la ronda (anuncio)
+
+    int monedas[MAX_PARTICIPANTES] = {};
+    int trofeos[MAX_PARTICIPANTES] = {};
+    int deltaMonedas[MAX_PARTICIPANTES] = {};
+    float tiempoMonedas[MAX_PARTICIPANTES] = {};
+    float tiempoTrofeo[MAX_PARTICIPANTES] = {};
+    int ultimoTrofeo = -1;              // quien consiguio el ultimo trofeo
+
+    int valorDado = -1;                 // numero que muestra el dado
+    float tiempoDado = 99.0f;           // desde que cambio (salto)
+
+    float tiempoMensaje = 0.0f;         // tiempoMensajeGimmick del frame anterior
+    ResorteUI caidaMensaje;             // caida del cartel de aviso
+
+    ColgadoUI colgado[MAX_PARTICIPANTES];   // balanceo al recibir el turno
+    ResorteUI bajada[MAX_PARTICIPANTES];    // la del turno cuelga mas abajo
+};
+
+
+static EstadoHudTablero estadoHudTablero;
+
+
+static float Limitar01Hud(float v)
+{
+    return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
+}
+
+
+// Rebote al aparecer: 1 + extra al principio, baja a 1 en `duracion`.
+static float EscalaReboteHud(float t, float duracion, float extra, bool reducir)
+{
+    if (reducir)
+    {
+        return 1.0f;
+    }
+
+    float resto = 1.0f - Limitar01Hud(t / duracion);
+
+    return 1.0f + extra * resto * resto * resto;
+}
+
+
+// Lo que muestra el dado sobre la ficha: -1 oculto, 0 girando (se espera
+// la tirada), 1..10 un numero (resultado o pasos que quedan).
+static int ValorDadoHud(
     const PartidaTablero& partida
 )
 {
-    int indiceParticipante =
-        ObtenerParticipanteTurnoTableroFinal(partida);
+    int turno = ObtenerParticipanteTurnoTableroFinal(partida);
 
-    if (partida.fase == FASE_PARTIDA_TABLERO_TERMINADA)
+    if (turno < 0 || partida.participantes == nullptr)
     {
-        return "PARTIDA TERMINADA";
+        return -1;
     }
 
-    if (indiceParticipante < 0 || partida.participantes == nullptr)
+    switch (partida.fase)
     {
-        return "SIN JUGADORES";
-    }
-
-    const Participante& participante =
-        partida.participantes[indiceParticipante];
-
-    if (partida.fase == FASE_PARTIDA_TABLERO_ESPERANDO_DADO)
-    {
-        if (participante.esBot)
+        case FASE_PARTIDA_TABLERO_ESPERANDO_DADO:
         {
-            return TextFormat(
-                "TURNO J%d - BOT LANZANDO DADO...",
-                indiceParticipante + 1
-            );
-        }
+            const Participante& participante = partida.participantes[turno];
 
-        if (!participante.conectado)
-        {
-            return TextFormat(
-                "J%d: RECONECTA TU CONTROL (JUEGA UN BOT EN %d s)",
-                indiceParticipante + 1,
-                (int)std::ceil(std::fmax(0.0f, 4.0f - partida.tiempoFase))
-            );
-        }
-
-        return TextFormat(
-            "J%d: %s PARA LANZAR EL DADO",
-            indiceParticipante + 1,
-            ObtenerTextoBotonPrincipal(participante)
-        );
-    }
-
-    if (partida.fase == FASE_PARTIDA_TABLERO_MOSTRANDO_DADO)
-    {
-        return TextFormat(
-            "J%d SACO %d",
-            indiceParticipante + 1,
-            partida.valorDado
-        );
-    }
-
-    if (partida.fase == FASE_PARTIDA_TABLERO_ELIGIENDO_RUTA)
-    {
-        const EstadoJugadorPartidaTablero& jugadorRuta =
-            partida.jugadores[indiceParticipante];
-
-        if (
-            partida.definicion != nullptr &&
-            partida.definicion->DescribirOpcionRuta != nullptr
-        )
-        {
-            const char* descripcion =
-                partida.definicion->DescribirOpcionRuta(
-                    partida,
-                    jugadorRuta.casillaActual,
-                    partida.opcionRuta
-                );
-
-            if (descripcion != nullptr)
+            // Humano sin mando: hasta que juegue el bot no hay tirada.
+            if (
+                !participante.esBot &&
+                !participante.conectado &&
+                partida.tiempoFase < 4.0f
+            )
             {
-                return TextFormat(
-                    "J%d: RUTA %d - %s",
-                    indiceParticipante + 1,
-                    partida.opcionRuta + 1,
-                    descripcion
-                );
+                return -1;
             }
+
+            return 0;
         }
 
-        return TextFormat(
-            "J%d: ELEGIR RUTA %d",
-            indiceParticipante + 1,
-            partida.opcionRuta + 1
-        );
+        case FASE_PARTIDA_TABLERO_MOSTRANDO_DADO:
+            return partida.valorDado;
+
+        // En la bifurcacion el dado taparia las etiquetas de ruta (las
+        // casillas estan pegadas a la ficha): los pasos van al cartel.
+        case FASE_PARTIDA_TABLERO_MOVIENDO:
+        case FASE_PARTIDA_TABLERO_DECISION_TROFEO:
+            return partida.pasosPendientes > 0 ? partida.pasosPendientes : -1;
+
+        default:
+            break;
     }
 
-    if (partida.fase == FASE_PARTIDA_TABLERO_MOVIENDO)
+    return -1;
+}
+
+
+// Jugador cuya etiqueta se destaca: nadie al terminar la ronda (el
+// indice ya apunta al primero de la ronda siguiente) ni la partida.
+static int TurnoVisibleHud(const PartidaTablero& partida)
+{
+    if (
+        partida.fase == FASE_PARTIDA_TABLERO_FIN_RONDA ||
+        partida.fase == FASE_PARTIDA_TABLERO_TERMINADA
+    )
     {
-        return TextFormat(
-            "MOVIENDO - %d PASOS RESTANTES",
-            partida.pasosPendientes
-        );
+        return -1;
     }
+
+    return ObtenerParticipanteTurnoTableroFinal(partida);
+}
+
+
+static void SincronizarEstadoHudTablero(
+    const PartidaTablero& partida
+)
+{
+    float reloj = estadoHudTablero.reloj;
+
+    estadoHudTablero = EstadoHudTablero{};
+    estadoHudTablero.iniciado = true;
+    estadoHudTablero.partida = &partida;
+    estadoHudTablero.reloj = reloj;
+    estadoHudTablero.ronda = partida.rondaActual;
+    estadoHudTablero.tiempoRonda = 0.0f;
+    estadoHudTablero.valorDado = ValorDadoHud(partida);
+    estadoHudTablero.tiempoMensaje = partida.tiempoMensajeGimmick;
+
+    int turno = TurnoVisibleHud(partida);
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        estadoHudTablero.monedas[i] = partida.jugadores[i].monedas;
+        estadoHudTablero.trofeos[i] = partida.jugadores[i].trofeos;
+        estadoHudTablero.tiempoMonedas[i] = 99.0f;
+        estadoHudTablero.tiempoTrofeo[i] = 99.0f;
+
+        estadoHudTablero.colgado[i].Iniciar(0.0f, 0.0f, 0.0f, 0.6f);
+        estadoHudTablero.colgado[i].aterrizo = true;
+        estadoHudTablero.colgado[i].focoPrevio = i == turno;
+
+        estadoHudTablero.bajada[i].valor =
+            i == turno ? BAJADA_TURNO_HUD : 0.0f;
+    }
+}
+
+
+static void ActualizarEstadoHudTablero(
+    const PartidaTablero& partida,
+    const EstiloUI& estilo
+)
+{
+    EstadoHudTablero& e = estadoHudTablero;
+    bool reducir = estilo.reducirMovimiento;
+
+    // Reloj del EstiloUI compartido (Juego lo avanza cada frame).
+    float dt = estilo.tiempo - e.reloj;
+    e.reloj = estilo.tiempo;
+
+    // Un hueco largo significa que el tablero no se dibujo un rato
+    // (minijuego, menus). Si al volver no es la ronda siguiente, es otra
+    // partida: se copia el estado sin animar los cambios.
+    bool hueco = !(dt > 0.0f && dt < 0.5f);
+
+    if (hueco)
+    {
+        dt = GetFrameTime();
+        if (dt > 0.1f) dt = 0.1f;
+    }
+
+    if (
+        !e.iniciado ||
+        e.partida != &partida ||
+        partida.rondaActual < e.ronda ||
+        (hueco && partida.rondaActual != e.ronda + 1)
+    )
+    {
+        SincronizarEstadoHudTablero(partida);
+    }
+
+    e.tiempoRonda += dt;
+
+    if (partida.rondaActual != e.ronda)
+    {
+        e.ronda = partida.rondaActual;
+        e.tiempoRonda = 0.0f;
+    }
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        const EstadoJugadorPartidaTablero& jugador = partida.jugadores[i];
+
+        if (jugador.monedas != e.monedas[i])
+        {
+            e.deltaMonedas[i] = jugador.monedas - e.monedas[i];
+            e.monedas[i] = jugador.monedas;
+            e.tiempoMonedas[i] = 0.0f;
+        }
+        else
+        {
+            e.tiempoMonedas[i] += dt;
+        }
+
+        if (jugador.trofeos > e.trofeos[i])
+        {
+            e.tiempoTrofeo[i] = 0.0f;
+            e.ultimoTrofeo = i;
+        }
+        else
+        {
+            e.tiempoTrofeo[i] += dt;
+        }
+
+        e.trofeos[i] = jugador.trofeos;
+    }
+
+    int turno = TurnoVisibleHud(partida);
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        bool activo = i == turno;
+        float objetivo = activo ? BAJADA_TURNO_HUD : 0.0f;
+
+        e.colgado[i].Actualizar(estilo, dt, activo);
+
+        if (reducir)
+        {
+            e.bajada[i].valor = objetivo;
+            e.bajada[i].velocidad = 0.0f;
+        }
+        else
+        {
+            e.bajada[i].Actualizar(objetivo, dt, 160.0f, 14.0f);
+        }
+    }
+
+    int valorDado = ValorDadoHud(partida);
+
+    if (valorDado != e.valorDado)
+    {
+        e.valorDado = valorDado;
+        e.tiempoDado = 0.0f;
+    }
+    else
+    {
+        e.tiempoDado += dt;
+    }
+
+    // Aviso nuevo del gimmick: su contador vuelve a subir.
+    if (partida.tiempoMensajeGimmick > e.tiempoMensaje + 0.01f)
+    {
+        e.caidaMensaje.valor = reducir ? 0.0f : -90.0f;
+        e.caidaMensaje.velocidad = 0.0f;
+    }
+
+    e.tiempoMensaje = partida.tiempoMensajeGimmick;
+
+    if (reducir)
+    {
+        e.caidaMensaje = ResorteUI{};
+    }
+    else
+    {
+        e.caidaMensaje.Actualizar(0.0f, dt, 90.0f, 9.0f);
+    }
+}
+
+
+//==================================================
+// LIENZO: unidades de referencia ancladas arriba o abajo
+//==================================================
+
+static float XHud(float x)
+{
+    float escala = EscalaUI();
+
+    return ((float)GetScreenWidth() - UI_REF_ANCHO * escala) * 0.5f + x * escala;
+}
+
+
+static float YArribaHud(float y)
+{
+    return y * EscalaUI();
+}
+
+
+static float YAbajoHud(float y)
+{
+    return (float)GetScreenHeight() - (UI_REF_ALTO - y) * EscalaUI();
+}
+
+
+// Altura de la soga (unidades ref) en x, con una comba suave.
+static float AlturaSogaHud(float x, float inicio, float fin)
+{
+    float centro = (inicio + fin) * 0.5f;
+    float medio = (fin - inicio) * 0.5f;
+
+    if (medio <= 0.0f)
+    {
+        return Y_SOGA_HUD;
+    }
+
+    float u = (x - centro) / medio;
+
+    return Y_SOGA_HUD + COMBA_SOGA_HUD * (1.0f - u * u);
+}
+
+
+static float GrosorLineaHud(float unidades)
+{
+    float grosor = Px(unidades);
+
+    return grosor < 1.0f ? 1.0f : grosor;
+}
+
+
+//==================================================
+// PIEZAS DE DIBUJO
+//==================================================
+
+// Pinza de madera centrada en (cx, ySoga), en pixeles.
+static void DibujarPinzaHud(float cx, float ySoga)
+{
+    Rectangle pinza = { cx - Px(4.0f), ySoga - Px(6.0f), Px(8.0f), Px(18.0f) };
+
+    DrawRectangleRec(pinza, UI_MADERA_MEDIA);
+    DrawRectangleLinesEx(pinza, GrosorLineaHud(1.0f), UI_TINTA);
+    DrawRectangleRec(
+        Rectangle{ pinza.x, pinza.y + Px(7.0f), pinza.width, Px(2.0f) },
+        UI_MADERA_OSCURA
+    );
+}
+
+
+// Banderin de color con cola en V. (x, y) esquina superior izquierda, px.
+static void DibujarFormaBanderinHud(float x, float y, float ancho, float alto, Color color)
+{
+    float cola = alto * 0.26f;
+    float cuerpo = alto - cola;
+    float medio = x + ancho * 0.5f;
+
+    DrawRectangleRec(Rectangle{ x, y, ancho, cuerpo }, color);
+
+    // DrawTriangle: vertices en sentido antihorario en pantalla.
+    DrawTriangle(Vector2{ x, y + cuerpo - 0.5f }, Vector2{ x, y + alto }, Vector2{ medio, y + cuerpo - 0.5f }, color);
+    DrawTriangle(Vector2{ medio, y + cuerpo - 0.5f }, Vector2{ x + ancho, y + alto }, Vector2{ x + ancho, y + cuerpo - 0.5f }, color);
+}
+
+
+static void DibujarBanderinHud(float x, float y, float ancho, float alto, Color color)
+{
+    float borde = GrosorLineaHud(1.5f);
+
+    DibujarFormaBanderinHud(x - borde, y - borde, ancho + borde * 2.0f, alto + borde * 2.5f, UI_TINTA);
+    DibujarFormaBanderinHud(x, y, ancho, alto, color);
+}
+
+
+// Marco de madera fino y placa clara (como TarjetaUI, sin caida).
+// Devuelve la placa (zona del texto) en pixeles.
+static Rectangle DibujarPlacaConMarcoHud(const EstiloUI& estilo, Rectangle rect, float marcoRef)
+{
+    DrawRectangleRec(
+        Rectangle{ rect.x + Px(3.0f), rect.y + Px(4.0f), rect.width, rect.height },
+        Fade(BLACK, 0.25f)
+    );
+
+    DibujarNueveCortes(estilo.madera, 12, rect, EscalaUI() * 0.5f, WHITE);
+
+    float marco = Px(marcoRef);
+    Rectangle placa = {
+        rect.x + marco, rect.y + marco,
+        rect.width - marco * 2.0f, rect.height - marco * 2.0f
+    };
+
+    DibujarNueveCortes(estilo.placa, 8, placa, EscalaUI(), WHITE);
+
+    return placa;
+}
+
+
+// Tablon grande: madera gruesa y placa clara, con sombra proyectada.
+static Rectangle DibujarTablonHud(const EstiloUI& estilo, Rectangle rect)
+{
+    DrawRectangleRec(
+        Rectangle{ rect.x + Px(6.0f), rect.y + Px(8.0f), rect.width, rect.height },
+        Fade(BLACK, 0.30f)
+    );
+    DibujarNueveCortes(estilo.madera, 12, rect, EscalaUI(), WHITE);
+
+    float margen = Px(14.0f);
+    Rectangle placa = {
+        rect.x + margen, rect.y + margen,
+        rect.width - margen * 2.0f, rect.height - margen * 2.0f
+    };
+
+    DibujarNueveCortes(estilo.placa, 8, placa, EscalaUI(), WHITE);
+
+    return placa;
+}
+
+
+// Texto alineado a la derecha que se reduce si no cabe.
+static void DibujarTextoDerechaHud(const char* texto, float derecha, float y, int token, float anchoMax, Color color)
+{
+    int tamano = TamanoTextoAjustadoUI(texto, token, anchoMax);
+
+    DrawText(texto, (int)(derecha - MeasureText(texto, tamano)), (int)y, tamano, color);
+}
+
+
+// Moneda: disco dorado con contorno de tinta. Centro y radio en pixeles.
+static void DibujarMonedaHud(float cx, float cy, float radio)
+{
+    Vector2 centro = { cx, cy };
+
+    DrawCircleV(centro, radio + GrosorLineaHud(1.5f), UI_TINTA);
+    DrawCircleV(centro, radio, COLOR_ORO_HUD);
+    DrawCircleV(centro, radio * 0.62f, COLOR_ORO_OSCURO_HUD);
+    DrawCircleV(centro, radio * 0.42f, COLOR_ORO_CLARO_HUD);
+}
+
+
+// Una pieza de la copa, agrandada `extra` pixeles (para el contorno).
+static void DibujarPiezasTrofeoHud(float cx, float cy, float t, float extra, Color color, Color colorPie)
+{
+    // Asas: anillos a cada lado de la copa.
+    float radioAsa = t * 0.17f;
+    float grosorAsa = t * 0.07f + extra;
+
+    DrawRing(Vector2{ cx - t * 0.34f, cy - t * 0.26f }, radioAsa - grosorAsa, radioAsa + extra, 0.0f, 360.0f, 12, color);
+    DrawRing(Vector2{ cx + t * 0.34f, cy - t * 0.26f }, radioAsa - grosorAsa, radioAsa + extra, 0.0f, 360.0f, 12, color);
+
+    // Copa: borde recto arriba y fondo redondo.
+    DrawRectangleRec(
+        Rectangle{ cx - t * 0.34f - extra, cy - t * 0.50f - extra, t * 0.68f + extra * 2.0f, t * 0.26f + extra * 2.0f },
+        color
+    );
+    DrawCircleSector(Vector2{ cx, cy - t * 0.25f }, t * 0.34f + extra, 0.0f, 180.0f, 14, color);
+
+    // Tallo y pie.
+    DrawRectangleRec(
+        Rectangle{ cx - t * 0.07f - extra, cy - extra, t * 0.14f + extra * 2.0f, t * 0.34f + extra * 2.0f },
+        color
+    );
+    DrawRectangleRec(
+        Rectangle{ cx - t * 0.28f - extra, cy + t * 0.34f - extra, t * 0.56f + extra * 2.0f, t * 0.16f + extra * 2.0f },
+        colorPie
+    );
+}
+
+
+// Copa de trofeo. Centro y alto total en pixeles.
+static void DibujarTrofeoIconoHud(float cx, float cy, float alto)
+{
+    DibujarPiezasTrofeoHud(cx, cy, alto, GrosorLineaHud(1.5f), UI_TINTA, UI_TINTA);
+    DibujarPiezasTrofeoHud(cx, cy, alto, 0.0f, COLOR_ORO_HUD, COLOR_ORO_OSCURO_HUD);
+
+    // Brillo.
+    DrawRectangleRec(
+        Rectangle{ cx - alto * 0.22f, cy - alto * 0.44f, alto * 0.08f, alto * 0.30f },
+        COLOR_ORO_CLARO_HUD
+    );
+}
+
+
+//==================================================
+// TEXTOS DE CONTROLES (fieles a Systems/Input.cpp)
+//==================================================
+
+// Confirmar: LeerInputSeleccionParticipante. Con un solo teclado
+// (modo completo) confirman ESPACIO y ENTER.
+static const char* TextoConfirmarHud(const Participante& participante)
+{
+    switch (participante.control)
+    {
+        case CONTROL_GAMEPAD:
+            return "A";
+
+        case CONTROL_TECLADO_FLECHAS:
+            return "ENTER";
+
+        case CONTROL_TECLADO_WASD:
+            return "ESPACIO";
+
+        case CONTROL_TECLADO_COMPLETO:
+            return "ESPACIO / ENTER";
+
+        case CONTROL_NINGUNO:
+            break;
+    }
+
+    return "";
+}
+
+
+// Cambiar de ruta: cualquier direccion (izq/arriba = anterior,
+// der/abajo = siguiente).
+static const char* TextoElegirHud(const Participante& participante)
+{
+    switch (participante.control)
+    {
+        case CONTROL_GAMEPAD:
+            return "CRUCETA / STICK";
+
+        case CONTROL_TECLADO_FLECHAS:
+            return "FLECHAS";
+
+        case CONTROL_TECLADO_WASD:
+            return "WASD";
+
+        case CONTROL_TECLADO_COMPLETO:
+            return "WASD / FLECHAS";
+
+        case CONTROL_NINGUNO:
+            break;
+    }
+
+    return "";
+}
+
+
+// Compra del trofeo: confirmar o Y compran; cancelar, N o ESC no.
+// Y, N y ESC son del teclado: solo se anuncian a quien juega con teclado.
+static void TextosCompraTrofeoHud(
+    const Participante& participante,
+    const char*& comprar,
+    const char*& noComprar
+)
+{
+    switch (participante.control)
+    {
+        case CONTROL_GAMEPAD:
+            comprar = "A";
+            noComprar = "B";
+            return;
+
+        case CONTROL_TECLADO_FLECHAS:
+            comprar = "ENTER / Y";
+            noComprar = "SHIFT DER / N / ESC";
+            return;
+
+        case CONTROL_TECLADO_WASD:
+            comprar = "ESPACIO / Y";
+            noComprar = "RETROCESO / N / ESC";
+            return;
+
+        case CONTROL_TECLADO_COMPLETO:
+            comprar = "ESPACIO / ENTER / Y";
+            noComprar = "RETROCESO / N / ESC";
+            return;
+
+        case CONTROL_NINGUNO:
+            break;
+    }
+
+    comprar = "";
+    noComprar = "";
+}
+
+
+// ESC siempre pausa; START de un mando tambien (SolicitaPausaTablero).
+static const char* TextoPausaHud(const PartidaTablero& partida)
+{
+    for (int i = 0; i < partida.cantidadJugadores; i++)
+    {
+        const Participante& participante =
+            partida.participantes[partida.ordenParticipantes[i]];
+
+        if (!participante.esBot && participante.control == CONTROL_GAMEPAD)
+        {
+            return "ESC / START: PAUSA Y SALIR";
+        }
+    }
+
+    return "ESC: PAUSA Y SALIR";
+}
+
+
+// Nombre corto del control para la etiqueta del jugador.
+static const char* NombreControlHud(const Participante& participante)
+{
+    if (participante.esBot)
+    {
+        return "BOT";
+    }
+
+    switch (participante.control)
+    {
+        case CONTROL_TECLADO_COMPLETO:
+            return "TECLADO";
+
+        case CONTROL_TECLADO_WASD:
+            return "WASD";
+
+        case CONTROL_TECLADO_FLECHAS:
+            return "FLECHAS";
+
+        case CONTROL_GAMEPAD:
+            return TextFormat("MANDO %d", participante.indiceGamepad + 1);
+
+        case CONTROL_NINGUNO:
+            break;
+    }
+
+    return "";
+}
+
+
+// Humano que decide en esta fase (no bot y con su control conectado).
+static bool HumanoDecideHud(const PartidaTablero& partida, int turno)
+{
+    return ParticipantePuedeDecidirTablero(partida, turno);
+}
+
+
+//==================================================
+// TEXTOS DE FASE
+//==================================================
+
+// Texto del evento de la casilla (despues de resolverse). Vacio si la
+// fase no es la del evento o aun no se resolvio.
+static void TextoEventoHud(
+    const PartidaTablero& partida,
+    int turno,
+    char* destino,
+    int capacidad
+)
+{
+    destino[0] = '\0';
+
+    if (
+        partida.fase != FASE_PARTIDA_TABLERO_EVENTO_CASILLA ||
+        partida.tiempoFase <= 0.0f
+    )
+    {
+        return;
+    }
+
+    // Evento resuelto por el gimmick del tablero.
+    if (partida.textoEvento[0] != '\0')
+    {
+        std::snprintf(destino, capacidad, "%s", partida.textoEvento);
+        return;
+    }
+
+    const Casilla* casilla =
+        partida.tablero.ObtenerCasilla(partida.jugadores[turno].casillaActual);
+
+    if (casilla == nullptr)
+    {
+        return;
+    }
+
+    if (casilla->tipo == CASILLA_POSITIVA)
+    {
+        std::snprintf(destino, capacidad, "CASILLA VERDE: %+d MONEDAS", partida.variacionMonedasEvento);
+    }
+    else if (casilla->tipo == CASILLA_NEGATIVA)
+    {
+        std::snprintf(destino, capacidad, "CASILLA ROJA: %d MONEDAS", partida.variacionMonedasEvento);
+    }
+    else if (casilla->tipo == CASILLA_ESPECIAL)
+    {
+        if (partida.ultimoEventoEspecial == EVENTO_TABLERO_BONIFICACION)
+        {
+            std::snprintf(destino, capacidad, "EVENTO: BONIFICACIÓN DE %+d MONEDAS", partida.variacionMonedasEvento);
+        }
+        else if (partida.ultimoEventoEspecial == EVENTO_TABLERO_MULTA)
+        {
+            std::snprintf(destino, capacidad, "EVENTO: MULTA DE %d MONEDAS", partida.variacionMonedasEvento);
+        }
+        else if (partida.ultimoEventoEspecial == EVENTO_TABLERO_INTERCAMBIO)
+        {
+            std::snprintf(
+                destino, capacidad,
+                "EVENTO: J%d Y J%d CAMBIAN SUS MONEDAS",
+                turno + 1,
+                partida.jugadorIntercambioEvento + 1
+            );
+        }
+        else
+        {
+            std::snprintf(destino, capacidad, "EVENTO ESPECIAL");
+        }
+    }
+    else if (casilla->tipo == CASILLA_NEUTRA)
+    {
+        std::snprintf(destino, capacidad, "CASILLA AZUL: SIN CAMBIOS");
+    }
+    else
+    {
+        std::snprintf(destino, capacidad, "ESTA CASILLA NO CAMBIA NADA");
+    }
+}
+
+
+// Segunda linea del cartel del turno: que esta pasando.
+static void TextoFaseHud(
+    const PartidaTablero& partida,
+    int turno,
+    char* destino,
+    int capacidad
+)
+{
+    const Participante& participante = partida.participantes[turno];
+    bool humano = !participante.esBot;
+    bool sinMando = humano && !participante.conectado;
+    int segundosBot = (int)std::ceil(std::fmax(0.0f, 4.0f - partida.tiempoFase));
+
+    // Humano sin mando en una fase que pide decidir: avisa del bot.
+    bool fasePideDecidir =
+        partida.fase == FASE_PARTIDA_TABLERO_ESPERANDO_DADO ||
+        partida.fase == FASE_PARTIDA_TABLERO_ELIGIENDO_RUTA ||
+        (
+            partida.fase == FASE_PARTIDA_TABLERO_DECISION_TROFEO &&
+            partida.compraTrofeoDisponible
+        );
+
+    if (sinMando && fasePideDecidir)
+    {
+        if (partida.tiempoFase < 4.0f)
+        {
+            std::snprintf(destino, capacidad, "RECONECTÁ TU MANDO: SI NO, JUEGA UN BOT EN %d s", segundosBot);
+        }
+        else
+        {
+            std::snprintf(destino, capacidad, "SIN MANDO: JUEGA UN BOT POR VOS");
+        }
+
+        return;
+    }
+
+    switch (partida.fase)
+    {
+        case FASE_PARTIDA_TABLERO_ESPERANDO_DADO:
+            std::snprintf(destino, capacidad, "%s", humano ? "TIRÁ EL DADO" : "EL BOT TIRA EL DADO...");
+            return;
+
+        case FASE_PARTIDA_TABLERO_MOSTRANDO_DADO:
+            std::snprintf(destino, capacidad, humano ? "¡SACASTE %d!" : "¡SACÓ %d!", partida.valorDado);
+            return;
+
+        case FASE_PARTIDA_TABLERO_ELIGIENDO_RUTA:
+            // El humano ve el selector de ruta en su lugar.
+            std::snprintf(destino, capacidad, "%s", humano ? "ELEGI POR DÓNDE SEGUIR" : "EL BOT ELIGE EL CAMINO...");
+            return;
+
+        case FASE_PARTIDA_TABLERO_MOVIENDO:
+            if (partida.pasosPendientes == 1)
+            {
+                std::snprintf(destino, capacidad, "AVANZA: QUEDA 1 PASO");
+            }
+            else
+            {
+                std::snprintf(destino, capacidad, "AVANZA: QUEDAN %d PASOS", partida.pasosPendientes);
+            }
+            return;
+
+        case FASE_PARTIDA_TABLERO_DECISION_TROFEO:
+            std::snprintf(destino, capacidad, "¡LLEGÓ AL TROFEO!");
+            return;
+
+        case FASE_PARTIDA_TABLERO_EVENTO_CASILLA:
+            TextoEventoHud(partida, turno, destino, capacidad);
+            return;
+
+        case FASE_PARTIDA_TABLERO_FIN_TURNO:
+            std::snprintf(destino, capacidad, "FIN DEL TURNO");
+            return;
+
+        case FASE_PARTIDA_TABLERO_FIN_RONDA:
+            std::snprintf(destino, capacidad, "¡SE VIENE EL MINIJUEGO!");
+            return;
+
+        default:
+            break;
+    }
+
+    destino[0] = '\0';
+}
+
+
+// Ayuda de controles de la fase (vacia si no hay nada que pulsar).
+static void TextoAyudaHud(
+    const PartidaTablero& partida,
+    int turno,
+    char* destino,
+    int capacidad
+)
+{
+    const Participante& participante = partida.participantes[turno];
+    const char* pausa = TextoPausaHud(partida);
+    bool decide = HumanoDecideHud(partida, turno);
 
     if (partida.fase == FASE_PARTIDA_TABLERO_DECISION_TROFEO)
     {
-        if (!partida.compraTrofeoDisponible)
+        // En la compra no hay pausa: ESC responde «no comprar».
+        destino[0] = '\0';
+
+        if (decide && partida.compraTrofeoDisponible)
         {
-            return TextFormat(
-                "TROFEO: NECESITAS %d MONEDAS",
-                partida.costoTrofeo
-            );
+            const char* comprar = "";
+            const char* noComprar = "";
+            TextosCompraTrofeoHud(participante, comprar, noComprar);
+
+            std::snprintf(destino, capacidad, "%s: COMPRAR   |   %s: NO COMPRAR", comprar, noComprar);
         }
 
-        return TextFormat(
-            "COMPRAR TROFEO POR %d MONEDAS? CONFIRMAR / CANCELAR",
-            partida.costoTrofeo
+        return;
+    }
+
+    if (partida.fase == FASE_PARTIDA_TABLERO_ESPERANDO_DADO && decide)
+    {
+        std::snprintf(destino, capacidad, "%s: TIRAR EL DADO   |   %s", TextoConfirmarHud(participante), pausa);
+        return;
+    }
+
+    if (partida.fase == FASE_PARTIDA_TABLERO_ELIGIENDO_RUTA && decide)
+    {
+        std::snprintf(
+            destino, capacidad,
+            "%s: CAMBIAR DE RUTA   |   %s: SEGUIR POR ESA   |   %s",
+            TextoElegirHud(participante),
+            TextoConfirmarHud(participante),
+            pausa
+        );
+        return;
+    }
+
+    std::snprintf(destino, capacidad, "%s", pausa);
+}
+
+
+//==================================================
+// TENDEDERO: ETIQUETAS DE JUGADORES Y CARTEL DE RONDA
+//==================================================
+
+static void DibujarEtiquetaJugadorHud(
+    const EstiloUI& estilo,
+    const PartidaTablero& partida,
+    int indice,
+    float xRef,
+    float ySogaRef,
+    bool activo
+)
+{
+    const EstadoHudTablero& e = estadoHudTablero;
+    const Participante& participante = partida.participantes[indice];
+    const EstadoJugadorPartidaTablero& jugador = partida.jugadores[indice];
+    bool reducir = estilo.reducirMovimiento;
+
+    float ySoga = YArribaHud(ySogaRef);
+    float bajada = e.bajada[indice].valor;
+
+    Rectangle rect = {
+        XHud(xRef),
+        YArribaHud(ySogaRef + 8.0f + bajada),
+        Px(ANCHO_ETIQUETA_HUD),
+        Px(ALTO_ETIQUETA_HUD)
+    };
+
+    float pinzaIzq = rect.x + Px(22.0f);
+    float pinzaDer = rect.x + rect.width - Px(22.0f);
+    Vector2 pivote = { rect.x + rect.width * 0.5f, ySoga };
+
+    // Salto corto cuando cambian las monedas o los trofeos.
+    float tCambio = std::fmin(e.tiempoMonedas[indice], e.tiempoTrofeo[indice]);
+
+    if (!reducir && tCambio < T_SALTO_HUD)
+    {
+        rect.y -= Px(7.0f) * std::sin(PI_TABLERO_FINAL * tCambio / T_SALTO_HUD);
+    }
+
+    // Si cuelga mas abajo (tiene el turno), dos tramos de soga hasta la
+    // etiqueta. Se dibujan antes, por detras.
+    if (bajada > 1.0f)
+    {
+        DibujarCuerdaUI(estilo, Vector2{ pinzaIzq, ySoga }, Vector2{ pinzaIzq, rect.y + Px(4.0f) });
+        DibujarCuerdaUI(estilo, Vector2{ pinzaDer, ySoga }, Vector2{ pinzaDer, rect.y + Px(4.0f) });
+    }
+
+    rlPushMatrix();
+    rlTranslatef(pivote.x, pivote.y, 0.0f);
+    rlRotatef(e.colgado[indice].angulo, 0.0f, 0.0f, 1.0f);
+    rlTranslatef(-pivote.x, -pivote.y, 0.0f);
+
+    Rectangle placa = DibujarPlacaConMarcoHud(estilo, rect, 6.0f);
+    (void)placa;
+
+    DibujarBanderinHud(rect.x + Px(12.0f), rect.y + Px(11.0f), Px(20.0f), Px(36.0f), participante.color);
+
+    // Linea 1: J1 y el control (o BOT).
+    float xTexto = rect.x + Px(40.0f);
+    float derecha = rect.x + rect.width - Px(12.0f);
+    float yLinea1 = rect.y + Px(9.0f);
+
+    const char* nombre = TextFormat("J%d", indice + 1);
+    int tamanoNombre = TamanoTexto(UI_TEXTO);
+    DrawText(nombre, (int)xTexto, (int)yLinea1, tamanoNombre, UI_TINTA);
+
+    float xControl = xTexto + MeasureText(nombre, tamanoNombre) + Px(7.0f);
+    bool sinMando = !participante.esBot && !participante.conectado;
+
+    DibujarTextoAjustadoUI(
+        sinMando ? "SIN MANDO" : NombreControlHud(participante),
+        xControl,
+        yLinea1 + Px(3.0f),
+        UI_TEXTO_PEQUENO,
+        derecha - xControl,
+        sinMando ? COLOR_TINTA_ALERTA_HUD : UI_TINTA_SUAVE,
+        false
+    );
+
+    // Linea 2: trofeos y monedas.
+    float yIconos = rect.y + Px(46.0f);
+    float yValores = yIconos - TamanoTexto(UI_TEXTO) * 0.5f + Px(1.0f);
+    float xTrofeo = rect.x + Px(50.0f);
+    float xMoneda = rect.x + Px(100.0f);
+
+    // Destello detras del valor que cambio.
+    if (e.tiempoTrofeo[indice] < T_DESTELLO_HUD)
+    {
+        float k = 1.0f - e.tiempoTrofeo[indice] / T_DESTELLO_HUD;
+        DrawRectangleRec(
+            Rectangle{ xTrofeo - Px(12.0f), yIconos - Px(13.0f), Px(44.0f), Px(26.0f) },
+            Fade(UI_FOCO, 0.75f * k)
         );
     }
 
-    if (partida.fase == FASE_PARTIDA_TABLERO_EVENTO_CASILLA)
+    if (e.tiempoMonedas[indice] < T_DESTELLO_HUD)
     {
-        // Evento resuelto por el gimmick del tablero.
-        if (partida.textoEvento[0] != '\0')
+        float k = 1.0f - e.tiempoMonedas[indice] / T_DESTELLO_HUD;
+        DrawRectangleRec(
+            Rectangle{ xMoneda - Px(12.0f), yIconos - Px(13.0f), derecha - xMoneda + Px(16.0f), Px(26.0f) },
+            Fade(UI_FOCO, 0.75f * k)
+        );
+    }
+
+    DibujarTrofeoIconoHud(xTrofeo, yIconos, Px(18.0f));
+    DrawText(
+        TextFormat("%d", jugador.trofeos),
+        (int)(xTrofeo + Px(13.0f)), (int)yValores, TamanoTexto(UI_TEXTO), UI_TINTA
+    );
+
+    DibujarMonedaHud(xMoneda, yIconos, Px(8.0f));
+    DrawText(
+        TextFormat("%d", jugador.monedas),
+        (int)(xMoneda + Px(14.0f)), (int)yValores, TamanoTexto(UI_TEXTO), UI_TINTA
+    );
+
+    // Cuanto cambio: «+3» / «-3» a la derecha, un rato.
+    int delta = e.deltaMonedas[indice];
+
+    if (e.tiempoMonedas[indice] < T_DELTA_MONEDAS && delta != 0)
+    {
+        DibujarTextoDerechaHud(
+            TextFormat("%+d", delta),
+            derecha,
+            yIconos - TamanoTexto(UI_TEXTO_PEQUENO) * 0.5f + Px(1.0f),
+            UI_TEXTO_PEQUENO,
+            Px(40.0f),
+            delta > 0 ? COLOR_TINTA_POSITIVA_HUD : COLOR_TINTA_ALERTA_HUD
+        );
+    }
+
+    if (activo)
+    {
+        DibujarMarcoFoco(rect);
+    }
+
+    rlPopMatrix();
+
+    DibujarPinzaHud(pinzaIzq, ySoga);
+    DibujarPinzaHud(pinzaDer, ySoga);
+}
+
+
+static void DibujarCartelRondaHud(
+    const EstiloUI& estilo,
+    const PartidaTablero& partida,
+    float xRef,
+    float ySogaRef
+)
+{
+    Rectangle rect = {
+        XHud(xRef),
+        YArribaHud(ySogaRef + 8.0f),
+        Px(ANCHO_RONDA_HUD),
+        Px(ALTO_RONDA_HUD)
+    };
+
+    bool ultima =
+        partida.rondaActual >= partida.cantidadRondas &&
+        partida.fase != FASE_PARTIDA_TABLERO_TERMINADA;
+
+    DrawRectangleRec(
+        Rectangle{ rect.x + Px(4.0f), rect.y + Px(5.0f), rect.width, rect.height },
+        Fade(BLACK, 0.28f)
+    );
+    DibujarNueveCortes(estilo.cartel, 10, rect, EscalaUI(), WHITE);
+
+    Rectangle cara = {
+        rect.x + Px(9.0f), rect.y + Px(9.0f),
+        rect.width - Px(18.0f), rect.height - Px(18.0f)
+    };
+
+    if (ultima)
+    {
+        DrawRectangleRec(cara, Fade(COLOR_PLACA_ALERTA_HUD, 0.85f));
+    }
+
+    float cx = rect.x + rect.width * 0.5f;
+    Color tinta = ultima ? COLOR_TINTA_ALERTA_HUD : UI_TINTA;
+
+    DibujarTextoAjustadoUI(
+        ultima ? "ÚLTIMA RONDA" : "RONDA",
+        cx, rect.y + Px(12.0f), UI_TEXTO_PEQUENO - 2,
+        cara.width - Px(6.0f), ultima ? COLOR_TINTA_ALERTA_HUD : UI_TINTA_SUAVE, true
+    );
+
+    DibujarTextoAjustadoUI(
+        TextFormat("%d/%d", partida.rondaActual, partida.cantidadRondas),
+        cx, rect.y + Px(27.0f), UI_TEXTO_GRANDE,
+        cara.width - Px(6.0f), tinta, true
+    );
+
+    // Progreso: un punto por ronda (o una barra si son muchas).
+    float x0 = rect.x + Px(18.0f);
+    float x1 = rect.x + rect.width - Px(18.0f);
+    float y = rect.y + rect.height - Px(16.0f);
+    int total = partida.cantidadRondas > 0 ? partida.cantidadRondas : 1;
+
+    if (total <= 10)
+    {
+        float paso = total > 1 ? (x1 - x0) / (total - 1) : 0.0f;
+
+        for (int r = 0; r < total; r++)
         {
-            return partida.textoEvento;
+            float x = total > 1 ? x0 + paso * r : (x0 + x1) * 0.5f;
+            bool jugada = r < partida.rondaActual;
+
+            DrawCircleV(Vector2{ x, y }, Px(4.0f), UI_TINTA);
+            DrawCircleV(
+                Vector2{ x, y }, Px(2.8f),
+                jugada ? (ultima ? Color{ 226, 104, 46, 255 } : UI_FOCO) : UI_PLACA_CLARA
+            );
+        }
+    }
+    else
+    {
+        Rectangle riel = { x0, y - Px(3.0f), x1 - x0, Px(6.0f) };
+        DrawRectangleRec(riel, Fade(UI_MADERA_OSCURA, 0.30f));
+        riel.width *= Limitar01Hud((float)partida.rondaActual / total);
+        DrawRectangleRec(riel, UI_FOCO);
+    }
+
+    float ySoga = YArribaHud(ySogaRef);
+    DibujarPinzaHud(rect.x + Px(26.0f), ySoga);
+    DibujarPinzaHud(rect.x + rect.width - Px(26.0f), ySoga);
+}
+
+
+// Dos sogas desde un cartel de arriba hasta otro de abajo (pixeles).
+static void DibujarSogasColgantesHud(const EstiloUI& estilo, float cx, float separacion, float yArriba, float yAbajo)
+{
+    if (yAbajo <= yArriba)
+    {
+        return;
+    }
+
+    DibujarCuerdaUI(estilo, Vector2{ cx - separacion, yArriba }, Vector2{ cx - separacion, yAbajo + Px(4.0f) });
+    DibujarCuerdaUI(estilo, Vector2{ cx + separacion, yArriba }, Vector2{ cx + separacion, yAbajo + Px(4.0f) });
+}
+
+
+// Debajo del cartel de ronda: tablero, zona y estado del gimmick; o el
+// aviso del gimmick mientras dura.
+static void DibujarTiraTableroHud(
+    const EstiloUI& estilo,
+    const PartidaTablero& partida,
+    float cxRef,
+    float yArribaRef
+)
+{
+    const EstadoHudTablero& e = estadoHudTablero;
+    float cx = XHud(cxRef);
+    float yArriba = YArribaHud(yArribaRef);
+
+    // Aviso del gimmick: cartel mas grande que cae, y sube al terminar.
+    if (partida.tiempoMensajeGimmick > 0.0f && partida.mensajeGimmick[0] != '\0')
+    {
+        float subida = 0.0f;
+
+        if (!estilo.reducirMovimiento && partida.tiempoMensajeGimmick < 0.3f)
+        {
+            float k = 1.0f - partida.tiempoMensajeGimmick / 0.3f;
+            subida = 90.0f * k * k;
         }
 
-        const EstadoJugadorPartidaTablero& jugador =
-            partida.jugadores[indiceParticipante];
+        const float ancho = 470.0f;
+        float anchoTexto = Px(ancho - 40.0f);
+        MedidaParrafoUI medida = MedirParrafoUI(partida.mensajeGimmick, UI_TEXTO, anchoTexto, Px(52.0f));
+        float alto = 26.0f + medida.alto / EscalaUI();
 
+        Rectangle rect = {
+            XHud(cxRef - ancho * 0.5f),
+            YArribaHud(yArribaRef + 10.0f + e.caidaMensaje.valor - subida),
+            Px(ancho),
+            Px(alto)
+        };
+
+        DibujarSogasColgantesHud(estilo, cx, Px(40.0f), yArriba - Px(4.0f), rect.y);
+        Rectangle placa = DibujarPlacaConMarcoHud(estilo, rect, 7.0f);
+
+        DibujarParrafoUI(
+            partida.mensajeGimmick,
+            placa.x + Px(13.0f),
+            placa.y + (placa.height - medida.alto) * 0.5f,
+            UI_TEXTO,
+            anchoTexto,
+            UI_TINTA,
+            UI_ALINEAR_CENTRO,
+            Px(52.0f)
+        );
+
+        return;
+    }
+
+    // Tira fija: tablero y zona del jugador activo + estado del gimmick.
+    char lineaTablero[128] = "";
+    std::snprintf(lineaTablero, sizeof(lineaTablero), "%s", partida.definicion->nombre);
+
+    int turno = ObtenerParticipanteTurnoTableroFinal(partida);
+
+    if (turno >= 0 && partida.definicion->nombresZonas != nullptr)
+    {
         const Casilla* casilla =
-            partida.tablero.ObtenerCasilla(jugador.casillaActual);
+            partida.tablero.ObtenerCasilla(partida.jugadores[turno].casillaActual);
 
-        if (casilla == nullptr)
+        if (
+            casilla != nullptr &&
+            casilla->zona >= 0 &&
+            casilla->zona < partida.definicion->cantidadZonas
+        )
         {
-            return "EVENTO DE CASILLA";
+            std::snprintf(
+                lineaTablero, sizeof(lineaTablero), "%s - %s",
+                partida.definicion->nombre,
+                partida.definicion->nombresZonas[casilla->zona]
+            );
+        }
+    }
+
+    bool conGimmick = partida.estadoGimmick[0] != '\0';
+    int tamano = TamanoTexto(UI_TEXTO_PEQUENO);
+    float anchoTexto = (float)MeasureText(lineaTablero, tamano);
+
+    if (conGimmick)
+    {
+        anchoTexto = std::fmax(anchoTexto, (float)MeasureText(partida.estadoGimmick, tamano));
+    }
+
+    float ancho = anchoTexto / EscalaUI() + 28.0f;
+    if (ancho < 260.0f) ancho = 260.0f;
+    if (ancho > 560.0f) ancho = 560.0f;
+
+    float alto = conGimmick ? 48.0f : 28.0f;
+
+    Rectangle rect = {
+        XHud(cxRef - ancho * 0.5f),
+        YArribaHud(yArribaRef + 10.0f),
+        Px(ancho),
+        Px(alto)
+    };
+
+    DibujarSogasColgantesHud(estilo, cx, Px(40.0f), yArriba - Px(4.0f), rect.y);
+
+    DrawRectangleRec(
+        Rectangle{ rect.x + Px(2.0f), rect.y + Px(3.0f), rect.width, rect.height },
+        Fade(BLACK, 0.22f)
+    );
+    DibujarNueveCortes(estilo.placa, 8, rect, EscalaUI(), WHITE);
+    DrawRectangleLinesEx(rect, GrosorLineaHud(1.0f), Fade(UI_MADERA_OSCURA, 0.6f));
+
+    float anchoUtil = rect.width - Px(16.0f);
+
+    DibujarTextoAjustadoUI(
+        lineaTablero, cx, rect.y + Px(6.0f), UI_TEXTO_PEQUENO,
+        anchoUtil, UI_TINTA_SUAVE, true
+    );
+
+    if (conGimmick)
+    {
+        DibujarTextoAjustadoUI(
+            partida.estadoGimmick, cx, rect.y + Px(26.0f), UI_TEXTO_PEQUENO,
+            anchoUtil, UI_TINTA, true
+        );
+    }
+}
+
+
+static void DibujarTendederoHud(
+    const EstiloUI& estilo,
+    const PartidaTablero& partida
+)
+{
+    int cantidad = partida.cantidadJugadores;
+
+    if (cantidad <= 0)
+    {
+        return;
+    }
+
+    // Orden de turno: la primera mitad a la izquierda del cartel de ronda.
+    int cantidadIzq = (cantidad + 1) / 2;
+    int cantidadDer = cantidad - cantidadIzq;
+
+    float anchoIzq = cantidadIzq * ANCHO_ETIQUETA_HUD + (cantidadIzq - 1) * SEPARACION_ETIQUETAS_HUD;
+    float anchoDer = cantidadDer > 0 ? cantidadDer * ANCHO_ETIQUETA_HUD + (cantidadDer - 1) * SEPARACION_ETIQUETAS_HUD : 0.0f;
+    float total = anchoIzq + SEPARACION_RONDA_HUD + ANCHO_RONDA_HUD + SEPARACION_RONDA_HUD + anchoDer;
+    float inicio = UI_REF_ANCHO * 0.5f - total * 0.5f;
+    float xRonda = inicio + anchoIzq + SEPARACION_RONDA_HUD;
+    float cxRonda = xRonda + ANCHO_RONDA_HUD * 0.5f;
+
+    float sogaInicio = inicio - SOGA_SOBRANTE_HUD;
+    float sogaFin = inicio + total + SOGA_SOBRANTE_HUD;
+
+    // 1) Lo que cuelga del cartel de ronda (pasa por detras de la fila).
+    float ySogaRonda = AlturaSogaHud(cxRonda, sogaInicio, sogaFin);
+    DibujarTiraTableroHud(estilo, partida, cxRonda, ySogaRonda + 8.0f + ALTO_RONDA_HUD - 4.0f);
+
+    // 2) Soga: dos tramos verticales desde el borde y la comba.
+    DibujarCuerdaUI(estilo, Vector2{ XHud(sogaInicio), 0.0f }, Vector2{ XHud(sogaInicio), YArribaHud(Y_SOGA_HUD) });
+    DibujarCuerdaUI(estilo, Vector2{ XHud(sogaFin), 0.0f }, Vector2{ XHud(sogaFin), YArribaHud(Y_SOGA_HUD) });
+
+    const int tramos = 12;
+
+    for (int k = 0; k < tramos; k++)
+    {
+        float xa = sogaInicio + (sogaFin - sogaInicio) * k / tramos;
+        float xb = sogaInicio + (sogaFin - sogaInicio) * (k + 1) / tramos;
+
+        DibujarCuerdaUI(
+            estilo,
+            Vector2{ XHud(xa), YArribaHud(AlturaSogaHud(xa, sogaInicio, sogaFin)) },
+            Vector2{ XHud(xb), YArribaHud(AlturaSogaHud(xb, sogaInicio, sogaFin)) }
+        );
+    }
+
+    DrawCircleV(Vector2{ XHud(sogaInicio), YArribaHud(Y_SOGA_HUD) }, Px(4.5f), UI_MADERA_OSCURA);
+    DrawCircleV(Vector2{ XHud(sogaFin), YArribaHud(Y_SOGA_HUD) }, Px(4.5f), UI_MADERA_OSCURA);
+
+    // 3) Etiquetas y cartel de ronda.
+    int turno = TurnoVisibleHud(partida);
+
+    for (int k = 0; k < cantidad; k++)
+    {
+        int indice = partida.ordenParticipantes[k];
+        float x = k < cantidadIzq
+            ? inicio + k * (ANCHO_ETIQUETA_HUD + SEPARACION_ETIQUETAS_HUD)
+            : xRonda + ANCHO_RONDA_HUD + SEPARACION_RONDA_HUD +
+              (k - cantidadIzq) * (ANCHO_ETIQUETA_HUD + SEPARACION_ETIQUETAS_HUD);
+        float centro = x + ANCHO_ETIQUETA_HUD * 0.5f;
+
+        DibujarEtiquetaJugadorHud(
+            estilo, partida, indice, x,
+            AlturaSogaHud(centro, sogaInicio, sogaFin),
+            indice == turno
+        );
+    }
+
+    DibujarCartelRondaHud(estilo, partida, xRonda, ySogaRonda);
+}
+
+
+//==================================================
+// DADO SOBRE LA FICHA Y ETIQUETAS DE RUTA
+//==================================================
+
+// Punto de pantalla sobre la ficha del jugador del turno.
+static Vector2 PuntoSobreFichaHud(const PartidaTablero& partida, int turno, float alturaMundo)
+{
+    Vector3 p = partida.jugadores[turno].posicionVisual;
+    p.y += alturaMundo;
+
+    return GetWorldToScreen(p, partida.camara);
+}
+
+
+static void DibujarDadoHud(
+    const EstiloUI& estilo,
+    const PartidaTablero& partida
+)
+{
+    const EstadoHudTablero& e = estadoHudTablero;
+    int valor = e.valorDado;
+    int turno = ObtenerParticipanteTurnoTableroFinal(partida);
+
+    if (valor < 0 || turno < 0)
+    {
+        return;
+    }
+
+    bool reducir = estilo.reducirMovimiento;
+    bool girando = valor == 0;
+    bool resultado = partida.fase == FASE_PARTIDA_TABLERO_MOSTRANDO_DADO;
+    float t = estilo.tiempo;
+
+    // Encima de la flecha amarilla que marca la ficha activa.
+    Vector2 base = PuntoSobreFichaHud(partida, turno, 2.2f);
+    float lado = Px(LADO_DADO_HUD);
+
+    float escala = 1.0f;
+    float angulo = 0.0f;
+
+    if (girando)
+    {
+        if (!reducir)
+        {
+            base.y -= Px(4.0f) * std::sin(t * 4.0f);
+            angulo = 7.0f * std::sin(t * 9.0f);
+        }
+    }
+    else if (resultado)
+    {
+        escala = EscalaReboteHud(e.tiempoDado, 0.30f, 0.55f, reducir);
+    }
+    else
+    {
+        escala = EscalaReboteHud(e.tiempoDado, 0.20f, 0.22f, reducir);
+    }
+
+    lado *= escala;
+
+    // Dentro de la pantalla, libre del tendedero y del cartel de abajo.
+    float ancho = (float)GetScreenWidth();
+    float cx = std::fmax(Px(60.0f), std::fmin(ancho - Px(60.0f), base.x));
+    float cy = base.y - Px(LADO_DADO_HUD) * 0.5f - Px(6.0f);
+    cy = std::fmax(YArribaHud(150.0f), std::fmin(YAbajoHud(560.0f), cy));
+
+    char texto[8] = "";
+
+    if (girando)
+    {
+        // Caras al azar mientras se espera; quieto, un «?».
+        if (reducir)
+        {
+            std::snprintf(texto, sizeof(texto), "?");
+        }
+        else
+        {
+            std::snprintf(texto, sizeof(texto), "%d", 1 + (int)(t * 12.0f) % 10);
+        }
+    }
+    else
+    {
+        std::snprintf(texto, sizeof(texto), "%d", valor);
+    }
+
+    rlPushMatrix();
+    rlTranslatef(cx, cy, 0.0f);
+    rlRotatef(angulo, 0.0f, 0.0f, 1.0f);
+
+    float borde = GrosorLineaHud(3.0f);
+    Rectangle cara = { -lado * 0.5f, -lado * 0.5f, lado, lado };
+
+    DrawRectangleRounded(
+        Rectangle{ cara.x - borde + Px(3.0f), cara.y - borde + Px(5.0f), cara.width + borde * 2.0f, cara.height + borde * 2.0f },
+        0.24f, 6, Fade(BLACK, 0.30f)
+    );
+    DrawRectangleRounded(
+        Rectangle{ cara.x - borde, cara.y - borde, cara.width + borde * 2.0f, cara.height + borde * 2.0f },
+        0.24f, 6, UI_TINTA
+    );
+    DrawRectangleRounded(cara, 0.22f, 6, COLOR_CARA_DADO_HUD);
+
+    // Canto inferior algo mas oscuro: volumen de dado.
+    DrawRectangleRec(
+        Rectangle{ cara.x + lado * 0.12f, cara.y + lado * 0.84f, lado * 0.76f, lado * 0.08f },
+        Fade(UI_MADERA_MEDIA, 0.35f)
+    );
+
+    if (resultado)
+    {
+        float halo = Px(5.0f);
+        DrawRectangleRoundedLinesEx(
+            Rectangle{ cara.x - halo, cara.y - halo, cara.width + halo * 2.0f, cara.height + halo * 2.0f },
+            0.26f, 6, Px(UI_BORDE_FOCO), UI_FOCO
+        );
+    }
+
+    int tamano = (int)(TamanoTexto(UI_TEXTO_GRANDE) * escala);
+    int anchoTexto = MeasureText(texto, tamano);
+    DrawText(texto, -anchoTexto / 2, -tamano / 2, tamano, UI_TINTA);
+
+    rlPopMatrix();
+
+    // Mientras se espera la tirada de un humano: el boton, al costado.
+    if (girando && HumanoDecideHud(partida, turno))
+    {
+        const char* boton = TextoConfirmarHud(partida.participantes[turno]);
+        int tamanoBoton = TamanoTexto(UI_TEXTO_PEQUENO);
+        float medio = (MeasureText(boton, tamanoBoton) + Px(21.0f)) * 0.5f;
+
+        OpcionesEtiquetaUI opciones;
+        opciones.borde = partida.participantes[turno].color;
+
+        float xEtiqueta = cx + Px(LADO_DADO_HUD) * 0.5f + Px(12.0f) + medio;
+
+        // Si no entra a la derecha, va a la izquierda.
+        if (xEtiqueta + medio > ancho - Px(8.0f))
+        {
+            xEtiqueta = cx - Px(LADO_DADO_HUD) * 0.5f - Px(12.0f) - medio;
         }
 
-        if (casilla->tipo == CASILLA_POSITIVA)
+        DibujarEtiquetaUI(boton, Vector2{ xEtiqueta, cy }, reducir ? 0.0f : -3.0f, opciones);
+    }
+}
+
+
+static void DibujarEtiquetasRutaHud(
+    const EstiloUI& estilo,
+    const PartidaTablero& partida
+)
+{
+    if (partida.fase != FASE_PARTIDA_TABLERO_ELIGIENDO_RUTA)
+    {
+        return;
+    }
+
+    int turno = ObtenerParticipanteTurnoTableroFinal(partida);
+
+    if (turno < 0)
+    {
+        return;
+    }
+
+    const Casilla* origen =
+        partida.tablero.ObtenerCasilla(partida.jugadores[turno].casillaActual);
+
+    if (origen == nullptr || origen->cantidadConexiones <= 1)
+    {
+        return;
+    }
+
+    // Primero las no elegidas, para que la elegida quede encima.
+    for (int pasada = 0; pasada < 2; pasada++)
+    {
+        for (int o = 0; o < origen->cantidadConexiones; o++)
         {
-            return "CASILLA VERDE: +3 MONEDAS";
+            bool elegida = o == partida.opcionRuta;
+
+            if (elegida != (pasada == 1))
+            {
+                continue;
+            }
+
+            const Casilla* destino =
+                partida.tablero.ObtenerCasilla(origen->conexiones[o].destino);
+
+            if (destino == nullptr)
+            {
+                continue;
+            }
+
+            // Por encima de la flecha 3D de la ruta elegida.
+            Vector3 punto = destino->posicion;
+            punto.y += 2.3f;
+            Vector2 pantalla = GetWorldToScreen(punto, partida.camara);
+
+            if (elegida && !estilo.reducirMovimiento)
+            {
+                pantalla.y -= Px(4.0f) * std::sin(estilo.tiempo * 5.0f);
+            }
+
+            OpcionesEtiquetaUI opciones;
+            opciones.pico = true;
+            opciones.borde = elegida ? UI_FOCO : UI_MADERA_MEDIA;
+            opciones.tokenTexto = elegida ? UI_TEXTO : UI_TEXTO_PEQUENO;
+            opciones.alfa = elegida ? 1.0f : 0.85f;
+
+            DibujarEtiquetaUI(
+                TextFormat("RUTA %d", o + 1),
+                pantalla,
+                elegida ? 0.0f : (o == 0 ? -4.0f : 4.0f),
+                opciones
+            );
+        }
+    }
+}
+
+
+//==================================================
+// CARTEL DEL TURNO (abajo) Y LEYENDA
+//==================================================
+
+// Sello del evento de la casilla: texto y color segun lo que paso.
+static bool SelloEventoHud(const PartidaTablero& partida, char* texto, int capacidad, Color& color)
+{
+    if (
+        partida.fase != FASE_PARTIDA_TABLERO_EVENTO_CASILLA ||
+        partida.tiempoFase <= 0.0f
+    )
+    {
+        return false;
+    }
+
+    int variacion = partida.variacionMonedasEvento;
+
+    if (variacion == 0)
+    {
+        return false;
+    }
+
+    std::snprintf(texto, capacidad, "%+d", variacion);
+    color = variacion > 0 ? UI_POSITIVO : UI_PELIGRO;
+
+    return true;
+}
+
+
+static void DibujarCartelTurnoHud(
+    const EstiloUI& estilo,
+    const PartidaTablero& partida,
+    int turno
+)
+{
+    const Participante& participante = partida.participantes[turno];
+
+    Rectangle rect = {
+        XHud(UI_REF_ANCHO * 0.5f - ANCHO_CARTEL_TURNO * 0.5f),
+        YAbajoHud(Y_CARTEL_TURNO),
+        Px(ANCHO_CARTEL_TURNO),
+        Px(ALTO_CARTEL_TURNO)
+    };
+
+    Rectangle placa = DibujarPlacaConMarcoHud(estilo, rect, 6.0f);
+    (void)placa;
+
+    bool finRonda = partida.fase == FASE_PARTIDA_TABLERO_FIN_RONDA;
+
+    DibujarBanderinHud(
+        rect.x + Px(14.0f), rect.y + Px(10.0f), Px(18.0f), Px(34.0f),
+        finRonda ? UI_MADERA_MEDIA : participante.color
+    );
+
+    float xTexto = rect.x + Px(44.0f);
+    float derecha = rect.x + rect.width - Px(14.0f);
+
+    // Sello del evento a la derecha (reserva su lugar).
+    char textoSello[8] = "";
+    Color colorSello = UI_POSITIVO;
+    bool conSello = SelloEventoHud(partida, textoSello, (int)sizeof(textoSello), colorSello);
+
+    if (conSello)
+    {
+        derecha -= Px(44.0f);
+    }
+
+    // Linea 1: de quien es el turno.
+    const char* titulo =
+        finRonda
+        ? TextFormat("RONDA %d TERMINADA", partida.rondaActual)
+        : TextFormat("TURNO DE J%d", turno + 1);
+
+    int tamanoTitulo = TamanoTexto(UI_TEXTO);
+    DrawText(titulo, (int)xTexto, (int)(rect.y + Px(9.0f)), tamanoTitulo, UI_TINTA);
+
+    if (participante.esBot && !finRonda)
+    {
+        DrawText(
+            "BOT",
+            (int)(xTexto + MeasureText(titulo, tamanoTitulo) + Px(7.0f)),
+            (int)(rect.y + Px(12.0f)),
+            TamanoTexto(UI_TEXTO_PEQUENO),
+            UI_TINTA_SUAVE
+        );
+    }
+
+    // En la bifurcacion no hay dado sobre la ficha: los pasos van aca.
+    if (
+        partida.fase == FASE_PARTIDA_TABLERO_ELIGIENDO_RUTA &&
+        partida.pasosPendientes > 0
+    )
+    {
+        DibujarTextoDerechaHud(
+            partida.pasosPendientes == 1 ? "QUEDA 1 PASO" : TextFormat("QUEDAN %d PASOS", partida.pasosPendientes),
+            derecha,
+            rect.y + Px(12.0f),
+            UI_TEXTO_PEQUENO,
+            Px(150.0f),
+            UI_TINTA_SUAVE
+        );
+    }
+
+    // Linea 2: que esta pasando. Al elegir ruta, el humano ve un selector
+    // «< RUTA 1: ... >».
+    float yLinea2 = rect.y + Px(32.0f);
+    bool selector =
+        partida.fase == FASE_PARTIDA_TABLERO_ELIGIENDO_RUTA &&
+        HumanoDecideHud(partida, turno);
+
+    if (selector)
+    {
+        const char* descripcion = nullptr;
+
+        if (partida.definicion->DescribirOpcionRuta != nullptr)
+        {
+            descripcion =
+                partida.definicion->DescribirOpcionRuta(
+                    partida,
+                    partida.jugadores[turno].casillaActual,
+                    partida.opcionRuta
+                );
         }
 
-        if (casilla->tipo == CASILLA_NEGATIVA)
+        char linea[128] = "";
+
+        if (descripcion != nullptr)
         {
-            return TextFormat(
-                "CASILLA ROJA: %d MONEDAS",
-                partida.variacionMonedasEvento
+            std::snprintf(linea, sizeof(linea), "RUTA %d: %s", partida.opcionRuta + 1, descripcion);
+        }
+        else
+        {
+            std::snprintf(linea, sizeof(linea), "RUTA %d", partida.opcionRuta + 1);
+        }
+
+        float medio = Px(6.0f);
+        float yFlecha = yLinea2 + TamanoTexto(UI_TEXTO_PEQUENO) * 0.5f;
+
+        DibujarFlechaUI(xTexto + medio, yFlecha, medio, -1, UI_TINTA);
+        DibujarFlechaUI(derecha - medio, yFlecha, medio, 1, UI_TINTA);
+
+        float izquierda = xTexto + medio * 2.0f + Px(8.0f);
+        float anchoLinea = derecha - medio * 2.0f - Px(8.0f) - izquierda;
+
+        DibujarTextoAjustadoUI(
+            linea, izquierda + anchoLinea * 0.5f, yLinea2, UI_TEXTO_PEQUENO,
+            anchoLinea, UI_TINTA, true
+        );
+    }
+    else
+    {
+        char linea[128] = "";
+        TextoFaseHud(partida, turno, linea, (int)sizeof(linea));
+
+        bool alerta =
+            !participante.esBot &&
+            !participante.conectado;
+
+        DibujarTextoAjustadoUI(
+            linea, xTexto, yLinea2, UI_TEXTO_PEQUENO,
+            derecha - xTexto, alerta ? COLOR_TINTA_ALERTA_HUD : UI_TINTA_SUAVE, false
+        );
+    }
+
+    if (conSello)
+    {
+        DibujarSelloUI(
+            textoSello,
+            Vector2{ rect.x + rect.width - Px(34.0f), rect.y + rect.height * 0.5f },
+            22.0f,
+            UI_SELLO_ESTRELLA,
+            colorSello,
+            -8.0f,
+            1.0f
+        );
+    }
+}
+
+
+// Tablon de la compra del trofeo (reemplaza al cartel del turno).
+static void DibujarTablonTrofeoHud(
+    const EstiloUI& estilo,
+    const PartidaTablero& partida,
+    int turno
+)
+{
+    const Participante& participante = partida.participantes[turno];
+    const EstadoJugadorPartidaTablero& jugador = partida.jugadores[turno];
+    bool humano = !participante.esBot;
+    bool decide = HumanoDecideHud(partida, turno);
+    bool alcanza = partida.compraTrofeoDisponible;
+
+    // Entra desde abajo.
+    float subida = 0.0f;
+
+    if (!estilo.reducirMovimiento)
+    {
+        float resto = 1.0f - Limitar01Hud(partida.tiempoFase / T_ENTRADA_TABLON);
+        subida = (ALTO_TABLON_TROFEO + 60.0f) * resto * resto * resto;
+    }
+
+    // Con botones (humano que decide), con linea de estado (bot o sin
+    // mando) o solo titulo y precio (no le alcanza).
+    bool conBotones = decide && alcanza;
+    bool conEstado = alcanza && !decide;
+    float alto =
+        conBotones ? ALTO_TABLON_TROFEO :
+        (conEstado ? ALTO_TABLON_TROFEO - 30.0f : ALTO_TABLON_TROFEO - 52.0f);
+
+    Rectangle rect = {
+        XHud(UI_REF_ANCHO * 0.5f - ANCHO_TABLON_TROFEO * 0.5f),
+        YAbajoHud(Y_CARTEL_TURNO + ALTO_CARTEL_TURNO - alto + subida),
+        Px(ANCHO_TABLON_TROFEO),
+        Px(alto)
+    };
+
+    Rectangle placa = DibujarTablonHud(estilo, rect);
+
+    // Copa grande a la izquierda.
+    float xCopa = placa.x + Px(44.0f);
+    DibujarTrofeoIconoHud(
+        xCopa,
+        placa.y + std::fmin(Px(46.0f), placa.height * 0.5f),
+        std::fmin(Px(54.0f), placa.height - Px(16.0f))
+    );
+
+    float xTexto = placa.x + Px(88.0f);
+    float anchoTexto = placa.x + placa.width - Px(14.0f) - xTexto;
+
+    // Titulo.
+    char titulo[64] = "";
+
+    if (alcanza)
+    {
+        std::snprintf(titulo, sizeof(titulo), humano ? "¿COMPRÁS EL TROFEO?" : "¿J%d COMPRA EL TROFEO?", turno + 1);
+    }
+    else
+    {
+        std::snprintf(titulo, sizeof(titulo), "%s", humano ? "NO TE ALCANZA PARA EL TROFEO" : "NO LE ALCANZA PARA EL TROFEO");
+    }
+
+    DibujarTextoAjustadoUI(titulo, xTexto, placa.y + Px(10.0f), UI_TEXTO_GRANDE - 4, anchoTexto, UI_TINTA, false);
+
+    // Precio y monedas del jugador.
+    float yValores = placa.y + Px(48.0f);
+    int tamano = TamanoTexto(UI_TEXTO);
+    float x = xTexto;
+
+    DrawText("CUESTA", (int)x, (int)yValores, tamano, UI_TINTA_SUAVE);
+    x += MeasureText("CUESTA", tamano) + Px(16.0f);
+    DibujarMonedaHud(x, yValores + tamano * 0.5f, Px(8.0f));
+    x += Px(14.0f);
+    const char* costo = TextFormat("%d", partida.costoTrofeo);
+    DrawText(costo, (int)x, (int)yValores, tamano, UI_TINTA);
+    x += MeasureText(costo, tamano) + Px(30.0f);
+
+    if (alcanza)
+    {
+        const char* tiene = humano ? "TENÉS" : "TIENE";
+        DrawText(tiene, (int)x, (int)yValores, tamano, UI_TINTA_SUAVE);
+        x += MeasureText(tiene, tamano) + Px(16.0f);
+        DibujarMonedaHud(x, yValores + tamano * 0.5f, Px(8.0f));
+        x += Px(14.0f);
+        DrawText(TextFormat("%d", jugador.monedas), (int)x, (int)yValores, tamano, UI_TINTA);
+    }
+    else
+    {
+        const char* falta = TextFormat(
+            "FALTAN %d",
+            partida.costoTrofeo - jugador.monedas
+        );
+        DrawText(falta, (int)x, (int)yValores, tamano, COLOR_TINTA_ALERTA_HUD);
+    }
+
+    if (!conBotones)
+    {
+        // Bot pensando o humano sin mando: una linea de estado.
+        if (conEstado)
+        {
+            char linea[96] = "";
+            TextoFaseHud(partida, turno, linea, (int)sizeof(linea));
+
+            if (participante.esBot)
+            {
+                std::snprintf(linea, sizeof(linea), "EL BOT DECIDE...");
+            }
+
+            DibujarTextoAjustadoUI(
+                linea, xTexto, placa.y + Px(76.0f), UI_TEXTO_PEQUENO,
+                anchoTexto, participante.esBot ? UI_TINTA_SUAVE : COLOR_TINTA_ALERTA_HUD, false
             );
         }
 
-        if (casilla->tipo == CASILLA_ESPECIAL)
+        return;
+    }
+
+    // Dos carteles con la accion y sus teclas (no hay foco: cada uno
+    // tiene su propia tecla).
+    const char* teclasComprar = "";
+    const char* teclasNo = "";
+    TextosCompraTrofeoHud(participante, teclasComprar, teclasNo);
+
+    const char* acciones[2] = { "COMPRAR", "NO COMPRAR" };
+    const char* teclas[2] = { teclasComprar, teclasNo };
+    float anchoBoton = (placa.width - Px(88.0f) - Px(14.0f) - Px(12.0f)) * 0.5f;
+
+    for (int b = 0; b < 2; b++)
+    {
+        Rectangle boton = {
+            xTexto + b * (anchoBoton + Px(12.0f)),
+            placa.y + placa.height - Px(54.0f),
+            anchoBoton,
+            Px(48.0f)
+        };
+
+        DrawRectangleRec(
+            Rectangle{ boton.x + Px(3.0f), boton.y + Px(4.0f), boton.width, boton.height },
+            Fade(BLACK, 0.22f)
+        );
+        DibujarNueveCortes(estilo.cartel, 10, boton, EscalaUI() * 0.6f, WHITE);
+
+        if (b == 0)
         {
-            if (
-                partida.ultimoEventoEspecial ==
-                EVENTO_TABLERO_BONIFICACION
-            )
-            {
-                return TextFormat(
-                    "EVENTO: BONIFICACION +%d MONEDAS",
-                    partida.variacionMonedasEvento
-                );
-            }
-
-            if (
-                partida.ultimoEventoEspecial ==
-                EVENTO_TABLERO_MULTA
-            )
-            {
-                return TextFormat(
-                    "EVENTO: MULTA %d MONEDAS",
-                    partida.variacionMonedasEvento
-                );
-            }
-
-            if (
-                partida.ultimoEventoEspecial ==
-                EVENTO_TABLERO_INTERCAMBIO
-            )
-            {
-                return TextFormat(
-                    "EVENTO: J%d INTERCAMBIA MONEDAS CON J%d",
-                    indiceParticipante + 1,
-                    partida.jugadorIntercambioEvento + 1
-                );
-            }
-
-            return "EVENTO ESPECIAL";
+            DrawRectangleLinesEx(boton, GrosorLineaHud(2.0f), UI_POSITIVO);
         }
 
-        return "CASILLA AZUL: SIN CAMBIOS";
+        float cx = boton.x + boton.width * 0.5f;
+
+        DibujarTextoAjustadoUI(
+            acciones[b], cx, boton.y + Px(7.0f), UI_TEXTO,
+            boton.width - Px(16.0f), b == 0 ? COLOR_TINTA_POSITIVA_HUD : UI_TINTA, true
+        );
+        DibujarTextoAjustadoUI(
+            teclas[b], cx, boton.y + Px(29.0f), UI_TEXTO_PEQUENO - 2,
+            boton.width - Px(16.0f), UI_TINTA_SUAVE, true
+        );
+    }
+}
+
+
+// Leyenda de casillas y precio del trofeo (abajo a la derecha).
+static void DibujarLeyendaHud(
+    const EstiloUI& estilo,
+    const PartidaTablero& partida
+)
+{
+    const TipoCasilla tipos[3] = { CASILLA_POSITIVA, CASILLA_NEGATIVA, CASILLA_ESPECIAL };
+    const char* nombres[3] = { "+3", "-3", "EVENTO" };
+
+    int tamano = TamanoTexto(UI_TEXTO_PEQUENO - 2);
+    const char* precio = TextFormat("%d", partida.costoTrofeo);
+
+    // Ancho: (punto + texto) por casilla, copa + precio, y aire.
+    float ancho = Px(12.0f);
+
+    for (int i = 0; i < 3; i++)
+    {
+        ancho += Px(16.0f) + MeasureText(nombres[i], tamano) + Px(12.0f);
+    }
+
+    ancho += Px(18.0f) + MeasureText(precio, tamano) + Px(12.0f);
+
+    Rectangle rect = {
+        XHud(UI_REF_ANCHO - 14.0f) - ancho,
+        YAbajoHud(636.0f),
+        ancho,
+        Px(28.0f)
+    };
+
+    DrawRectangleRec(
+        Rectangle{ rect.x + Px(2.0f), rect.y + Px(3.0f), rect.width, rect.height },
+        Fade(BLACK, 0.22f)
+    );
+    DibujarNueveCortes(estilo.placa, 8, rect, EscalaUI(), WHITE);
+    DrawRectangleLinesEx(rect, GrosorLineaHud(1.0f), Fade(UI_MADERA_OSCURA, 0.6f));
+
+    float x = rect.x + Px(12.0f);
+    float cy = rect.y + rect.height * 0.5f;
+
+    for (int i = 0; i < 3; i++)
+    {
+        DrawCircleV(Vector2{ x + Px(5.0f), cy }, Px(6.0f), UI_TINTA);
+        DrawCircleV(Vector2{ x + Px(5.0f), cy }, Px(5.0f), ObtenerColorCasilla(tipos[i]));
+        x += Px(16.0f);
+        DrawText(nombres[i], (int)x, (int)(cy - tamano * 0.5f), tamano, UI_TINTA);
+        x += MeasureText(nombres[i], tamano) + Px(12.0f);
+    }
+
+    DibujarTrofeoIconoHud(x + Px(6.0f), cy, Px(14.0f));
+    x += Px(18.0f);
+    DrawText(precio, (int)x, (int)(cy - tamano * 0.5f), tamano, UI_TINTA);
+}
+
+
+//==================================================
+// ANUNCIOS SOBRE EL MUNDO
+//==================================================
+
+static float AlfaAnuncioHud(float t, float duracion)
+{
+    if (t > duracion - 0.35f)
+    {
+        return Limitar01Hud((duracion - t) / 0.35f);
+    }
+
+    return 1.0f;
+}
+
+
+static void DibujarAnunciosHud(
+    const EstiloUI& estilo,
+    const PartidaTablero& partida
+)
+{
+    const EstadoHudTablero& e = estadoHudTablero;
+    bool reducir = estilo.reducirMovimiento;
+    float cx = (float)GetScreenWidth() * 0.5f;
+    float yCentro = (float)GetScreenHeight() * 0.40f;
+    int turno = ObtenerParticipanteTurnoTableroFinal(partida);
+
+    // +3 / -3 de la casilla: sube desde la ficha y se desvanece.
+    char textoSello[8] = "";
+    Color colorSello = UI_POSITIVO;
+
+    if (
+        turno >= 0 &&
+        SelloEventoHud(partida, textoSello, (int)sizeof(textoSello), colorSello) &&
+        partida.variacionMonedasEvento != 0
+    )
+    {
+        float t = partida.tiempoFase;
+        Vector2 ficha = PuntoSobreFichaHud(partida, turno, 1.6f);
+        float subida = reducir ? 0.0f : Px(36.0f) * Limitar01Hud(t / 0.8f);
+        int token = (int)(UI_TEXTO_TITULO * EscalaReboteHud(t, 0.25f, 0.4f, reducir));
+
+        DibujarTextoMundoContornoUI(
+            textoSello,
+            ficha.x,
+            ficha.y - Px(70.0f) - subida,
+            token,
+            partida.variacionMonedasEvento > 0 ? COLOR_MUNDO_POSITIVO_HUD : COLOR_MUNDO_NEGATIVO_HUD,
+            AlfaAnuncioHud(t, T_EVENTO_CASILLA)
+        );
+    }
+
+    // Trofeo recien comprado.
+    if (
+        e.ultimoTrofeo >= 0 &&
+        e.tiempoTrofeo[e.ultimoTrofeo] < T_ANUNCIO_TROFEO
+    )
+    {
+        float t = e.tiempoTrofeo[e.ultimoTrofeo];
+        int token = (int)(UI_TEXTO_TITULO * EscalaReboteHud(t, 0.25f, 0.35f, reducir));
+
+        DibujarTextoMundoContornoUI(
+            TextFormat("¡J%d CONSIGUE UN TROFEO!", e.ultimoTrofeo + 1),
+            cx, yCentro - TamanoTexto(UI_TEXTO_TITULO) * 0.5f,
+            token, UI_FOCO, AlfaAnuncioHud(t, T_ANUNCIO_TROFEO)
+        );
+
+        return;
     }
 
     if (partida.fase == FASE_PARTIDA_TABLERO_FIN_RONDA)
     {
-        return "FIN DE RONDA - PREPARANDO MINIJUEGO";
+        int token = (int)(UI_TEXTO_TITULO * EscalaReboteHud(partida.tiempoFase, 0.25f, 0.35f, reducir));
+
+        DibujarTextoMundoContornoUI(
+            "¡FIN DE LA RONDA!",
+            cx, yCentro - TamanoTexto(UI_TEXTO_TITULO) * 0.5f,
+            token, UI_FOCO, 1.0f
+        );
+
+        return;
     }
 
-    return "FINALIZANDO TURNO...";
+    // Comienzo de ronda.
+    if (e.tiempoRonda < T_ANUNCIO_RONDA && partida.fase != FASE_PARTIDA_TABLERO_TERMINADA)
+    {
+        bool ultima = partida.rondaActual >= partida.cantidadRondas && partida.cantidadRondas > 1;
+        int token = (int)(UI_TEXTO_TITULO * EscalaReboteHud(e.tiempoRonda, 0.25f, 0.35f, reducir));
+
+        DibujarTextoMundoContornoUI(
+            ultima ? "¡ÚLTIMA RONDA!" : TextFormat("RONDA %d", partida.rondaActual),
+            cx, yCentro - TamanoTexto(UI_TEXTO_TITULO) * 0.5f,
+            token, ultima ? COLOR_MUNDO_NEGATIVO_HUD : UI_TEXTO_MUNDO,
+            AlfaAnuncioHud(e.tiempoRonda, T_ANUNCIO_RONDA)
+        );
+    }
 }
 
 
 //==================================================
-// HUD COMPACTO
+// RESULTADO FINAL
 //==================================================
-
-static float EscalaHudTablero()
-{
-    float escala = GetScreenHeight() / 720.0f;
-
-    if (escala < 0.9f) escala = 0.9f;
-    if (escala > 1.8f) escala = 1.8f;
-
-    return escala;
-}
-
-
-// Texto con sombra para que se lea sobre el mapa sin necesitar un panel.
-static void DibujarTextoHudTablero(
-    const char* texto,
-    int x,
-    int y,
-    int tamano,
-    Color color
-)
-{
-    DrawText(texto, x + 1, y + 1, tamano, Fade(BLACK, 0.75f));
-    DrawText(texto, x, y, tamano, color);
-}
-
-
-static void DibujarMonedaHudTablero(int x, int y, int radio)
-{
-    DrawCircle(x, y, (float)radio, Color{ 255, 205, 50, 255 });
-    DrawCircle(x, y, radio * 0.62f, Color{ 214, 150, 20, 255 });
-    DrawCircle(x, y, radio * 0.40f, Color{ 255, 226, 110, 255 });
-}
-
-
-static void DibujarTrofeoHudTablero(int x, int y, int tamano)
-{
-    Color oro = Color{ 255, 205, 50, 255 };
-
-    DrawRectangle(x - tamano / 2, y - tamano / 2, tamano, tamano / 2, oro);
-    DrawCircle(x, y, tamano * 0.5f, oro);
-    DrawRectangle(x - tamano / 8, y, tamano / 4, tamano / 2, oro);
-    DrawRectangle(x - tamano / 2, y + tamano / 2, tamano, tamano / 6, Color{ 214, 150, 20, 255 });
-}
-
-
-static void DibujarMarcadorTableroFinal(
-    const PartidaTablero& partida
-)
-{
-    float esc = EscalaHudTablero();
-
-    int margen = (int)(14 * esc);
-    int separacion = (int)(8 * esc);
-    int anchoTarjeta = (int)(176 * esc);
-    int altoTarjeta = (int)(54 * esc);
-
-    int participanteTurno =
-        ObtenerParticipanteTurnoTableroFinal(partida);
-
-    // Si no caben en la parte izquierda, se encogen.
-    int maximo = (int)(GetScreenWidth() * 0.66f) - margen;
-    int necesario =
-        partida.cantidadJugadores * (anchoTarjeta + separacion);
-
-    if (necesario > maximo && partida.cantidadJugadores > 0)
-    {
-        anchoTarjeta = maximo / partida.cantidadJugadores - separacion;
-    }
-
-    for (int i = 0; i < partida.cantidadJugadores; i++)
-    {
-        int indice = partida.ordenParticipantes[i];
-        bool activo = indice == participanteTurno;
-
-        int x = margen + i * (anchoTarjeta + separacion);
-        int y = margen - (activo ? (int)(3 * esc) : 0);
-
-        Color color = partida.participantes[indice].color;
-
-        Rectangle caja =
-        {
-            (float)x, (float)y, (float)anchoTarjeta, (float)altoTarjeta
-        };
-
-        DrawRectangleRounded(caja, 0.25f, 6, Fade(Color{ 18, 22, 30, 255 }, activo ? 0.82f : 0.58f));
-
-        // Banda con el color del jugador.
-        DrawRectangleRounded(
-            Rectangle{ caja.x, caja.y, 8.0f * esc, caja.height },
-            0.6f, 4, color
-        );
-
-        if (activo)
-        {
-            DrawRectangleRoundedLinesEx(caja, 0.25f, 6, 2.5f * esc, YELLOW);
-        }
-
-        int t1 = (int)(17 * esc);
-        int t2 = (int)(20 * esc);
-
-        DibujarTextoHudTablero(
-            TextFormat("J%d", indice + 1),
-            x + (int)(18 * esc), y + (int)(6 * esc), t1, color
-        );
-
-        const char* control =
-            partida.participantes[indice].esBot
-            ? "BOT"
-            : ObtenerNombreControlParticipante(partida.participantes[indice]);
-
-        int tc = (int)(11 * esc);
-        DrawText(
-            control,
-            x + anchoTarjeta - MeasureText(control, tc) - (int)(8 * esc),
-            y + (int)(7 * esc), tc, Fade(RAYWHITE, 0.6f)
-        );
-
-        int yFila = y + (int)(33 * esc);
-        int icono = (int)(7 * esc);
-
-        DibujarTrofeoHudTablero(x + (int)(26 * esc), yFila, icono * 2 - 2);
-        DibujarTextoHudTablero(
-            TextFormat("%d", partida.jugadores[indice].trofeos),
-            x + (int)(38 * esc), yFila - (int)(9 * esc), t2, RAYWHITE
-        );
-
-        DibujarMonedaHudTablero(x + (int)(anchoTarjeta * 0.52f), yFila, icono);
-        DibujarTextoHudTablero(
-            TextFormat("%d", partida.jugadores[indice].monedas),
-            x + (int)(anchoTarjeta * 0.52f) + (int)(12 * esc),
-            yFila - (int)(9 * esc), t2, RAYWHITE
-        );
-    }
-}
-
 
 static int CompararClasificacionTablero(
     const PartidaTablero& partida,
@@ -2075,41 +3801,7 @@ static void DibujarResultadoFinalTablero(
         return;
     }
 
-    DrawRectangle(
-        0,
-        0,
-        GetScreenWidth(),
-        GetScreenHeight(),
-        Fade(BLACK, 0.72f)
-    );
-
-    Rectangle panel =
-    {
-        GetScreenWidth() / 2.0f - 330.0f,
-        GetScreenHeight() / 2.0f - 235.0f,
-        660.0f,
-        470.0f
-    };
-
-    DrawRectangle(
-        (int)panel.x,
-        (int)panel.y,
-        (int)panel.width,
-        (int)panel.height,
-        Color{ 24, 27, 35, 248 }
-    );
-
-    DrawRectangleLinesEx(panel, 4.0f, GOLD);
-
-    const char* titulo = "RESULTADO FINAL";
-
-    DrawText(
-        titulo,
-        GetScreenWidth() / 2 - MeasureText(titulo, 38) / 2,
-        (int)panel.y + 28,
-        38,
-        GOLD
-    );
+    const EstiloUI& estilo = ObtenerEstiloUI();
 
     int ranking[MAX_PARTICIPANTES]{};
 
@@ -2145,59 +3837,179 @@ static void DibujarResultadoFinalTablero(
             ranking[1]
         ) == 0;
 
-    const char* ganador =
-        empatePrimero
-        ? "EMPATE EN EL PRIMER PUESTO"
-        : TextFormat("GANA JUGADOR %d", ranking[0] + 1);
+    // Un solo velo y el tablon, que entra cayendo.
+    float aparicion = estilo.reducirMovimiento ? 1.0f : Limitar01Hud(partida.tiempoFase / 0.25f);
+    DibujarVeloUI(0.55f * aparicion);
 
-    DrawText(
-        ganador,
-        GetScreenWidth() / 2 - MeasureText(ganador, 25) / 2,
-        (int)panel.y + 83,
-        25,
-        RAYWHITE
-    );
+    const float ancho = 560.0f;
+    const float altoFila = 40.0f;
+    float alto = 14.0f + 56.0f + partida.cantidadJugadores * altoFila + 44.0f + 14.0f;
+    float caida = 0.0f;
 
-    for (int i = 0; i < partida.cantidadJugadores; i++)
+    if (!estilo.reducirMovimiento)
     {
-        int indice = ranking[i];
-        int y = (int)panel.y + 135 + i * 58;
-
-        Color color = partida.participantes[indice].color;
-
-        DrawRectangle(
-            (int)panel.x + 46,
-            y,
-            568,
-            46,
-            Fade(color, 0.72f)
-        );
-
-        DrawText(
-            TextFormat(
-                "%d. J%d     TROFEOS %d     MONEDAS %d",
-                i + 1,
-                indice + 1,
-                partida.jugadores[indice].trofeos,
-                partida.jugadores[indice].monedas
-            ),
-            (int)panel.x + 62,
-            y + 12,
-            20,
-            BLACK
-        );
+        float resto = 1.0f - Limitar01Hud(partida.tiempoFase / 0.35f);
+        caida = -(alto + 120.0f) * resto * resto * resto;
     }
 
-    const char* ayuda =
-        "ENTER / ESC: VOLVER    R: REINICIAR";
-
-    DrawText(
-        ayuda,
-        GetScreenWidth() / 2 - MeasureText(ayuda, 18) / 2,
-        (int)panel.y + 430,
-        18,
-        LIGHTGRAY
+    Rectangle rect = RectRef(
+        UI_REF_ANCHO * 0.5f - ancho * 0.5f,
+        UI_REF_ALTO * 0.5f - alto * 0.5f + caida,
+        ancho,
+        alto
     );
+
+    Rectangle placa = DibujarTablonHud(estilo, rect);
+    float cx = rect.x + rect.width * 0.5f;
+
+    const char* titulo =
+        empatePrimero
+        ? "¡EMPATE EN EL PRIMER PUESTO!"
+        : TextFormat("¡GANA J%d!", ranking[0] + 1);
+
+    DibujarTextoAjustadoUI(titulo, cx, placa.y + Px(12.0f), UI_TEXTO_GRANDE, placa.width - Px(24.0f), UI_TINTA, true);
+
+    DrawRectangleRec(
+        Rectangle{ placa.x + Px(16.0f), placa.y + Px(50.0f), placa.width - Px(32.0f), Px(2.0f) },
+        Fade(UI_MADERA_OSCURA, 0.45f)
+    );
+
+    static const Color medallas[4] = {
+        { 255, 200, 70, 255 },      // oro (UI_FOCO)
+        { 206, 208, 216, 255 },     // plata
+        { 220, 156, 104, 255 },     // bronce
+        { 196, 170, 130, 255 }      // madera clara
+    };
+
+    int puesto = 1;
+
+    for (int f = 0; f < partida.cantidadJugadores; f++)
+    {
+        int indice = ranking[f];
+        const Participante& participante = partida.participantes[indice];
+
+        // Empatados comparten puesto.
+        if (f > 0 && CompararClasificacionTablero(partida, ranking[f - 1], indice) != 0)
+        {
+            puesto = f + 1;
+        }
+
+        float y = placa.y + Px(58.0f + f * altoFila);
+        float centroY = y + Px(altoFila * 0.5f);
+
+        if (puesto == 1)
+        {
+            DrawRectangleRec(
+                Rectangle{ placa.x + Px(8.0f), y + Px(2.0f), placa.width - Px(16.0f), Px(altoFila - 4.0f) },
+                Fade(UI_FOCO, 0.30f)
+            );
+        }
+
+        float xMedalla = placa.x + Px(30.0f);
+        DrawCircleV(Vector2{ xMedalla, centroY }, Px(13.5f), UI_TINTA);
+        DrawCircleV(Vector2{ xMedalla, centroY }, Px(12.0f), medallas[puesto <= 3 ? puesto - 1 : 3]);
+
+        const char* textoPuesto = TextFormat("%d", puesto);
+        int tamanoPuesto = TamanoTexto(UI_TEXTO_PEQUENO);
+        DrawText(textoPuesto, (int)(xMedalla - MeasureText(textoPuesto, tamanoPuesto) * 0.5f), (int)(centroY - tamanoPuesto * 0.5f), tamanoPuesto, UI_TINTA);
+
+        DibujarBanderinHud(placa.x + Px(56.0f), centroY - Px(12.0f), Px(14.0f), Px(24.0f), participante.color);
+
+        int tamanoNombre = TamanoTexto(UI_TEXTO);
+        const char* nombre = TextFormat("J%d", indice + 1);
+        float xNombre = placa.x + Px(80.0f);
+        DrawText(nombre, (int)xNombre, (int)(centroY - tamanoNombre * 0.5f), tamanoNombre, UI_TINTA);
+
+        if (participante.esBot)
+        {
+            DrawText(
+                "BOT",
+                (int)(xNombre + MeasureText(nombre, tamanoNombre) + Px(8.0f)),
+                (int)(centroY - TamanoTexto(UI_TEXTO_PEQUENO) * 0.5f + Px(1.0f)),
+                TamanoTexto(UI_TEXTO_PEQUENO),
+                UI_TINTA_SUAVE
+            );
+        }
+
+        // Trofeos y monedas a la derecha.
+        float derecha = placa.x + placa.width - Px(18.0f);
+        const char* monedas = TextFormat("%d", partida.jugadores[indice].monedas);
+        float xMonedas = derecha - MeasureText(monedas, tamanoNombre);
+        DrawText(monedas, (int)xMonedas, (int)(centroY - tamanoNombre * 0.5f), tamanoNombre, UI_TINTA);
+        DibujarMonedaHud(xMonedas - Px(14.0f), centroY, Px(8.0f));
+
+        const char* trofeos = TextFormat("%d", partida.jugadores[indice].trofeos);
+        float xTrofeos = xMonedas - Px(86.0f);
+        DrawText(trofeos, (int)xTrofeos, (int)(centroY - tamanoNombre * 0.5f), tamanoNombre, UI_TINTA);
+        DibujarTrofeoIconoHud(xTrofeos - Px(14.0f), centroY, Px(20.0f));
+    }
+
+    DibujarTextoAjustadoUI(
+        "ENTER / ESC: VOLVER   |   R: REINICIAR",
+        cx, placa.y + placa.height - Px(28.0f), UI_TEXTO_PEQUENO,
+        placa.width - Px(24.0f), UI_TINTA_SUAVE, true
+    );
+}
+
+
+//==================================================
+// HUD COMPLETO
+//==================================================
+
+static void DibujarHudTablero(
+    const PartidaTablero& partida
+)
+{
+    const EstiloUI& estilo = ObtenerEstiloUI();
+
+    if (
+        !estilo.cargado ||
+        partida.participantes == nullptr ||
+        partida.cantidadJugadores <= 0
+    )
+    {
+        return;
+    }
+
+    ActualizarEstadoHudTablero(partida, estilo);
+
+    if (partida.fase == FASE_PARTIDA_TABLERO_TERMINADA)
+    {
+        DibujarTendederoHud(estilo, partida);
+        DibujarResultadoFinalTablero(partida);
+        return;
+    }
+
+    int turno = ObtenerParticipanteTurnoTableroFinal(partida);
+
+    // Sobre el mundo, lo que esta pegado a fichas y casillas.
+    DibujarEtiquetasRutaHud(estilo, partida);
+    DibujarDadoHud(estilo, partida);
+
+    DibujarTendederoHud(estilo, partida);
+
+    if (turno >= 0)
+    {
+        if (partida.fase == FASE_PARTIDA_TABLERO_DECISION_TROFEO)
+        {
+            DibujarTablonTrofeoHud(estilo, partida, turno);
+        }
+        else
+        {
+            DibujarCartelTurnoHud(estilo, partida, turno);
+        }
+
+        char ayuda[160] = "";
+        TextoAyudaHud(partida, turno, ayuda, (int)sizeof(ayuda));
+
+        if (ayuda[0] != '\0')
+        {
+            DibujarAyudaUI(estilo, ayuda);
+        }
+    }
+
+    DibujarLeyendaHud(estilo, partida);
+    DibujarAnunciosHud(estilo, partida);
 }
 
 
@@ -2253,211 +4065,16 @@ void PartidaTablero::Dibujar() const
 
     if (!tablero.recorridoValido)
     {
-        DrawText(
+        DibujarTextoMundoContornoUI(
             "ERROR: RECORRIDO DE TABLERO INVALIDO",
-            32,
-            32,
-            28,
-            RED
+            GetScreenWidth() * 0.5f,
+            Px(40.0f),
+            UI_TEXTO_GRANDE,
+            COLOR_MUNDO_NEGATIVO_HUD
         );
 
         return;
     }
 
-    float esc = EscalaHudTablero();
-    int ancho = GetScreenWidth();
-    int alto = GetScreenHeight();
-    int margen = (int)(14 * esc);
-
-    DibujarMarcadorTableroFinal(*this);
-
-    // Panel superior derecho: ronda, tablero y estado del gimmick.
-    {
-        int tRonda = (int)(24 * esc);
-        int tPeq = (int)(14 * esc);
-        int tGim = tPeq;
-        int anchoMaxPanel = (int)(ancho * 0.34f);
-
-        if (
-            estadoGimmick[0] != '\0' &&
-            MeasureText(estadoGimmick, tGim) + (int)(28 * esc) > anchoMaxPanel
-        )
-        {
-            tGim = (int)(tGim * (float)(anchoMaxPanel - (int)(28 * esc)) / MeasureText(estadoGimmick, tGim));
-        }
-
-        const char* textoRonda =
-            TextFormat("RONDA %d / %d", rondaActual, cantidadRondas);
-
-        int anchoPanel = (int)(300 * esc);
-
-        if (estadoGimmick[0] != '\0')
-        {
-            int anchoGimmick = MeasureText(estadoGimmick, tGim) + (int)(28 * esc);
-            if (anchoGimmick > anchoPanel) anchoPanel = anchoGimmick;
-        }
-
-        int altoPanel = (int)((estadoGimmick[0] != '\0' ? 78 : 56) * esc);
-        int x = ancho - anchoPanel - margen;
-
-        Rectangle caja = { (float)x, (float)margen, (float)anchoPanel, (float)altoPanel };
-
-        DrawRectangleRounded(caja, 0.2f, 6, Fade(Color{ 18, 22, 30, 255 }, 0.66f));
-        DrawRectangleRoundedLinesEx(caja, 0.2f, 6, 2.0f, definicion->colorTema);
-
-        DibujarTextoHudTablero(textoRonda, x + (int)(14 * esc), margen + (int)(7 * esc), tRonda, RAYWHITE);
-
-        // Nombre del tablero y zona donde esta el jugador activo.
-        const char* textoTablero = definicion->nombre;
-        int turnoHud = ObtenerParticipanteTurnoTableroFinal(*this);
-
-        if (
-            turnoHud >= 0 &&
-            definicion->nombresZonas != nullptr
-        )
-        {
-            const Casilla* casillaHud =
-                tablero.ObtenerCasilla(jugadores[turnoHud].casillaActual);
-
-            if (
-                casillaHud != nullptr &&
-                casillaHud->zona >= 0 &&
-                casillaHud->zona < definicion->cantidadZonas
-            )
-            {
-                textoTablero =
-                    TextFormat(
-                        "%s - %s",
-                        definicion->nombre,
-                        definicion->nombresZonas[casillaHud->zona]
-                    );
-            }
-        }
-
-        DibujarTextoHudTablero(
-            textoTablero,
-            x + anchoPanel - MeasureText(textoTablero, tPeq) - (int)(12 * esc),
-            margen + (int)(34 * esc), tPeq, ColorBrightness(definicion->colorTema, 0.5f)
-        );
-
-        if (estadoGimmick[0] != '\0')
-        {
-            DibujarTextoHudTablero(
-                estadoGimmick,
-                x + (int)(14 * esc), margen + (int)(55 * esc), tGim,
-                Color{ 255, 226, 150, 255 }
-            );
-        }
-    }
-
-    // Aviso temporal del gimmick (centro, bajo el mapa).
-    if (tiempoMensajeGimmick > 0.0f)
-    {
-        int tamano = (int)(22 * esc);
-        int anchoAviso = MeasureText(mensajeGimmick, tamano) + (int)(44 * esc);
-        int altoAviso = (int)(40 * esc);
-        int xAviso = ancho / 2 - anchoAviso / 2;
-        int yAviso = alto - (int)(130 * esc);
-
-        Rectangle caja = { (float)xAviso, (float)yAviso, (float)anchoAviso, (float)altoAviso };
-
-        DrawRectangleRounded(caja, 0.4f, 6, Fade(BLACK, 0.74f));
-        DrawRectangleRoundedLinesEx(caja, 0.4f, 6, 2.0f, definicion->colorTema);
-
-        DrawText(
-            mensajeGimmick,
-            xAviso + (int)(22 * esc),
-            yAviso + (int)(9 * esc),
-            tamano,
-            RAYWHITE
-        );
-    }
-
-    // Instruccion de fase: banda inferior centrada.
-    {
-        const char* fraseFase = ObtenerTextoFaseTableroFinal(*this);
-
-        int tamano = (int)(20 * esc);
-        int anchoTexto = MeasureText(fraseFase, tamano);
-        int maximoAncho = ancho - (int)(60 * esc);
-
-        if (anchoTexto > maximoAncho)
-        {
-            tamano = (int)(tamano * (float)maximoAncho / anchoTexto);
-            anchoTexto = MeasureText(fraseFase, tamano);
-        }
-
-        int anchoBanda = anchoTexto + (int)(44 * esc);
-        int altoBanda = (int)(40 * esc);
-        int x = ancho / 2 - anchoBanda / 2;
-        int y = alto - altoBanda - (int)(30 * esc);
-
-        Rectangle caja = { (float)x, (float)y, (float)anchoBanda, (float)altoBanda };
-
-        DrawRectangleRounded(caja, 0.4f, 6, Fade(Color{ 18, 22, 30, 255 }, 0.74f));
-
-        DrawText(
-            fraseFase,
-            x + (int)(22 * esc),
-            y + (altoBanda - tamano) / 2,
-            tamano,
-            RAYWHITE
-        );
-    }
-
-    // Dado.
-    if (valorDado > 0)
-    {
-        int lado = (int)(76 * esc);
-        int x = ancho - lado - margen;
-        int y = (int)(100 * esc) + (estadoGimmick[0] != '\0' ? (int)(18 * esc) : 0);
-
-        Rectangle caja = { (float)x, (float)y, (float)lado, (float)lado };
-
-        DrawRectangleRounded(caja, 0.2f, 6, RAYWHITE);
-        DrawRectangleRoundedLinesEx(caja, 0.2f, 6, 3.0f, Color{ 30, 30, 40, 255 });
-
-        const char* textoDado = TextFormat("%d", valorDado);
-        int tamano = (int)(46 * esc);
-
-        DrawText(
-            textoDado,
-            x + lado / 2 - MeasureText(textoDado, tamano) / 2,
-            y + (lado - tamano) / 2,
-            tamano,
-            BLACK
-        );
-    }
-
-    // Leyenda de casillas (esquina inferior derecha) y ayuda de pausa.
-    {
-        int tamano = (int)(13 * esc);
-        int y = alto - (int)(22 * esc);
-        int x = ancho - margen;
-
-        const char* leyenda =
-            TextFormat("TROFEO %d MONEDAS", costoTrofeo);
-
-        x -= MeasureText(leyenda, tamano);
-        DibujarTextoHudTablero(leyenda, x, y, tamano, Color{ 255, 226, 120, 255 });
-
-        const TipoCasilla tipos[3] = { CASILLA_POSITIVA, CASILLA_NEGATIVA, CASILLA_ESPECIAL };
-        const char* nombres[3] = { "+3", "-3", "EVENTO" };
-
-        for (int i = 2; i >= 0; i--)
-        {
-            x -= (int)(14 * esc);
-            x -= MeasureText(nombres[i], tamano);
-            DibujarTextoHudTablero(nombres[i], x, y, tamano, RAYWHITE);
-            x -= (int)(14 * esc);
-            DrawCircle(x + (int)(5 * esc), y + (int)(7 * esc), 5.0f * esc, ObtenerColorCasilla(tipos[i]));
-        }
-
-        DibujarTextoHudTablero(
-            "ESC / START: PAUSA Y SALIR",
-            margen, y, tamano, Fade(RAYWHITE, 0.8f)
-        );
-    }
-
-    DibujarResultadoFinalTablero(*this);
+    DibujarHudTablero(*this);
 }

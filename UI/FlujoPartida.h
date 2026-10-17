@@ -24,6 +24,8 @@
 //     que la pulsacion que abrio la pantalla no la confirme sola.
 //   - El stick/cruceta del mando solo cuenta al INICIAR el movimiento.
 //   - Cancelar (ESC / B / Backspace / Shift) vuelve a la pantalla anterior.
+//     Excepcion: IntroTablero no tiene a donde volver (la partida ya esta
+//     preparada) y lo ignora; solo se salta confirmando.
 
 inline constexpr float BLOQUEO_ENTRADA_FLUJO = 0.30f;
 
@@ -169,6 +171,15 @@ struct IntroTablero
 
     LectorEntradaFlujo lector;
 
+    // Presentacion "tierra a la vista" (EstiloUI): el mapa a pantalla
+    // completa, el nombre pintado sobre el mundo y una bitacora al pie con
+    // la historia, el objetivo y el gimmick. Un barco cruza la ruta de la
+    // bitacora mientras corre el tiempo de la presentacion.
+    TarjetaUI bitacora;
+
+    // Mascara de controles de los humanos (ver SeleccionTablero).
+    int controlesAyuda = -1;
+
     void Inicializar(
         IdTablero idTablero,
         int cantidadRondas
@@ -209,6 +220,12 @@ struct OrdenTurno
     IdTablero tablero = TABLERO_ISLA_ARBOLEDA;
 
     LectorEntradaFlujo lector;
+
+    // Presentacion "sorteo en el muelle" (EstiloUI): un tablon con una
+    // ficha por tirador (indice = posicion en tiradores). Las fichas se
+    // reordenan al revelar y la primera recibe el marco de foco.
+    PanelUI panel;
+    TarjetaUI fichas[MAX_PARTICIPANTES];
 
     void Inicializar(
         const PartidaTablero& partida
@@ -262,6 +279,14 @@ struct ResultadosPartida
     AccionResultados accion = RESULTADOS_NINGUNA;
 
     LectorEntradaFlujo lector;
+
+    // Presentacion "entrega de trofeos" (EstiloUI): podio de madera con
+    // los banderines de los jugadores, clasificacion a la derecha y las
+    // opciones como carteles colgados de un riel. Los carteles caen cuando
+    // aparece el menu (menuPresentado).
+    PanelUI panel;
+    BotonUI carteles[CANTIDAD_OPCIONES];
+    bool menuPresentado = false;
 
     void Inicializar(
         const PartidaTablero& partida

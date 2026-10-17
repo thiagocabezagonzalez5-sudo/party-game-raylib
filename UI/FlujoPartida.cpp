@@ -53,24 +53,6 @@ static float Aparicion(
 }
 
 
-static void DibujarCentrado(
-    const char* texto,
-    int centroX,
-    int y,
-    int tamano,
-    Color color
-)
-{
-    DrawText(
-        texto,
-        centroX - MeasureText(texto, tamano) / 2,
-        y,
-        tamano,
-        color
-    );
-}
-
-
 // Texto con salto de linea por palabras. Devuelve la Y siguiente.
 static int DibujarParrafo(
     const char* texto,
@@ -137,81 +119,6 @@ static int DibujarParrafo(
     }
 
     return y;
-}
-
-
-static void DibujarAyuda(
-    const char* texto
-)
-{
-    DibujarCentrado(
-        texto,
-        GetScreenWidth() / 2,
-        GetScreenHeight() - 34,
-        18,
-        LIGHTGRAY
-    );
-}
-
-
-static void DibujarTitulo(
-    const char* texto,
-    Color color
-)
-{
-    DibujarCentrado(
-        texto,
-        GetScreenWidth() / 2,
-        28,
-        40,
-        color
-    );
-}
-
-
-static void DibujarVelo(
-    float opacidad
-)
-{
-    DrawRectangle(
-        0,
-        0,
-        GetScreenWidth(),
-        GetScreenHeight(),
-        Fade(Color{ 10, 12, 18, 255 }, opacidad)
-    );
-}
-
-
-static void DibujarBoton(
-    Rectangle rect,
-    const char* texto,
-    bool seleccionado,
-    Color acento,
-    float alfa
-)
-{
-    DrawRectangleRec(
-        rect,
-        Fade(
-            seleccionado ? acento : Color{ 34, 38, 50, 255 },
-            (seleccionado ? 0.95f : 0.85f) * alfa
-        )
-    );
-
-    DrawRectangleLinesEx(
-        rect,
-        seleccionado ? 4.0f : 2.0f,
-        Fade(seleccionado ? RAYWHITE : GRAY, alfa)
-    );
-
-    DibujarCentrado(
-        texto,
-        (int)(rect.x + rect.width / 2.0f),
-        (int)(rect.y + rect.height / 2.0f - 11.0f),
-        22,
-        Fade(seleccionado ? BLACK : RAYWHITE, alfa)
-    );
 }
 
 
@@ -545,11 +452,15 @@ static int ObtenerControlesAyuda(
 // o ENTER y WASD solo con ESPACIO, y ambos vuelven con RETROCESO; flechas
 // usan ENTER y SHIFT DER; el mando A y B. ESC siempre vuelve. Sin humanos
 // conectados el teclado acepta ENTER o ESPACIO.
-static void DibujarAyudaFlujo(
+//
+// accionMover y accionVolver pueden ser nullptr: esa parte no se muestra
+// (pantallas sin eleccion o que no vuelven atras).
+static void DibujarAyudaAccionesFlujo(
     const EstiloUI& estilo,
     int controles,
     const char* accionMover,
-    const char* accionConfirmar
+    const char* accionConfirmar,
+    const char* accionVolver
 )
 {
     const bool completo = (controles & (1 << CONTROL_TECLADO_COMPLETO)) != 0;
@@ -595,17 +506,38 @@ static void DibujarAyudaFlujo(
 
     for (int i = 0; i < 2; i++)
     {
-        std::snprintf(
-            texto,
-            sizeof(texto),
-            "IZQ / DER: %s%s%s: %s%s%s: ATRÁS",
-            accionMover,
-            separadores[i],
+        int usado = 0;
+
+        if (accionMover != nullptr)
+        {
+            usado += std::snprintf(
+                texto + usado,
+                sizeof(texto) - usado,
+                "IZQ / DER: %s%s",
+                accionMover,
+                separadores[i]
+            );
+        }
+
+        usado += std::snprintf(
+            texto + usado,
+            sizeof(texto) - usado,
+            "%s: %s",
             confirmar,
-            accionConfirmar,
-            separadores[i],
-            volver
+            accionConfirmar
         );
+
+        if (accionVolver != nullptr && usado < (int)sizeof(texto))
+        {
+            std::snprintf(
+                texto + usado,
+                sizeof(texto) - usado,
+                "%s%s: %s",
+                separadores[i],
+                volver,
+                accionVolver
+            );
+        }
 
         if (MeasureText(texto, TamanoTexto(UI_TEXTO_PEQUENO)) <= (int)Px(976.0f))
         {
@@ -614,6 +546,18 @@ static void DibujarAyudaFlujo(
     }
 
     DibujarAyudaUI(estilo, texto);
+}
+
+
+// Ayuda de las pantallas de eleccion (tablero y configuracion).
+static void DibujarAyudaFlujo(
+    const EstiloUI& estilo,
+    int controles,
+    const char* accionMover,
+    const char* accionConfirmar
+)
+{
+    DibujarAyudaAccionesFlujo(estilo, controles, accionMover, accionConfirmar, "ATRÁS");
 }
 
 
@@ -1514,6 +1458,26 @@ void ConfiguracionPartida::Dibujar(
 //==================================================
 // INTRO DEL TABLERO
 //==================================================
+//
+// "Tierra a la vista": el mapa ocupa toda la pantalla, el nombre va
+// pintado sobre el mundo (con contorno, legible sobre cualquier mapa) y
+// la bitacora del viaje se apoya al pie. El barco de la ruta marca el
+// tiempo que falta para que la presentacion termine sola.
+
+// Bitacora al pie del mapa (unidades de referencia). Termina por encima
+// de la barra de ayuda (674).
+static const Rectangle TARJETA_INTRO = { 120.0f, 420.0f, 1040.0f, 236.0f };
+static const float X_HISTORIA_INTRO = 146.0f;
+static const float ANCHO_HISTORIA_INTRO = 536.0f;
+static const float X_DIVISOR_INTRO = 710.0f;
+static const float X_DATOS_INTRO = 736.0f;
+static const float ANCHO_DATOS_INTRO = 398.0f;
+
+// Ruta del barco: del muelle a la isla, en el borde inferior de la bitacora.
+static const float X_MUELLE_INTRO = 162.0f;
+static const float X_ISLA_INTRO = 1108.0f;
+static const float Y_AGUA_INTRO = 632.0f;
+
 
 void IntroTablero::Inicializar(
     IdTablero idTablero,
@@ -1524,6 +1488,10 @@ void IntroTablero::Inicializar(
     rondas = cantidadRondas;
     tiempo = 0.0f;
     terminada = false;
+    controlesAyuda = -1;
+
+    // La bitacora asoma despues de que aparece el mapa.
+    bitacora.Iniciar(TARJETA_INTRO, nullptr, 0.15f);
 
     lector.Reiniciar();
 }
@@ -1537,6 +1505,10 @@ void IntroTablero::Actualizar(
 {
     tiempo += deltaTime;
 
+    ActualizarTarjetaUI(bitacora, ObtenerEstiloUI(), deltaTime);
+
+    controlesAyuda = ObtenerControlesAyuda(participantes, cantidad);
+
     EntradaFlujo entrada = lector.Leer(participantes, cantidad);
 
     if (tiempo >= DURACION)
@@ -1546,10 +1518,12 @@ void IntroTablero::Actualizar(
     }
 
     // Saltar solo despues del bloqueo, para que una pulsacion
-    // heredada no se salte la presentacion.
+    // heredada no se salte la presentacion. Cancelar (ESC / B / ...) no
+    // hace nada: la partida ya esta preparada, no hay pantalla anterior a
+    // la que volver y la confirmacion de salida vive en el tablero.
     if (
         tiempo >= BLOQUEO_ENTRADA_FLUJO + 0.2f &&
-        (entrada.confirmar || entrada.cancelar)
+        entrada.confirmar
     )
     {
         terminada = true;
@@ -1559,9 +1533,12 @@ void IntroTablero::Actualizar(
 
 void IntroTablero::Dibujar() const
 {
+    const EstiloUI& estilo = ObtenerEstiloUI();
+
     const int ancho = GetScreenWidth();
     const int alto = GetScreenHeight();
     const Color tema = ObtenerColorTemaTablero(tablero);
+    const bool reducir = estilo.reducirMovimiento;
 
     // Vista del mapa a pantalla completa.
     DibujarVistaPreviaTablero(
@@ -1570,91 +1547,220 @@ void IntroTablero::Dibujar() const
         tiempo
     );
 
-    // Degradado inferior para que el texto sea legible sobre el mapa.
+    // Sombra suave solo arriba, detras del nombre (no a pantalla completa).
+    const float aparicion = Aparicion(tiempo, 0.0f, 0.30f);
+    const int altoSombra = (int)PuntoRef(0.0f, 210.0f).y;
+
     DrawRectangleGradientV(
         0,
-        alto / 2 - 40,
+        0,
         ancho,
-        alto / 2 + 40,
-        Fade(BLACK, 0.0f),
-        Fade(BLACK, 0.88f)
+        altoSombra,
+        Fade(UI_VELO, 0.50f * aparicion),
+        Fade(UI_VELO, 0.0f)
     );
 
-    const int x = 70;
-    const int anchoTexto = ancho - 140;
-    int y = alto / 2 + 10;
+    // Con reducirMovimiento todo aparece de una vez y sin desplazarse.
+    const float aNombre = reducir ? 1.0f : Aparicion(tiempo, 0.3f);
+    const float aHistoria = reducir ? 1.0f : Aparicion(tiempo, 1.0f);
+    const float aObjetivo = reducir ? 1.0f : Aparicion(tiempo, 2.2f);
+    const float aGimmick = reducir ? 1.0f : Aparicion(tiempo, 3.2f);
 
-    const float aNombre = Aparicion(tiempo, 0.3f);
-    const float aHistoria = Aparicion(tiempo, 1.0f);
-    const float aObjetivo = Aparicion(tiempo, 2.2f);
-    const float aGimmick = Aparicion(tiempo, 3.2f);
+    //------------------------------
+    // NOMBRE DEL DESTINO (sobre el mundo)
+    //------------------------------
 
-    DrawText(
-        ObtenerNombreTablero(tablero),
-        x,
-        y,
-        52,
-        Fade(tema, aNombre)
-    );
+    const float bajada = reducir ? 0.0f : -(1.0f - Suavizar(aNombre)) * 24.0f;
 
-    DrawText(
-        TextFormat("%d RONDAS", rondas),
-        ancho - 70 - MeasureText(TextFormat("%d RONDAS", rondas), 24),
-        y + 18,
-        24,
-        Fade(RAYWHITE, aNombre)
-    );
+    if (aNombre > 0.0f)
+    {
+        const char* nombre = ObtenerNombreTablero(tablero);
+        const int tamanoNombre = TamanoTexto(UI_TEXTO_TITULO);
 
-    y += 70;
+        OpcionesEtiquetaUI etiqueta;
+        etiqueta.borde = tema;
+        etiqueta.alfa = aNombre;
 
-    y = DibujarParrafo(
-        ObtenerHistoriaTablero(tablero),
-        x,
-        y,
-        anchoTexto,
-        22,
-        Fade(RAYWHITE, aHistoria)
-    );
+        DibujarEtiquetaUI("PRÓXIMO DESTINO", PuntoRef(640.0f, 34.0f + bajada), -2.0f, etiqueta);
 
-    y += 10;
+        Vector2 posicion = PuntoRef(640.0f, 54.0f + bajada);
 
-    DrawText(
-        TextFormat("OBJETIVO: %s", ObtenerObjetivoTablero(tablero)),
-        x,
-        y,
-        22,
-        Fade(GOLD, aObjetivo)
-    );
+        DibujarTextoMundoContornoUI(
+            nombre,
+            posicion.x,
+            posicion.y,
+            UI_TEXTO_TITULO,
+            UI_TEXTO_MUNDO,
+            aNombre
+        );
 
-    y += 34;
+        // Cinta del color del tablero bajo el nombre.
+        const float anchoCinta = (float)MeasureText(nombre, tamanoNombre);
 
-    DrawText(
-        TextFormat("GIMMICK: %s", ObtenerGimmickTablero(tablero)),
-        x,
-        y,
-        22,
-        Fade(SKYBLUE, aGimmick)
-    );
+        Rectangle cinta =
+        {
+            posicion.x - anchoCinta * 0.5f,
+            posicion.y + tamanoNombre + Px(10.0f),
+            anchoCinta,
+            Px(7.0f)
+        };
 
-    // Barra de progreso y ayuda.
-    DrawRectangle(0, alto - 8, ancho, 8, Fade(BLACK, 0.6f));
-    DrawRectangle(0, alto - 8, (int)(ancho * Limitar01(tiempo / DURACION)), 8, tema);
+        DrawRectangleRec(cinta, Fade(tema, aNombre));
+        DrawRectangleLinesEx(cinta, Px(1.5f), Fade(CONTORNO_DIBUJO, aNombre));
 
-    DrawText(
-        "ESPACIO / A: SALTAR",
-        ancho - 70 - MeasureText("ESPACIO / A: SALTAR", 18),
-        alto - 38,
-        18,
-        Fade(LIGHTGRAY, Aparicion(tiempo, 0.8f))
-    );
+        DibujarEtiquetaUI(
+            TextFormat("%d RONDAS", rondas),
+            PuntoRef(640.0f, 148.0f + bajada),
+            2.0f,
+            etiqueta
+        );
+    }
+
+    //------------------------------
+    // BITACORA DEL VIAJE
+    //------------------------------
+
+    DibujarTarjetaUI(estilo, bitacora);
+
+    if (estilo.cargado && bitacora.colgado.retraso <= 0.0f)
+    {
+        const float dy = bitacora.colgado.caida.valor;
+
+        // Historia a la izquierda.
+        Vector2 historia = PuntoRef(X_HISTORIA_INTRO, 438.0f + dy);
+
+        DibujarRotulo("HISTORIA", historia.x, historia.y, aHistoria);
+
+        DibujarParrafoUI(
+            ObtenerHistoriaTablero(tablero),
+            historia.x,
+            historia.y + Px(22.0f),
+            UI_TEXTO,
+            Px(ANCHO_HISTORIA_INTRO),
+            Fade(UI_TINTA, aHistoria),
+            UI_ALINEAR_IZQUIERDA,
+            Px(110.0f)
+        );
+
+        // Divisor: una cuerda vertical entre historia y reglas.
+        DibujarCuerdaUI(
+            estilo,
+            PuntoRef(X_DIVISOR_INTRO, 436.0f + dy),
+            PuntoRef(X_DIVISOR_INTRO, 572.0f + dy)
+        );
+
+        // Objetivo y gimmick a la derecha.
+        Vector2 objetivo = PuntoRef(X_DATOS_INTRO, 436.0f + dy);
+
+        DibujarRotulo("OBJETIVO", objetivo.x, objetivo.y, aObjetivo);
+
+        DibujarParrafoUI(
+            ObtenerObjetivoTablero(tablero),
+            objetivo.x,
+            objetivo.y + Px(20.0f),
+            UI_TEXTO,
+            Px(ANCHO_DATOS_INTRO),
+            Fade(UI_TINTA, aObjetivo),
+            UI_ALINEAR_IZQUIERDA,
+            Px(46.0f)
+        );
+
+        Vector2 gimmick = PuntoRef(X_DATOS_INTRO, 510.0f + dy);
+
+        DibujarRotulo("GIMMICK", gimmick.x, gimmick.y, aGimmick);
+
+        DibujarParrafoUI(
+            ObtenerGimmickTablero(tablero),
+            gimmick.x,
+            gimmick.y + Px(20.0f),
+            UI_TEXTO,
+            Px(ANCHO_DATOS_INTRO),
+            Fade(UI_TINTA, aGimmick),
+            UI_ALINEAR_IZQUIERDA,
+            Px(42.0f)
+        );
+
+        //------------------------------
+        // RUTA: el barco avanza con el tiempo de la presentacion
+        //------------------------------
+
+        const float yAgua = Y_AGUA_INTRO + dy;
+
+        DibujarNueveCortes(
+            estilo.madera,
+            12,
+            RectRef(X_MUELLE_INTRO - 16.0f, yAgua - 4.0f, 44.0f, 14.0f),
+            EscalaUI(),
+            WHITE
+        );
+
+        DibujarCuerdaUI(
+            estilo,
+            PuntoRef(X_MUELLE_INTRO + 28.0f, yAgua + 4.0f),
+            PuntoRef(X_ISLA_INTRO - 26.0f, yAgua + 4.0f)
+        );
+
+        DibujarIslaDestino(PuntoRef(X_ISLA_INTRO, yAgua + 4.0f), tema);
+
+        const float progreso = Limitar01(tiempo / DURACION);
+        const float xBarco =
+            (X_MUELLE_INTRO + 40.0f) +
+            ((X_ISLA_INTRO - 48.0f) - (X_MUELLE_INTRO + 40.0f)) * progreso;
+
+        // Cabeceo leve mientras navega (quieto con reducirMovimiento).
+        const float cabeceo = reducir ? 0.0f : std::sin(tiempo * 3.0f) * 3.0f;
+
+        DibujarBarco(PuntoRef(xBarco, yAgua - 6.0f), cabeceo, tema);
+    }
+
+    if (controlesAyuda >= 0)
+    {
+        DibujarAyudaAccionesFlujo(estilo, controlesAyuda, nullptr, "SALTAR", nullptr);
+    }
 }
 
 
 //==================================================
 // ORDEN DE TURNO
 //==================================================
+//
+// "Sorteo en el muelle": un tablon con una ficha por jugador. Cada uno
+// tira su dado; al revelar, las fichas se reordenan por turno, reciben
+// el sello de su puesto y la primera queda con el marco de foco.
 
 static const float INICIO_TIRADA_ORDEN = 0.7f;
+
+static const Rectangle PANEL_ORDEN = { 140.0f, 92.0f, 1000.0f, 490.0f };
+static const float ANCHO_FICHA_ORDEN = 200.0f;
+static const float ALTO_FICHA_ORDEN = 270.0f;
+static const float SEPARACION_FICHA_ORDEN = 24.0f;
+static const float Y_FICHA_ORDEN = 162.0f;
+
+// Cara del dado: un blanco calido, mas claro que la placa.
+static const Color COLOR_CARA_DADO = { 255, 250, 238, 255 };
+
+// Medallas por puesto (las mismas del tablon final de los minijuegos).
+static const Color COLORES_MEDALLA[MAX_PARTICIPANTES] =
+{
+    { 255, 200, 70, 255 },      // oro (UI_FOCO)
+    { 206, 208, 216, 255 },     // plata
+    { 220, 156, 104, 255 },     // bronce
+    { 196, 170, 130, 255 }      // madera clara
+};
+
+
+static Color ObtenerColorMedalla(
+    int puesto
+)
+{
+    if (puesto < 1 || puesto > MAX_PARTICIPANTES)
+    {
+        return COLORES_MEDALLA[MAX_PARTICIPANTES - 1];
+    }
+
+    return COLORES_MEDALLA[puesto - 1];
+}
+
 
 static float ObtenerTiempoDetencionDado(
     int posicionTirador
@@ -1669,6 +1775,62 @@ static float ObtenerTiempoRevelarOrden(
 )
 {
     return ObtenerTiempoDetencionDado(cantidad - 1) + 0.8f;
+}
+
+
+// X (unidades de referencia) de la ficha en la posicion dada (puede ser
+// fraccionaria mientras las fichas se reordenan).
+static float XFichaOrden(
+    float posicion,
+    int cantidad
+)
+{
+    const float total =
+        cantidad * ANCHO_FICHA_ORDEN + (cantidad - 1) * SEPARACION_FICHA_ORDEN;
+
+    return 640.0f - total * 0.5f + posicion * (ANCHO_FICHA_ORDEN + SEPARACION_FICHA_ORDEN);
+}
+
+
+// Dado de madera clara. centro en pixeles; lado en unidades de referencia.
+// valor 0 = todavia sin tirar ("?").
+static void DibujarDadoOrden(
+    Vector2 centro,
+    float ladoRef,
+    float angulo,
+    float escala,
+    int valor
+)
+{
+    const float lado = Px(ladoRef) * escala;
+    const float medio = lado * 0.5f;
+
+    rlPushMatrix();
+    rlTranslatef(centro.x, centro.y, 0.0f);
+    rlRotatef(angulo, 0.0f, 0.0f, 1.0f);
+
+    DrawRectangleRec(
+        Rectangle{ -medio + Px(4.0f), -medio + Px(5.0f), lado, lado },
+        Fade(BLACK, 0.25f)
+    );
+
+    Rectangle cara = { -medio, -medio, lado, lado };
+
+    DrawRectangleRec(cara, COLOR_CARA_DADO);
+    DrawRectangleLinesEx(cara, Px(3.0f) * escala, CONTORNO_DIBUJO);
+
+    const char* texto = valor > 0 ? TextFormat("%d", valor) : "?";
+    const int tamano = (int)(TamanoTexto(48) * escala);
+
+    DrawText(
+        texto,
+        -MeasureText(texto, tamano) / 2,
+        -tamano / 2,
+        tamano,
+        UI_TINTA
+    );
+
+    rlPopMatrix();
 }
 
 
@@ -1745,6 +1907,24 @@ void OrdenTurno::Inicializar(
         dado[orden[k]] = valores[k];
     }
 
+    // Presentacion: cae el tablon y despues las fichas, una a una.
+    panel.Iniciar(PANEL_ORDEN, 0.0f);
+
+    for (int j = 0; j < MAX_PARTICIPANTES; j++)
+    {
+        fichas[j].Iniciar(
+            Rectangle
+            {
+                XFichaOrden((float)j, cantidad),
+                Y_FICHA_ORDEN,
+                ANCHO_FICHA_ORDEN,
+                ALTO_FICHA_ORDEN
+            },
+            nullptr,
+            0.30f + j * UI_T_ESCALONADO
+        );
+    }
+
     lector.Reiniciar();
 }
 
@@ -1757,6 +1937,15 @@ void OrdenTurno::Actualizar(
 )
 {
     tiempo += deltaTime;
+
+    const EstiloUI& estilo = ObtenerEstiloUI();
+
+    ActualizarPanelUI(panel, estilo, deltaTime);
+
+    for (int j = 0; j < cantidad; j++)
+    {
+        ActualizarTarjetaUI(fichas[j], estilo, deltaTime);
+    }
 
     EntradaFlujo entrada =
         lector.Leer(participantes, cantidadParticipantes);
@@ -1816,48 +2005,171 @@ void OrdenTurno::Actualizar(
 }
 
 
+// Contenido de una ficha del sorteo. (x, y): esquina de la ficha en
+// unidades de referencia, ya con la caida de entrada.
+static void DibujarFichaOrden(
+    const OrdenTurno& sorteo,
+    int posicionTirador,
+    int posicionFinal,
+    const Participante& datos,
+    float x,
+    float y,
+    float reorden,
+    bool reducir
+)
+{
+    const int participante = sorteo.tiradores[posicionTirador];
+    const float centroX = x + ANCHO_FICHA_ORDEN * 0.5f;
+
+    // Cabecera: banderin del jugador, numero y control.
+    Vector2 mastil = PuntoRef(x + 28.0f, y + 20.0f);
+
+    DibujarBanderin(mastil.x, mastil.y, datos.color, 1.0f);
+
+    Vector2 nombre = PuntoRef(x + 82.0f, y + 20.0f);
+
+    DibujarTextoTinta(
+        TextFormat("J%d", participante + 1),
+        nombre.x,
+        nombre.y,
+        UI_TEXTO_GRANDE,
+        UI_TINTA
+    );
+
+    DibujarTextoAjustadoUI(
+        ObtenerEtiquetaControl(datos),
+        nombre.x,
+        nombre.y + Px(36.0f),
+        UI_TEXTO_PEQUENO,
+        Px(ANCHO_FICHA_ORDEN - 96.0f),
+        UI_TINTA_SUAVE,
+        false
+    );
+
+    DrawLineEx(
+        PuntoRef(x + 16.0f, y + 90.0f),
+        PuntoRef(x + ANCHO_FICHA_ORDEN - 16.0f, y + 90.0f),
+        Px(1.5f),
+        Fade(UI_TINTA_SUAVE, 0.45f)
+    );
+
+    // Dado: gira mientras rueda, salta al detenerse.
+    const float detencion = ObtenerTiempoDetencionDado(posicionTirador);
+    const bool detenido = sorteo.tiempo >= detencion;
+    const bool rodando = !detenido && sorteo.tiempo >= INICIO_TIRADA_ORDEN;
+
+    int valor = 0;
+    float angulo = 0.0f;
+    float escala = 1.0f;
+
+    if (detenido)
+    {
+        valor = sorteo.dado[participante];
+
+        const float desde = sorteo.tiempo - detencion;
+
+        if (!reducir && desde < 0.25f)
+        {
+            escala = 1.0f + 0.2f * (1.0f - desde / 0.25f);
+        }
+    }
+    else if (rodando)
+    {
+        valor = ((int)(sorteo.tiempo * 22.0f) + participante * 3) % 10 + 1;
+
+        if (!reducir)
+        {
+            angulo = std::sin(sorteo.tiempo * 31.0f + posicionTirador * 1.9f) * 8.0f;
+        }
+    }
+
+    DibujarDadoOrden(PuntoRef(centroX, y + 152.0f), 92.0f, angulo, escala, valor);
+
+    // Pie de la ficha: lo que saco y, al revelar, su turno.
+    Vector2 pie = PuntoRef(centroX, y + 214.0f);
+
+    if (reorden > 0.7f)
+    {
+        DibujarTextoAjustadoUI(
+            TextFormat("TURNO %d", posicionFinal + 1),
+            pie.x,
+            pie.y,
+            UI_TEXTO_GRANDE,
+            Px(ANCHO_FICHA_ORDEN - 24.0f),
+            UI_TINTA,
+            true
+        );
+    }
+    else if (detenido)
+    {
+        DibujarTextoAjustadoUI(
+            TextFormat("SACÓ %d", valor),
+            pie.x,
+            pie.y + Px(6.0f),
+            UI_TEXTO,
+            Px(ANCHO_FICHA_ORDEN - 24.0f),
+            UI_TINTA_SUAVE,
+            true
+        );
+    }
+}
+
+
 void OrdenTurno::Dibujar(
     const Participante participantes[]
 ) const
 {
-    const int ancho = GetScreenWidth();
-    const int alto = GetScreenHeight();
-    const Color tema = ObtenerColorTemaTablero(tablero);
+    const EstiloUI& estilo = ObtenerEstiloUI();
+
+    const bool reducir = estilo.reducirMovimiento;
+    const float aparicion = Aparicion(tiempo, 0.0f, 0.30f);
 
     DibujarVistaPreviaTablero(
         tablero,
-        Rectangle{ 0.0f, 0.0f, (float)ancho, (float)alto },
+        Rectangle{ 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() },
         tiempo
     );
 
-    DibujarVelo(0.72f);
+    DibujarVeloPlaya(aparicion);
+    DibujarTituloPlaya("ORDEN DE TURNO", aparicion);
 
-    DibujarTitulo("ORDEN DE TURNO", tema);
+    DibujarPanelUI(estilo, panel);
 
-    DibujarCentrado(
-        revelado ? "EL DADO MÁS ALTO JUEGA PRIMERO" : "TIRANDO LOS DADOS...",
-        ancho / 2,
-        78,
-        22,
-        LIGHTGRAY
-    );
+    if (!estilo.cargado || panel.colgado.retraso > 0.0f)
+    {
+        return;
+    }
 
+    // Todo el contenido acompana la caida y el rebote del tablon.
+    const float dy = panel.colgado.caida.valor;
     const float tiempoRevelar = ObtenerTiempoRevelarOrden(cantidad);
 
-    const float anchoTarjeta = 210.0f;
-    const float altoTarjeta = 250.0f;
-    const float separacion = 24.0f;
+    Vector2 subtitulo = PuntoRef(640.0f, 116.0f + dy);
 
-    const float total =
-        cantidad * anchoTarjeta + (cantidad - 1) * separacion;
+    DibujarTextoAjustadoUI(
+        revelado ? "EL DADO MÁS ALTO JUEGA PRIMERO" : "TIRANDO LOS DADOS...",
+        subtitulo.x,
+        subtitulo.y,
+        UI_TEXTO,
+        Px(PANEL_ORDEN.width - 80.0f),
+        UI_TINTA,
+        true
+    );
 
-    const float x0 = (ancho - total) / 2.0f;
-    const float y0 = alto / 2.0f - altoTarjeta / 2.0f + 10.0f;
+    DrawLineEx(
+        PuntoRef(PANEL_ORDEN.x + 40.0f, 146.0f + dy),
+        PuntoRef(PANEL_ORDEN.x + PANEL_ORDEN.width - 40.0f, 146.0f + dy),
+        Px(1.5f),
+        Fade(UI_TINTA_SUAVE, 0.45f)
+    );
 
-    const float u =
-        revelado
-        ? Suavizar((tiempo - tiempoRevelar) / 0.6f)
-        : 0.0f;
+    // Reordenamiento de las fichas (0 = por numero, 1 = por turno).
+    float reorden = 0.0f;
+
+    if (revelado)
+    {
+        reorden = reducir ? 1.0f : Suavizar((tiempo - tiempoRevelar) / 0.6f);
+    }
 
     for (int j = 0; j < cantidad; j++)
     {
@@ -1873,102 +2185,113 @@ void OrdenTurno::Dibujar(
             }
         }
 
-        const float posicion =
-            (float)j + ((float)posicionFinal - (float)j) * u;
-
-        const bool primero = posicionFinal == 0;
-
-        Rectangle tarjeta =
+        if (fichas[j].colgado.retraso > 0.0f)
         {
-            x0 + posicion * (anchoTarjeta + separacion),
-            y0,
-            anchoTarjeta,
-            altoTarjeta
-        };
-
-        const Participante& datos = participantes[participante];
-
-        DrawRectangleRec(tarjeta, Color{ 24, 27, 36, 240 });
-
-        DrawRectangle(
-            (int)tarjeta.x,
-            (int)tarjeta.y,
-            (int)tarjeta.width,
-            62,
-            Fade(datos.color, 0.9f)
-        );
-
-        DrawText(
-            TextFormat("J%d", participante + 1),
-            (int)tarjeta.x + 12,
-            (int)tarjeta.y + 8,
-            30,
-            BLACK
-        );
-
-        DrawText(
-            ObtenerEtiquetaControl(datos),
-            (int)tarjeta.x + 12,
-            (int)tarjeta.y + 40,
-            16,
-            BLACK
-        );
-
-        // Dado.
-        const float lado = 92.0f;
-
-        Rectangle dadoRect =
-        {
-            tarjeta.x + tarjeta.width / 2.0f - lado / 2.0f,
-            tarjeta.y + 84.0f,
-            lado,
-            lado
-        };
-
-        int valor = 0;
-
-        if (tiempo >= ObtenerTiempoDetencionDado(j))
-        {
-            valor = dado[participante];
-        }
-        else if (tiempo >= INICIO_TIRADA_ORDEN)
-        {
-            valor = ((int)(tiempo * 22.0f) + participante * 3) % 10 + 1;
+            continue;
         }
 
-        DrawRectangleRec(dadoRect, RAYWHITE);
-        DrawRectangleLinesEx(dadoRect, 4.0f, BLACK);
+        TarjetaUI ficha = fichas[j];
+        ficha.ref.x = XFichaOrden(
+            (float)j + ((float)posicionFinal - (float)j) * reorden,
+            cantidad
+        );
+        ficha.ref.y += dy;
 
-        DibujarCentrado(
-            valor > 0 ? TextFormat("%d", valor) : "?",
-            (int)(dadoRect.x + lado / 2.0f),
-            (int)dadoRect.y + 22,
-            50,
-            BLACK
+        DibujarTarjetaUI(estilo, ficha);
+
+        const float x = ficha.ref.x;
+        const float y = ficha.ref.y + ficha.colgado.caida.valor;
+
+        DibujarFichaOrden(
+            *this,
+            j,
+            posicionFinal,
+            participantes[participante],
+            x,
+            y,
+            reorden,
+            reducir
         );
 
-        if (u > 0.7f)
+        // Sello del puesto: cae como un sello de goma al revelar.
+        const float sello = Limitar01((reorden - 0.7f) / 0.3f);
+
+        if (sello > 0.0f)
         {
-            DibujarCentrado(
-                TextFormat("TURNO %d", posicionFinal + 1),
-                (int)(tarjeta.x + tarjeta.width / 2.0f),
-                (int)tarjeta.y + 196,
-                28,
-                primero ? GOLD : RAYWHITE
+            const bool primero = posicionFinal == 0;
+
+            if (primero)
+            {
+                DibujarMarcoFoco(RectRef(x, y, ANCHO_FICHA_ORDEN, ALTO_FICHA_ORDEN));
+            }
+
+            DibujarSelloUI(
+                TextFormat("%dº", posicionFinal + 1),
+                PuntoRef(x + ANCHO_FICHA_ORDEN - 14.0f, y + 14.0f),
+                30.0f * (reducir ? 1.0f : 1.0f + 0.5f * (1.0f - sello)),
+                primero ? UI_SELLO_ESTRELLA : UI_SELLO_CIRCULO,
+                ObtenerColorMedalla(posicionFinal + 1),
+                primero ? -10.0f : 8.0f,
+                reducir ? 1.0f : sello
             );
         }
-
-        DrawRectangleLinesEx(
-            tarjeta,
-            primero && u > 0.7f ? 6.0f : 2.0f,
-            primero && u > 0.7f ? GOLD : GRAY
-        );
     }
 
-    DibujarAyuda(
-        revelado
-        ? "ESPACIO / A: COMENZAR LA PARTIDA"
-        : "ESPACIO / A: VER EL RESULTADO"
+    // Quien abre la partida y el resto del orden.
+    if (revelado && cantidad > 0)
+    {
+        const float alfa =
+            reducir ? 1.0f : Aparicion(tiempo, tiempoRevelar + 0.4f, 0.3f);
+
+        Vector2 abre = PuntoRef(640.0f, 450.0f + dy);
+
+        DibujarTextoAjustadoUI(
+            TextFormat("¡J%d ABRE LA PARTIDA!", orden[0] + 1),
+            abre.x,
+            abre.y,
+            UI_TEXTO_GRANDE,
+            Px(PANEL_ORDEN.width - 80.0f),
+            Fade(UI_TINTA, alfa),
+            true
+        );
+
+        if (cantidad > 1)
+        {
+            char despues[64] = "DESPUÉS:";
+            int usado = (int)std::strlen(despues);
+
+            for (int k = 1; k < cantidad && usado < (int)sizeof(despues); k++)
+            {
+                const char* separador =
+                    k == 1 ? " " : (k == cantidad - 1 ? " Y " : ", ");
+
+                usado += std::snprintf(
+                    despues + usado,
+                    sizeof(despues) - usado,
+                    "%sJ%d",
+                    separador,
+                    orden[k] + 1
+                );
+            }
+
+            DibujarTextoAjustadoUI(
+                despues,
+                abre.x,
+                abre.y + Px(42.0f),
+                UI_TEXTO,
+                Px(PANEL_ORDEN.width - 80.0f),
+                Fade(UI_TINTA_SUAVE, alfa),
+                true
+            );
+        }
+    }
+
+    DibujarAyudaAccionesFlujo(
+        estilo,
+        ObtenerControlesAyuda(participantes, MAX_PARTICIPANTES),
+        nullptr,
+        revelado ? "COMENZAR LA PARTIDA" : "VER EL RESULTADO",
+        nullptr
     );
 }
 
@@ -1976,6 +2299,38 @@ void OrdenTurno::Dibujar(
 //==================================================
 // RESULTADOS DE LA PARTIDA
 //==================================================
+//
+// "Entrega de trofeos": la misma carta que la eleccion de destino. A la
+// izquierda, el podio de madera donde se izan los banderines de los
+// jugadores y, colgadas del riel, las opciones; a la derecha, la
+// clasificacion con trofeos y monedas.
+
+static const Rectangle PANEL_RESULTADOS = { 40.0f, 92.0f, 1200.0f, 568.0f };
+static const float X_CENTRO_PODIO = 418.0f;
+static const float Y_BASE_PODIO = 500.0f;
+static const float ANCHO_COLUMNA_PODIO = 136.0f;
+static const float SEPARACION_COLUMNA_PODIO = 22.0f;
+static const float ALTO_MASTIL_PODIO = 76.0f;
+
+// Clasificacion (mismas columnas que la bitacora del destino).
+static const float ALTO_FILA_CLASIFICACION = 46.0f;
+static const float X_TROFEOS_CLASIFICACION = 1110.0f;     // borde derecho
+static const float X_MONEDAS_CLASIFICACION = 1206.0f;     // borde derecho
+
+static const char* TEXTOS_OPCIONES_RESULTADOS[ResultadosPartida::CANTIDAD_OPCIONES] =
+{
+    "REVANCHA",
+    "NUEVA PARTIDA",
+    "VOLVER AL HUB"
+};
+
+static const char* DESCRIPCIONES_OPCIONES_RESULTADOS[ResultadosPartida::CANTIDAD_OPCIONES] =
+{
+    "JUGÁS OTRA VEZ EN EL MISMO TABLERO, CON LOS MISMOS JUGADORES Y RONDAS.",
+    "VOLVÉS A ELEGIR PERSONAJES, TABLERO Y RONDAS.",
+    "VOLVÉS AL MENÚ PRINCIPAL."
+};
+
 
 static float ObtenerTiempoRevelarPuesto(
     int slot,
@@ -2052,6 +2407,10 @@ void ResultadosPartida::Inicializar(
         puesto[k] = empate ? puesto[k - 1] : k + 1;
     }
 
+    // Presentacion: la carta cae ya; los carteles, al aparecer el menu.
+    panel.Iniciar(PANEL_RESULTADOS, 0.0f);
+    menuPresentado = false;
+
     lector.Reiniciar();
 }
 
@@ -2064,6 +2423,35 @@ void ResultadosPartida::Actualizar(
 )
 {
     tiempo += deltaTime;
+
+    const EstiloUI& estilo = ObtenerEstiloUI();
+    const float tiempoMenu = ObtenerTiempoMenuResultados(cantidad);
+
+    ActualizarPanelUI(panel, estilo, deltaTime);
+
+    if (!menuPresentado && tiempo >= tiempoMenu)
+    {
+        menuPresentado = true;
+
+        for (int i = 0; i < CANTIDAD_OPCIONES; i++)
+        {
+            carteles[i].Iniciar(
+                RectCartelTablero(i, CANTIDAD_OPCIONES),
+                TEXTOS_OPCIONES_RESULTADOS[i],
+                (i % 2 == 0) ? -1.5f : 1.5f,
+                i * UI_T_ESCALONADO
+            );
+        }
+    }
+
+    if (menuPresentado)
+    {
+        for (int i = 0; i < CANTIDAD_OPCIONES; i++)
+        {
+            carteles[i].activo = i == opcion;
+            ActualizarBotonUI(carteles[i], estilo, deltaTime, i == opcion);
+        }
+    }
 
     EntradaFlujo entrada =
         lector.Leer(participantes, cantidadParticipantes);
@@ -2089,8 +2477,6 @@ void ResultadosPartida::Actualizar(
     {
         return;
     }
-
-    const float tiempoMenu = ObtenerTiempoMenuResultados(cantidad);
 
     // Durante la revelacion, confirmar o cancelar la salta.
     if (tiempo < tiempoMenu)
@@ -2125,6 +2511,7 @@ void ResultadosPartida::Actualizar(
             opcion == 1 ? RESULTADOS_NUEVA_PARTIDA :
                           RESULTADOS_VOLVER_HUB;
 
+        carteles[opcion].colgado.Pulsar();
         audio.ReproducirSonido(SONIDO_UI_CONFIRMAR);
         return;
     }
@@ -2141,33 +2528,139 @@ void ResultadosPartida::Actualizar(
 }
 
 
+// Corona dorada con contorno. centroX / yBase en pixeles.
 static void DibujarCorona(
     float centroX,
     float yBase,
     float escala
 )
 {
-    const float ancho = 46.0f * escala;
-    const float alto = 26.0f * escala;
+    const float ancho = 40.0f * escala;
+    const float alto = 24.0f * escala;
     const float izquierda = centroX - ancho / 2.0f;
+    const float yBanda = yBase - alto * 0.35f;
 
-    DrawRectangle(
-        (int)izquierda,
-        (int)(yBase - alto * 0.35f),
-        (int)ancho,
-        (int)(alto * 0.35f),
-        GOLD
-    );
+    Vector2 puntas[3];
 
     for (int i = 0; i < 3; i++)
     {
-        const float x = izquierda + ancho * (0.17f + 0.33f * (float)i);
+        puntas[i] = Vector2{ izquierda + ancho * (0.17f + 0.33f * (float)i), yBase - alto };
+    }
 
-        DrawTriangle(
-            Vector2{ x - ancho * 0.17f, yBase - alto * 0.35f },
-            Vector2{ x + ancho * 0.17f, yBase - alto * 0.35f },
-            Vector2{ x, yBase - alto },
-            GOLD
+    // Contorno: la misma silueta un poco mas grande, detras.
+    const float borde = 2.0f * escala;
+
+    for (int capa = 0; capa < 2; capa++)
+    {
+        const float g = capa == 0 ? borde : 0.0f;
+        const Color color = capa == 0 ? CONTORNO_DIBUJO : UI_FOCO;
+
+        DrawRectangleRec(
+            Rectangle{ izquierda - g, yBanda - g, ancho + g * 2.0f, yBase - yBanda + g * 2.0f },
+            color
+        );
+
+        for (int i = 0; i < 3; i++)
+        {
+            DrawTriangle(
+                Vector2{ puntas[i].x - ancho * 0.17f - g, yBanda + g * 0.5f },
+                Vector2{ puntas[i].x + ancho * 0.17f + g, yBanda + g * 0.5f },
+                Vector2{ puntas[i].x, puntas[i].y - g * 1.5f },
+                color
+            );
+        }
+    }
+
+    // Joyas.
+    for (int i = 0; i < 3; i++)
+    {
+        DrawCircleV(
+            Vector2{ puntas[i].x, yBanda + (yBase - yBanda) * 0.5f },
+            2.2f * escala,
+            UI_PELIGRO
+        );
+    }
+}
+
+
+// Banderin chico para las filas de la clasificacion. (x, y) = punta del
+// mastil en pixeles.
+static void DibujarBanderinFila(
+    float x,
+    float y,
+    Color color,
+    float alfa
+)
+{
+    DrawLineEx(
+        Vector2{ x, y },
+        Vector2{ x, y + Px(30.0f) },
+        Px(3.0f),
+        Fade(UI_MADERA_OSCURA, alfa)
+    );
+
+    Vector2 a = { x + Px(1.5f), y + Px(2.0f) };
+    Vector2 b = { x + Px(1.5f), y + Px(18.0f) };
+    Vector2 punta = { x + Px(24.0f), y + Px(10.0f) };
+
+    DrawTriangle(a, b, punta, Fade(color, alfa));
+    DrawTriangleLines(a, b, punta, Fade(CONTORNO_DIBUJO, alfa));
+}
+
+
+// Texto en tinta alineado a la derecha (borde en pixeles).
+static void DibujarTextoDerechaFlujo(
+    const char* texto,
+    float derecha,
+    float y,
+    int tokenTexto,
+    Color color
+)
+{
+    const int tamano = TamanoTexto(tokenTexto);
+
+    DrawText(texto, (int)(derecha - MeasureText(texto, tamano)), (int)y, tamano, color);
+}
+
+
+// Confeti del ganador: se dibuja encima de todo y se apaga solo a los
+// pocos segundos para no distraer del menu.
+static void DibujarConfetiResultados(
+    float desde
+)
+{
+    const float alfa = 1.0f - Limitar01((desde - 6.0f) / 1.5f);
+
+    if (alfa <= 0.0f)
+    {
+        return;
+    }
+
+    const float ancho = (float)GetScreenWidth();
+    const float alto = (float)GetScreenHeight();
+    const float u = EscalaUI();
+
+    const Color paleta[5] =
+    {
+        UI_FOCO,
+        UI_POSITIVO,
+        UI_PELIGRO,
+        { 120, 200, 236, 255 },
+        UI_PLACA_CLARA
+    };
+
+    for (int i = 0; i < 80; i++)
+    {
+        const float rx = std::fmod((float)i * 0.6180339f, 1.0f);
+        const float velocidad = (90.0f + std::fmod((float)i * 37.0f, 120.0f)) * u;
+        const float y = std::fmod(desde * velocidad + (float)i * 53.0f * u, alto + 40.0f * u) - 20.0f * u;
+        const float x = rx * ancho + std::sin(desde * 2.0f + (float)i) * 22.0f * u;
+
+        DrawRectanglePro(
+            Rectangle{ x, y, 9.0f * u, 5.0f * u },
+            Vector2{ 4.5f * u, 2.5f * u },
+            desde * 180.0f + (float)i * 40.0f,
+            Fade(paleta[i % 5], 0.9f * alfa)
         );
     }
 }
@@ -2177,25 +2670,41 @@ void ResultadosPartida::Dibujar(
     const Participante participantes[]
 ) const
 {
-    const int ancho = GetScreenWidth();
-    const int alto = GetScreenHeight();
+    const EstiloUI& estilo = ObtenerEstiloUI();
+
     const Color tema = ObtenerColorTemaTablero(tablero);
+    const bool reducir = estilo.reducirMovimiento;
+    const float aparicion = Aparicion(tiempo, 0.0f, 0.30f);
 
     DibujarVistaPreviaTablero(
         tablero,
-        Rectangle{ 0.0f, 0.0f, (float)ancho, (float)alto },
+        Rectangle{ 0.0f, 0.0f, (float)GetScreenWidth(), (float)GetScreenHeight() },
         tiempo * 0.5f
     );
 
-    DibujarVelo(0.78f);
+    DibujarVeloPlaya(aparicion);
+    DibujarTituloPlaya("FIN DE LA PARTIDA", aparicion);
 
-    DibujarTitulo("FIN DE LA PARTIDA", GOLD);
+    DibujarPanelUI(estilo, panel);
 
+    if (!estilo.cargado || panel.colgado.retraso > 0.0f)
+    {
+        return;
+    }
+
+    // Todo el contenido acompana la caida y el rebote de la carta.
+    const float dy = panel.colgado.caida.valor;
     const float tiempoGanador = ObtenerTiempoRevelarPuesto(0, cantidad);
     const float tiempoMenu = ObtenerTiempoMenuResultados(cantidad);
+    const bool hayGanador = tiempo >= tiempoGanador;
 
-    // Ganador (o empate).
-    if (tiempo >= tiempoGanador)
+    //------------------------------
+    // ANUNCIO DEL GANADOR
+    //------------------------------
+
+    Vector2 anuncio = PuntoRef(X_CENTRO_PODIO, 122.0f + dy);
+
+    if (hayGanador)
     {
         int empatados = 0;
 
@@ -2207,30 +2716,52 @@ void ResultadosPartida::Dibujar(
             }
         }
 
-        const float pulso =
-            1.0f + 0.04f * std::sin(tiempo * 5.0f);
-
         const char* texto =
             empatados > 1
-            ? "EMPATE EN EL PRIMER PUESTO"
-            : TextFormat("GANA JUGADOR %d", ranking[0] + 1);
+            ? "¡EMPATE EN EL PRIMER PUESTO!"
+            : TextFormat("¡GANA J%d!", ranking[0] + 1);
 
-        const int tamano = (int)(34.0f * pulso);
+        // Aparece un poco mas grande y se asienta.
+        float crecer = 1.0f;
 
-        DibujarCentrado(texto, ancho / 2, 84, tamano, RAYWHITE);
+        if (!reducir)
+        {
+            crecer = 1.0f + 0.35f * (1.0f - Suavizar((tiempo - tiempoGanador) / 0.3f));
+        }
+
+        int tamano = (int)(TamanoTexto(UI_TEXTO_GRANDE) * crecer);
+        const float anchoMaximo = Px(660.0f);
+
+        while (tamano > 10 && MeasureText(texto, tamano) > anchoMaximo)
+        {
+            tamano--;
+        }
+
+        DrawText(
+            texto,
+            (int)(anuncio.x - MeasureText(texto, tamano) * 0.5f),
+            (int)(anuncio.y + (TamanoTexto(UI_TEXTO_GRANDE) - tamano) * 0.5f),
+            tamano,
+            UI_TINTA
+        );
     }
     else
     {
-        DibujarCentrado(
-            ObtenerNombreTablero(tablero),
-            ancho / 2,
-            84,
-            24,
-            Fade(tema, 0.9f)
+        DibujarTextoAjustadoUI(
+            "CONTANDO TROFEOS...",
+            anuncio.x,
+            anuncio.y + Px(6.0f),
+            UI_TEXTO,
+            Px(660.0f),
+            UI_TINTA_SUAVE,
+            true
         );
     }
 
-    // Podio: 2.o, 1.o, 3.o, 4.o de izquierda a derecha.
+    //------------------------------
+    // PODIO: 2.o, 1.o, 3.o, 4.o de izquierda a derecha
+    //------------------------------
+
     const int ordenPantalla[MAX_PARTICIPANTES] = { 1, 0, 2, 3 };
 
     int columnas[MAX_PARTICIPANTES] = {};
@@ -2245,15 +2776,21 @@ void ResultadosPartida::Dibujar(
         }
     }
 
-    const float anchoColumna = 180.0f;
-    const float separacion = 28.0f;
+    const float totalPodio =
+        cantidadColumnas * ANCHO_COLUMNA_PODIO +
+        (cantidadColumnas - 1) * SEPARACION_COLUMNA_PODIO;
 
-    const float total =
-        cantidadColumnas * anchoColumna +
-        (cantidadColumnas - 1) * separacion;
+    const float x0 = X_CENTRO_PODIO - totalPodio * 0.5f;
+    const float yBase = Y_BASE_PODIO + dy;
 
-    const float x0 = (ancho - total) / 2.0f;
-    const float yBase = (float)alto - 170.0f;
+    // Tablon de la base, un poco mas ancho que las columnas.
+    DibujarNueveCortes(
+        estilo.madera,
+        12,
+        RectRef(x0 - 24.0f, yBase, totalPodio + 48.0f, 18.0f),
+        EscalaUI(),
+        WHITE
+    );
 
     for (int pos = 0; pos < cantidadColumnas; pos++)
     {
@@ -2262,163 +2799,308 @@ void ResultadosPartida::Dibujar(
         const Participante& datos = participantes[participante];
 
         const float inicio = ObtenerTiempoRevelarPuesto(slot, cantidad);
-        const float crecimiento = Suavizar((tiempo - inicio) / 0.5f);
+
+        float crecimiento = Suavizar((tiempo - inicio) / 0.5f);
+
+        if (reducir)
+        {
+            crecimiento = tiempo >= inicio ? 1.0f : 0.0f;
+        }
 
         if (crecimiento <= 0.0f)
         {
             continue;
         }
 
-        const float alturaFinal =
-            120.0f + (float)(cantidad - 1 - slot) * 40.0f;
-
+        // Altura segun el puesto (los empatados quedan a la par).
+        const float alturaFinal = 70.0f + (float)(cantidad - puesto[slot]) * 40.0f;
         const float altura = alturaFinal * crecimiento;
-        const float x = x0 + pos * (anchoColumna + separacion);
+        const float x = x0 + pos * (ANCHO_COLUMNA_PODIO + SEPARACION_COLUMNA_PODIO);
+        const float arriba = yBase - altura;
+        const float centroX = x + ANCHO_COLUMNA_PODIO * 0.5f;
         const bool campeon = puesto[slot] == 1;
 
-        Rectangle columna = { x, yBase - altura, anchoColumna, altura };
+        Rectangle columna = RectRef(x, arriba, ANCHO_COLUMNA_PODIO, altura + 4.0f);
 
-        DrawRectangleRec(columna, Fade(datos.color, 0.88f));
-        DrawRectangleLinesEx(columna, campeon ? 5.0f : 2.0f, campeon ? GOLD : BLACK);
-
-        const float conteo = Limitar01((tiempo - inicio) / 0.8f);
-
-        if (crecimiento > 0.9f)
-        {
-            const int centro = (int)(x + anchoColumna / 2.0f);
-            const int arriba = (int)columna.y;
-
-            DibujarCentrado(TextFormat("%d", puesto[slot]), centro, arriba + 8, 48, BLACK);
-
-            DrawText(
-                TextFormat("TROFEOS %d", (int)((float)trofeos[participante] * conteo + 0.5f)),
-                (int)x + 12,
-                arriba + 62,
-                18,
-                BLACK
-            );
-
-            DrawText(
-                TextFormat("MONEDAS %d", (int)((float)monedas[participante] * conteo + 0.5f)),
-                (int)x + 12,
-                arriba + 86,
-                18,
-                BLACK
-            );
-
-            DrawText(
-                ObtenerEtiquetaControl(datos),
-                (int)x + 12,
-                arriba + 108,
-                14,
-                Fade(BLACK, 0.75f)
-            );
-        }
-
-        // Ficha del jugador sobre la columna.
-        const float salto =
-            campeon && tiempo >= tiempoGanador
-            ? std::fabs(std::sin(tiempo * 4.0f)) * 10.0f
-            : 0.0f;
-
-        const float centroX = x + anchoColumna / 2.0f;
-        const float centroY = columna.y - 36.0f - salto;
-
-        DrawCircle((int)centroX, (int)centroY, 30.0f, datos.color);
-        DrawCircleLines((int)centroX, (int)centroY, 30.0f, campeon ? GOLD : RAYWHITE);
-
-        DibujarCentrado(
-            TextFormat("J%d", participante + 1),
-            (int)centroX,
-            (int)centroY - 12,
-            24,
-            BLACK
+        DrawRectangleRec(
+            Rectangle{ columna.x + Px(5.0f), columna.y + Px(6.0f), columna.width, columna.height },
+            Fade(BLACK, 0.25f)
         );
 
-        if (campeon && tiempo >= tiempoGanador)
+        // Mientras crece, los bordes del 9-slice se achican para no
+        // superar la mitad del alto de la columna.
+        DibujarNueveCortes(
+            estilo.madera,
+            12,
+            columna,
+            std::fmin(EscalaUI(), columna.height / 24.0f),
+            WHITE
+        );
+
+        if (crecimiento < 0.9f)
         {
-            DibujarCorona(centroX, centroY - 34.0f, 1.0f);
+            continue;
+        }
+
+        // Franja del color del jugador y sello del puesto.
+        Rectangle franja = RectRef(x + 12.0f, arriba + 12.0f, ANCHO_COLUMNA_PODIO - 24.0f, 8.0f);
+
+        DrawRectangleRec(franja, datos.color);
+        DrawRectangleLinesEx(franja, Px(1.5f), CONTORNO_DIBUJO);
+
+        DibujarSelloUI(
+            TextFormat("%dº", puesto[slot]),
+            PuntoRef(centroX, arriba + 46.0f),
+            26.0f,
+            campeon ? UI_SELLO_ESTRELLA : UI_SELLO_CIRCULO,
+            ObtenerColorMedalla(puesto[slot]),
+            campeon ? -8.0f : 0.0f
+        );
+
+        // El banderin del campeon se iza y baja un poco (salvo
+        // reducirMovimiento): el mastil siempre apoya en la columna.
+        float izado = 0.0f;
+
+        if (campeon && hayGanador && !reducir)
+        {
+            izado = std::fabs(std::sin(tiempo * 4.0f)) * 10.0f;
+        }
+
+        Rectangle tela =
+        {
+            centroX - 26.0f,
+            arriba - ALTO_MASTIL_PODIO - izado,
+            62.0f,
+            28.0f
+        };
+
+        DibujarBanderinUI(
+            estilo,
+            TextFormat("J%d", participante + 1),
+            tela,
+            ALTO_MASTIL_PODIO + izado,
+            datos.color,
+            true,
+            pos * 1.3f
+        );
+
+        if (campeon && hayGanador)
+        {
+            // Sobre la perilla del mastil (borde izquierdo de la tela).
+            Vector2 perilla = PuntoRef(tela.x - 4.0f, tela.y - 12.0f);
+
+            DibujarCorona(perilla.x, perilla.y - Px(8.0f), EscalaUI());
         }
     }
 
-    // Confeti del ganador.
-    if (tiempo >= tiempoGanador)
+    //------------------------------
+    // OPCIONES (carteles colgados del riel)
+    //------------------------------
+
+    DibujarNueveCortes(
+        estilo.madera,
+        12,
+        RectRef(
+            RIEL_CARTELES_TABLERO.x,
+            RIEL_CARTELES_TABLERO.y + dy,
+            RIEL_CARTELES_TABLERO.width,
+            RIEL_CARTELES_TABLERO.height
+        ),
+        EscalaUI(),
+        WHITE
+    );
+
+    if (menuPresentado)
     {
-        const float tc = tiempo - tiempoGanador;
-
-        const Color paleta[5] = { GOLD, SKYBLUE, PINK, LIME, ORANGE };
-
-        for (int i = 0; i < 90; i++)
-        {
-            const float rx = std::fmod((float)i * 0.6180339f, 1.0f);
-            const float velocidad = 90.0f + std::fmod((float)i * 37.0f, 120.0f);
-            const float y = std::fmod(tc * velocidad + (float)i * 53.0f, (float)alto + 40.0f) - 20.0f;
-            const float x = rx * (float)ancho + std::sin(tc * 2.0f + (float)i) * 22.0f;
-
-            DrawRectanglePro(
-                Rectangle{ x, y, 9.0f, 5.0f },
-                Vector2{ 4.5f, 2.5f },
-                tc * 180.0f + (float)i * 40.0f,
-                Fade(paleta[i % 5], 0.9f)
-            );
-        }
-    }
-
-    // Menu de opciones.
-    if (tiempo >= tiempoMenu)
-    {
-        const float aparicion = Aparicion(tiempo, tiempoMenu, 0.4f);
-
-        static const char* textos[CANTIDAD_OPCIONES] =
-        {
-            "REVANCHA",
-            "NUEVA PARTIDA",
-            "VOLVER AL HUB"
-        };
-
-        static const char* descripciones[CANTIDAD_OPCIONES] =
-        {
-            "MISMO TABLERO, JUGADORES Y RONDAS",
-            "ELEGIR JUGADORES Y TABLERO DE NUEVO",
-            "VOLVER AL MENÚ PRINCIPAL"
-        };
-
-        const float anchoBoton = 250.0f;
-        const float altoBoton = 52.0f;
-        const float espacio = 20.0f;
-
-        const float totalBotones =
-            CANTIDAD_OPCIONES * anchoBoton + (CANTIDAD_OPCIONES - 1) * espacio;
-
-        const float xBotones = (ancho - totalBotones) / 2.0f;
-
         for (int i = 0; i < CANTIDAD_OPCIONES; i++)
         {
-            DibujarBoton(
+            BotonUI cartel = carteles[i];
+            cartel.ref.y += dy;
+
+            DibujarBotonUI(estilo, cartel, i == opcion);
+        }
+    }
+
+    //------------------------------
+    // CLASIFICACION
+    //------------------------------
+
+    Vector2 origen = PuntoRef(X_INFO_TABLERO, 122.0f + dy);
+    const float xInfo = origen.x;
+    float y = origen.y;
+
+    DibujarRotulo(TextFormat("PARTIDA DE %d RONDAS", rondas), xInfo, y);
+    y += Px(22.0f);
+
+    DibujarTextoAjustadoUI(
+        ObtenerNombreTablero(tablero),
+        xInfo,
+        y,
+        UI_TEXTO_GRANDE,
+        Px(ANCHO_INFO_TABLERO),
+        UI_TINTA,
+        false
+    );
+    y += TamanoTexto(UI_TEXTO_GRANDE) + Px(8.0f);
+
+    DibujarCintaTema(xInfo, y, Px(ANCHO_INFO_TABLERO), tema);
+    y += Px(22.0f);
+
+    const float xTrofeos = PuntoRef(X_TROFEOS_CLASIFICACION, 0.0f).x;
+    const float xMonedas = PuntoRef(X_MONEDAS_CLASIFICACION, 0.0f).x;
+    const int tamanoPequeno = TamanoTexto(UI_TEXTO_PEQUENO);
+    const int tamanoTexto = TamanoTexto(UI_TEXTO);
+
+    DibujarRotulo("CLASIFICACIÓN", xInfo, y);
+    DibujarTextoDerechaFlujo("TROFEOS", xTrofeos, y, UI_TEXTO_PEQUENO, UI_TINTA_SUAVE);
+    DibujarTextoDerechaFlujo("MONEDAS", xMonedas, y, UI_TEXTO_PEQUENO, UI_TINTA_SUAVE);
+    y += Px(24.0f);
+
+    for (int k = 0; k < cantidad; k++)
+    {
+        const float inicio = ObtenerTiempoRevelarPuesto(k, cantidad);
+        const float alfa =
+            reducir
+            ? (tiempo >= inicio ? 1.0f : 0.0f)
+            : Aparicion(tiempo, inicio, 0.3f);
+
+        const float yFila = y + Px(ALTO_FILA_CLASIFICACION) * k;
+        const float centroY = yFila + Px(ALTO_FILA_CLASIFICACION) * 0.5f;
+
+        if (alfa <= 0.0f)
+        {
+            continue;
+        }
+
+        const int participante = ranking[k];
+        const Participante& datos = participantes[participante];
+
+        if (puesto[k] == 1 && hayGanador)
+        {
+            DrawRectangleRec(
                 Rectangle
                 {
-                    xBotones + i * (anchoBoton + espacio),
-                    (float)alto - 118.0f,
-                    anchoBoton,
-                    altoBoton
+                    xInfo - Px(8.0f),
+                    yFila + Px(2.0f),
+                    Px(ANCHO_INFO_TABLERO) + Px(14.0f),
+                    Px(ALTO_FILA_CLASIFICACION - 4.0f)
                 },
-                textos[i],
-                i == opcion,
-                tema,
-                aparicion
+                Fade(UI_FOCO, 0.30f * alfa)
             );
         }
 
-        DibujarCentrado(
-            descripciones[opcion],
-            ancho / 2,
-            alto - 56,
-            18,
-            Fade(LIGHTGRAY, aparicion)
+        // Medalla con el puesto.
+        Vector2 medalla = { xInfo + Px(14.0f), centroY };
+
+        DrawCircleV(medalla, Px(14.0f), Fade(UI_TINTA, alfa));
+        DrawCircleV(medalla, Px(12.5f), Fade(ObtenerColorMedalla(puesto[k]), alfa));
+
+        const char* textoPuesto = TextFormat("%d", puesto[k]);
+
+        DrawText(
+            textoPuesto,
+            (int)(medalla.x - MeasureText(textoPuesto, tamanoPequeno) * 0.5f),
+            (int)(medalla.y - tamanoPequeno * 0.5f),
+            tamanoPequeno,
+            Fade(UI_TINTA, alfa)
         );
+
+        DibujarBanderinFila(xInfo + Px(40.0f), centroY - Px(15.0f), datos.color, alfa);
+
+        const char* nombre = TextFormat("J%d", participante + 1);
+        const float xNombre = xInfo + Px(72.0f);
+
+        DrawText(
+            nombre,
+            (int)xNombre,
+            (int)(centroY - tamanoTexto * 0.5f),
+            tamanoTexto,
+            Fade(UI_TINTA, alfa)
+        );
+
+        const float xControl = xNombre + MeasureText(nombre, tamanoTexto) + Px(10.0f);
+
+        DibujarTextoAjustadoUI(
+            ObtenerEtiquetaControl(datos),
+            xControl,
+            centroY - tamanoPequeno * 0.5f + Px(1.0f),
+            UI_TEXTO_PEQUENO,
+            xTrofeos - Px(78.0f) - xControl,
+            Fade(UI_TINTA_SUAVE, alfa),
+            false
+        );
+
+        // Los numeros cuentan hasta su valor al aparecer la fila.
+        const float conteo = reducir ? 1.0f : Limitar01((tiempo - inicio) / 0.8f);
+
+        DibujarTextoDerechaFlujo(
+            TextFormat("%d", (int)((float)trofeos[participante] * conteo + 0.5f)),
+            xTrofeos,
+            centroY - tamanoTexto * 0.5f,
+            UI_TEXTO,
+            Fade(UI_TINTA, alfa)
+        );
+
+        DibujarTextoDerechaFlujo(
+            TextFormat("%d", (int)((float)monedas[participante] * conteo + 0.5f)),
+            xMonedas,
+            centroY - tamanoTexto * 0.5f,
+            UI_TEXTO,
+            Fade(UI_TINTA, alfa)
+        );
+    }
+
+    // Regla de desempate y la opcion elegida, al pie de la columna.
+    Vector2 regla = PuntoRef(X_INFO_TABLERO, 420.0f + dy);
+
+    DrawLineEx(
+        Vector2{ regla.x, regla.y },
+        Vector2{ regla.x + Px(ANCHO_INFO_TABLERO), regla.y },
+        Px(1.5f),
+        Fade(UI_TINTA_SUAVE, 0.45f)
+    );
+
+    DibujarParrafoUI(
+        "GANA QUIEN TENGA MÁS TROFEOS. CON LOS MISMOS TROFEOS, DESEMPATAN LAS MONEDAS.",
+        regla.x,
+        regla.y + Px(12.0f),
+        UI_TEXTO_PEQUENO,
+        Px(ANCHO_INFO_TABLERO),
+        UI_TINTA_SUAVE
+    );
+
+    if (menuPresentado)
+    {
+        const float alfa = reducir ? 1.0f : Aparicion(tiempo, tiempoMenu, 0.3f);
+        Vector2 detalle = PuntoRef(X_INFO_TABLERO, 500.0f + dy);
+
+        DibujarRotulo(TEXTOS_OPCIONES_RESULTADOS[opcion], detalle.x, detalle.y, alfa);
+
+        DibujarParrafoUI(
+            DESCRIPCIONES_OPCIONES_RESULTADOS[opcion],
+            detalle.x,
+            detalle.y + Px(22.0f),
+            UI_TEXTO,
+            Px(ANCHO_INFO_TABLERO),
+            Fade(UI_TINTA, alfa),
+            UI_ALINEAR_IZQUIERDA,
+            Px(110.0f)
+        );
+    }
+
+    if (hayGanador && !reducir)
+    {
+        DibujarConfetiResultados(tiempo - tiempoGanador);
+    }
+
+    const int controles = ObtenerControlesAyuda(participantes, MAX_PARTICIPANTES);
+
+    if (menuPresentado)
+    {
+        DibujarAyudaAccionesFlujo(estilo, controles, "ELEGIR", "CONFIRMAR", "VOLVER AL HUB");
     }
     else
     {
-        DibujarAyuda("ESPACIO / A: SALTAR");
+        DibujarAyudaAccionesFlujo(estilo, controles, nullptr, "SALTAR", nullptr);
     }
 }
