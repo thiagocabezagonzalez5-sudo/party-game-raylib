@@ -3647,14 +3647,14 @@ static void AlIniciarRondaArboleda(
         sizeof(partida.estadoGimmick),
         "%s",
         partida.gimmickActivo
-            ? "FLORACION: CASILLAS VERDES +5 ESTA RONDA"
+            ? "FLORACIÓN: CASILLAS VERDES +5 ESTA RONDA"
             : "BOSQUE EN REPOSO: FLORECE EN RONDAS PARES"
     );
 
     EstablecerMensajeGimmick(
         partida,
         partida.gimmickActivo
-            ? "FLORACION! LAS CASILLAS VERDES PAGAN +5"
+            ? "¡FLORACIÓN! LAS CASILLAS VERDES PAGAN +5"
             : "EL BOSQUE DESCANSA: VERDES +3"
     );
 }
@@ -3686,7 +3686,7 @@ static bool ResolverCasillaArboleda(
     std::snprintf(
         partida.textoEvento,
         sizeof(partida.textoEvento),
-        "FLORACION: CASILLA VERDE +%d MONEDAS",
+        "FLORACIÓN: CASILLA VERDE +%d MONEDAS",
         MONEDAS_VERDE_FLORACION
     );
 
@@ -3923,12 +3923,12 @@ const DefinicionTablero& ObtenerDefinicionTableroArboleda()
             "Tras cada cosecha, el trofeo brota en otro claro del bosque.";
 
         definicion.objetivo =
-            "Reune mas trofeos (20 monedas cada uno) en 5 rondas.";
+            "Reuní más trofeos (20 monedas cada uno) en 5 rondas.";
 
         definicion.gimmick =
-            "Floracion: en rondas pares las casillas verdes pagan +5.";
+            "Floración: en rondas pares las casillas verdes pagan +5.";
 
-        definicion.dificultad = "FACIL";
+        definicion.dificultad = "FÁCIL";
 
         definicion.colorTema = Color{ 48, 145, 74, 255 };
         definicion.colorFondo = Color{ 86, 165, 210, 255 };

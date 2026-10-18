@@ -687,8 +687,8 @@ static void AlIniciarRondaForjaVolcan(
     EstablecerMensajeGimmick(
         partida,
         levantado
-            ? "EL PUENTE SE LEVANTA! ATAJO CERRADO"
-            : "EL PUENTE BAJA! ATAJO ABIERTO"
+            ? "¡EL PUENTE SE LEVANTA! ATAJO CERRADO"
+            : "¡EL PUENTE BAJA! ATAJO ABIERTO"
     );
 }
 
@@ -785,7 +785,7 @@ static void ResolverEventoEspecialForja(
         std::snprintf(
             partida.textoEvento,
             sizeof(partida.textoEvento),
-            "DUENDE LADRON: J%d ROBA %d MONEDAS A J%d",
+            "DUENDE LADRÓN: J%d ROBA %d MONEDAS A J%d",
             participante + 1,
             robo,
             rival + 1
@@ -820,7 +820,7 @@ static void ResolverEventoEspecialForja(
         std::snprintf(
             partida.textoEvento,
             sizeof(partida.textoEvento),
-            "GEISER: J%d SALE DISPARADO A OTRA CASILLA",
+            "GÉISER: J%d SALE DISPARADO A OTRA CASILLA",
             participante + 1
         );
     }
@@ -862,7 +862,7 @@ static bool ResolverCasillaForjaVolcan(
         std::snprintf(
             partida.textoEvento,
             sizeof(partida.textoEvento),
-            "ERUPCION! LA LLAMA TE QUEMA: -%d MONEDAS",
+            "¡ERUPCIÓN! LA LLAMA TE QUEMA: -%d MONEDAS",
             perdida
         );
 
@@ -984,14 +984,14 @@ const DefinicionTablero& ObtenerDefinicionTableroForjaVolcan()
     if (!preparada)
     {
         definicion.id = TABLERO_FORJA_VOLCAN;
-        definicion.nombre = "FORJA DEL VOLCAN";
+        definicion.nombre = "FORJA DEL VOLCÁN";
 
         definicion.historia =
-            "Los mineros funden el Corazon de Magma en la forja del volcan. "
-            "Quien paga la fianza de excavacion se lleva un trofeo de oro fundido.";
+            "Los mineros funden el Corazón de Magma en la forja del volcán. "
+            "Quien paga la fianza de excavación se lleva un trofeo de oro fundido.";
 
         definicion.objetivo =
-            "Reune mas trofeos (20 monedas cada uno) en 5 rondas.";
+            "Reuní más trofeos (20 monedas cada uno) en 5 rondas.";
 
         definicion.gimmick =
             "Puente de basalto: sube y baja cada ronda y abre o cierra el atajo.";
