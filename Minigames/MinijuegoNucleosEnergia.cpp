@@ -1085,7 +1085,7 @@ void MinijuegoNucleosEnergia::Dibujar(
 
         if (!participantes[i].esBot)
         {
-            // Golpe: E / SHIFT DER / B. Golpe al suelo: saltar otra vez en el aire.
+            // Golpe: E / SHIFT DER / X. Golpe al suelo: saltar otra vez en el aire.
             std::snprintf(
                 jugador.controles,
                 sizeof(jugador.controles),

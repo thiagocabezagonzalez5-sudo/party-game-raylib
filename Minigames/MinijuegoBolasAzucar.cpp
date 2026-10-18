@@ -1501,7 +1501,7 @@ void MinijuegoBolasAzucar::Dibujar(
     {
         const char* ayuda[3] =
         {
-            "MOVER + ACCION (E / SHIFT DER / B): CREAR BOLA, LUEGO LANZAR",
+            "MOVER + ACCION (E / SHIFT DER / X): CREAR BOLA, LUEGO LANZAR",
             "EMPUJA LA BOLA POR EL AZUCAR (BLANCO) PARA QUE CREZCA",
             "CHOCOLATE: DERRITE Y RALENTIZA  |  GOMINOLAS: REBOTAN"
         };

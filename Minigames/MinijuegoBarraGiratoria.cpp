@@ -1032,7 +1032,7 @@ void MinijuegoBarraGiratoria::Dibujar(
     );
 
     DrawText(
-        "GOLPE: E / SHIFT / B   |   GROUND POUND: SALTO EN EL AIRE",
+        "GOLPE: E / SHIFT / X   |   GROUND POUND: SALTO EN EL AIRE",
         25,
         116,
         16,

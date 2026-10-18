@@ -1023,7 +1023,7 @@ void MinijuegoColorSeguro::Dibujar(
     );
 
     DrawText(
-        "AIRE: GROUND POUND   E/SHIFT/B: GOLPEAR",
+        "AIRE: GROUND POUND   E/SHIFT/X: GOLPEAR",
         25,
         190,
         17,

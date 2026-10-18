@@ -116,8 +116,18 @@ void DibujarHudMinijuego(
 );
 
 
+// Marca "este frame se dibujo el HUD comun". ZonaPruebas la reinicia
+// antes de dibujar el minijuego activo; despues ZonaPruebas y Juego la
+// consultan para mostrar sus controles (R, ESC, vuelta al tablero) en la
+// tira de ayuda del estilo nuevo en lugar de las capas oscuras viejas,
+// que siguen igual para los minijuegos con HUD propio.
+void ReiniciarMarcaHudMinijuego();
+
+bool HudMinijuegoDibujado();
+
+
 // Textos de teclas fieles a Systems/Input.cpp para armar la ayuda.
-// Golpe / accion: E, SHIFT DER o B. Movimiento: WASD/FLECHAS, WASD,
+// Golpe / accion: E, SHIFT DER o X. Movimiento: WASD/FLECHAS, WASD,
 // FLECHAS o STICK. Vacio para bots.
 const char* TextoBotonGolpeHud(const Participante& participante);
 

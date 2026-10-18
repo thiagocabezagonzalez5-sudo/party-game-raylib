@@ -1003,7 +1003,7 @@ void MinijuegoRacimoToxico::Dibujar(
         );
     }
 
-    DrawText("IZQ = 1 FRUTO  |  DER = 2 FRUTOS  |  ACCION (E / SHIFT DER / B) = CONFIRMAR", 32, 84, 15, RAYWHITE);
+    DrawText("IZQ = 1 FRUTO  |  DER = 2 FRUTOS  |  ACCION (E / SHIFT DER / X) = CONFIRMAR", 32, 84, 15, RAYWHITE);
     DrawText("MORADO = BAYA TOXICA (-1 VIDA)  |  DORADO = SALTA AL SIGUIENTE", 32, 104, 15, RAYWHITE);
 
     if (fase == FASE_RACIMO_TURNO || fase == FASE_RACIMO_ANIMACION)

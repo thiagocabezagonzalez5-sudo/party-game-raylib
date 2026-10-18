@@ -1204,7 +1204,7 @@ void MinijuegoParejasGlaciar::Dibujar(
         );
     }
 
-    DrawText("MOVER = CURSOR  |  ACCION (E / SHIFT DER / B) = REVELAR BLOQUE", 32, 84, 15, RAYWHITE);
+    DrawText("MOVER = CURSOR  |  ACCION (E / SHIFT DER / X) = REVELAR BLOQUE", 32, 84, 15, RAYWHITE);
     DrawText("AURORA = 3 PUNTOS  |  CADA 4 FALLOS SEGUIDOS EL GLACIAR CRUJE", 32, 104, 15, RAYWHITE);
 
     if (fase != FASE_GLACIAR_PREPARACION)

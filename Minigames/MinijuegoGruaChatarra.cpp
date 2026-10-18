@@ -102,7 +102,7 @@ static const char* TextoBotonAccionGrua(const Participante& participante)
 {
     if (participante.control == CONTROL_GAMEPAD)
     {
-        return "B";
+        return "X";
     }
 
     return participante.control == CONTROL_TECLADO_FLECHAS ? "SHIFT DER" : "E";

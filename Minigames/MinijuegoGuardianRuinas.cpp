@@ -1451,7 +1451,7 @@ void MinijuegoGuardianRuinas::Dibujar(
 
     DrawRectangle(0, altoPantalla - 32, anchoPantalla, 32, Fade(BLACK, 0.7f));
 
-    const char* ayuda = "GUARDIAN: IZQ/DER MOVER, ACCION EMBESTIR   ATACANTES: MOVER + ACCION (E / SHIFT DER / B) LANZA, IZQ/DER AL LANZAR DESVIAN";
+    const char* ayuda = "GUARDIAN: IZQ/DER MOVER, ACCION EMBESTIR   ATACANTES: MOVER + ACCION (E / SHIFT DER / X) LANZA, IZQ/DER AL LANZAR DESVIAN";
     DrawText(ayuda, centro - MeasureText(ayuda, 14) / 2, altoPantalla - 24, 14, RAYWHITE);
 
     if (fase == FASE_GUARDIAN_PREPARACION)
@@ -1473,7 +1473,7 @@ void MinijuegoGuardianRuinas::Dibujar(
             }
 
             const char* boton = participantes[i].control == CONTROL_GAMEPAD
-                ? "B"
+                ? "X"
                 : (participantes[i].control == CONTROL_TECLADO_FLECHAS ? "SHIFT DER" : "E");
 
             DrawText(

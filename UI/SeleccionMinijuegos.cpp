@@ -1615,7 +1615,7 @@ static void DibujarControlesPrevia(
     }
 
     const char* acciones[3] = { "MOVER", "SALTAR", "ACCIÓN" };
-    const char* mando[3] = { "STICK O CRUCETA", "A", "B" };
+    const char* mando[3] = { "STICK O CRUCETA", "A", "X" };
 
     for (int fila = 0; fila < 3; fila++)
     {

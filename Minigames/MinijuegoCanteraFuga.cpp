@@ -867,7 +867,7 @@ void MinijuegoCanteraFuga::Dibujar(
 
             if (!participante.esBot)
             {
-                // Tolva: solo izquierda/derecha. Roca: golpear (E / SHIFT DER / B).
+                // Tolva: solo izquierda/derecha. Roca: golpear (E / SHIFT DER / X).
                 const char* mover =
                     participante.control == CONTROL_GAMEPAD ? "STICK"
                     : (participante.control == CONTROL_TECLADO_FLECHAS ? "FLECHAS"

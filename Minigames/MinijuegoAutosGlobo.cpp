@@ -116,7 +116,7 @@ static const char* TextoTurboGlobo(const Participante& participante)
 {
     if (participante.control == CONTROL_GAMEPAD)
     {
-        return "B";
+        return "X";
     }
 
     if (participante.control == CONTROL_TECLADO_FLECHAS)

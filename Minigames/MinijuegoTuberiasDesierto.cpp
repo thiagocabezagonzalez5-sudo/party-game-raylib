@@ -1210,7 +1210,7 @@ void MinijuegoTuberiasDesierto::Dibujar(
 
     DrawText(aviso, centro - MeasureText(aviso, 30) / 2, 14, 30, colorAviso);
 
-    const char* ayuda = "IZQ / DER: MOVER SELECTOR   ACCION (E / SHIFT DER / B): CONFIRMAR   BUSCA LA TUBERIA QUE LLEGA AL CANTARO DORADO";
+    const char* ayuda = "IZQ / DER: MOVER SELECTOR   ACCION (E / SHIFT DER / X): CONFIRMAR   BUSCA LA TUBERIA QUE LLEGA AL CANTARO DORADO";
     DrawRectangle(0, altoPantalla - 32, anchoPantalla, 32, Fade(BLACK, 0.7f));
     DrawText(ayuda, centro - MeasureText(ayuda, 14) / 2, altoPantalla - 24, 14, RAYWHITE);
 
@@ -1233,7 +1233,7 @@ void MinijuegoTuberiasDesierto::Dibujar(
             }
 
             const char* boton = participantes[i].control == CONTROL_GAMEPAD
-                ? "B"
+                ? "X"
                 : (participantes[i].control == CONTROL_TECLADO_FLECHAS ? "SHIFT DER" : "E");
 
             DrawText(

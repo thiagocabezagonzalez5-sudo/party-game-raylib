@@ -158,11 +158,21 @@ static void PrepararRondaInterruptores(
 }
 
 
+// Nivel previo (izquierda, derecha) del mando del jugador en turno, para
+// mover la seleccion con flanco. Hay un solo minijuego activo a la vez.
+static bool direccionPreviaMandoInterruptores[2] = {};
+
+
 static void PrepararTurnoInterruptores(
     MinijuegoInterruptoresCaos& minijuego,
     int jugador
 )
 {
+    // Una direccion que venia mantenida del turno anterior no cuenta:
+    // hay que soltarla para mover.
+    direccionPreviaMandoInterruptores[0] = true;
+    direccionPreviaMandoInterruptores[1] = true;
+
     minijuego.jugadorTurno = jugador;
     minijuego.jugadorExplosion = -1;
     minijuego.numeroTurno++;
@@ -408,11 +418,37 @@ void MinijuegoInterruptoresCaos::Actualizar(
     else
     {
         int seleccionAntes = interruptorSeleccionado;
+        const Participante& participante = participantes[jugadorTurno];
 
-        if (AccionDireccionalControlPresionada(
-            participantes[jugadorTurno],
-            CONTROL_DIRECCION_IZQUIERDA
-        ))
+        InputMinijuegoParticipante entrada =
+            LeerInputMinijuegoParticipante(participante);
+
+        bool moverIzquierda = false;
+        bool moverDerecha = false;
+
+        if (participante.control == CONTROL_GAMEPAD)
+        {
+            // Mando: cruceta o stick, con flanco para no mover cada frame.
+            // X es la accion (activar) y B no se usa, asi elegir y activar
+            // no comparten boton.
+            moverIzquierda = entrada.izquierda && !direccionPreviaMandoInterruptores[0];
+            moverDerecha = entrada.derecha && !direccionPreviaMandoInterruptores[1];
+            direccionPreviaMandoInterruptores[0] = entrada.izquierda;
+            direccionPreviaMandoInterruptores[1] = entrada.derecha;
+        }
+        else
+        {
+            moverIzquierda = AccionDireccionalControlPresionada(
+                participante,
+                CONTROL_DIRECCION_IZQUIERDA
+            );
+            moverDerecha = AccionDireccionalControlPresionada(
+                participante,
+                CONTROL_DIRECCION_DERECHA
+            );
+        }
+
+        if (moverIzquierda)
         {
             interruptorSeleccionado = MoverSeleccionInterruptor(
                 *this,
@@ -421,10 +457,7 @@ void MinijuegoInterruptoresCaos::Actualizar(
             );
         }
 
-        if (AccionDireccionalControlPresionada(
-            participantes[jugadorTurno],
-            CONTROL_DIRECCION_DERECHA
-        ))
+        if (moverDerecha)
         {
             interruptorSeleccionado = MoverSeleccionInterruptor(
                 *this,
@@ -437,9 +470,6 @@ void MinijuegoInterruptoresCaos::Actualizar(
         {
             ReproducirSonidoMinijuego(audio, SONIDO_BOTON);
         }
-
-        InputMinijuegoParticipante entrada =
-            LeerInputMinijuegoParticipante(participantes[jugadorTurno]);
 
         confirmar = confirmar || entrada.golpear;
     }

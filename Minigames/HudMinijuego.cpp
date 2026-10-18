@@ -92,6 +92,9 @@ struct EstadoHudMinijuego
 
 static EstadoHudMinijuego estadoHud;
 
+// Ver ReiniciarMarcaHudMinijuego / HudMinijuegoDibujado.
+static bool hudDibujadoEsteFrame = false;
+
 
 static float Limitar01(float v)
 {
@@ -974,11 +977,11 @@ static void DibujarTablonFinal(
         }
     }
 
-    const char* reinicio = TextoReinicioMinijuego();
-    bool conReinicio = reinicio[0] != '\0';
+    // «R: REINICIAR» no va en el tablon: ZonaPruebas lo muestra en la
+    // tira de ayuda de abajo (HudMinijuegoDibujado), una sola vez.
     bool conNota = datos.notaFinal != nullptr && datos.notaFinal[0] != '\0';
     const float altoFila = 32.0f;
-    float alto = 14.0f + 52.0f + filas * altoFila + (conNota ? 22.0f : 0.0f) + (conReinicio ? 34.0f : 8.0f) + 14.0f;
+    float alto = 14.0f + 52.0f + filas * altoFila + (conNota ? 22.0f : 0.0f) + 8.0f + 14.0f;
 
     Rectangle rect = {
         X(cxRef - ANCHO_TABLON_FINAL * 0.5f),
@@ -1104,14 +1107,6 @@ static void DibujarTablonFinal(
             placa.width - Px(24.0f), UI_TINTA_SUAVE, true
         );
     }
-
-    if (conReinicio)
-    {
-        DibujarTextoAjustadoUI(
-            reinicio, cx, placa.y + placa.height - Px(26.0f), UI_TEXTO_PEQUENO,
-            placa.width - Px(24.0f), UI_TINTA_SUAVE, true
-        );
-    }
 }
 
 
@@ -1186,6 +1181,8 @@ void DibujarHudMinijuego(
     {
         return;
     }
+
+    hudDibujadoEsteFrame = true;
 
     ActualizarEstadoHud(datos, estilo);
 
@@ -1294,6 +1291,18 @@ void DibujarHudMinijuego(
 }
 
 
+void ReiniciarMarcaHudMinijuego()
+{
+    hudDibujadoEsteFrame = false;
+}
+
+
+bool HudMinijuegoDibujado()
+{
+    return hudDibujadoEsteFrame;
+}
+
+
 const char* TextoBotonGolpeHud(const Participante& participante)
 {
     if (participante.esBot)
@@ -1304,7 +1313,7 @@ const char* TextoBotonGolpeHud(const Participante& participante)
     switch (participante.control)
     {
         case CONTROL_GAMEPAD:
-            return "B";
+            return "X";
 
         case CONTROL_TECLADO_FLECHAS:
             return "SHIFT DER";

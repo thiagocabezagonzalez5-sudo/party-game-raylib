@@ -96,7 +96,7 @@ static const char* NombreJugadorNubes(const Participante& participante, int indi
 static const char* TextoGolpeNubes(const Participante& participante)
 {
     if (participante.esBot) return "BOT";
-    if (participante.control == CONTROL_GAMEPAD) return "B";
+    if (participante.control == CONTROL_GAMEPAD) return "X";
     if (participante.control == CONTROL_TECLADO_FLECHAS) return "SHIFT DER";
     return "E";
 }

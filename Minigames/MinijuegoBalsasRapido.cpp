@@ -1462,7 +1462,7 @@ static void DibujarBalsa(const MinijuegoBalsasRapido& m, const BalsaRio& b)
 static const char* TextoBotonPalada(const Participante& participante)
 {
     if (participante.esBot || !participante.conectado) return "AUTO";
-    if (participante.control == CONTROL_GAMEPAD) return "B";
+    if (participante.control == CONTROL_GAMEPAD) return "X";
     if (participante.control == CONTROL_TECLADO_FLECHAS) return "SHIFT DER";
 
     return "E";
@@ -1637,7 +1637,7 @@ void MinijuegoBalsasRapido::Dibujar(
         TextoCentrado("RAPIDO: IZQ = CASCADA CORTA CON ROCAS   DER = REMANSO LARGO Y SEGURO", centro, 94, 18, Color{ 180, 255, 240, 255 });
     }
 
-    const char* ayuda = "REMAR: E / SHIFT DER / B (cada uno en su lado)   SOLO: IZQ/DER + REMAR PARA GIRAR   PALADAS JUNTAS = BONUS";
+    const char* ayuda = "REMAR: E / SHIFT DER / X (cada uno en su lado)   SOLO: IZQ/DER + REMAR PARA GIRAR   PALADAS JUNTAS = BONUS";
     DrawRectangle(0, altoPantalla - 38, GetScreenWidth(), 38, Fade(BLACK, 0.78f));
     TextoCentrado(ayuda, centro, altoPantalla - 29, 16, RAYWHITE);
 

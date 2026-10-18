@@ -1580,7 +1580,7 @@ static void ListaJugadoresEquipo(
 static const char* TextoBotonGolpe(const Participante& participante)
 {
     if (participante.esBot || !participante.conectado) return "AUTO";
-    if (participante.control == CONTROL_GAMEPAD) return "B";
+    if (participante.control == CONTROL_GAMEPAD) return "X";
     if (participante.control == CONTROL_TECLADO_FLECHAS) return "SHIFT DER";
 
     return "E";
@@ -1729,7 +1729,7 @@ void MinijuegoVoleaMagma::Dibujar(
         );
     }
 
-    const char* ayuda = "MOVER: WASD / FLECHAS / STICK   SALTAR: ESPACIO / ENTER / A   GOLPE: E / SHIFT DER / B (apunta con la direccion)   SALTO + GOLPE = REMATE";
+    const char* ayuda = "MOVER: WASD / FLECHAS / STICK   SALTAR: ESPACIO / ENTER / A   GOLPE: E / SHIFT DER / X (apunta con la direccion)   SALTO + GOLPE = REMATE";
     int ayudaAncho = MeasureText(ayuda, 14);
     DrawRectangle(centro - ayudaAncho / 2 - 12, altoPantalla - 34, ayudaAncho + 24, 28, Fade(BLACK, 0.78f));
     DrawText(ayuda, centro - ayudaAncho / 2, altoPantalla - 28, 14, RAYWHITE);

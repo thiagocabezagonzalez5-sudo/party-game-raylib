@@ -1486,7 +1486,7 @@ void MinijuegoCajasPuerto::Dibujar(
         );
     }
 
-    const char* controles = "TRIO: MOVER + ACCION (E / SHIFT DER / B) ENTRA  |  GRUA: IZQ/DER + ACCION";
+    const char* controles = "TRIO: MOVER + ACCION (E / SHIFT DER / X) ENTRA  |  GRUA: IZQ/DER + ACCION";
     int anchoControles = MeasureText(controles, 16);
 
     DrawRectangle(ancho / 2 - anchoControles / 2 - 12, alto - 86, anchoControles + 24, 26, Fade(BLACK, 0.79f));

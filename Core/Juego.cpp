@@ -5,8 +5,10 @@
 
 #include <cmath>
 #include <algorithm>
+#include <cstdio>
 #include "Systems/Input.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HudMinijuego.h"
 #include "Systems/CalidadGrafica.h"
 #include "UI/EstiloUIGlobal.h"
 
@@ -181,90 +183,180 @@ static void VolverAlHub(
 }
 
 
-static void DibujarConfirmacionSalida(
-    int opcion,
-    float tiempo
+// Mascara (1 << control) de los humanos que lee LectorEntradaFlujo:
+// activos, no bots y conectados (misma regla que FlujoPartida).
+static int ObtenerControlesHumanos(
+    const Participante participantes[]
 )
 {
-    const int ancho = GetScreenWidth();
-    const int alto = GetScreenHeight();
-    const float aparicion =
-        tiempo >= 0.2f ? 1.0f : tiempo / 0.2f;
+    int mascara = 0;
 
-    DrawRectangle(0, 0, ancho, alto, Fade(BLACK, 0.62f * aparicion));
-
-    Rectangle panel =
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        ancho / 2.0f - 300.0f,
-        alto / 2.0f - 130.0f,
-        600.0f,
-        260.0f
-    };
+        const Participante& participante = participantes[i];
 
-    DrawRectangleRec(panel, Fade(Color{ 24, 27, 35, 255 }, aparicion));
-    DrawRectangleLinesEx(panel, 4.0f, Fade(ORANGE, aparicion));
+        if (participante.activo && !participante.esBot && participante.conectado)
+        {
+            mascara |= 1 << participante.control;
+        }
+    }
 
-    const char* titulo = "SALIR DE LA PARTIDA?";
-    const char* aviso = "SE PIERDE EL PROGRESO DE ESTA PARTIDA";
+    return mascara;
+}
 
-    DrawText(
-        titulo,
-        ancho / 2 - MeasureText(titulo, 34) / 2,
-        (int)panel.y + 34,
-        34,
-        Fade(RAYWHITE, aparicion)
+
+// Teclas con las que LectorEntradaFlujo confirma y cancela HOY: teclado
+// completo ESPACIO o ENTER, WASD solo ESPACIO, flechas ENTER, mando A; se
+// vuelve con ESC siempre, RETROCESO (WASD), SHIFT DER (flechas) o B. Sin
+// humanos conectados el teclado acepta ENTER o ESPACIO.
+static void ArmarTeclasFlujo(
+    int controles,
+    char* confirmar,
+    int tamanoConfirmar,
+    char* cancelar,
+    int tamanoCancelar
+)
+{
+    const bool completo = (controles & (1 << CONTROL_TECLADO_COMPLETO)) != 0;
+    const bool espacio = completo || (controles & (1 << CONTROL_TECLADO_WASD)) != 0;
+    const bool flechas = (controles & (1 << CONTROL_TECLADO_FLECHAS)) != 0;
+    const bool enter = completo || flechas;
+    const bool mando = (controles & (1 << CONTROL_GAMEPAD)) != 0;
+
+    if (controles == 0)
+    {
+        std::snprintf(confirmar, tamanoConfirmar, "ESPACIO / ENTER");
+        std::snprintf(cancelar, tamanoCancelar, "ESC");
+        return;
+    }
+
+    std::snprintf(
+        confirmar,
+        tamanoConfirmar,
+        "%s%s%s",
+        espacio ? "ESPACIO" : "",
+        enter ? (espacio ? " / ENTER" : "ENTER") : "",
+        mando ? ((espacio || enter) ? " / A" : "A") : ""
     );
 
-    DrawText(
-        aviso,
-        ancho / 2 - MeasureText(aviso, 18) / 2,
-        (int)panel.y + 84,
-        18,
-        Fade(LIGHTGRAY, aparicion)
+    std::snprintf(
+        cancelar,
+        tamanoCancelar,
+        "ESC%s%s%s",
+        espacio ? " / RETROCESO" : "",
+        flechas ? " / SHIFT DER" : "",
+        mando ? " / B" : ""
+    );
+}
+
+
+// Cartel «¿SALIR DE LA PARTIDA?» (ModalUI del estilo «Carteles de
+// playa»). Solo dibuja: la eleccion la sigue llevando Juego::Actualizar
+// con opcionSalida y lectorSalida. El cartel se reabre cuando tiempo
+// vuelve a empezar y se anima con el mismo avance de tiempo (respeta
+// reducirMovimiento a traves del estilo compartido).
+static void DibujarConfirmacionSalida(
+    int opcion,
+    float tiempo,
+    const Participante participantes[]
+)
+{
+    static ModalUI modal;
+    static float tiempoPrevio = 0.0f;
+
+    EstiloUI& estilo = ObtenerEstiloUI();
+
+    if (!modal.abierto || tiempo < tiempoPrevio)
+    {
+        modal.botonCancelar = 0;
+        modal.Abrir(
+            Rectangle{ 340.0f, 220.0f, 600.0f, 250.0f },
+            "¿SALIR DE LA PARTIDA?",
+            "CONTINUAR",
+            "SALIR AL HUB",
+            0
+        );
+        tiempoPrevio = 0.0f;
+    }
+
+    // Sin entrada: ActualizarModalUI solo anima (velo, caida y balanceo
+    // del boton que recibe el foco).
+    modal.foco = opcion == 1 ? 1 : 0;
+    ActualizarModalUI(modal, estilo, std::fmax(0.0f, tiempo - tiempoPrevio), EntradaUI{});
+    tiempoPrevio = tiempo;
+
+    DibujarModalUI(estilo, modal, "SE PIERDE EL PROGRESO DE ESTA PARTIDA.");
+
+    char confirmar[64] = "";
+    char cancelar[64] = "";
+    ArmarTeclasFlujo(
+        ObtenerControlesHumanos(participantes),
+        confirmar,
+        sizeof(confirmar),
+        cancelar,
+        sizeof(cancelar)
     );
 
-    const char* textos[2] = { "CONTINUAR", "SALIR AL HUB" };
+    // Con muchos controles a la vez se acortan los separadores.
+    const char* separadores[2] = { "   |   ", "  |  " };
+    char ayuda[256] = "";
 
     for (int i = 0; i < 2; i++)
     {
-        Rectangle boton =
+        std::snprintf(
+            ayuda,
+            sizeof(ayuda),
+            "IZQ / DER: ELEGIR%s%s: ACEPTAR%s%s: CONTINUAR",
+            separadores[i],
+            confirmar,
+            separadores[i],
+            cancelar
+        );
+
+        if (MeasureText(ayuda, TamanoTexto(UI_TEXTO_PEQUENO)) <= (int)Px(976.0f))
         {
-            panel.x + 40.0f + i * 270.0f,
-            panel.y + 130.0f,
-            250.0f,
-            56.0f
-        };
-
-        const bool elegido = i == opcion;
-
-        DrawRectangleRec(
-            boton,
-            Fade(elegido ? ORANGE : Color{ 40, 44, 58, 255 }, aparicion)
-        );
-
-        DrawRectangleLinesEx(
-            boton,
-            elegido ? 4.0f : 2.0f,
-            Fade(elegido ? RAYWHITE : GRAY, aparicion)
-        );
-
-        DrawText(
-            textos[i],
-            (int)(boton.x + boton.width / 2.0f) - MeasureText(textos[i], 22) / 2,
-            (int)boton.y + 17,
-            22,
-            Fade(elegido ? BLACK : RAYWHITE, aparicion)
-        );
+            break;
+        }
     }
 
-    const char* ayuda = "IZQ / DER: ELEGIR   |   ESPACIO / A: ACEPTAR   |   ESC / B: CONTINUAR";
+    DibujarAyudaUI(estilo, ayuda);
+}
 
-    DrawText(
-        ayuda,
-        ancho / 2 - MeasureText(ayuda, 16) / 2,
-        (int)panel.y + 216,
-        16,
-        Fade(GRAY, aparicion)
+
+// Tira de ayuda de la ronda de tablero para los minijuegos con el HUD
+// comun. Mismos plazos que Juego::Actualizar: vuelta automatica a los 7 s
+// y confirmacion de un humano (ConfirmarConParticipanteHumano, mismas
+// teclas que LectorEntradaFlujo).
+static void DibujarAyudaRondaTablero(
+    bool terminado,
+    float tiempoResultado,
+    const Participante participantes[]
+)
+{
+    const EstiloUI& estilo = ObtenerEstiloUI();
+
+    if (!terminado)
+    {
+        DibujarAyudaUI(estilo, "MINIJUEGO DE RONDA: JUGÁ HASTA EL FINAL PARA VOLVER AL TABLERO");
+        return;
+    }
+
+    int segundos = (int)std::ceil(std::fmax(0.0f, 7.0f - tiempoResultado));
+    int controles = ObtenerControlesHumanos(participantes);
+
+    if (controles == 0)
+    {
+        DibujarAyudaUI(estilo, TextFormat("VUELTA AL TABLERO EN %d s", segundos));
+        return;
+    }
+
+    char confirmar[64] = "";
+    char cancelar[64] = "";
+    ArmarTeclasFlujo(controles, confirmar, sizeof(confirmar), cancelar, sizeof(cancelar));
+
+    DibujarAyudaUI(
+        estilo,
+        TextFormat("VUELTA AL TABLERO EN %d s   |   %s: SEGUIR YA", segundos, confirmar)
     );
 }
 
@@ -1601,7 +1693,7 @@ void Juego::Dibujar()
 
             if (confirmandoSalida)
             {
-                DibujarConfirmacionSalida(opcionSalida, tiempoSalida);
+                DibujarConfirmacionSalida(opcionSalida, tiempoSalida, participantes);
             }
 
             break;
@@ -1621,6 +1713,18 @@ void Juego::Dibujar()
             bool terminado =
                 resultado != nullptr &&
                 ResultadoMinijuegoFinalizado(*resultado);
+
+            // Minijuegos con el HUD comun (el tendedero): la indicacion va
+            // en la tira de ayuda del estilo nuevo, no en la barra oscura.
+            if (HudMinijuegoDibujado())
+            {
+                DibujarAyudaRondaTablero(
+                    terminado,
+                    tiempoResultadoMinijuegoTablero,
+                    participantes
+                );
+                break;
+            }
 
             DrawRectangle(
                 0,

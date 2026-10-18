@@ -3,6 +3,32 @@
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/UtilidadesMinijuegos.h"
+#include "Minigames/HudMinijuego.h"
+#include "UI/EstiloUIGlobal.h"
+
+
+// Controles del modo libre (catalogo) para los minijuegos con el HUD
+// comun: la tira de ayuda del estilo nuevo en lugar del recuadro oscuro.
+// F3 (depuracion) va aparte, chico y en tinta suave, al final de la tira.
+static void DibujarAyudaCatalogoHud()
+{
+    const EstiloUI& estilo = ObtenerEstiloUI();
+
+    DibujarAyudaUI(estilo, "R: REINICIAR   |   ESC: VOLVER AL CATÁLOGO");
+
+    // Mismo rectangulo que usa DibujarAyudaUI para la tira.
+    Rectangle tira = RectRef(140.0f, 674.0f, 1000.0f, 32.0f);
+    const int tokenDebug = 12;
+
+    DibujarTextoDerechaUI(
+        "F3 DEBUG",
+        tira.x + tira.width - Px(12.0f),
+        tira.y + (tira.height - TamanoTexto(tokenDebug)) * 0.5f,
+        tokenDebug,
+        Px(120.0f),
+        UI_TINTA_SUAVE
+    );
+}
 
 
 static const char* NombreModoPrueba(
@@ -520,6 +546,7 @@ void ZonaPruebas::Dibujar() const
 {
     PrepararTemaVisualZona(*this);
     EstablecerRondaOficialTableroMinijuegos(modoTablero);
+    ReiniciarMarcaHudMinijuego();
 
     switch (modoActual)
     {
@@ -551,6 +578,12 @@ void ZonaPruebas::Dibujar() const
 
     if (modoCatalogo)
     {
+        if (HudMinijuegoDibujado())
+        {
+            DibujarAyudaCatalogoHud();
+            return;
+        }
+
         DrawRectangle(
             18,
             GetScreenHeight() - 54,
@@ -579,7 +612,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FABRICA  7 TABLERO  8 ISLA  9 CAPITAN  0 BARRA",
+        "1 PRINCIPAL  2 COLOR  3 PELOTAS  4 MODELOS  5 TRONCO  6 FÁBRICA  7 TABLERO  8 ISLA  9 CAPITÁN  0 BARRA",
         30,
         GetScreenHeight() - 196,
         14,
@@ -595,7 +628,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "F8 MAGNETICA  F9 MUROS  F10 NUCLEOS  F11 TALADROS  F12 MIRADAS  PGUP INTERRUPTORES  PGDN TANQUES",
+        "F8 MAGNÉTICA  F9 MUROS  F10 NÚCLEOS  F11 TALADROS  F12 MIRADAS  PGUP INTERRUPTORES  PGDN TANQUES",
         30,
         GetScreenHeight() - 142,
         15,

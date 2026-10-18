@@ -453,9 +453,11 @@ InputMinijuegoParticipante LeerInputMinijuegoParticipante(
             GAMEPAD_BUTTON_RIGHT_FACE_DOWN
         );
 
+        // Accion = X en todo el juego (igual que LeerInputGamepad);
+        // B queda para volver / cancelar en los menus.
         entrada.golpear = IsGamepadButtonPressed(
             gamepad,
-            GAMEPAD_BUTTON_RIGHT_FACE_RIGHT
+            GAMEPAD_BUTTON_RIGHT_FACE_LEFT
         );
 
         return entrada;
