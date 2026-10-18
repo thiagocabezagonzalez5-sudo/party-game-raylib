@@ -1217,6 +1217,49 @@ void MinijuegoIslaFuego::Dibujar(
         );
     }
 
+    // Tablon final: quien sigue en pie termina con el mismo tiempo que el
+    // ultimo en caer, asi que se explica el orden (no cambia el ranking).
+    if (hud.fase == HUD_MINIJUEGO_FIN && resultado.estado == RESULTADO_MINIJUEGO_FINALIZADO)
+    {
+        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        {
+            if (!hud.jugadores[i].visible) continue;
+
+            const ResultadoParticipante& yo = resultado.participantes[i];
+
+            for (int j = 0; j < MAX_PARTICIPANTES; j++)
+            {
+                if (j == i || !hud.jugadores[j].visible) continue;
+
+                const ResultadoParticipante& otro = resultado.participantes[j];
+                if (otro.posicionFinal == yo.posicionFinal) continue;
+                if (otro.puntuacionMinijuego / 100 != yo.puntuacionMinijuego / 100) continue;
+
+                if (!estadosJugadores[i].eliminado || !estadosJugadores[j].eliminado)
+                {
+                    std::snprintf(
+                        hud.jugadores[i].detalleDesempate,
+                        sizeof(hud.jugadores[i].detalleDesempate),
+                        "%s",
+                        estadosJugadores[i].eliminado ? "CAYÓ" : "EN PIE"
+                    );
+                    hud.notaFinal = "MISMO TIEMPO: QUEDA ARRIBA QUIEN SIGUE EN PIE";
+                }
+                else
+                {
+                    // Dos caidas en la misma decima: las centesimas dan el orden.
+                    std::snprintf(
+                        hud.jugadores[i].detalleFinal,
+                        sizeof(hud.jugadores[i].detalleFinal),
+                        "%d,%02d S",
+                        yo.puntuacionMinijuego / 1000,
+                        (yo.puntuacionMinijuego % 1000) / 10
+                    );
+                }
+            }
+        }
+    }
+
     DibujarHudMinijuego(hud, participantes);
 }
 

@@ -1765,9 +1765,6 @@ static const float T_EVENTO_CASILLA = 1.35f;    // duracion de la fase (ver Actu
 static const Color COLOR_TINTA_POSITIVA_HUD = { 20, 92, 48, 255 };
 static const Color COLOR_TINTA_ALERTA_HUD = { 160, 30, 24, 255 };
 static const Color COLOR_PLACA_ALERTA_HUD = { 255, 190, 170, 255 };
-static const Color COLOR_ORO_HUD = { 255, 200, 60, 255 };
-static const Color COLOR_ORO_OSCURO_HUD = { 200, 140, 30, 255 };
-static const Color COLOR_ORO_CLARO_HUD = { 255, 230, 130, 255 };
 static const Color COLOR_CARA_DADO_HUD = { 255, 248, 232, 255 };
 static const Color COLOR_MUNDO_POSITIVO_HUD = { 130, 235, 150, 255 };
 static const Color COLOR_MUNDO_NEGATIVO_HUD = { 255, 120, 100, 255 };
@@ -2100,67 +2097,6 @@ static float GrosorLineaHud(float unidades)
 // PIEZAS DE DIBUJO
 //==================================================
 
-// Pinza de madera centrada en (cx, ySoga), en pixeles.
-static void DibujarPinzaHud(float cx, float ySoga)
-{
-    Rectangle pinza = { cx - Px(4.0f), ySoga - Px(6.0f), Px(8.0f), Px(18.0f) };
-
-    DrawRectangleRec(pinza, UI_MADERA_MEDIA);
-    DrawRectangleLinesEx(pinza, GrosorLineaHud(1.0f), UI_TINTA);
-    DrawRectangleRec(
-        Rectangle{ pinza.x, pinza.y + Px(7.0f), pinza.width, Px(2.0f) },
-        UI_MADERA_OSCURA
-    );
-}
-
-
-// Banderin de color con cola en V. (x, y) esquina superior izquierda, px.
-static void DibujarFormaBanderinHud(float x, float y, float ancho, float alto, Color color)
-{
-    float cola = alto * 0.26f;
-    float cuerpo = alto - cola;
-    float medio = x + ancho * 0.5f;
-
-    DrawRectangleRec(Rectangle{ x, y, ancho, cuerpo }, color);
-
-    // DrawTriangle: vertices en sentido antihorario en pantalla.
-    DrawTriangle(Vector2{ x, y + cuerpo - 0.5f }, Vector2{ x, y + alto }, Vector2{ medio, y + cuerpo - 0.5f }, color);
-    DrawTriangle(Vector2{ medio, y + cuerpo - 0.5f }, Vector2{ x + ancho, y + alto }, Vector2{ x + ancho, y + cuerpo - 0.5f }, color);
-}
-
-
-static void DibujarBanderinHud(float x, float y, float ancho, float alto, Color color)
-{
-    float borde = GrosorLineaHud(1.5f);
-
-    DibujarFormaBanderinHud(x - borde, y - borde, ancho + borde * 2.0f, alto + borde * 2.5f, UI_TINTA);
-    DibujarFormaBanderinHud(x, y, ancho, alto, color);
-}
-
-
-// Marco de madera fino y placa clara (como TarjetaUI, sin caida).
-// Devuelve la placa (zona del texto) en pixeles.
-static Rectangle DibujarPlacaConMarcoHud(const EstiloUI& estilo, Rectangle rect, float marcoRef)
-{
-    DrawRectangleRec(
-        Rectangle{ rect.x + Px(3.0f), rect.y + Px(4.0f), rect.width, rect.height },
-        Fade(BLACK, 0.25f)
-    );
-
-    DibujarNueveCortes(estilo.madera, 12, rect, EscalaUI() * 0.5f, WHITE);
-
-    float marco = Px(marcoRef);
-    Rectangle placa = {
-        rect.x + marco, rect.y + marco,
-        rect.width - marco * 2.0f, rect.height - marco * 2.0f
-    };
-
-    DibujarNueveCortes(estilo.placa, 8, placa, EscalaUI(), WHITE);
-
-    return placa;
-}
-
-
 // Tablon grande: madera gruesa y placa clara, con sombra proyectada.
 static Rectangle DibujarTablonHud(const EstiloUI& estilo, Rectangle rect)
 {
@@ -2179,70 +2115,6 @@ static Rectangle DibujarTablonHud(const EstiloUI& estilo, Rectangle rect)
     DibujarNueveCortes(estilo.placa, 8, placa, EscalaUI(), WHITE);
 
     return placa;
-}
-
-
-// Texto alineado a la derecha que se reduce si no cabe.
-static void DibujarTextoDerechaHud(const char* texto, float derecha, float y, int token, float anchoMax, Color color)
-{
-    int tamano = TamanoTextoAjustadoUI(texto, token, anchoMax);
-
-    DrawText(texto, (int)(derecha - MeasureText(texto, tamano)), (int)y, tamano, color);
-}
-
-
-// Moneda: disco dorado con contorno de tinta. Centro y radio en pixeles.
-static void DibujarMonedaHud(float cx, float cy, float radio)
-{
-    Vector2 centro = { cx, cy };
-
-    DrawCircleV(centro, radio + GrosorLineaHud(1.5f), UI_TINTA);
-    DrawCircleV(centro, radio, COLOR_ORO_HUD);
-    DrawCircleV(centro, radio * 0.62f, COLOR_ORO_OSCURO_HUD);
-    DrawCircleV(centro, radio * 0.42f, COLOR_ORO_CLARO_HUD);
-}
-
-
-// Una pieza de la copa, agrandada `extra` pixeles (para el contorno).
-static void DibujarPiezasTrofeoHud(float cx, float cy, float t, float extra, Color color, Color colorPie)
-{
-    // Asas: anillos a cada lado de la copa.
-    float radioAsa = t * 0.17f;
-    float grosorAsa = t * 0.07f + extra;
-
-    DrawRing(Vector2{ cx - t * 0.34f, cy - t * 0.26f }, radioAsa - grosorAsa, radioAsa + extra, 0.0f, 360.0f, 12, color);
-    DrawRing(Vector2{ cx + t * 0.34f, cy - t * 0.26f }, radioAsa - grosorAsa, radioAsa + extra, 0.0f, 360.0f, 12, color);
-
-    // Copa: borde recto arriba y fondo redondo.
-    DrawRectangleRec(
-        Rectangle{ cx - t * 0.34f - extra, cy - t * 0.50f - extra, t * 0.68f + extra * 2.0f, t * 0.26f + extra * 2.0f },
-        color
-    );
-    DrawCircleSector(Vector2{ cx, cy - t * 0.25f }, t * 0.34f + extra, 0.0f, 180.0f, 14, color);
-
-    // Tallo y pie.
-    DrawRectangleRec(
-        Rectangle{ cx - t * 0.07f - extra, cy - extra, t * 0.14f + extra * 2.0f, t * 0.34f + extra * 2.0f },
-        color
-    );
-    DrawRectangleRec(
-        Rectangle{ cx - t * 0.28f - extra, cy + t * 0.34f - extra, t * 0.56f + extra * 2.0f, t * 0.16f + extra * 2.0f },
-        colorPie
-    );
-}
-
-
-// Copa de trofeo. Centro y alto total en pixeles.
-static void DibujarTrofeoIconoHud(float cx, float cy, float alto)
-{
-    DibujarPiezasTrofeoHud(cx, cy, alto, GrosorLineaHud(1.5f), UI_TINTA, UI_TINTA);
-    DibujarPiezasTrofeoHud(cx, cy, alto, 0.0f, COLOR_ORO_HUD, COLOR_ORO_OSCURO_HUD);
-
-    // Brillo.
-    DrawRectangleRec(
-        Rectangle{ cx - alto * 0.22f, cy - alto * 0.44f, alto * 0.08f, alto * 0.30f },
-        COLOR_ORO_CLARO_HUD
-    );
 }
 
 
@@ -2667,10 +2539,10 @@ static void DibujarEtiquetaJugadorHud(
     rlRotatef(e.colgado[indice].angulo, 0.0f, 0.0f, 1.0f);
     rlTranslatef(-pivote.x, -pivote.y, 0.0f);
 
-    Rectangle placa = DibujarPlacaConMarcoHud(estilo, rect, 6.0f);
+    Rectangle placa = DibujarPlacaConMarcoUI(estilo, rect, 6.0f);
     (void)placa;
 
-    DibujarBanderinHud(rect.x + Px(12.0f), rect.y + Px(11.0f), Px(20.0f), Px(36.0f), participante.color);
+    DibujarBanderinColganteUI(Vector2{ rect.x + Px(12.0f), rect.y + Px(11.0f) }, participante.color, 20.0f, 36.0f);
 
     // Linea 1: J1 y el control (o BOT).
     float xTexto = rect.x + Px(40.0f);
@@ -2719,13 +2591,13 @@ static void DibujarEtiquetaJugadorHud(
         );
     }
 
-    DibujarTrofeoIconoHud(xTrofeo, yIconos, Px(18.0f));
+    DibujarTrofeoUI(Vector2{ xTrofeo, yIconos }, 18.0f);
     DrawText(
         TextFormat("%d", jugador.trofeos),
         (int)(xTrofeo + Px(13.0f)), (int)yValores, TamanoTexto(UI_TEXTO), UI_TINTA
     );
 
-    DibujarMonedaHud(xMoneda, yIconos, Px(8.0f));
+    DibujarMonedaUI(Vector2{ xMoneda, yIconos }, 8.0f);
     DrawText(
         TextFormat("%d", jugador.monedas),
         (int)(xMoneda + Px(14.0f)), (int)yValores, TamanoTexto(UI_TEXTO), UI_TINTA
@@ -2736,7 +2608,7 @@ static void DibujarEtiquetaJugadorHud(
 
     if (e.tiempoMonedas[indice] < T_DELTA_MONEDAS && delta != 0)
     {
-        DibujarTextoDerechaHud(
+        DibujarTextoDerechaUI(
             TextFormat("%+d", delta),
             derecha,
             yIconos - TamanoTexto(UI_TEXTO_PEQUENO) * 0.5f + Px(1.0f),
@@ -2753,8 +2625,8 @@ static void DibujarEtiquetaJugadorHud(
 
     rlPopMatrix();
 
-    DibujarPinzaHud(pinzaIzq, ySoga);
-    DibujarPinzaHud(pinzaDer, ySoga);
+    DibujarPinzaUI(Vector2{ pinzaIzq, ySoga });
+    DibujarPinzaUI(Vector2{ pinzaDer, ySoga });
 }
 
 
@@ -2838,8 +2710,8 @@ static void DibujarCartelRondaHud(
     }
 
     float ySoga = YArribaHud(ySogaRef);
-    DibujarPinzaHud(rect.x + Px(26.0f), ySoga);
-    DibujarPinzaHud(rect.x + rect.width - Px(26.0f), ySoga);
+    DibujarPinzaUI(Vector2{ rect.x + Px(26.0f), ySoga });
+    DibujarPinzaUI(Vector2{ rect.x + rect.width - Px(26.0f), ySoga });
 }
 
 
@@ -2893,7 +2765,7 @@ static void DibujarTiraTableroHud(
         };
 
         DibujarSogasColgantesHud(estilo, cx, Px(40.0f), yArriba - Px(4.0f), rect.y);
-        Rectangle placa = DibujarPlacaConMarcoHud(estilo, rect, 7.0f);
+        Rectangle placa = DibujarPlacaConMarcoUI(estilo, rect, 7.0f);
 
         DibujarParrafoUI(
             partida.mensajeGimmick,
@@ -3317,14 +3189,15 @@ static void DibujarCartelTurnoHud(
         Px(ALTO_CARTEL_TURNO)
     };
 
-    Rectangle placa = DibujarPlacaConMarcoHud(estilo, rect, 6.0f);
+    Rectangle placa = DibujarPlacaConMarcoUI(estilo, rect, 6.0f);
     (void)placa;
 
     bool finRonda = partida.fase == FASE_PARTIDA_TABLERO_FIN_RONDA;
 
-    DibujarBanderinHud(
-        rect.x + Px(14.0f), rect.y + Px(10.0f), Px(18.0f), Px(34.0f),
-        finRonda ? UI_MADERA_MEDIA : participante.color
+    DibujarBanderinColganteUI(
+        Vector2{ rect.x + Px(14.0f), rect.y + Px(10.0f) },
+        finRonda ? UI_MADERA_MEDIA : participante.color,
+        18.0f, 34.0f
     );
 
     float xTexto = rect.x + Px(44.0f);
@@ -3366,7 +3239,7 @@ static void DibujarCartelTurnoHud(
         partida.pasosPendientes > 0
     )
     {
-        DibujarTextoDerechaHud(
+        DibujarTextoDerechaUI(
             partida.pasosPendientes == 1 ? "QUEDA 1 PASO" : TextFormat("QUEDAN %d PASOS", partida.pasosPendientes),
             derecha,
             rect.y + Px(12.0f),
@@ -3491,12 +3364,11 @@ static void DibujarTablonTrofeoHud(
 
     Rectangle placa = DibujarTablonHud(estilo, rect);
 
-    // Copa grande a la izquierda.
+    // Copa grande a la izquierda (el alto se pasa en unidades de referencia).
     float xCopa = placa.x + Px(44.0f);
-    DibujarTrofeoIconoHud(
-        xCopa,
-        placa.y + std::fmin(Px(46.0f), placa.height * 0.5f),
-        std::fmin(Px(54.0f), placa.height - Px(16.0f))
+    DibujarTrofeoUI(
+        Vector2{ xCopa, placa.y + std::fmin(Px(46.0f), placa.height * 0.5f) },
+        std::fmin(Px(54.0f), placa.height - Px(16.0f)) / EscalaUI()
     );
 
     float xTexto = placa.x + Px(88.0f);
@@ -3523,7 +3395,7 @@ static void DibujarTablonTrofeoHud(
 
     DrawText("CUESTA", (int)x, (int)yValores, tamano, UI_TINTA_SUAVE);
     x += MeasureText("CUESTA", tamano) + Px(16.0f);
-    DibujarMonedaHud(x, yValores + tamano * 0.5f, Px(8.0f));
+    DibujarMonedaUI(Vector2{ x, yValores + tamano * 0.5f }, 8.0f);
     x += Px(14.0f);
     const char* costo = TextFormat("%d", partida.costoTrofeo);
     DrawText(costo, (int)x, (int)yValores, tamano, UI_TINTA);
@@ -3534,7 +3406,7 @@ static void DibujarTablonTrofeoHud(
         const char* tiene = humano ? "TENÉS" : "TIENE";
         DrawText(tiene, (int)x, (int)yValores, tamano, UI_TINTA_SUAVE);
         x += MeasureText(tiene, tamano) + Px(16.0f);
-        DibujarMonedaHud(x, yValores + tamano * 0.5f, Px(8.0f));
+        DibujarMonedaUI(Vector2{ x, yValores + tamano * 0.5f }, 8.0f);
         x += Px(14.0f);
         DrawText(TextFormat("%d", jugador.monedas), (int)x, (int)yValores, tamano, UI_TINTA);
     }
@@ -3661,7 +3533,7 @@ static void DibujarLeyendaHud(
         x += MeasureText(nombres[i], tamano) + Px(12.0f);
     }
 
-    DibujarTrofeoIconoHud(x + Px(6.0f), cy, Px(14.0f));
+    DibujarTrofeoUI(Vector2{ x + Px(6.0f), cy }, 14.0f);
     x += Px(18.0f);
     DrawText(precio, (int)x, (int)(cy - tamano * 0.5f), tamano, UI_TINTA);
 }
@@ -3913,7 +3785,7 @@ static void DibujarResultadoFinalTablero(
         int tamanoPuesto = TamanoTexto(UI_TEXTO_PEQUENO);
         DrawText(textoPuesto, (int)(xMedalla - MeasureText(textoPuesto, tamanoPuesto) * 0.5f), (int)(centroY - tamanoPuesto * 0.5f), tamanoPuesto, UI_TINTA);
 
-        DibujarBanderinHud(placa.x + Px(56.0f), centroY - Px(12.0f), Px(14.0f), Px(24.0f), participante.color);
+        DibujarBanderinColganteUI(Vector2{ placa.x + Px(56.0f), centroY - Px(12.0f) }, participante.color, 14.0f, 24.0f);
 
         int tamanoNombre = TamanoTexto(UI_TEXTO);
         const char* nombre = TextFormat("J%d", indice + 1);
@@ -3936,12 +3808,12 @@ static void DibujarResultadoFinalTablero(
         const char* monedas = TextFormat("%d", partida.jugadores[indice].monedas);
         float xMonedas = derecha - MeasureText(monedas, tamanoNombre);
         DrawText(monedas, (int)xMonedas, (int)(centroY - tamanoNombre * 0.5f), tamanoNombre, UI_TINTA);
-        DibujarMonedaHud(xMonedas - Px(14.0f), centroY, Px(8.0f));
+        DibujarMonedaUI(Vector2{ xMonedas - Px(14.0f), centroY }, 8.0f);
 
         const char* trofeos = TextFormat("%d", partida.jugadores[indice].trofeos);
         float xTrofeos = xMonedas - Px(86.0f);
         DrawText(trofeos, (int)xTrofeos, (int)(centroY - tamanoNombre * 0.5f), tamanoNombre, UI_TINTA);
-        DibujarTrofeoIconoHud(xTrofeos - Px(14.0f), centroY, Px(20.0f));
+        DibujarTrofeoUI(Vector2{ xTrofeos - Px(14.0f), centroY }, 20.0f);
     }
 
     DibujarTextoAjustadoUI(

@@ -16,9 +16,10 @@
 //    una pinza, queda torcida, gris y con el sello «FUERA»;
 //  - en el medio, el cartel del reloj: los segundos y una mecha de soga
 //    que se consume (o un medidor, si el minijuego no tiene tiempo).
-// Centrado bajo la soga cuelga el cartel de presentacion durante la
-// primera parte de la cuenta regresiva (se retira antes del «1» para que
-// se vean los personajes) y, al terminar, el tablon de resultados. Solo
+// Durante la cuenta regresiva, el cartel de presentacion va plantado
+// abajo y al centro (no tapa a los personajes) y baja antes del «¡YA!».
+// Al terminar, el tablon de resultados cuelga del tramo de soga del
+// reloj, asi sus sogas no cruzan ninguna etiqueta. Solo
 // los anuncios grandes («3, 2, 1, ¡YA!», «¡TIEMPO!», «¡FIN!») van sobre
 // el mundo, en texto claro con contorno y sombra dura.
 //

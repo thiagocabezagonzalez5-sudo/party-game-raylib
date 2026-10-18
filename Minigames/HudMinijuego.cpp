@@ -27,10 +27,13 @@ static const float Y_SOGA = 14.0f;              // altura de la soga en los extr
 static const float COMBA_SOGA = 6.0f;           // cuanto baja en el centro
 static const float SOGA_SOBRANTE = 30.0f;       // soga a cada lado de la fila
 
-static const float ANCHO_PRESENTACION = 560.0f;
-static const float ALTO_PRESENTACION = 96.0f;
+// El cartel de presentacion va plantado abajo y al centro: angosto para
+// dejar libres las esquinas de abajo (donde arrancan los escaladores de
+// la Cantera) y bajo la fila de personajes de Nucleos e Isla.
+static const float ANCHO_PRESENTACION = 372.0f;
+static const float MARGEN_INFERIOR_PRESENTACION = 60.0f;  // sobre la barra de ayuda
 static const float ANCHO_TABLON_FINAL = 540.0f;
-static const float Y_CARTELES = 150.0f;         // presentacion y tablon final
+static const float Y_CARTELES = 150.0f;         // tablon final
 
 static const int TOKEN_ANUNCIO = 128;           // «3», «2», «1», «¡YA!»
 static const int TOKEN_ANUNCIO_FIN = 96;        // «¡TIEMPO!», «¡FIN!»
@@ -42,8 +45,7 @@ static const float T_ANUNCIO_FIN = 1.4f;
 static const float T_TABLON_FINAL = 1.2f;
 static const float T_SALTO_PUNTAJE = 0.28f;
 static const float T_DESTELLO_PUNTAJE = 0.6f;
-static const float T_RETIRO_PRESENTACION = 1.3f;  // cuenta restante al retirarse
-static const float T_SUBIDA_PRESENTACION = 0.35f;
+static const float T_RETIRO_PRESENTACION = 0.35f; // cuenta restante al empezar a bajar
 
 // Colores locales (sobre placa clara; contraste >= 4.5:1 con la placa).
 static const Color COLOR_SELLO = { 150, 36, 30, 255 };          // «FUERA»
@@ -279,75 +281,6 @@ static float AlturaSoga(float x, float inicio, float fin)
 // PIEZAS DE DIBUJO
 //==================================================
 
-// Pinza de madera centrada en (cx, ySoga), en pixeles.
-static void DibujarPinza(float cx, float ySoga)
-{
-    Rectangle pinza = { cx - Px(4.0f), ySoga - Px(6.0f), Px(8.0f), Px(18.0f) };
-
-    DrawRectangleRec(pinza, UI_MADERA_MEDIA);
-    DrawRectangleLinesEx(pinza, Px(1.0f) < 1.0f ? 1.0f : Px(1.0f), UI_TINTA);
-    DrawRectangleRec(
-        Rectangle{ pinza.x, pinza.y + Px(7.0f), pinza.width, Px(2.0f) },
-        UI_MADERA_OSCURA
-    );
-}
-
-
-// Banderin de color con cola en V. (x, y) esquina superior izquierda, px.
-static void DibujarFormaBanderin(float x, float y, float ancho, float alto, Color color)
-{
-    float cola = alto * 0.26f;
-    float cuerpo = alto - cola;
-    float medio = x + ancho * 0.5f;
-
-    DrawRectangleRec(Rectangle{ x, y, ancho, cuerpo }, color);
-
-    // DrawTriangle: vertices en sentido antihorario en pantalla.
-    DrawTriangle(Vector2{ x, y + cuerpo - 0.5f }, Vector2{ x, y + alto }, Vector2{ medio, y + cuerpo - 0.5f }, color);
-    DrawTriangle(Vector2{ medio, y + cuerpo - 0.5f }, Vector2{ x + ancho, y + alto }, Vector2{ x + ancho, y + cuerpo - 0.5f }, color);
-}
-
-
-static void DibujarBanderin(float x, float y, float ancho, float alto, Color color)
-{
-    float borde = Px(1.5f) < 1.0f ? 1.0f : Px(1.5f);
-
-    DibujarFormaBanderin(x - borde, y - borde, ancho + borde * 2.0f, alto + borde * 2.5f, UI_TINTA);
-    DibujarFormaBanderin(x, y, ancho, alto, color);
-}
-
-
-// Marco de madera fino y placa clara (como TarjetaUI, sin caida).
-static Rectangle DibujarPlacaConMarco(const EstiloUI& estilo, Rectangle rect, float marcoRef)
-{
-    DrawRectangleRec(
-        Rectangle{ rect.x + Px(3.0f), rect.y + Px(4.0f), rect.width, rect.height },
-        Fade(BLACK, 0.25f)
-    );
-
-    DibujarNueveCortes(estilo.madera, 12, rect, EscalaUI() * 0.5f, WHITE);
-
-    float marco = Px(marcoRef);
-    Rectangle placa = {
-        rect.x + marco, rect.y + marco,
-        rect.width - marco * 2.0f, rect.height - marco * 2.0f
-    };
-
-    DibujarNueveCortes(estilo.placa, 8, placa, EscalaUI(), WHITE);
-
-    return placa;
-}
-
-
-// Texto alineado a la derecha que se reduce si no cabe.
-static void DibujarTextoDerecha(const char* texto, float derecha, float y, int token, float anchoMax, Color color)
-{
-    int tamano = TamanoTextoAjustadoUI(texto, token, anchoMax);
-
-    DrawText(texto, (int)(derecha - MeasureText(texto, tamano)), (int)y, tamano, color);
-}
-
-
 // Anuncio grande sobre el mundo: contorno oscuro y sombra dura gruesa
 // (para leerse sobre cielo claro, nieve o lava) y la cara con
 // DibujarTextoMundo. cy es el centro vertical en pixeles.
@@ -382,35 +315,69 @@ static void DibujarAnuncio(const char* texto, float cy, float tokenEscalado, Col
 }
 
 
-// Parte el texto en dos lineas por el espacio mas cercano a la mitad si
-// no cabe en una sola. Devuelve la cantidad de lineas (1 o 2).
-static int PartirEnDosLineas(const char* texto, int token, float anchoMax, char lineas[2][128])
+// Parte el texto en lineas de hasta anchoMax, palabra por palabra. Lo
+// que no entra en la ultima linea queda en ella (DibujarTextoAjustadoUI
+// la achica). Devuelve la cantidad de lineas (1 a 3).
+static int PartirPorAncho(const char* texto, int token, float anchoMax, char lineas[3][128])
 {
-    std::snprintf(lineas[0], 128, "%s", texto);
+    int tamano = TamanoTexto(token);
+    int cantidad = 0;
+    const char* resto = texto;
 
-    if ((float)MeasureText(texto, TamanoTexto(token)) <= anchoMax)
+    while (*resto == ' ') resto++;
+
+    while (*resto != '\0' && cantidad < 3)
     {
-        return 1;
+        char* linea = lineas[cantidad];
+        std::snprintf(linea, 128, "%s", resto);
+        int largo = (int)std::strlen(linea);
+        int corte = largo;
+
+        if (cantidad < 2 && (float)MeasureText(linea, tamano) > anchoMax)
+        {
+            // Ultimo espacio con el que la linea entra.
+            for (int i = largo - 1; i > 0; i--)
+            {
+                if (linea[i] != ' ') continue;
+                linea[i] = '\0';
+                bool entra = (float)MeasureText(linea, tamano) <= anchoMax;
+                linea[i] = ' ';
+                if (entra) { corte = i; break; }
+            }
+        }
+
+        linea[corte] = '\0';
+        resto += corte;
+        while (*resto == ' ') resto++;
+        cantidad++;
     }
 
-    int largo = (int)std::strlen(lineas[0]);
-    int mejor = -1;
+    return cantidad;
+}
 
-    for (int i = 0; i < largo; i++)
+
+// Como PartirPorAncho, pero con lineas parejas: busca el ancho mas chico
+// que da la misma cantidad de lineas (sin una palabra sola al final).
+static int PartirEnTresLineas(const char* texto, int token, float anchoMax, char lineas[3][128])
+{
+    int cantidad = PartirPorAncho(texto, token, anchoMax, lineas);
+    int tamano = TamanoTexto(token);
+    float ancho = anchoMax;
+
+    for (float prueba = anchoMax - Px(8.0f); cantidad > 1 && prueba > anchoMax * 0.5f; prueba -= Px(8.0f))
     {
-        if (lineas[0][i] != ' ') continue;
-        if (mejor < 0 || std::abs(i - largo / 2) < std::abs(mejor - largo / 2)) mejor = i;
+        char intento[3][128] = {};
+        int lineasIntento = PartirPorAncho(texto, token, prueba, intento);
+
+        if (lineasIntento != cantidad || (float)MeasureText(intento[cantidad - 1], tamano) > prueba)
+        {
+            break;
+        }
+
+        ancho = prueba;
     }
 
-    if (mejor < 0)
-    {
-        return 1;
-    }
-
-    std::snprintf(lineas[1], 128, "%s", lineas[0] + mejor + 1);
-    lineas[0][mejor] = '\0';
-
-    return 2;
+    return ancho < anchoMax ? PartirPorAncho(texto, token, ancho, lineas) : cantidad;
 }
 
 
@@ -524,7 +491,7 @@ static void DibujarEtiquetaJugador(
     rlRotatef(angulo, 0.0f, 0.0f, 1.0f);
     rlTranslatef(-pinzaIzq, -ySogaPx, 0.0f);
 
-    Rectangle placa = DibujarPlacaConMarco(estilo, rect, 6.0f);
+    Rectangle placa = DibujarPlacaConMarcoUI(estilo, rect, 6.0f);
 
     // Linea 1: J1 [BOT] ............ valor
     float xTexto = rect.x + Px(40.0f);
@@ -561,7 +528,7 @@ static void DibujarEtiquetaJugador(
     }
 
     Color colorJugador = jugador.eliminado ? COLOR_GRIS_FUERA : participante.color;
-    DibujarBanderin(rect.x + Px(12.0f), rect.y + Px(11.0f), Px(20.0f), Px(36.0f), colorJugador);
+    DibujarBanderinColganteUI(Vector2{ rect.x + Px(12.0f), rect.y + Px(11.0f) }, colorJugador, 20.0f, 36.0f);
 
     DrawText(nombre, (int)xTexto, (int)yLinea1, tamanoNombre, UI_TINTA);
 
@@ -572,7 +539,7 @@ static void DibujarEtiquetaJugador(
 
     if (!jugador.eliminado && jugador.valor[0] != '\0')
     {
-        DibujarTextoDerecha(jugador.valor, derecha, yLinea1, UI_TEXTO, derecha - finNombre, UI_TINTA);
+        DibujarTextoDerechaUI(jugador.valor, derecha, yLinea1, UI_TEXTO, derecha - finNombre, UI_TINTA);
     }
 
     // Linea 2: estado, rol o control.
@@ -634,11 +601,11 @@ static void DibujarEtiquetaJugador(
     rlPopMatrix();
 
     // Pinzas sobre la soga (la derecha falta si esta eliminado).
-    DibujarPinza(pinzaIzq, ySogaPx);
+    DibujarPinzaUI(Vector2{ pinzaIzq, ySogaPx });
 
     if (!jugador.eliminado)
     {
-        DibujarPinza(pinzaDer, ySogaPx);
+        DibujarPinzaUI(Vector2{ pinzaDer, ySogaPx });
     }
 
     // Ayuda de controles colgando debajo (solo humanos, mientras se juega).
@@ -823,8 +790,8 @@ static void DibujarCartelReloj(
 
     rlPopMatrix();
 
-    DibujarPinza(rect.x + Px(26.0f), ySogaPx);
-    DibujarPinza(rect.x + rect.width - Px(26.0f), ySogaPx);
+    DibujarPinzaUI(Vector2{ rect.x + Px(26.0f), ySogaPx });
+    DibujarPinzaUI(Vector2{ rect.x + rect.width - Px(26.0f), ySogaPx });
 }
 
 
@@ -848,59 +815,63 @@ static void DibujarSogasDesdeSoga(const EstiloUI& estilo, float cx, float ySoga,
 }
 
 
+// Cartel de presentacion: titulo y objetivo durante toda la cuenta
+// regresiva. Va plantado sobre dos postes abajo y al centro, para que la
+// cuenta deje ver a todos los personajes; sube al aparecer y baja justo
+// antes del «¡YA!» (con reducirMovimiento, aparece y se va sin moverse).
 static void DibujarPresentacion(
     const EstiloUI& estilo,
     const DatosHudMinijuego& datos,
-    float cxRef,
-    float ySogaRef
+    float cxRef
 )
 {
-    // Solo durante la primera parte de la cuenta: en el ultimo tramo la
-    // soga lo sube detras de la fila para que cada jugador vea su
-    // personaje antes del «¡YA!».
     if (datos.fase != HUD_MINIJUEGO_CUENTA || datos.cuentaRestante <= 0.0f)
     {
         return;
     }
 
-    float subida = 0.0f;
+    float anchoUtil = Px(ANCHO_PRESENTACION - 7.0f * 2.0f - 24.0f);
+    char lineas[3][128] = {};
+    int cantidad = PartirEnTresLineas(datos.objetivo, UI_TEXTO_PEQUENO, anchoUtil, lineas);
+    float alto = 7.0f + 10.0f + 36.0f + cantidad * 18.0f + 8.0f + 7.0f;
 
-    if (datos.cuentaRestante < T_RETIRO_PRESENTACION)
+    // Desplazamiento hacia abajo (unidades ref): entrada desde abajo y
+    // salida al final de la cuenta.
+    float bajada = -estadoHud.caidaPresentacion.valor;
+
+    if (!estilo.reducirMovimiento && datos.cuentaRestante < T_RETIRO_PRESENTACION)
     {
-        if (estilo.reducirMovimiento)
-        {
-            return;
-        }
-
-        float k = Limitar01((T_RETIRO_PRESENTACION - datos.cuentaRestante) / T_SUBIDA_PRESENTACION);
-        if (k >= 1.0f)
-        {
-            return;
-        }
-
-        subida = (Y_CARTELES + ALTO_PRESENTACION) * k * k;
+        float k = Limitar01((T_RETIRO_PRESENTACION - datos.cuentaRestante) / T_RETIRO_PRESENTACION);
+        bajada += (alto + MARGEN_INFERIOR_PRESENTACION) * k * k;
     }
+
+    float yFondo = (float)GetScreenHeight() - Px(MARGEN_INFERIOR_PRESENTACION);
 
     Rectangle rect = {
         X(cxRef - ANCHO_PRESENTACION * 0.5f),
-        Y(Y_CARTELES + estadoHud.caidaPresentacion.valor - subida),
+        yFondo - Px(alto) + Px(bajada),
         Px(ANCHO_PRESENTACION),
-        Px(ALTO_PRESENTACION)
+        Px(alto)
     };
 
-    DibujarSogasDesdeSoga(estilo, X(cxRef), Y(ySogaRef), rect.y);
+    // Postes hasta el borde de abajo (pasan detras de la barra de ayuda).
+    for (int lado = -1; lado <= 1; lado += 2)
+    {
+        float cxPoste = rect.x + rect.width * 0.5f + lado * Px(ANCHO_PRESENTACION * 0.5f - 46.0f);
+        Rectangle poste = { cxPoste - Px(5.0f), rect.y + Px(12.0f), Px(10.0f), (float)GetScreenHeight() - rect.y };
 
-    Rectangle placa = DibujarPlacaConMarco(estilo, rect, 7.0f);
+        DrawRectangleRec(Rectangle{ poste.x + Px(3.0f), poste.y, poste.width, poste.height }, Fade(BLACK, 0.25f));
+        DrawRectangleRec(poste, UI_MADERA_OSCURA);
+        DrawRectangleRec(Rectangle{ poste.x + Px(2.0f), poste.y, Px(2.0f), poste.height }, UI_MADERA_MEDIA);
+    }
+
+    Rectangle placa = DibujarPlacaConMarcoUI(estilo, rect, 7.0f);
     float cx = rect.x + rect.width * 0.5f;
-    float anchoUtil = placa.width - Px(24.0f);
 
     DibujarTextoAjustadoUI(
         datos.titulo, cx, placa.y + Px(10.0f), UI_TEXTO_GRANDE,
         anchoUtil, UI_TINTA, true
     );
-
-    char lineas[2][128] = {};
-    int cantidad = PartirEnDosLineas(datos.objetivo, UI_TEXTO_PEQUENO, anchoUtil, lineas);
 
     for (int l = 0; l < cantidad; l++)
     {
@@ -964,11 +935,14 @@ static void TituloFinal(
 }
 
 
+// cxRef centra el tablon; cxSogasRef es el reloj, de donde cuelga: asi
+// sus sogas nunca cruzan una etiqueta aunque el reloj quede corrido.
 static void DibujarTablonFinal(
     const EstiloUI& estilo,
     const DatosHudMinijuego& datos,
     const Participante participantes[],
     float cxRef,
+    float cxSogasRef,
     float ySogaRef
 )
 {
@@ -1013,7 +987,7 @@ static void DibujarTablonFinal(
         Px(alto)
     };
 
-    DibujarSogasDesdeSoga(estilo, X(cxRef), Y(ySogaRef), rect.y);
+    DibujarSogasDesdeSoga(estilo, X(cxSogasRef), Y(ySogaRef), rect.y);
 
     DrawRectangleRec(
         Rectangle{ rect.x + Px(6.0f), rect.y + Px(8.0f), rect.width, rect.height },
@@ -1071,7 +1045,7 @@ static void DibujarTablonFinal(
         int tamanoPuesto = TamanoTexto(UI_TEXTO_PEQUENO);
         DrawText(textoPuesto, (int)(xMedalla - MeasureText(textoPuesto, tamanoPuesto) * 0.5f), (int)(centroY - tamanoPuesto * 0.5f), tamanoPuesto, UI_TINTA);
 
-        DibujarBanderin(placa.x + Px(54.0f), centroY - Px(11.0f), Px(13.0f), Px(22.0f), participante.color);
+        DibujarBanderinColganteUI(Vector2{ placa.x + Px(54.0f), centroY - Px(11.0f) }, participante.color, 13.0f, 22.0f);
 
         int tamanoNombre = TamanoTexto(UI_TEXTO);
         const char* nombre = TextFormat("J%d", participante.numeroJugador);
@@ -1102,7 +1076,7 @@ static void DibujarTablonFinal(
         const char* detalle = datos.jugadores[i].detalleFinal;
         float anchoDetalle = placa.width * (conDesempate ? 0.20f : 0.32f);
 
-        DibujarTextoDerecha(detalle, derechaDetalle, centroY - tamanoNombre * 0.5f, UI_TEXTO, anchoDetalle, UI_TINTA);
+        DibujarTextoDerechaUI(detalle, derechaDetalle, centroY - tamanoNombre * 0.5f, UI_TEXTO, anchoDetalle, UI_TINTA);
 
         // Criterio de desempate en letra chica, a la izquierda del puntaje.
         if (conDesempate)
@@ -1110,7 +1084,7 @@ static void DibujarTablonFinal(
             int tamanoDetalle = TamanoTextoAjustadoUI(detalle, UI_TEXTO, anchoDetalle);
             float derechaDesempate = derechaDetalle - MeasureText(detalle, tamanoDetalle) - Px(16.0f);
 
-            DibujarTextoDerecha(
+            DibujarTextoDerechaUI(
                 desempate,
                 derechaDesempate,
                 centroY - TamanoTexto(UI_TEXTO_PEQUENO) * 0.5f + Px(1.0f),
@@ -1257,13 +1231,17 @@ void DibujarHudMinijuego(
     float yRelojRef = AlturaSoga(cxReloj, sogaInicio, sogaFin) + 8.0f;
 
     // 1) Carteles grandes, centrados en pantalla aunque el reloj quede
-    //    corrido (formatos por equipos). Cuelgan de la soga por detras de
-    //    la fila.
+    //    corrido (formatos por equipos). El tablon final cuelga del tramo
+    //    de soga del reloj, por detras de la fila.
     float cxCarteles = UI_REF_ANCHO * 0.5f;
-    float ySogaCarteles = AlturaSoga(cxCarteles, sogaInicio, sogaFin);
+    float margenSogas = ANCHO_TABLON_FINAL * 0.5f - 70.0f;
+    float cxSogas = cxReloj;
+    if (cxSogas < cxCarteles - margenSogas) cxSogas = cxCarteles - margenSogas;
+    if (cxSogas > cxCarteles + margenSogas) cxSogas = cxCarteles + margenSogas;
+    float ySogaCarteles = AlturaSoga(cxSogas, sogaInicio, sogaFin);
 
-    DibujarPresentacion(estilo, datos, cxCarteles, ySogaCarteles);
-    DibujarTablonFinal(estilo, datos, participantes, cxCarteles, ySogaCarteles);
+    DibujarPresentacion(estilo, datos, cxCarteles);
+    DibujarTablonFinal(estilo, datos, participantes, cxCarteles, cxSogas, ySogaCarteles);
 
     // 2) Soga: dos tramos verticales desde el borde y la comba.
     DibujarCuerdaUI(estilo, Vector2{ X(sogaInicio), 0.0f }, Vector2{ X(sogaInicio), Y(Y_SOGA) });
