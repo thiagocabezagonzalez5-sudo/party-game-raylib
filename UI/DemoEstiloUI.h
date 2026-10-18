@@ -8,19 +8,22 @@
 //==================================================
 //
 // Muestra todos los componentes de UI/EstiloUI en una pantalla de
-// configuracion de ejemplo (5 pestanas, una tarjeta y dos avisos
+// configuracion de ejemplo (6 pestanas, una tarjeta y dos avisos
 // modales). La pestana EXTRAS muestra la segunda tanda: texto con
 // contorno, etiquetas, parrafo, sellos, velo, banderines y marco con
-// recorte. No toca el flujo del juego: se ejecuta con
+// recorte. La pestana HUD muestra la tercera: pinzas, banderin colgante,
+// placa con marco, texto alineado, iconos de moneda y trofeo, y el alfa
+// de la tarjeta y el banderin. No toca el flujo del juego: se ejecuta con
 // Tests/DemoEstiloUI.ps1.
 //
 // Controles: arriba/abajo cambia de elemento, izquierda/derecha ajusta,
 // aceptar confirma, Q/E (LB/RB) cambia de pestana, volver pregunta si
 // salir. En EXTRAS: izquierda/derecha cambia la alineacion del parrafo y
-// aceptar muestra u oculta el velo.
+// aceptar muestra u oculta el velo. En HUD: izquierda/derecha cambia el
+// alfa (25 % a 100 %).
 //==================================================
 
-inline constexpr int DEMO_PESTANAS = 5;
+inline constexpr int DEMO_PESTANAS = 6;
 inline constexpr int DEMO_FILAS = 3;
 
 
@@ -45,6 +48,11 @@ struct DemoEstiloUI
     TarjetaUI tarjetaParrafo;
     int alineacionParrafo = 0;      // AlineacionUI
     VeloUI velo;
+
+    // Pestana HUD (tercera tanda): tarjeta que se funde y alfa elegido
+    // en cuartos (1..4 = 25 %..100 %).
+    TarjetaUI tarjetaAlfa;
+    int cuartosAlfa = 4;
 
     BotonUI botonVolver;
     BotonUI botonAplicar;

@@ -535,7 +535,15 @@ void ActualizarTarjetaUI(
     float dt
 );
 
-void DibujarTarjetaUI(const EstiloUI& estilo, const TarjetaUI& tarjeta);
+// alfa (0..1, tercera tanda): funde la tarjeta entera (sombra, madera,
+// placa, titulo y divisor). Con 1 se ve igual que siempre. Las capas se
+// funden por separado: a medio fundido se transparenta la madera bajo la
+// placa (pensado para aparecer/desaparecer, no para quedar a medias).
+void DibujarTarjetaUI(
+    const EstiloUI& estilo,
+    const TarjetaUI& tarjeta,
+    float alfa = 1.0f
+);
 
 // Zona clara bajo el titulo, en unidades de referencia (sin la caida de
 // entrada: sumar colgado.caida.valor si se dibuja a mano).
@@ -543,11 +551,13 @@ Rectangle AreaContenidoTarjetaUI(const TarjetaUI& tarjeta);
 
 // Linea "etiqueta   valor" numero `linea` (0, 1, ...) del contenido.
 // Etiqueta en tinta suave, valor en tinta; ambos se reducen si no caben.
+// alfa: el mismo que se le pase a DibujarTarjetaUI.
 void DibujarLineaTarjetaUI(
     const TarjetaUI& tarjeta,
     int linea,
     const char* etiqueta,
-    const char* valor
+    const char* valor,
+    float alfa = 1.0f
 );
 
 
@@ -765,6 +775,10 @@ void DibujarVeloUI(float alfa, Color color = UI_VELO);
 // refBandera: la tela, en unidades de referencia (el mastil va pegado a
 // su borde izquierdo). altoMastilRef: largo del mastil desde el borde
 // superior de la tela hacia abajo.
+//
+// alfa (0..1, tercera tanda): funde mastil, tela y texto juntos. Con 1 se
+// ve igual que siempre. A medio fundido el contorno de la tela se ve algo
+// mas denso (las capas se funden por separado).
 
 void DibujarBanderinUI(
     const EstiloUI& estilo,
@@ -773,7 +787,8 @@ void DibujarBanderinUI(
     float altoMastilRef,
     Color color = UI_PELIGRO,
     bool ondear = true,
-    float fase = 0.0f
+    float fase = 0.0f,
+    float alfa = 1.0f
 );
 
 
@@ -804,3 +819,94 @@ void TerminarMarcoIlustracionUI(
 
 // Area interior (pixeles enteros, la misma que recorta) sin dibujar nada.
 Rectangle AreaMarcoIlustracionUI(Rectangle ref, float grosorMarcoRef = 10.0f);
+
+
+//==================================================
+// COMPONENTES (TERCERA TANDA): PIEZAS DEL HUD
+//==================================================
+//
+// Las piezas del tendedero del HUD (minijuegos y tablero): pinza, banderin
+// colgante del jugador, placa con marco, texto alineado e iconos de moneda
+// y trofeo. Son copias fieles de los helpers static de HudMinijuego.cpp y
+// PartidaTablero.cpp: con alfa = 1 se ven identicos, asi que migrarlos no
+// cambia el aspecto. Misma convencion que la segunda tanda: posiciones en
+// PIXELES, tamanos en unidades de referencia. Ninguna anima ni carga
+// recursos. alfa (0..1) funde cada pieza entera (las capas se funden por
+// separado: a medio fundido el contorno se ve algo mas denso).
+
+
+// ---- Pinza: broche de madera que sujeta un cartel a la soga ----
+// puntoSoga: punto de la soga donde muerde, en pixeles. Mide 8x18
+// unidades y cubre la soga de -6 a +12 (el cartel cuelga debajo). Se
+// dibuja DESPUES del cartel, para que lo tape.
+
+void DibujarPinzaUI(Vector2 puntoSoga, float alfa = 1.0f);
+
+
+// ---- Banderin colgante: la cinta de color del jugador ----
+// Tela vertical con cola en V abajo y contorno de tinta, sin mastil ni
+// texto (para eso esta DibujarBanderinUI). esquina: arriba a la izquierda
+// de la tela, en pixeles. En la etiqueta del HUD: 20x36 a (12, 11) del
+// borde de la etiqueta.
+
+void DibujarBanderinColganteUI(
+    Vector2 esquina,
+    Color color,
+    float anchoRef = 20.0f,
+    float altoRef = 36.0f,
+    float alfa = 1.0f
+);
+
+
+// ---- Placa con marco: placa clara con marco fino de madera ----
+// Como TarjetaUI pero sin estado, sin caida y con el marco que se pida
+// (6 en las etiquetas y el cartel de turno, 7 en la presentacion del
+// minijuego y la tira del tablero). rect en PIXELES (ya
+// convertido, p. ej. con el lienzo del HUD). Devuelve la placa (zona del
+// texto) en pixeles; si el estilo no esta cargado no dibuja, pero la
+// devuelve igual.
+
+Rectangle DibujarPlacaConMarcoUI(
+    const EstiloUI& estilo,
+    Rectangle rect,
+    float marcoRef = 6.0f,
+    float alfa = 1.0f
+);
+
+
+// ---- Texto alineado ----
+// Como DibujarTextoAjustadoUI (reduce la fuente si no cabe en anchoMaximo
+// pixeles, minimo 10 px, nunca corta), pero x es el borde izquierdo, el
+// centro o el borde DERECHO segun la alineacion. Devuelve la fuente usada
+// en pixeles. La transparencia va en el alfa de `color`.
+
+int DibujarTextoAlineadoUI(
+    const char* texto,
+    float x,
+    float y,
+    int tokenTexto,
+    float anchoMaximo,
+    Color color,
+    AlineacionUI alineacion
+);
+
+// Atajo: texto pegado a `derecha` (pixeles), p. ej. un valor al final de
+// una fila.
+int DibujarTextoDerechaUI(
+    const char* texto,
+    float derecha,
+    float y,
+    int tokenTexto,
+    float anchoMaximo,
+    Color color
+);
+
+
+// ---- Iconos: moneda y trofeo ----
+// centro en pixeles. Moneda: disco dorado con contorno de tinta (radio 8
+// en el HUD). Trofeo: copa dorada con asas y pie (alto 18 en la etiqueta
+// del HUD, 54 en el tablon de compra).
+
+void DibujarMonedaUI(Vector2 centro, float radioRef = 8.0f, float alfa = 1.0f);
+
+void DibujarTrofeoUI(Vector2 centro, float altoRef = 18.0f, float alfa = 1.0f);

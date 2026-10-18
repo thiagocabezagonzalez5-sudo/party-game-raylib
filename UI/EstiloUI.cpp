@@ -42,6 +42,21 @@ static Color Escalar(Color c, float factor)
 }
 
 
+// Multiplica el alfa propio del color (a diferencia de Fade, que lo
+// reemplaza): con alfa = 1 devuelve el color sin cambios.
+static Color MultiplicarAlfa(Color c, float alfa)
+{
+    if (alfa >= 1.0f)
+    {
+        return c;
+    }
+
+    c.a = (unsigned char)(c.a * Limitar(alfa, 0.0f, 1.0f));
+
+    return c;
+}
+
+
 //==================================================
 // ESCALA Y LAYOUT
 //==================================================
@@ -1512,9 +1527,9 @@ Rectangle AreaContenidoTarjetaUI(const TarjetaUI& tarjeta)
 }
 
 
-void DibujarTarjetaUI(const EstiloUI& estilo, const TarjetaUI& tarjeta)
+void DibujarTarjetaUI(const EstiloUI& estilo, const TarjetaUI& tarjeta, float alfa)
 {
-    if (!estilo.cargado || tarjeta.colgado.retraso > 0.0f)
+    if (!estilo.cargado || tarjeta.colgado.retraso > 0.0f || alfa <= 0.0f)
     {
         return;
     }
@@ -1525,12 +1540,12 @@ void DibujarTarjetaUI(const EstiloUI& estilo, const TarjetaUI& tarjeta)
 
     DrawRectangleRec(
         Rectangle{ rect.x + Px(4.0f), rect.y + Px(5.0f), rect.width, rect.height },
-        Fade(BLACK, 0.22f)
+        MultiplicarAlfa(Fade(BLACK, 0.22f), alfa)
     );
 
     // Marco de madera fino (la misma textura del panel, a media escala)
     // y la placa clara encima: el texto solo va sobre la placa.
-    DibujarNueveCortes(estilo.madera, 12, rect, escala * 0.6f, WHITE);
+    DibujarNueveCortes(estilo.madera, 12, rect, escala * 0.6f, MultiplicarAlfa(WHITE, alfa));
 
     float marco = Px(MARCO_TARJETA);
     Rectangle placa = {
@@ -1538,7 +1553,7 @@ void DibujarTarjetaUI(const EstiloUI& estilo, const TarjetaUI& tarjeta)
         rect.width - marco * 2.0f, rect.height - marco * 2.0f
     };
 
-    DibujarNueveCortes(estilo.placa, 8, placa, escala, WHITE);
+    DibujarNueveCortes(estilo.placa, 8, placa, escala, MultiplicarAlfa(WHITE, alfa));
 
     if (tarjeta.titulo == nullptr)
     {
@@ -1554,13 +1569,13 @@ void DibujarTarjetaUI(const EstiloUI& estilo, const TarjetaUI& tarjeta)
         placa.y + Px(8.0f),
         UI_TEXTO,
         anchoUtil,
-        UI_TINTA,
+        MultiplicarAlfa(UI_TINTA, alfa),
         false
     );
 
     DrawRectangleRec(
         Rectangle{ placa.x + relleno, placa.y + Px(32.0f), anchoUtil, Px(2.0f) },
-        Fade(UI_MADERA_OSCURA, 0.45f)
+        MultiplicarAlfa(Fade(UI_MADERA_OSCURA, 0.45f), alfa)
     );
 }
 
@@ -1569,10 +1584,11 @@ void DibujarLineaTarjetaUI(
     const TarjetaUI& tarjeta,
     int linea,
     const char* etiqueta,
-    const char* valor
+    const char* valor,
+    float alfa
 )
 {
-    if (tarjeta.colgado.retraso > 0.0f)
+    if (tarjeta.colgado.retraso > 0.0f || alfa <= 0.0f)
     {
         return;
     }
@@ -1583,8 +1599,8 @@ void DibujarLineaTarjetaUI(
 
     float y = rect.y + (rect.height - TamanoTexto(UI_TEXTO_PEQUENO)) * 0.5f;
 
-    DibujarTextoAjustadoUI(etiqueta, rect.x, y, UI_TEXTO_PEQUENO, rect.width * 0.42f, UI_TINTA_SUAVE, false);
-    DibujarTextoAjustadoUI(valor, rect.x + rect.width * 0.45f, y, UI_TEXTO_PEQUENO, rect.width * 0.55f, UI_TINTA, false);
+    DibujarTextoAjustadoUI(etiqueta, rect.x, y, UI_TEXTO_PEQUENO, rect.width * 0.42f, MultiplicarAlfa(UI_TINTA_SUAVE, alfa), false);
+    DibujarTextoAjustadoUI(valor, rect.x + rect.width * 0.45f, y, UI_TEXTO_PEQUENO, rect.width * 0.55f, MultiplicarAlfa(UI_TINTA, alfa), false);
 }
 
 
@@ -2458,10 +2474,11 @@ void DibujarBanderinUI(
     float altoMastilRef,
     Color color,
     bool ondear,
-    float fase
+    float fase,
+    float alfa
 )
 {
-    if (!estilo.cargado)
+    if (!estilo.cargado || alfa <= 0.0f)
     {
         return;
     }
@@ -2483,13 +2500,13 @@ void DibujarBanderinUI(
 
     DrawRectangleRec(
         Rectangle{ mastil.x + Px(3.0f), mastil.y + Px(4.0f), mastil.width, mastil.height },
-        Fade(BLACK, 0.25f)
+        MultiplicarAlfa(Fade(BLACK, 0.25f), alfa)
     );
-    DrawRectangleRec(mastil, UI_MADERA_MEDIA);
-    DrawRectangleRec(Rectangle{ mastil.x + Px(1.5f), mastil.y, Px(2.0f), mastil.height }, Escalar(UI_MADERA_MEDIA, 1.18f));
-    DrawRectangleLinesEx(mastil, Px(1.5f), CONTORNO_MADERA);
-    DrawCircleV(Vector2{ mastil.x + anchoMastil * 0.5f, mastil.y }, Px(6.5f), CONTORNO_MADERA);
-    DrawCircleV(Vector2{ mastil.x + anchoMastil * 0.5f, mastil.y }, Px(5.0f), UI_FOCO);
+    DrawRectangleRec(mastil, MultiplicarAlfa(UI_MADERA_MEDIA, alfa));
+    DrawRectangleRec(Rectangle{ mastil.x + Px(1.5f), mastil.y, Px(2.0f), mastil.height }, MultiplicarAlfa(Escalar(UI_MADERA_MEDIA, 1.18f), alfa));
+    DrawRectangleLinesEx(mastil, Px(1.5f), MultiplicarAlfa(CONTORNO_MADERA, alfa));
+    DrawCircleV(Vector2{ mastil.x + anchoMastil * 0.5f, mastil.y }, Px(6.5f), MultiplicarAlfa(CONTORNO_MADERA, alfa));
+    DrawCircleV(Vector2{ mastil.x + anchoMastil * 0.5f, mastil.y }, Px(5.0f), MultiplicarAlfa(UI_FOCO, alfa));
 
     // Bordes de la tela: arriba y abajo por columna (+ la cola).
     Vector2 arriba[SEGMENTOS_BANDERIN + 1];
@@ -2518,17 +2535,17 @@ void DibujarBanderinUI(
     {
         Vector2 d = { 0.0f, 0.0f };
         float crecer = 0.0f;
-        Color c = color;
+        Color c = MultiplicarAlfa(color, alfa);
 
         if (capa == 0)
         {
             d = Vector2{ Px(4.0f), Px(5.0f) };
-            c = Fade(BLACK, 0.25f);
+            c = MultiplicarAlfa(Fade(BLACK, 0.25f), alfa);
         }
         else if (capa == 1)
         {
             crecer = Px(1.5f);
-            c = CONTORNO_MADERA;
+            c = MultiplicarAlfa(CONTORNO_MADERA, alfa);
         }
 
         for (int i = 0; i < SEGMENTOS_BANDERIN; i++)
@@ -2566,8 +2583,8 @@ void DibujarBanderinUI(
         Vector2 b0 = { abajo[i].x, abajo[i].y - margenFranja };
         Vector2 b1 = { abajo[i + 1].x, abajo[i + 1].y - margenFranja };
 
-        DibujarTrianguloUI(a0, b0, b1, UI_PLACA_CLARA);
-        DibujarTrianguloUI(a0, b1, a1, UI_PLACA_CLARA);
+        DibujarTrianguloUI(a0, b0, b1, MultiplicarAlfa(UI_PLACA_CLARA, alfa));
+        DibujarTrianguloUI(a0, b1, a1, MultiplicarAlfa(UI_PLACA_CLARA, alfa));
     }
 
     float anchoFranja = arriba[hasta].x - arriba[desde].x;
@@ -2592,7 +2609,7 @@ void DibujarBanderinUI(
     rlPushMatrix();
     rlTranslatef(centroX, tela.y + tela.height * 0.5f + onda, 0.0f);
     rlRotatef(std::atan(pendiente) * RAD2DEG, 0.0f, 0.0f, 1.0f);
-    DrawText(texto, (int)(-anchoTexto * 0.5f), (int)(-tamano * 0.5f), tamano, UI_TINTA);
+    DrawText(texto, (int)(-anchoTexto * 0.5f), (int)(-tamano * 0.5f), tamano, MultiplicarAlfa(UI_TINTA, alfa));
     rlPopMatrix();
 }
 
@@ -2685,4 +2702,250 @@ void TerminarMarcoIlustracionUI(
     );
 
     DrawRectangleLinesEx(area, Px(1.5f), CONTORNO_MADERA);
+}
+
+
+//==================================================
+// TERCERA TANDA: PIEZAS DEL HUD
+//==================================================
+//
+// Copias fieles de los helpers static de Minigames/HudMinijuego.cpp y
+// Gameplay/PartidaTablero.cpp (mismas medidas y colores): con alfa = 1
+// el resultado es identico, para poder migrarlos sin cambio visual.
+
+// Dorados de la moneda y el trofeo (los del HUD del tablero).
+static const Color ORO_ICONO = { 255, 200, 60, 255 };
+static const Color ORO_OSCURO_ICONO = { 200, 140, 30, 255 };
+static const Color ORO_CLARO_ICONO = { 255, 230, 130, 255 };
+
+
+// Grosor de linea en pixeles: nunca menos de 1 px.
+static float GrosorLineaUI(float unidades)
+{
+    float grosor = Px(unidades);
+
+    return grosor < 1.0f ? 1.0f : grosor;
+}
+
+
+//==================================================
+// PINZA
+//==================================================
+
+void DibujarPinzaUI(Vector2 puntoSoga, float alfa)
+{
+    if (alfa <= 0.0f)
+    {
+        return;
+    }
+
+    Rectangle pinza = { puntoSoga.x - Px(4.0f), puntoSoga.y - Px(6.0f), Px(8.0f), Px(18.0f) };
+
+    DrawRectangleRec(pinza, MultiplicarAlfa(UI_MADERA_MEDIA, alfa));
+    DrawRectangleLinesEx(pinza, GrosorLineaUI(1.0f), MultiplicarAlfa(UI_TINTA, alfa));
+    DrawRectangleRec(
+        Rectangle{ pinza.x, pinza.y + Px(7.0f), pinza.width, Px(2.0f) },
+        MultiplicarAlfa(UI_MADERA_OSCURA, alfa)
+    );
+}
+
+
+//==================================================
+// BANDERIN COLGANTE
+//==================================================
+
+// Tela con cola en V. (x, y) esquina superior izquierda, todo en pixeles.
+static void DibujarFormaBanderinColgante(float x, float y, float ancho, float alto, Color color)
+{
+    float cola = alto * 0.26f;
+    float cuerpo = alto - cola;
+    float medio = x + ancho * 0.5f;
+
+    DrawRectangleRec(Rectangle{ x, y, ancho, cuerpo }, color);
+
+    // DrawTriangle: vertices en sentido antihorario en pantalla.
+    DrawTriangle(Vector2{ x, y + cuerpo - 0.5f }, Vector2{ x, y + alto }, Vector2{ medio, y + cuerpo - 0.5f }, color);
+    DrawTriangle(Vector2{ medio, y + cuerpo - 0.5f }, Vector2{ x + ancho, y + alto }, Vector2{ x + ancho, y + cuerpo - 0.5f }, color);
+}
+
+
+void DibujarBanderinColganteUI(
+    Vector2 esquina,
+    Color color,
+    float anchoRef,
+    float altoRef,
+    float alfa
+)
+{
+    if (alfa <= 0.0f)
+    {
+        return;
+    }
+
+    float ancho = Px(anchoRef);
+    float alto = Px(altoRef);
+    float borde = GrosorLineaUI(1.5f);
+
+    DibujarFormaBanderinColgante(
+        esquina.x - borde,
+        esquina.y - borde,
+        ancho + borde * 2.0f,
+        alto + borde * 2.5f,
+        MultiplicarAlfa(UI_TINTA, alfa)
+    );
+    DibujarFormaBanderinColgante(esquina.x, esquina.y, ancho, alto, MultiplicarAlfa(color, alfa));
+}
+
+
+//==================================================
+// PLACA CON MARCO
+//==================================================
+
+Rectangle DibujarPlacaConMarcoUI(
+    const EstiloUI& estilo,
+    Rectangle rect,
+    float marcoRef,
+    float alfa
+)
+{
+    float marco = Px(marcoRef);
+    Rectangle placa = {
+        rect.x + marco, rect.y + marco,
+        rect.width - marco * 2.0f, rect.height - marco * 2.0f
+    };
+
+    if (!estilo.cargado || alfa <= 0.0f)
+    {
+        return placa;
+    }
+
+    DrawRectangleRec(
+        Rectangle{ rect.x + Px(3.0f), rect.y + Px(4.0f), rect.width, rect.height },
+        MultiplicarAlfa(Fade(BLACK, 0.25f), alfa)
+    );
+
+    DibujarNueveCortes(estilo.madera, 12, rect, EscalaUI() * 0.5f, MultiplicarAlfa(WHITE, alfa));
+    DibujarNueveCortes(estilo.placa, 8, placa, EscalaUI(), MultiplicarAlfa(WHITE, alfa));
+
+    return placa;
+}
+
+
+//==================================================
+// TEXTO ALINEADO
+//==================================================
+
+int DibujarTextoAlineadoUI(
+    const char* texto,
+    float x,
+    float y,
+    int tokenTexto,
+    float anchoMaximo,
+    Color color,
+    AlineacionUI alineacion
+)
+{
+    int tamano = TamanoTextoAjustadoUI(texto, tokenTexto, anchoMaximo);
+    float ancho = (float)MeasureText(texto, tamano);
+
+    if (alineacion == UI_ALINEAR_CENTRO)
+    {
+        x -= ancho * 0.5f;
+    }
+    else if (alineacion == UI_ALINEAR_DERECHA)
+    {
+        x -= ancho;
+    }
+
+    DrawText(texto, (int)x, (int)y, tamano, color);
+
+    return tamano;
+}
+
+
+int DibujarTextoDerechaUI(
+    const char* texto,
+    float derecha,
+    float y,
+    int tokenTexto,
+    float anchoMaximo,
+    Color color
+)
+{
+    return DibujarTextoAlineadoUI(texto, derecha, y, tokenTexto, anchoMaximo, color, UI_ALINEAR_DERECHA);
+}
+
+
+//==================================================
+// ICONOS: MONEDA Y TROFEO
+//==================================================
+
+void DibujarMonedaUI(Vector2 centro, float radioRef, float alfa)
+{
+    if (alfa <= 0.0f)
+    {
+        return;
+    }
+
+    float radio = Px(radioRef);
+
+    DrawCircleV(centro, radio + GrosorLineaUI(1.5f), MultiplicarAlfa(UI_TINTA, alfa));
+    DrawCircleV(centro, radio, MultiplicarAlfa(ORO_ICONO, alfa));
+    DrawCircleV(centro, radio * 0.62f, MultiplicarAlfa(ORO_OSCURO_ICONO, alfa));
+    DrawCircleV(centro, radio * 0.42f, MultiplicarAlfa(ORO_CLARO_ICONO, alfa));
+}
+
+
+// Piezas de la copa (alto t en pixeles), agrandadas `extra` pixeles para
+// el contorno.
+static void DibujarPiezasTrofeo(float cx, float cy, float t, float extra, Color color, Color colorPie)
+{
+    // Asas: anillos a cada lado de la copa.
+    float radioAsa = t * 0.17f;
+    float grosorAsa = t * 0.07f + extra;
+
+    DrawRing(Vector2{ cx - t * 0.34f, cy - t * 0.26f }, radioAsa - grosorAsa, radioAsa + extra, 0.0f, 360.0f, 12, color);
+    DrawRing(Vector2{ cx + t * 0.34f, cy - t * 0.26f }, radioAsa - grosorAsa, radioAsa + extra, 0.0f, 360.0f, 12, color);
+
+    // Copa: borde recto arriba y fondo redondo.
+    DrawRectangleRec(
+        Rectangle{ cx - t * 0.34f - extra, cy - t * 0.50f - extra, t * 0.68f + extra * 2.0f, t * 0.26f + extra * 2.0f },
+        color
+    );
+    DrawCircleSector(Vector2{ cx, cy - t * 0.25f }, t * 0.34f + extra, 0.0f, 180.0f, 14, color);
+
+    // Tallo y pie.
+    DrawRectangleRec(
+        Rectangle{ cx - t * 0.07f - extra, cy - extra, t * 0.14f + extra * 2.0f, t * 0.34f + extra * 2.0f },
+        color
+    );
+    DrawRectangleRec(
+        Rectangle{ cx - t * 0.28f - extra, cy + t * 0.34f - extra, t * 0.56f + extra * 2.0f, t * 0.16f + extra * 2.0f },
+        colorPie
+    );
+}
+
+
+void DibujarTrofeoUI(Vector2 centro, float altoRef, float alfa)
+{
+    if (alfa <= 0.0f)
+    {
+        return;
+    }
+
+    float alto = Px(altoRef);
+    Color contorno = MultiplicarAlfa(UI_TINTA, alfa);
+
+    DibujarPiezasTrofeo(centro.x, centro.y, alto, GrosorLineaUI(1.5f), contorno, contorno);
+    DibujarPiezasTrofeo(
+        centro.x, centro.y, alto, 0.0f,
+        MultiplicarAlfa(ORO_ICONO, alfa),
+        MultiplicarAlfa(ORO_OSCURO_ICONO, alfa)
+    );
+
+    // Brillo.
+    DrawRectangleRec(
+        Rectangle{ centro.x - alto * 0.22f, centro.y - alto * 0.44f, alto * 0.08f, alto * 0.30f },
+        MultiplicarAlfa(ORO_CLARO_ICONO, alfa)
+    );
 }

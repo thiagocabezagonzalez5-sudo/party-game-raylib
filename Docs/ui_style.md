@@ -158,53 +158,59 @@ documentación de la API. No se tocará lógica de juego ni pantallas concretas.
 
 ---
 
-# Direccion elegida: A, «Carteles de playa» (implementada)
+# Dirección elegida: A, «Carteles de playa» (implementada)
 
 Ajustes pedidos e implementados:
 
 1. **Balanceo solo al aparecer y al recibir foco.** En reposo todo queda quieto
-   (cada cartel mantiene un angulo fijo de ±1,5°). El pendulo se amortigua en ~1 s.
-2. **Se puede desactivar.** `EstiloUI::reducirMovimiento = true` elimina la caida
+   (cada cartel mantiene un ángulo fijo de ±1,5°). El péndulo se amortigua en ~1 s.
+2. **Se puede desactivar.** `EstiloUI::reducirMovimiento = true` elimina la caída
    de entrada y todos los balanceos (los elementos aparecen y se quedan en su sitio).
-   Conviene enlazarlo con la opcion existente `reducirMovimiento` de
-   `ConfiguracionJuego`. La demo lo muestra en la pestana JUEGO («Reducir movimiento»).
+   Conviene enlazarlo con la opción existente `reducirMovimiento` de
+   `ConfiguracionJuego`. La demo lo muestra en la pestaña JUEGO («Reducir movimiento»).
 3. **Texto solo sobre zonas claras.** Todo el texto va en tinta oscura
    (`UI_TINTA`, contraste ~9:1) sobre la placa clara; la madera oscura solo es marco.
-   Las placas son de color plano, sin veta. Las unicas excepciones son los titulos
+   Las placas son de color plano, sin veta. Las únicas excepciones son los títulos
    sobre el mundo (`DibujarTextoMundo`), con sombra dura.
 4. **Madera y cuerda como recursos 9-slice reutilizables.** Se generan una vez
-   por codigo (`CargarEstiloUI`) y se dibujan con `DibujarNueveCortes`. Ninguna
+   por código (`CargarEstiloUI`) y se dibujan con `DibujarNueveCortes`. Ninguna
    pantalla dibuja tablones a mano.
-5. **Un color de foco y un sistema de tamanos.** `UI_FOCO` = dorado del HUB
-   (`COLOR_ACENTO` de `MenuPrincipal.cpp`, 255/200/70). Tamanos en unidades de
-   1280x720 con `EscalaUI()` = min(ancho/1280, alto/720); tamanos de texto del HUB
-   (20, 30 con foco, 54 titulo) como tokens.
+5. **Un color de foco y un sistema de tamaños.** `UI_FOCO` = dorado del HUB
+   (`COLOR_ACENTO` de `MenuPrincipal.cpp`, 255/200/70). Tamaños en unidades de
+   1280x720 con `EscalaUI()` = min(ancho/1280, alto/720); tamaños de texto del HUB
+   (20, 30 con foco, 54 título) como tokens.
 
-No incluido en esta etapa: el dial/timon (las palancas cubren los valores
+No incluido en esta etapa: el dial/timón (las palancas cubren los valores
 continuos) y el sonido de UI (solo se documenta; lo reproduce cada pantalla con
 el audio existente).
 
-## Como ejecutar la demo
+## Cómo ejecutar la demo
 
 ```
 powershell -File Tests/DemoEstiloUI.ps1                 # compila y abre la demo
 powershell -File Tests/DemoEstiloUI.ps1 -SoloCompilar   # solo compila
-build/DemoEstiloUI.exe --captura 1920 1080 build/capturas/estiloui_v2
-build/DemoEstiloUI.exe --captura 1280 720 build/capturas/estiloui_v2/reducido --reducir-movimiento
+build/DemoEstiloUI.exe --captura 1920 1080 build/capturas/estiloui_tanda3
+build/DemoEstiloUI.exe --captura 1280 720 build/capturas/estiloui_tanda3/reducido --reducir-movimiento
 ```
 
-La demo tiene 5 pestanas: VIDEO (palanca con texto propio «60 FPS»), AUDIO
+(Si la política de ejecución de PowerShell bloquea el script, agregá
+`-ExecutionPolicy Bypass` antes de `-File`.)
+
+La demo tiene 6 pestañas: VIDEO (palanca con texto propio «60 FPS»), AUDIO
 (palancas 0..100 % por defecto), JUEGO (interruptor «Reducir movimiento»),
-CONTROLES (palanca con rango 5..35 %, selector deshabilitado y tarjeta) y EXTRAS
-(segunda tanda: textos con contorno, banderines, marco con recorte, parrafo,
-sellos, etiquetas y velo; izquierda/derecha cambia la alineacion del parrafo y
-aceptar muestra u oculta el velo). VOLVER o Esc abren el aviso «¿Salir sin
-aplicar?»; APLICAR abre un aviso con cuenta atras.
+CONTROLES (palanca con rango 5..35 %, selector deshabilitado y tarjeta), EXTRAS
+(segunda tanda: textos con contorno, banderines, marco con recorte, párrafo,
+sellos, etiquetas y velo; izquierda/derecha cambia la alineación del párrafo y
+aceptar muestra u oculta el velo) y HUD (tercera tanda: tendedero con pinzas,
+etiquetas de jugador con banderín colgante, placa con marco, texto alineado,
+iconos de moneda y trofeo, y el alfa de la tarjeta y de los banderines;
+izquierda/derecha cambia el alfa de 25 % a 100 %). VOLVER o Esc abren el aviso
+«¿Salir sin aplicar?»; APLICAR abre un aviso con cuenta atrás.
 
 ## Componentes y API (`UI/EstiloUI.h`)
 
-Todas las posiciones se pasan en **unidades de referencia** (1280x720); el modulo
-las convierte con `RectRef`. Los componentes con animacion llevan su estado dentro
+Todas las posiciones se pasan en **unidades de referencia** (1280x720); el módulo
+las convierte con `RectRef`. Los componentes con animación llevan su estado dentro
 del propio struct.
 
 | Componente | Struct | Funciones |
@@ -212,28 +218,28 @@ del propio struct.
 | Recursos | `EstiloUI` | `CargarEstiloUI`, `DescargarEstiloUI`, `ActualizarEstiloUI`; campo `reducirMovimiento` |
 | Escala | — | `EscalaUI()`, `Px(u)`, `RectRef(x,y,w,h)`, `TamanoTexto(token)` |
 | Entrada | `EntradaUI`, `LectorEntradaUI`, `EnfoqueUI` | `LeerEntradaUI(lector)`, `EnfoqueUI::Mover(delta)` |
-| Animacion | `ResorteUI`, `ColgadoUI` | `ResorteUI::Actualizar`, `ColgadoUI::Iniciar/Actualizar/Pulsar/EnMovimiento` |
+| Animación | `ResorteUI`, `ColgadoUI` | `ResorteUI::Actualizar`, `ColgadoUI::Iniciar/Actualizar/Pulsar/EnMovimiento` |
 | Panel | `PanelUI` | `Iniciar(rect, retraso)`, `ActualizarPanelUI`, `DibujarPanelUI`, `AreaInteriorPanelUI` |
-| Titulo | — | `DibujarTituloUI(estilo, colgado, texto, rect)` |
-| Boton / pestana | `BotonUI` | `Iniciar(rect, texto, reposo, retraso)`, `ActualizarBotonUI(b, estilo, dt, foco)`, `DibujarBotonUI(estilo, b, foco)`; `colgado.Pulsar()` al aceptar; `activo` marca la pestana actual. Si el texto no cabe, la fuente se reduce sola (sin cortar) |
-| Ancho segun texto | — | `AnchoNecesarioBotonUI(texto, token = UI_TEXTO)`: ancho en unidades de referencia (texto + marco + aire) para dimensionar botones y pestanas |
+| Título | — | `DibujarTituloUI(estilo, colgado, texto, rect)` |
+| Botón / pestaña | `BotonUI` | `Iniciar(rect, texto, reposo, retraso)`, `ActualizarBotonUI(b, estilo, dt, foco)`, `DibujarBotonUI(estilo, b, foco)`; `colgado.Pulsar()` al aceptar; `activo` marca la pestaña actual. Si el texto no cabe, la fuente se reduce sola (sin cortar) |
+| Ancho según texto | — | `AnchoNecesarioBotonUI(texto, token = UI_TEXTO)`: ancho en unidades de referencia (texto + marco + aire) para dimensionar botones y pestañas |
 | Selector `< valor >` | `SelectorUI` | `Iniciar`, `ActualizarSelectorUI`, `GolpearSelectorUI(dir)`, `DibujarSelectorUI(estilo, s, textoValor, foco)`; `habilitado = false`: placa rayada, flechas solo contorneadas, texto en `UI_TINTA_SUAVE` (~4,7:1) y `GolpearSelectorUI` no hace nada. `Iniciar` lo repone a `true` |
-| Palanca (slider) | `PalancaUI` | `Iniciar(rect, etiqueta, valor, retraso)`, `ActualizarPalancaUI`, `AjustarPalancaUI(dir)`, `DibujarPalancaUI(estilo, p, foco, textoValor = nullptr)`; `valor` 0..1, `paso`. Valor mostrado: `textoValor` (p. ej. «60 FPS») o `formatoValor` printf sobre `ValorRealPalancaUI` (= `minimo + valor * (maximo - minimo)`, p. ej. `"%.0f %%"` con 5..35) o, por defecto, 0..100 %. `anchoValor` reserva la zona del texto; `RielPalancaUI(p, x0, x1)` da el riel en pixeles. `Iniciar` no toca `minimo/maximo/formatoValor/anchoValor` |
+| Palanca (slider) | `PalancaUI` | `Iniciar(rect, etiqueta, valor, retraso)`, `ActualizarPalancaUI`, `AjustarPalancaUI(dir)`, `DibujarPalancaUI(estilo, p, foco, textoValor = nullptr)`; `valor` 0..1, `paso`. Valor mostrado: `textoValor` (p. ej. «60 FPS») o `formatoValor` printf sobre `ValorRealPalancaUI` (= `minimo + valor * (maximo - minimo)`, p. ej. `"%.0f %%"` con 5..35) o, por defecto, 0..100 %. `anchoValor` reserva la zona del texto; `RielPalancaUI(p, x0, x1)` da el riel en píxeles. `Iniciar` no toca `minimo/maximo/formatoValor/anchoValor` |
 | Interruptor (toggle) | `InterruptorUI` | `Iniciar`, `ActualizarInterruptorUI`, `DibujarInterruptorUI`; campo `activo` |
-| Tarjeta (bloque de informacion) | `TarjetaUI` | `Iniciar(rect, titulo o nullptr, retraso)`, `ActualizarTarjetaUI`, `DibujarTarjetaUI`, `AreaContenidoTarjetaUI`, `DibujarLineaTarjetaUI(t, linea, etiqueta, valor)`. Placa clara con marco fino de madera, sin sogas ni foco |
-| Modal / aviso | `ModalUI` | `Abrir(rect, mensaje, boton0, boton1, focoInicial)`, `Cerrar()`, `ActualizarModalUI(m, estilo, dt, entrada)` → indice del boton elegido o -1 (al responder se cierra solo), `DibujarModalUI(estilo, m, detalle = nullptr, progreso = -1)`, `BotonModalBajoMouseUI`. Campos: `botonCancelar` (lo ejecuta volver), `largoSogas` (ganchos fijos a esa distancia sobre el cartel; 0 = sin sogas). Velo oscuro; izq/der eligen boton, arriba/abajo alternan; respeta `reducirMovimiento` |
+| Tarjeta (bloque de información) | `TarjetaUI` | `Iniciar(rect, titulo o nullptr, retraso)`, `ActualizarTarjetaUI`, `DibujarTarjetaUI(estilo, t, alfa = 1)`, `AreaContenidoTarjetaUI`, `DibujarLineaTarjetaUI(t, linea, etiqueta, valor, alfa = 1)`. Placa clara con marco fino de madera, sin sogas ni foco. `alfa` agregado en la tercera tanda |
+| Modal / aviso | `ModalUI` | `Abrir(rect, mensaje, boton0, boton1, focoInicial)`, `Cerrar()`, `ActualizarModalUI(m, estilo, dt, entrada)` → índice del botón elegido o -1 (al responder se cierra solo), `DibujarModalUI(estilo, m, detalle = nullptr, progreso = -1)`, `BotonModalBajoMouseUI`. Campos: `botonCancelar` (lo ejecuta volver), `largoSogas` (ganchos fijos a esa distancia sobre el cartel; 0 = sin sogas). Velo oscuro; izq/der eligen botón, arriba/abajo alternan; respeta `reducirMovimiento` |
 | Ayuda de controles | — | `DibujarAyudaUI(estilo, texto)` |
-| Texto ajustado | — | `TamanoTextoAjustadoUI(texto, token, anchoMax)`, `DibujarTextoAjustadoUI(texto, x, y, token, anchoMax, color, centrado)`: reducen la fuente de a 1 px (minimo 10 px) hasta que el texto quepa; nunca lo cortan |
+| Texto ajustado | — | `TamanoTextoAjustadoUI(texto, token, anchoMax)`, `DibujarTextoAjustadoUI(texto, x, y, token, anchoMax, color, centrado)`: reducen la fuente de a 1 px (mínimo 10 px) hasta que el texto quepa; nunca lo cortan |
 | Bajo nivel | — | `DibujarNueveCortes`, `DibujarCuerdaUI`, `DibujarMarcoFoco`, `DibujarFlechaUI(cx, cy, medio, dir, color)`, `DibujarTextoTinta`, `DibujarTextoMundo` |
 
 **Tokens** (todos en `EstiloUI.h`): colores `UI_FOCO`, `UI_TINTA`, `UI_TINTA_SUAVE`,
 `UI_PLACA_CLARA`, `UI_MADERA_OSCURA`, `UI_MADERA_MEDIA`, `UI_CUERDA`, `UI_POSITIVO`,
-`UI_PELIGRO`, `UI_TEXTO_MUNDO`; tamanos `UI_TEXTO_PEQUENO/UI_TEXTO/UI_TEXTO_GRANDE/
+`UI_PELIGRO`, `UI_TEXTO_MUNDO`; tamaños `UI_TEXTO_PEQUENO/UI_TEXTO/UI_TEXTO_GRANDE/
 UI_TEXTO_TITULO`, `UI_RELLENO`, `UI_SEPARACION`, `UI_ALTO_FILA`, `UI_ALTO_BOTON`,
 `UI_LARGO_CUERDA`, `UI_BORDE_FOCO`; tiempos `UI_T_CAIDA_ENTRADA`, `UI_T_ESCALONADO`,
 `UI_T_PULSACION`, `UI_T_ASENTAR_PALANCA`.
 
-**Uso tipico en una pantalla**
+**Uso típico en una pantalla**
 
 ```cpp
 EstiloUI estilo;  CargarEstiloUI(estilo);            // una vez
@@ -254,16 +260,16 @@ DescargarEstiloUI(estilo);
 ## Segunda tanda de componentes
 
 Solo se agregaron funciones, structs y un token (`UI_VELO`); ninguna firma,
-valor por defecto ni aspecto de lo anterior cambio. Ninguno carga recursos
+valor por defecto ni aspecto de lo anterior cambió. Ninguno carga recursos
 propios: usan las texturas de `EstiloUI` (o ninguna).
 
-**Convencion de unidades.** Las *posiciones* que suelen salir de otro calculo
-(un centro obtenido con `GetWorldToScreen`, un rectangulo ya pasado por
-`RectRef`) van en **pixeles**; los *tamanos* (radios, grosores, tokens de
+**Convención de unidades.** Las *posiciones* que suelen salir de otro cálculo
+(un centro obtenido con `GetWorldToScreen`, un rectángulo ya pasado por
+`RectRef`) van en **píxeles**; los *tamaños* (radios, grosores, tokens de
 texto) van en **unidades de referencia** y escalan con `EscalaUI()`. Los
-componentes que ocupan un lugar fijo de la pantalla (banderin, marco) reciben
-su rectangulo en unidades de referencia, como el resto del modulo. Para pasar
-un punto de referencia a pixeles: `RectRef(x, y, 0, 0)`.
+componentes que ocupan un lugar fijo de la pantalla (banderín, marco) reciben
+su rectángulo en unidades de referencia, como el resto del módulo. Para pasar
+un punto de referencia a píxeles: `RectRef(x, y, 0, 0)`.
 
 ### 1. Texto sobre el mundo con contorno
 
@@ -273,11 +279,11 @@ void DibujarTextoMundoContornoUI(const char* texto, float centroX, float y,
 ```
 
 Como `DibujarTextoMundo` (que no cambia), pero con contorno oscuro y sombra dura
-**proporcionales al tamano** (≈ 1/16 y 1/10 de la fuente: 16 px → 1 y 2 px;
+**proporcionales al tamaño** (≈ 1/16 y 1/10 de la fuente: 16 px → 1 y 2 px;
 54 px → 3 y 5 px). Usarlo para textos que van directo sobre la escena 3D y deben
 leerse sobre cualquier fondo (cielo claro, nieve, lava): «¡YA!», «RONDA 3»,
 puntos que saltan. `alfa` funde todo junto, pensado para aparecer/desaparecer
-(a mitad del fundido el contorno se ve algo mas denso que el texto).
+(a mitad del fundido el contorno se ve algo más denso que el texto).
 
 ```cpp
 DibujarTextoMundoContornoUI("¡YA!", GetScreenWidth() * 0.5f, Px(120), UI_TEXTO_TITULO, UI_FOCO);
@@ -293,17 +299,17 @@ Rectangle DibujarEtiquetaUI(const char* texto, Vector2 centro, float rotacionGra
 ```
 
 Cartelito de placa clara con borde de color (p. ej. el del jugador) y texto en
-tinta. `centro` en pixeles; rotacion en grados, sentido horario. `pico = true`
-agrega un triangulo abajo que senala el objetivo. Devuelve el rectangulo de la
-placa en pixeles **sin rotar** (para apilar etiquetas). Sin foco ni animacion.
-Usarlo para rotulos sobre jugadores, fichas o postales.
+tinta. `centro` en píxeles; rotación en grados, sentido horario. `pico = true`
+agrega un triángulo abajo que señala el objetivo. Devuelve el rectángulo de la
+placa en píxeles **sin rotar** (para apilar etiquetas). Sin foco ni animación.
+Usarlo para rótulos sobre jugadores, fichas o postales.
 
 ```cpp
 OpcionesEtiquetaUI op;  op.borde = colorJugador;  op.pico = true;
 DibujarEtiquetaUI("J1", Vector2{ pantalla.x, pantalla.y - Px(40) }, -5.0f, op);
 ```
 
-### 3. Parrafo con ajuste de linea
+### 3. Párrafo con ajuste de línea
 
 ```cpp
 enum AlineacionUI { UI_ALINEAR_IZQUIERDA, UI_ALINEAR_CENTRO, UI_ALINEAR_DERECHA };
@@ -316,11 +322,11 @@ MedidaParrafoUI DibujarParrafoUI(const char* texto, float x, float y, int tokenT
 ```
 
 Parte el texto por palabras (y en cada `\n`) para que quepa en `anchoMaximo`
-pixeles; una palabra mas larga que el ancho queda sola en su linea (nunca se
-corta). Con `altoMaximo > 0` la fuente baja de a 1 px (minimo 10) hasta que el
-bloque entre; si ni asi entra, `cabe = false` y se dibuja igual a 10 px. El
+píxeles; una palabra más larga que el ancho queda sola en su línea (nunca se
+corta). Con `altoMaximo > 0` la fuente baja de a 1 px (mínimo 10) hasta que el
+bloque entre; si ni así entra, `cabe = false` y se dibuja igual a 10 px. El
 interlineado es proporcional a la fuente. Devuelve el alto usado (primera a
-ultima linea), las lineas y la fuente final. `MedirParrafoUI` mide sin dibujar,
+última línea), las líneas y la fuente final. `MedirParrafoUI` mide sin dibujar,
 para reservar espacio. Usarlo para descripciones de minijuegos, reglas y
 avisos largos (en lugar de varias `DrawText`).
 
@@ -340,9 +346,9 @@ void DibujarSelloUI(const char* texto, Vector2 centro, float radioRef,
     float rotacionGrados = 0.0f, float alfa = 1.0f);
 ```
 
-Sello de goma: forma de color (circulo o estrella de 12 puntas) con contorno,
-disco claro al centro y el texto en tinta; la fuente se elige segun el radio y
-se reduce hasta entrar en el disco. `centro` en pixeles, `radioRef` en unidades
+Sello de goma: forma de color (círculo o estrella de 12 puntas) con contorno,
+disco claro al centro y el texto en tinta; la fuente se elige según el radio y
+se reduce hasta entrar en el disco. `centro` en píxeles, `radioRef` en unidades
 de referencia. Para textos muy cortos: «x2», «NUEVO», «1º», «+5».
 
 ```cpp
@@ -360,40 +366,42 @@ void DibujarVeloUI(const VeloUI& velo);
 void DibujarVeloUI(float alfa, Color color = UI_VELO);
 ```
 
-Oscurece toda la pantalla para dejar la escena en segundo plano detras de una
+Oscurece toda la pantalla para dejar la escena en segundo plano detrás de una
 pausa, un resultado o un aviso propio. Se cambia `visible` y `ActualizarVeloUI`
 anima `aparicion` en `duracion` segundos; con `reducirMovimiento` aparece y
-desaparece al instante. `Iniciar` fija el estado sin fundido. La version sin
-estado dibuja el rectangulo con ese alfa. Mismo color y opacidad que el velo
+desaparece al instante. `Iniciar` fija el estado sin fundido. La versión sin
+estado dibuja el rectángulo con ese alfa. Mismo color y opacidad que el velo
 de `ModalUI` (que sigue dibujando el suyo: no hace falta otro debajo).
 
 ```cpp
 velo.visible = enPausa;                 // cada frame
 ActualizarVeloUI(velo, estilo, dt);
 ... escena ...
-DibujarVeloUI(velo);                    // despues de la escena, antes del menu de pausa
+DibujarVeloUI(velo);                    // después de la escena, antes del menú de pausa
 ```
 
-### 6. Banderin con mastil
+### 6. Banderín con mástil
 
 ```cpp
 void DibujarBanderinUI(const EstiloUI& estilo, const char* texto, Rectangle refBandera,
-    float altoMastilRef, Color color = UI_PELIGRO, bool ondear = true, float fase = 0.0f);
+    float altoMastilRef, Color color = UI_PELIGRO, bool ondear = true, float fase = 0.0f,
+    float alfa = 1.0f);   // alfa: tercera tanda
 ```
 
-Mastil de madera con perilla dorada y una bandera de color con cola en V; el
+Mástil de madera con perilla dorada y una bandera de color con cola en V; el
 texto va en tinta sobre una franja clara de la tela. `refBandera` es la tela
-(unidades de referencia); el mastil va pegado a su borde izquierdo y mide
+(unidades de referencia); el mástil va pegado a su borde izquierdo y mide
 `altoMastilRef` desde el borde superior hacia abajo. Ondea con `estilo.tiempo`
 (requiere `ActualizarEstiloUI`); con `ondear = false` o `reducirMovimiento`
-queda quieta. `fase` desfasa banderines vecinos. Usarlo para marcar salida/meta,
-equipos o la casilla de un evento.
+queda quieta. `fase` desfasa banderines vecinos. `alfa` (tercera tanda) funde
+mástil, tela y texto juntos. Usarlo para marcar salida/meta, equipos o la
+casilla de un evento.
 
 ```cpp
 DibujarBanderinUI(estilo, "META", Rectangle{ 1080, 268, 150, 58 }, 330.0f, UI_POSITIVO, true, 1.7f);
 ```
 
-### 7. Marco de ilustracion con recorte
+### 7. Marco de ilustración con recorte
 
 ```cpp
 Rectangle ComenzarMarcoIlustracionUI(const EstiloUI& estilo, Rectangle ref,
@@ -403,13 +411,13 @@ Rectangle AreaMarcoIlustracionUI(Rectangle ref, float grosorMarcoRef = 10.0f);
 ```
 
 Marco de madera tipo cartel cuyo interior recorta lo que se dibuje entre
-`Comenzar` y `Terminar` (con `BeginScissorMode` sobre el area interior en
-pixeles enteros, ya escalada). `Comenzar` dibuja sombra, marco y fondo (alfa 0 =
-sin fondo) y devuelve el area interior en pixeles; `Terminar` cierra el recorte
+`Comenzar` y `Terminar` (con `BeginScissorMode` sobre el área interior en
+píxeles enteros, ya escalada). `Comenzar` dibuja sombra, marco y fondo (alfa 0 =
+sin fondo) y devuelve el área interior en píxeles; `Terminar` cierra el recorte
 y dibuja el canto interior encima del contenido. Usarlo para vistas previas de
 minijuegos, retratos o mapas. Limitaciones: no se anida, no rota, llamar ambas
 con el mismo `ref` y grosor, y al terminar el recorte queda desactivado (si la
-pantalla tenia uno propio, debe volver a activarlo).
+pantalla tenía uno propio, debe volver a activarlo).
 
 ```cpp
 Rectangle area = ComenzarMarcoIlustracionUI(estilo, Rectangle{ 282, 222, 250, 172 });
@@ -417,24 +425,190 @@ DrawTexturePro(vistaPrevia, origen, area, Vector2{}, 0.0f, WHITE);  // lo que so
 TerminarMarcoIlustracionUI(estilo, Rectangle{ 282, 222, 250, 172 });
 ```
 
+## Tercera tanda: piezas del HUD
+
+Las piezas del tendedero del HUD de minijuegos (`Minigames/HudMinijuego.cpp`)
+y del tablero (`Gameplay/PartidaTablero.cpp`), que hasta ahora eran copias
+`static` en cada archivo. Son **copias fieles**: mismas medidas, colores y
+orden de dibujo, así que el día que esos archivos se migren a esta API el HUD
+se verá igual (comprobado píxel a píxel contra las copias del tablero a
+1280x720, 1920x1080 y 1600x720: 0 píxeles distintos). Esa migración todavía no
+está hecha.
+
+Solo se agregaron funciones y dos parámetros con valor por defecto (`alfa` en
+`DibujarBanderinUI` y en `DibujarTarjetaUI`/`DibujarLineaTarjetaUI`); las
+llamadas existentes compilan y se ven igual. Ninguna pieza nueva carga recursos
+ni anima (no dependen de `reducirMovimiento`; la animación del HUD, como el
+salto de una etiqueta, la sigue haciendo quien las llama).
+
+Misma convención de unidades que la segunda tanda: posiciones en **píxeles**
+(el HUD calcula su propio lienzo anclado arriba o abajo, así que sus
+rectángulos ya vienen en píxeles) y tamaños en **unidades de referencia**.
+`alfa` (0..1) funde cada pieza entera; las capas se funden por separado, así
+que a medio fundido el contorno o la madera de abajo se transparentan un poco:
+está pensado para aparecer y desaparecer, no para quedar a medias. Con `alfa`
+= 1 el color se usa tal cual (se multiplica el alfa propio del color, no se
+reemplaza).
+
+### 1. Pinza
+
+```cpp
+void DibujarPinzaUI(Vector2 puntoSoga, float alfa = 1.0f);
+```
+
+Broche de madera de 8x18 unidades que muerde la soga en `puntoSoga` (píxeles):
+cubre de 6 unidades arriba a 12 abajo, con contorno de tinta y una franja oscura.
+Dibujarla **después** del cartel, para que tape su borde. Usarla para colgar
+etiquetas y carteles de una soga (en el HUD, a 22 unidades de cada borde de la
+etiqueta y a 26 en los carteles).
+
+```cpp
+DibujarPinzaUI(Vector2{ rect.x + Px(22.0f), ySoga });
+DibujarPinzaUI(Vector2{ rect.x + rect.width - Px(22.0f), ySoga });
+```
+
+### 2. Banderín colgante
+
+```cpp
+void DibujarBanderinColganteUI(Vector2 esquina, Color color,
+    float anchoRef = 20.0f, float altoRef = 36.0f, float alfa = 1.0f);
+```
+
+La cinta vertical de color del jugador: tela con cola en V abajo y contorno de
+tinta. **No es el mismo componente que `DibujarBanderinUI`** (aquel tiene mástil,
+texto y ondea; este es una pieza chica y quieta que va dentro de una etiqueta),
+por eso es una función aparte. `esquina` es la esquina superior izquierda de la
+tela, en píxeles. Medidas del HUD: 20x36 a (12, 11) del borde de la etiqueta;
+18x34 en el cartel de turno; 13x22 o 14x24 en las filas de resultados.
+
+```cpp
+DibujarBanderinColganteUI(Vector2{ rect.x + Px(12.0f), rect.y + Px(11.0f) }, participante.color);
+```
+
+### 3. Placa con marco
+
+```cpp
+Rectangle DibujarPlacaConMarcoUI(const EstiloUI& estilo, Rectangle rect,
+    float marcoRef = 6.0f, float alfa = 1.0f);
+```
+
+Sombra, marco fino de madera y placa clara, sin estado ni caída. `rect` en
+píxeles; devuelve la placa (la zona del texto) en píxeles. Marco 6 en las
+etiquetas de jugador y el cartel de turno, 7 en la presentación del minijuego
+y la tira del tablero. Si el estilo no
+está cargado no dibuja, pero devuelve la placa igual. Diferencia con
+`TarjetaUI`: la tarjeta tiene título, caída de entrada y un marco fijo de 7
+con otra sombra; usá la placa cuando el contenido lo dibujás vos.
+
+```cpp
+Rectangle placa = DibujarPlacaConMarcoUI(estilo, rect, 6.0f);
+DibujarTextoAjustadoUI("J1", placa.x + Px(30.0f), placa.y + Px(3.0f), UI_TEXTO, placa.width, UI_TINTA, false);
+```
+
+### 4. Texto alineado
+
+```cpp
+int DibujarTextoAlineadoUI(const char* texto, float x, float y, int tokenTexto,
+    float anchoMaximo, Color color, AlineacionUI alineacion);
+int DibujarTextoDerechaUI(const char* texto, float derecha, float y, int tokenTexto,
+    float anchoMaximo, Color color);
+```
+
+Como `DibujarTextoAjustadoUI` (reduce la fuente de a 1 px, mínimo 10, si el
+texto no cabe en `anchoMaximo` píxeles; nunca corta), pero `x` es el borde
+izquierdo, el centro o el **borde derecho** según `alineacion` (el mismo enum
+del párrafo). `DibujarTextoDerechaUI` es el atajo para pegar un valor al final
+de una fila («+3», un puntaje). Devuelven la fuente usada en píxeles. La
+transparencia va en el alfa de `color`.
+
+```cpp
+DibujarTextoDerechaUI(TextFormat("%d", puntos), derecha, yLinea1, UI_TEXTO, derecha - finNombre, UI_TINTA);
+```
+
+### 5. Icono de moneda
+
+```cpp
+void DibujarMonedaUI(Vector2 centro, float radioRef = 8.0f, float alfa = 1.0f);
+```
+
+Disco dorado con contorno de tinta y dos anillos interiores. `centro` en
+píxeles; radio 8 en las etiquetas, el tablón de compra y los resultados. Los
+dorados son los del HUD del tablero (internos del módulo, no son tokens).
+
+### 6. Icono de trofeo
+
+```cpp
+void DibujarTrofeoUI(Vector2 centro, float altoRef = 18.0f, float alfa = 1.0f);
+```
+
+Copa dorada con asas, tallo, pie y un brillo, con contorno de tinta. `centro`
+en píxeles (la copa queda centrada en alto). Alto 18 en las
+etiquetas, 14 en la leyenda, 20 en los resultados y 54 en el tablón de compra.
+
+```cpp
+DibujarTrofeoUI(Vector2{ rect.x + Px(50.0f), yIconos });
+DrawText(TextFormat("%d", trofeos), (int)(rect.x + Px(63.0f)), (int)yValores, TamanoTexto(UI_TEXTO), UI_TINTA);
+DibujarMonedaUI(Vector2{ rect.x + Px(100.0f), yIconos });
+```
+
+### 7. Alfa en el banderín y la tarjeta
+
+```cpp
+void DibujarBanderinUI(..., float fase = 0.0f, float alfa = 1.0f);
+void DibujarTarjetaUI(const EstiloUI& estilo, const TarjetaUI& tarjeta, float alfa = 1.0f);
+void DibujarLineaTarjetaUI(const TarjetaUI& tarjeta, int linea, const char* etiqueta,
+    const char* valor, float alfa = 1.0f);
+```
+
+Parámetro final con valor por defecto 1: las llamadas existentes no cambian ni
+se ven distinto. Con `alfa` < 1 se funde todo el componente (sombra, madera,
+placa, título, divisor y texto; en el banderín, mástil, tela y texto). Pasá el
+mismo `alfa` a `DibujarLineaTarjetaUI` para que las líneas acompañen a la
+tarjeta. Con `alfa` <= 0 no se dibuja nada.
+
+```cpp
+DibujarTarjetaUI(estilo, tarjeta, aparicion);
+DibujarLineaTarjetaUI(tarjeta, 0, "Monedas", "+3", aparicion);
+```
+
+**Migración (pendiente, no es parte de esta tanda).** Equivalencias para
+reemplazar las copias `static` sin cambio visual:
+
+| Copia en el HUD | API nueva |
+|---|---|
+| `DibujarPinza(cx, y)` / `DibujarPinzaHud(cx, y)` | `DibujarPinzaUI(Vector2{ cx, y })` |
+| `DibujarBanderin(x, y, Px(w), Px(h), c)` / `DibujarBanderinHud(...)` | `DibujarBanderinColganteUI(Vector2{ x, y }, c, w, h)` |
+| `DibujarPlacaConMarco(estilo, r, m)` / `DibujarPlacaConMarcoHud(...)` | `DibujarPlacaConMarcoUI(estilo, r, m)` |
+| `DibujarTextoDerecha(...)` / `DibujarTextoDerechaHud(...)` | `DibujarTextoDerechaUI(...)` (mismos argumentos) |
+| `DibujarMonedaHud(cx, cy, Px(r))` | `DibujarMonedaUI(Vector2{ cx, cy }, r)` |
+| `DibujarTrofeoIconoHud(cx, cy, Px(a))` | `DibujarTrofeoUI(Vector2{ cx, cy }, a)` |
+
+Si el alto del trofeo se calcula en píxeles (p. ej. `std::fmin(Px(54.0f),
+placa.height - Px(16.0f))`), dividirlo por `EscalaUI()` para pasarlo en
+unidades de referencia.
+
 ## Capturas de la demo
 
-`docs/img/ui_demo_{1280x720,1920x1080}_*.png` (primera version, 3 pestanas): 01 mitad
-de caida del panel, 02 rebote, 03 reposo, 04 palanca ajustada, 05 cambio de pestana a
-mitad de balanceo, 06 pestana en reposo, 07 boton con foco a mitad de balanceo,
-08 boton pulsado, 09 final.
+`docs/img/ui_demo_{1280x720,1920x1080}_*.png` (primera versión, 3 pestañas): 01 mitad
+de caída del panel, 02 rebote, 03 reposo, 04 palanca ajustada, 05 cambio de pestaña a
+mitad de balanceo, 06 pestaña en reposo, 07 botón con foco a mitad de balanceo,
+08 botón pulsado, 09 final.
 
-Version 2 (componentes nuevos), en `build/capturas/estiloui_v2/` (no versionadas;
-se regeneran con los comandos de arriba): 01 mitad de caida, 02 rebote,
-03 reposo con pestanas dimensionadas por su texto, 04 palanca con texto propio
-(120 FPS), 05 cambio de pestana a mitad, 06 palancas 0..100 %, 07 pestana CONTROLES
+Versión 2 (componentes nuevos), en `build/capturas/estiloui_v2/` (no versionadas;
+se regeneran con los comandos de arriba): 01 mitad de caída, 02 rebote,
+03 reposo con pestañas dimensionadas por su texto, 04 palanca con texto propio
+(120 FPS), 05 cambio de pestaña a mitad, 06 palancas 0..100 %, 07 pestaña CONTROLES
 con tarjeta, 08 palanca con rango (17 %) y selector deshabilitado con foco,
 09 entrada del aviso, 10 aviso en reposo, 11 foco movido a SALIR a mitad de
-balanceo, 12 aviso cancelado con volver, 13 aviso con cuenta atras. La carpeta
+balanceo, 12 aviso cancelado con volver, 13 aviso con cuenta atrás. La carpeta
 `reducido/` repite la secuencia con `reducirMovimiento` activado.
 
 Segunda tanda, en `build/capturas/estiloui_tanda2/` (y `reducido/`), con la
-misma secuencia mas: 14 pestana EXTRAS en reposo, 15 parrafo centrado y
-banderines ondeando, 16 velo a mitad del fundido, 17 velo completo. Se
-regeneran con `build/DemoEstiloUI.exe --captura 1280 720 build/capturas/estiloui_tanda2`
+misma secuencia más: 14 pestaña EXTRAS en reposo, 15 párrafo centrado y
+banderines ondeando, 16 velo a mitad del fundido, 17 velo completo.
+
+Tercera tanda, en `build/capturas/estiloui_tanda3/` (y `reducido/`), con 6
+pestañas y la misma secuencia más: 18 pestaña HUD en reposo (alfa 100 %) y
+19 alfa al 50 % (J4, tarjeta y banderines fundidos). Se regeneran con
+`build/DemoEstiloUI.exe --captura 1280 720 build/capturas/estiloui_tanda3`
 (y 1920 1080, y `--reducir-movimiento` hacia `reducido/`).

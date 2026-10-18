@@ -68,7 +68,11 @@ static const PasoGuion GUION[] =
     { 600, "volver" },      // REVERTIR
     { 601, "pestana+" },
     { 700, "derecha" },     // parrafo centrado
-    { 720, "aceptar" }      // velo
+    { 720, "aceptar" },     // velo
+    // HUD (tercera tanda): se pasa a la pestana y se baja el alfa a 50 %.
+    { 750, "pestana+" },
+    { 845, "izquierda" },
+    { 846, "izquierda" }
 };
 
 struct PasoCaptura
@@ -95,7 +99,9 @@ static const PasoCaptura CAPTURAS[] =
     { 690, "14_extras_reposo" },
     { 712, "15_extras_centrado_ondeo" },
     { 725, "16_velo_mitad" },
-    { 745, "17_velo_completo" }
+    { 745, "17_velo_completo" },
+    { 840, "18_hud_reposo" },
+    { 852, "19_hud_alfa_50" }
 };
 
 
@@ -139,7 +145,7 @@ int main(int argc, char** argv)
 
     LectorEntradaUI lector;
     int frame = 0;
-    int ultimaCaptura = 750;
+    int ultimaCaptura = 852;
 
     while (!WindowShouldClose() && !demo.salir)
     {

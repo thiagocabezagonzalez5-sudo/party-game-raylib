@@ -15,9 +15,11 @@ enum TipoFilaDemo
     FILA_TARJETA            // sin foco; ocupa el lugar de la ultima fila
 };
 
-// La ultima pestana (EXTRAS) no tiene filas: muestra la segunda tanda de
-// componentes y tiene un unico elemento con foco (el parrafo).
+// Las dos ultimas pestanas no tienen filas: EXTRAS muestra la segunda
+// tanda de componentes y HUD la tercera. Cada una tiene un unico
+// elemento con foco (el parrafo y el control de alfa).
 static const int PESTANA_EXTRAS = 4;
+static const int PESTANA_HUD = 5;
 
 // Por pestana con filas: tipo de fila y su indice dentro del arreglo del
 // tipo.
@@ -35,7 +37,8 @@ static const char* NOMBRES_PESTANA[DEMO_PESTANAS] =
     "AUDIO",
     "JUEGO",
     "CONTROLES",
-    "EXTRAS"
+    "EXTRAS",
+    "HUD"
 };
 
 static const char* OPCIONES_SELECTOR[3][3] =
@@ -48,7 +51,7 @@ static const char* OPCIONES_SELECTOR[3][3] =
 // Palanca con texto propio: limite de FPS en 5 pasos.
 static const int OPCIONES_FPS[5] = { 30, 60, 90, 120, 144 };
 
-static const float REPOSO_PESTANA[DEMO_PESTANAS] = { 1.2f, -1.0f, 1.4f, -1.2f, 1.0f };
+static const float REPOSO_PESTANA[DEMO_PESTANAS] = { 1.2f, -1.0f, 1.4f, -1.2f, 1.0f, -1.4f };
 
 // Interruptor que gobierna EstiloUI::reducirMovimiento.
 static const int INTERRUPTOR_REDUCIR = 2;
@@ -60,10 +63,11 @@ static const float Y_FILAS = 232.0f;
 static const float PASO_FILAS = 66.0f;
 static const float Y_BOTONES = 510.0f;
 
-// Con 5 pestanas, minimo 126 de ancho y 14 de hueco para que entren en
-// el panel.
-static const float HUECO_PESTANAS = 14.0f;
-static const float ANCHO_MINIMO_PESTANA = 126.0f;
+// Con 6 pestanas, 8 de aire extra sobre el texto, minimo 100 de ancho y
+// 10 de hueco para que entren en el panel.
+static const float AIRE_PESTANA = 8.0f;
+static const float HUECO_PESTANAS = 10.0f;
+static const float ANCHO_MINIMO_PESTANA = 100.0f;
 
 // EXTRAS: marco con recorte, tarjeta del parrafo, sellos, etiquetas y, a
 // los costados del panel (sobre el mundo), textos con contorno y
@@ -80,6 +84,22 @@ static const char* TEXTO_PARRAFO =
 
 static const char* NOMBRES_ALINEACION[3] = { "IZQUIERDA", "CENTRO", "DERECHA" };
 
+// HUD: un tendedero como el del HUD real (soga con comba, etiquetas de
+// jugador de 168x64 colgadas de pinzas) y, debajo, la tarjeta con alfa,
+// la placa del texto alineado (con foco) y la de los iconos.
+static const float ANCHO_ETIQUETA_HUD = 168.0f;
+static const float ALTO_ETIQUETA_HUD = 64.0f;
+static const float SEPARACION_ETIQUETAS_HUD = 10.0f;
+static const float X_ETIQUETAS_HUD = 289.0f;
+static const float Y_SOGA_HUD = 208.0f;
+static const float COMBA_SOGA_HUD = 6.0f;
+static const float SOGA_SOBRANTE_HUD = 22.0f;
+static const Rectangle REF_TARJETA_ALFA = { 290.0f, 314.0f, 240.0f, 150.0f };
+static const Rectangle REF_PLACA_TEXTO = { 548.0f, 314.0f, 230.0f, 150.0f };
+static const Rectangle REF_PLACA_ICONOS = { 796.0f, 314.0f, 194.0f, 150.0f };
+static const Color TINTA_POSITIVA_HUD = { 20, 92, 48, 255 };    // la del tablero
+static const Color AZUL_JUGADOR = { 70, 130, 210, 255 };
+
 static const Rectangle REF_MODAL_SALIR = { 340.0f, 230.0f, 600.0f, 250.0f };
 static const Rectangle REF_MODAL_APLICAR = { 340.0f, 220.0f, 600.0f, 270.0f };
 static const float DURACION_CONFIRMACION = 10.0f;
@@ -94,7 +114,7 @@ static Rectangle RectFila(int fila)
 // Filas que reciben foco en una pestana (la tarjeta no).
 static int FilasConFoco(int pestana)
 {
-    if (pestana == PESTANA_EXTRAS)
+    if (pestana == PESTANA_EXTRAS || pestana == PESTANA_HUD)
     {
         return 1;
     }
@@ -124,6 +144,12 @@ static void IniciarFilasPestana(DemoEstiloUI& demo, float retrasoBase)
     if (demo.pestanaActiva == PESTANA_EXTRAS)
     {
         demo.tarjetaParrafo.Iniciar(REF_TARJETA_PARRAFO, "Párrafo con ajuste", retrasoBase);
+        return;
+    }
+
+    if (demo.pestanaActiva == PESTANA_HUD)
+    {
+        demo.tarjetaAlfa.Iniciar(REF_TARJETA_ALFA, "Tarjeta con alfa", retrasoBase);
         return;
     }
 
@@ -197,6 +223,7 @@ void DemoEstiloUI::Inicializar(bool reducirMovimiento)
     opcionSelector[2] = 0;
     alineacionParrafo = UI_ALINEAR_IZQUIERDA;
     velo.Iniciar(false);
+    cuartosAlfa = 4;
 
     estilo.reducirMovimiento = reducirMovimiento;
 
@@ -228,7 +255,7 @@ void DemoEstiloUI::Inicializar(bool reducirMovimiento)
 
     for (int i = 0; i < DEMO_PESTANAS; i++)
     {
-        float necesario = AnchoNecesarioBotonUI(NOMBRES_PESTANA[i]) + 40.0f;
+        float necesario = AnchoNecesarioBotonUI(NOMBRES_PESTANA[i]) + AIRE_PESTANA;
         anchos[i] = necesario > ANCHO_MINIMO_PESTANA ? necesario : ANCHO_MINIMO_PESTANA;
         total += anchos[i];
     }
@@ -319,6 +346,13 @@ static void AjustarFilaEnfocada(DemoEstiloUI& demo, int direccion)
         return;
     }
 
+    if (demo.pestanaActiva == PESTANA_HUD)
+    {
+        int cuartos = demo.cuartosAlfa + direccion;
+        demo.cuartosAlfa = cuartos < 1 ? 1 : (cuartos > 4 ? 4 : cuartos);
+        return;
+    }
+
     int fila = demo.enfoque.indice;
     int tipo = FILAS_DEMO[demo.pestanaActiva][fila][0];
     int indice = FILAS_DEMO[demo.pestanaActiva][fila][1];
@@ -376,6 +410,7 @@ static void ActualizarFilas(DemoEstiloUI& demo, float deltaTime)
 
     ActualizarTarjetaUI(demo.tarjeta, demo.estilo, deltaTime);
     ActualizarTarjetaUI(demo.tarjetaParrafo, demo.estilo, deltaTime);
+    ActualizarTarjetaUI(demo.tarjetaAlfa, demo.estilo, deltaTime);
     ActualizarVeloUI(demo.velo, demo.estilo, deltaTime);
 }
 
@@ -479,7 +514,7 @@ void DemoEstiloUI::Actualizar(float deltaTime, const EntradaUI& entradaReal)
         {
             velo.visible = !velo.visible;
         }
-        else if (filasListas)
+        else if (filasListas && pestanaActiva != PESTANA_HUD)   // en HUD, aceptar no hace nada
         {
             int tipo = FILAS_DEMO[pestanaActiva][enfoque.indice][0];
             int indice = FILAS_DEMO[pestanaActiva][enfoque.indice][1];
@@ -706,6 +741,217 @@ static void DibujarExtras(const DemoEstiloUI& demo, bool foco)
 }
 
 
+// Altura de la soga del tendedero (unidades ref) en x, con comba suave
+// (la misma curva que el HUD real).
+static float AlturaSogaHud(float x, float inicio, float fin)
+{
+    float centro = (inicio + fin) * 0.5f;
+    float medio = (fin - inicio) * 0.5f;
+    float u = (x - centro) / medio;
+
+    return Y_SOGA_HUD + COMBA_SOGA_HUD * (1.0f - u * u);
+}
+
+
+// Datos de una etiqueta de jugador de la demo.
+struct EtiquetaHudDemo
+{
+    const char* nombre;
+    const char* control;    // linea 1, en tinta suave
+    Color color;
+    int trofeos;
+    int monedas;
+    const char* delta;      // «+3» a la derecha de la linea 2 (o nullptr)
+    const char* valor;      // estilo minijuego: valor a la derecha de la linea 1
+};
+
+
+// Etiqueta de jugador con las mismas medidas que la del HUD del tablero:
+// placa con marco 6, banderin colgante 20x36, J1 + control, trofeos y
+// monedas (o, estilo minijuego, el valor a la derecha) y dos pinzas.
+static void DibujarEtiquetaHud(
+    const EstiloUI& estilo,
+    const EtiquetaHudDemo& datos,
+    float xRef,
+    float ySogaRef,
+    bool activo,
+    float alfa
+)
+{
+    Vector2 esquina = PuntoRef(xRef, ySogaRef + 8.0f);
+    Rectangle rect = { esquina.x, esquina.y, Px(ANCHO_ETIQUETA_HUD), Px(ALTO_ETIQUETA_HUD) };
+    float ySoga = PuntoRef(xRef, ySogaRef).y;
+
+    DibujarPlacaConMarcoUI(estilo, rect, 6.0f, alfa);
+    DibujarBanderinColganteUI(Vector2{ rect.x + Px(12.0f), rect.y + Px(11.0f) }, datos.color, 20.0f, 36.0f, alfa);
+
+    // Linea 1: nombre y control (o BOT); estilo minijuego, el valor a la
+    // derecha.
+    float xTexto = rect.x + Px(40.0f);
+    float derecha = rect.x + rect.width - Px(12.0f);
+    float yLinea1 = rect.y + Px(9.0f);
+    int tamanoNombre = TamanoTexto(UI_TEXTO);
+
+    DrawText(datos.nombre, (int)xTexto, (int)yLinea1, tamanoNombre, Fade(UI_TINTA, alfa));
+
+    float xControl = xTexto + MeasureText(datos.nombre, tamanoNombre) + Px(7.0f);
+    float finControl = xControl + MeasureText(datos.control, TamanoTexto(UI_TEXTO_PEQUENO)) + Px(6.0f);
+
+    DibujarTextoAjustadoUI(
+        datos.control, xControl, yLinea1 + Px(3.0f), UI_TEXTO_PEQUENO,
+        derecha - xControl, Fade(UI_TINTA_SUAVE, alfa), false
+    );
+
+    if (datos.valor != nullptr)
+    {
+        DibujarTextoDerechaUI(datos.valor, derecha, yLinea1, UI_TEXTO, derecha - finControl, Fade(UI_TINTA, alfa));
+    }
+
+    // Linea 2: trofeos y monedas, y cuanto cambio a la derecha.
+    float yIconos = rect.y + Px(46.0f);
+    float yValores = yIconos - TamanoTexto(UI_TEXTO) * 0.5f + Px(1.0f);
+    float xTrofeo = rect.x + Px(50.0f);
+    float xMoneda = rect.x + Px(100.0f);
+
+    DibujarTrofeoUI(Vector2{ xTrofeo, yIconos }, 18.0f, alfa);
+    DrawText(TextFormat("%d", datos.trofeos), (int)(xTrofeo + Px(13.0f)), (int)yValores, TamanoTexto(UI_TEXTO), Fade(UI_TINTA, alfa));
+
+    DibujarMonedaUI(Vector2{ xMoneda, yIconos }, 8.0f, alfa);
+    DrawText(TextFormat("%d", datos.monedas), (int)(xMoneda + Px(14.0f)), (int)yValores, TamanoTexto(UI_TEXTO), Fade(UI_TINTA, alfa));
+
+    if (datos.delta != nullptr)
+    {
+        DibujarTextoDerechaUI(
+            datos.delta, derecha, yIconos - TamanoTexto(UI_TEXTO_PEQUENO) * 0.5f + Px(1.0f),
+            UI_TEXTO_PEQUENO, Px(40.0f), Fade(TINTA_POSITIVA_HUD, alfa)
+        );
+    }
+
+    if (activo)
+    {
+        DibujarMarcoFoco(rect);
+    }
+
+    // Las pinzas van despues: tapan el borde de la etiqueta y la soga.
+    DibujarPinzaUI(Vector2{ rect.x + Px(22.0f), ySoga }, alfa);
+    DibujarPinzaUI(Vector2{ rect.x + rect.width - Px(22.0f), ySoga }, alfa);
+}
+
+
+static void DibujarHud(const DemoEstiloUI& demo, bool foco)
+{
+    const EstiloUI& estilo = demo.estilo;
+    float alfa = demo.cuartosAlfa * 0.25f;
+
+    // Banderines con mastil a los costados, con el alfa elegido.
+    DibujarBanderinUI(estilo, "SALIDA", REF_BANDERIN_IZQ, ALTO_MASTIL, UI_PELIGRO, true, 0.0f, alfa);
+    DibujarBanderinUI(estilo, "META", REF_BANDERIN_DER, ALTO_MASTIL, UI_POSITIVO, true, 1.7f, alfa);
+
+    // 1) Tendedero: soga con comba, nudos y cuatro etiquetas. J4 usa el
+    // alfa elegido.
+    const int cantidad = 4;
+    float ancho = cantidad * ANCHO_ETIQUETA_HUD + (cantidad - 1) * SEPARACION_ETIQUETAS_HUD;
+    float sogaInicio = X_ETIQUETAS_HUD - SOGA_SOBRANTE_HUD;
+    float sogaFin = X_ETIQUETAS_HUD + ancho + SOGA_SOBRANTE_HUD;
+    const int tramos = 12;
+
+    for (int k = 0; k < tramos; k++)
+    {
+        float xa = sogaInicio + (sogaFin - sogaInicio) * k / tramos;
+        float xb = sogaInicio + (sogaFin - sogaInicio) * (k + 1) / tramos;
+
+        DibujarCuerdaUI(
+            estilo,
+            PuntoRef(xa, AlturaSogaHud(xa, sogaInicio, sogaFin)),
+            PuntoRef(xb, AlturaSogaHud(xb, sogaInicio, sogaFin))
+        );
+    }
+
+    DrawCircleV(PuntoRef(sogaInicio, Y_SOGA_HUD), Px(4.5f), UI_MADERA_OSCURA);
+    DrawCircleV(PuntoRef(sogaFin, Y_SOGA_HUD), Px(4.5f), UI_MADERA_OSCURA);
+
+    const EtiquetaHudDemo etiquetas[cantidad] = {
+        { "J1", "TECLADO", UI_PELIGRO, 1, 13, "+3", nullptr },
+        { "J2", "BOT", AZUL_JUGADOR, 0, 10, nullptr, nullptr },
+        { "J3", "BOT", UI_POSITIVO, 2, 7, nullptr, "125" },
+        { "J4", "BOT", UI_FOCO, 0, 22, nullptr, nullptr }
+    };
+
+    for (int i = 0; i < cantidad; i++)
+    {
+        float x = X_ETIQUETAS_HUD + i * (ANCHO_ETIQUETA_HUD + SEPARACION_ETIQUETAS_HUD);
+        float ySoga = AlturaSogaHud(x + ANCHO_ETIQUETA_HUD * 0.5f, sogaInicio, sogaFin);
+
+        DibujarEtiquetaHud(estilo, etiquetas[i], x, ySoga, i == 0, i == 3 ? alfa : 1.0f);
+    }
+
+    if (demo.tarjetaAlfa.colgado.retraso > 0.0f)
+    {
+        return;
+    }
+
+    // 2) Tarjeta que se funde entera con el alfa elegido.
+    DibujarTarjetaUI(estilo, demo.tarjetaAlfa, alfa);
+    DibujarLineaTarjetaUI(demo.tarjetaAlfa, 0, "Alfa", TextFormat("%d %%", demo.cuartosAlfa * 25), alfa);
+    DibujarLineaTarjetaUI(demo.tarjetaAlfa, 1, "Uso", "Fundidos", alfa);
+    DibujarLineaTarjetaUI(demo.tarjetaAlfa, 2, "Por defecto", "1 (opaca)", alfa);
+
+    // Las placas caen junto con la tarjeta.
+    float caida = demo.tarjetaAlfa.colgado.caida.valor * EscalaUI();
+
+    // 3) Texto alineado sobre una placa con marco 7 (la de los carteles
+    // del HUD): una linea por alineacion, con guias, y el alfa a la derecha.
+    Rectangle rectTexto = RectRef(REF_PLACA_TEXTO.x, REF_PLACA_TEXTO.y, REF_PLACA_TEXTO.width, REF_PLACA_TEXTO.height);
+    rectTexto.y += caida;
+
+    Rectangle placa = DibujarPlacaConMarcoUI(estilo, rectTexto, 7.0f);
+    float margen = Px(10.0f);
+    float izquierda = placa.x + margen;
+    float derecha = placa.x + placa.width - margen;
+    float anchoUtil = derecha - izquierda;
+    float paso = Px(30.0f);
+    float y = placa.y + Px(10.0f);
+
+    DrawRectangleRec(Rectangle{ izquierda - Px(1.0f), placa.y + Px(6.0f), Px(1.0f), paso * 3.0f }, Fade(UI_MADERA_OSCURA, 0.35f));
+    DrawRectangleRec(Rectangle{ (izquierda + derecha) * 0.5f, placa.y + Px(6.0f), Px(1.0f), paso * 3.0f }, Fade(UI_MADERA_OSCURA, 0.35f));
+    DrawRectangleRec(Rectangle{ derecha, placa.y + Px(6.0f), Px(1.0f), paso * 3.0f }, Fade(UI_MADERA_OSCURA, 0.35f));
+
+    DibujarTextoAlineadoUI("IZQUIERDA", izquierda, y, UI_TEXTO, anchoUtil, UI_TINTA, UI_ALINEAR_IZQUIERDA);
+    DibujarTextoAlineadoUI("CENTRO", (izquierda + derecha) * 0.5f, y + paso, UI_TEXTO, anchoUtil, UI_TINTA, UI_ALINEAR_CENTRO);
+    DibujarTextoAlineadoUI("DERECHA", derecha, y + paso * 2.0f, UI_TEXTO, anchoUtil, UI_TINTA, UI_ALINEAR_DERECHA);
+
+    // Fila "etiqueta ... valor" como en el HUD: el valor pegado a la derecha.
+    float yAlfa = placa.y + placa.height - Px(30.0f);
+    DrawRectangleRec(Rectangle{ izquierda, yAlfa - Px(6.0f), anchoUtil, Px(2.0f) }, Fade(UI_MADERA_OSCURA, 0.45f));
+    DrawText("ALFA", (int)izquierda, (int)yAlfa, TamanoTexto(UI_TEXTO), UI_TINTA_SUAVE);
+    DibujarFlechaUI(derecha - Px(92.0f), yAlfa + TamanoTexto(UI_TEXTO) * 0.5f, Px(6.0f), -1, demo.cuartosAlfa > 1 ? UI_TINTA : UI_TINTA_SUAVE);
+    DibujarTextoDerechaUI(TextFormat("%d %%", demo.cuartosAlfa * 25), derecha - Px(22.0f), yAlfa, UI_TEXTO, Px(58.0f), UI_TINTA);
+    DibujarFlechaUI(derecha - Px(5.0f), yAlfa + TamanoTexto(UI_TEXTO) * 0.5f, Px(6.0f), 1, demo.cuartosAlfa < 4 ? UI_TINTA : UI_TINTA_SUAVE);
+
+    if (foco)
+    {
+        DibujarMarcoFoco(rectTexto);
+    }
+
+    // 4) Iconos de moneda y trofeo a varios tamanos (8/12/18 y 18/30/54).
+    Rectangle rectIconos = RectRef(REF_PLACA_ICONOS.x, REF_PLACA_ICONOS.y, REF_PLACA_ICONOS.width, REF_PLACA_ICONOS.height);
+    rectIconos.y += caida;
+
+    Rectangle placaIconos = DibujarPlacaConMarcoUI(estilo, rectIconos, 7.0f);
+    float xs[3] = { 0.20f, 0.45f, 0.76f };
+    const float radiosMoneda[3] = { 8.0f, 12.0f, 18.0f };
+    const float altosTrofeo[3] = { 18.0f, 30.0f, 54.0f };
+
+    for (int i = 0; i < 3; i++)
+    {
+        float x = placaIconos.x + placaIconos.width * xs[i];
+
+        DibujarMonedaUI(Vector2{ x, placaIconos.y + Px(26.0f) }, radiosMoneda[i]);
+        DibujarTrofeoUI(Vector2{ x, placaIconos.y + Px(90.0f) }, altosTrofeo[i]);
+    }
+}
+
+
 // Velo encima de todo (menos los avisos) con un texto sobre el mundo.
 static void DibujarVeloExtras(const DemoEstiloUI& demo)
 {
@@ -745,13 +991,19 @@ void DemoEstiloUI::Dibujar() const
     }
 
     bool extras = pestanaActiva == PESTANA_EXTRAS;
+    bool hud = pestanaActiva == PESTANA_HUD;
 
     if (extras && filasListas)
     {
         DibujarExtras(*this, enfoque.indice == 0 && !hayModal);
     }
 
-    for (int fila = 0; fila < (filasListas && !extras ? DEMO_FILAS : 0); fila++)
+    if (hud && filasListas)
+    {
+        DibujarHud(*this, enfoque.indice == 0 && !hayModal);
+    }
+
+    for (int fila = 0; fila < (filasListas && !extras && !hud ? DEMO_FILAS : 0); fila++)
     {
         int tipo = FILAS_DEMO[pestanaActiva][fila][0];
         int indice = FILAS_DEMO[pestanaActiva][fila][1];
@@ -799,12 +1051,18 @@ void DemoEstiloUI::Dibujar() const
     DibujarBotonUI(estilo, botonVolver, enBotones && botonConFoco == 0);
     DibujarBotonUI(estilo, botonAplicar, enBotones && botonConFoco == 1);
 
-    DibujarAyudaUI(
-        estilo,
-        extras
-            ? "IZQ/DER: ALINEACIÓN   ENTER/A: VELO   ARRIBA/ABAJO: BOTONES   Q-E / LB-RB: PESTANAS   ESC/B: VOLVER"
-            : "FLECHAS/WASD O CRUCETA: MOVER   ENTER/A: ACEPTAR   Q-E / LB-RB: PESTANAS   ESC/B: VOLVER"
-    );
+    const char* ayuda = "FLECHAS/WASD O CRUCETA: MOVER   ENTER/A: ACEPTAR   Q-E / LB-RB: PESTAÑAS   ESC/B: VOLVER";
+
+    if (extras)
+    {
+        ayuda = "IZQ/DER: ALINEACIÓN   ENTER/A: VELO   ARRIBA/ABAJO: BOTONES   Q-E / LB-RB: PESTAÑAS   ESC/B: VOLVER";
+    }
+    else if (hud)
+    {
+        ayuda = "IZQ/DER: ALFA   ARRIBA/ABAJO: BOTONES   Q-E / LB-RB: PESTAÑAS   ESC/B: VOLVER";
+    }
+
+    DibujarAyudaUI(estilo, ayuda);
 
     DibujarVeloExtras(*this);
 
