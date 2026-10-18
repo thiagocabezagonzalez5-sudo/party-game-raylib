@@ -39,14 +39,14 @@ static const char* NOMBRES_OPCION[OPCION_MENU_CANTIDAD] =
 {
     "PARTIDA",
     "MINIJUEGOS",
-    "CONFIGURACION",
+    "CONFIGURACIÓN",
     "SALIR"
 };
 
 static const char* DESCRIPCIONES_OPCION[OPCION_MENU_CANTIDAD] =
 {
     "Tablero por turnos: dados, casillas y minijuegos",
-    "Juega retos sueltos sin tablero",
+    "Jugá retos sueltos sin tablero",
     "Controles, video y audio",
     "Cerrar el juego"
 };
@@ -498,8 +498,17 @@ void MenuPrincipal::PrepararEntrada(
     bool desdeLogo
 )
 {
-    opcionSeleccionada =
-        0;
+    // Al volver de otra pantalla el foco queda en la opcion que llevo
+    // alli (p. ej. CONFIGURACION); solo desde el logo se arranca en PARTIDA.
+    if (
+        desdeLogo ||
+        opcionSeleccionada < 0 ||
+        opcionSeleccionada >= OPCION_MENU_CANTIDAD
+    )
+    {
+        opcionSeleccionada =
+            0;
+    }
 
     ReiniciarAcciones(*this);
 
@@ -884,7 +893,7 @@ void MenuPrincipal::Dibujar()
     //------------------------------
 
     DibujarTextoCentrado(
-        "<- -> ELEGIR     ENTER / A: CONFIRMAR     MOUSE: APUNTAR Y CLICK",
+        "<- -> ELEGIR     ENTER / ESPACIO / A: CONFIRMAR     MOUSE: APUNTAR Y CLIC",
         ancho / 2,
         alto - 40,
         18,

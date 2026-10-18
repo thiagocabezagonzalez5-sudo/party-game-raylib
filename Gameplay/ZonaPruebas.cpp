@@ -218,7 +218,7 @@ static void DibujarZonaPrincipal(
 
     DrawText("ZONA PRINCIPAL DE PRUEBAS", 25, 25, 30, BLACK);
     DrawText(
-        "MOVIMIENTO + SALTO + GOLPES + COLISION SOLIDA",
+        "MOVIMIENTO + SALTO + GOLPES + COLISIÓN SÓLIDA",
         25,
         70,
         20,
@@ -593,7 +593,7 @@ void ZonaPruebas::Dibujar() const
         );
 
         DrawText(
-            "R REINICIAR   F3 DEBUG   ESC VOLVER AL CATALOGO",
+            "R REINICIAR   F3 DEBUG   ESC VOLVER AL CATÁLOGO",
             28,
             GetScreenHeight() - 45,
             17,
@@ -636,7 +636,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "INICIO PASARELAS  FIN CANTERA   , ANTERIOR  . SIGUIENTE (TODO EL CATALOGO)",
+        "INICIO PASARELAS  FIN CANTERA   , ANTERIOR  . SIGUIENTE (TODO EL CATÁLOGO)",
         30,
         GetScreenHeight() - 115,
         15,
@@ -652,7 +652,7 @@ void ZonaPruebas::Dibujar() const
     );
 
     DrawText(
-        "R REINICIAR   F3 DEBUG   ESC MENU",
+        "R REINICIAR   F3 DEBUG   ESC MENÚ",
         30,
         GetScreenHeight() - 59,
         17,

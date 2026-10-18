@@ -44,7 +44,7 @@ static const char* NOMBRES_PESTANA[DEMO_PESTANAS] =
 static const char* OPCIONES_SELECTOR[3][3] =
 {
     { "VENTANA", "COMPLETA", "SIN BORDES" },
-    { "FACIL", "NORMAL", "DIFICIL" },
+    { "FÁCIL", "NORMAL", "DIFICIL" },
     { "SOLO MANDO", "SOLO MANDO", "SOLO MANDO" }
 };
 
@@ -162,7 +162,7 @@ static void IniciarFilasPestana(DemoEstiloUI& demo, float retrasoBase)
 
         if (tipo == FILA_SELECTOR)
         {
-            const char* etiquetas[3] = { "Modo de pantalla", "Dificultad", "Distribucion" };
+            const char* etiquetas[3] = { "Modo de pantalla", "Dificultad", "Distribución" };
             demo.selectores[indice].Iniciar(rect, etiquetas[indice], retraso);
 
             // La distribucion no se puede cambiar sin teclado: deshabilitado.
@@ -171,7 +171,7 @@ static void IniciarFilasPestana(DemoEstiloUI& demo, float retrasoBase)
         else if (tipo == FILA_PALANCA)
         {
             // Se conserva el valor ajustado al volver a la pestana.
-            const char* etiquetas[4] = { "Limite de FPS", "Musica", "Efectos", "Zona muerta" };
+            const char* etiquetas[4] = { "Límite de FPS", "Música", "Efectos", "Zona muerta" };
             float valor = demo.palancas[indice].valor;
             demo.palancas[indice].Iniciar(rect, etiquetas[indice], valor, retraso);
 
@@ -982,7 +982,7 @@ void DemoEstiloUI::Dibujar() const
 
     bool hayModal = modalSalir.abierto || modalAplicar.abierto;
 
-    DibujarTituloUI(estilo, colgadoTitulo, "CONFIGURACION", REF_TITULO);
+    DibujarTituloUI(estilo, colgadoTitulo, "CONFIGURACIÓN", REF_TITULO);
     DibujarPanelUI(estilo, panel);
 
     for (int i = 0; i < DEMO_PESTANAS; i++)

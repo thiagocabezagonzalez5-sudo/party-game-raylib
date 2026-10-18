@@ -186,7 +186,7 @@ void DibujarMenuPausa(
     DrawRectangleLines(modalX, modalY, anchoModal, altoModal, DARKGRAY);
 
     DrawText(
-        "PAUSA / CONFIGURACION",
+        "PAUSA / CONFIGURACIÓN",
         modalX + 30,
         modalY + 25,
         30,
@@ -217,7 +217,7 @@ void DibujarMenuPausa(
         switch (i)
         {
             case OPCION_RESOLUCION:
-                nombre = "Resolucion";
+                nombre = "Resolución";
                 valor = TextFormat(
                     "%d x %d",
                     resoluciones[indiceResolucion].ancho,
@@ -236,7 +236,7 @@ void DibujarMenuPausa(
                 break;
 
             case OPCION_LIMITE_FPS:
-                nombre = "Limite de FPS";
+                nombre = "Límite de FPS";
                 valor = TextFormat("%d", opcionesFPS[indiceFPS]);
                 break;
 

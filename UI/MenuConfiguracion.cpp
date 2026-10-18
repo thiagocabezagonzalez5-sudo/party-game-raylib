@@ -2202,8 +2202,8 @@ static void DibujarContenidoExtra(
         {
             y = DibujarLinea("Jugador 1", "Teclado completo", teclado, y);
             y = DibujarLinea("Mover", "WASD o Flechas", teclado, y);
-            y = DibujarLinea("Saltar / Aceptar", "ESPACIO", teclado, y);
-            y = DibujarLinea("Acción", "E", teclado, y);
+            y = DibujarLinea("Saltar / Acción", "ESPACIO / E", teclado, y);
+            y = DibujarLinea("Aceptar", "ESPACIO o ENTER", teclado, y);
             y = DibujarLinea("Cancelar", "RETROCESO", teclado, y);
             DibujarLinea("Pausa / Salir", "ESC", teclado, y);
         }
@@ -2558,7 +2558,7 @@ void MenuConfiguracion::Dibujar(
 
     DibujarAyudaUI(
         estilo,
-        "FLECHAS/WASD O CRUCETA: ELEGIR Y CAMBIAR   ENTER/A: ACEPTAR   Q-E / LB-RB: PESTAÑAS   ESC/B: VOLVER"
+        "FLECHAS/WASD/CRUCETA: MOVER   ENTER/ESPACIO/A: ACEPTAR   Q-E/LB-RB: PESTAÑAS   ESC/B: VOLVER"
     );
 
     if (confirmandoVideo && modalIniciado)

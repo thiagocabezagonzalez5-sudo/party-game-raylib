@@ -1199,8 +1199,14 @@ static void DibujarPanelJugador(
         float pulso =
             0.5f + 0.5f * std::sin(t * 4.5f + indice);
 
+        // Con teclado completo tambien confirma ENTER (ver Systems/Input.cpp).
+        const char* botonUnirse =
+            participante.control == CONTROL_TECLADO_COMPLETO
+            ? "ESPACIO O ENTER"
+            : ObtenerTextoBotonPrincipal(participante);
+
         DrawText(
-            TextFormat("%s PARA UNIRTE", ObtenerTextoBotonPrincipal(participante)),
+            TextFormat("%s PARA UNIRTE", botonUnirse),
             xTexto,
             yFila3 - Px(2.0f),
             Px(16.0f),
@@ -1244,7 +1250,7 @@ static void DibujarPanelJugador(
     );
 
     DrawText(
-        jugador.listo ? "LISTO!" : "ELIGIENDO...",
+        jugador.listo ? "¡LISTO!" : "ELIGIENDO...",
         xTexto,
         yFila3 + Px(27.0f),
         Px(15.0f),
@@ -1327,7 +1333,7 @@ static void ComponerAyuda(
 
     if (completo)
     {
-        AgregarAyuda(destino, capacidad, "TECLADO: WASD o FLECHAS, ESPACIO o ENTER = OK, RETROCESO = ATRÁS");
+        AgregarAyuda(destino, capacidad, "TECLADO: WASD O FLECHAS, ESPACIO O ENTER = OK, RETROCESO = ATRÁS");
     }
 
     if (wasd)
@@ -1576,7 +1582,7 @@ void SeleccionPersonajes::Dibujar(
             Px((20.0f + 1.5f * pulso) * (0.6f + 0.4f * entrada));
 
         const char* mensaje =
-            "TODOS LISTOS!  CONFIRMÁ PARA SEGUIR";
+            "¡TODOS LISTOS!  CONFIRMÁ PARA SEGUIR";
 
         int anchoMensaje =
             MeasureText(mensaje, tamano) + Px(40.0f);
