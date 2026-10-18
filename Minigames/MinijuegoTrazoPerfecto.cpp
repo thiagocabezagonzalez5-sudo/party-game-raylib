@@ -792,7 +792,7 @@ void MinijuegoTrazoPerfecto::Dibujar(
             tiempoTrazo <= 5.0f ? ORANGE : RAYWHITE
         );
 
-        const char* ayuda = "MUEVE TU PINCEL (WASD / FLECHAS / STICK) Y SIGUE LA ESTRELLA DORADA";
+        const char* ayuda = "MOVÉ TU PINCEL (WASD / FLECHAS / STICK) Y SEGUI LA ESTRELLA DORADA";
         DrawText(ayuda, ancho - MeasureText(ayuda, 17) - 24, 60, 17, GOLD);
     }
     else
@@ -813,7 +813,7 @@ void MinijuegoTrazoPerfecto::Dibujar(
             : CalcularPuntuacionTrazo(jugadores[i]);
 
         DrawText(
-            TextFormat("J%d  PRECISION %d%%", participantes[i].numeroJugador, puntuacion),
+            TextFormat("J%d  PRECISIÓN %d%%", participantes[i].numeroJugador, puntuacion),
             (int)etiquetaSuperior[i].x,
             (int)etiquetaSuperior[i].y - 26,
             20,

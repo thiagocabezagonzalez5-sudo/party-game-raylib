@@ -1006,7 +1006,7 @@ void MinijuegoColorSeguro::Dibujar(
 
     DrawText(
         fase == FASE_ELEGIR_PLATAFORMA
-        ? "CORRE AL COLOR DE LA TV"
+        ? "CORRÉ AL COLOR DE LA TV"
         : "SOLO QUEDA LA PLATAFORMA CORRECTA",
         25,
         138,
@@ -1144,7 +1144,7 @@ void MinijuegoColorSeguro::Dibujar(
 
             DrawText(
                 TextFormat(
-                    "J%d  POSICION %d  %.3f s  RONDAS %d",
+                    "J%d  POSICIÓN %d  %.3f s  RONDAS %d",
                     participantes[i].numeroJugador,
                     resultado.participantes[i].posicionFinal,
                     estadosJugadores[i].tiempoSobrevividoMs / 1000.0f,

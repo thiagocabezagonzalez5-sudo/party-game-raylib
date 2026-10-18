@@ -316,7 +316,7 @@ void PruebaModelos::Dibujar() const
 
     DrawText(
         TextFormat(
-            "Rotacion: %.1f   Escala: %.2f",
+            "Rotación: %.1f   Escala: %.2f",
             rotacion,
             escala
         ),
@@ -357,7 +357,7 @@ void PruebaModelos::Dibujar() const
     );
 
     DrawText(
-        "ESPACIO: rotacion automatica ON/OFF",
+        "ESPACIO: rotación automática ON/OFF",
         25,
         GetScreenHeight() - 50,
         18,

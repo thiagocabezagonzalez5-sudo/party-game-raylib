@@ -1341,9 +1341,9 @@ void MinijuegoSenderoInvisible::Dibujar(
         tiempoRestante <= 10.0f ? RED : RAYWHITE
     );
 
-    const char* ayuda = "MOVER: WASD / FLECHAS / STICK   SALTAR: ESPACIO / ENTER / A   BUSCA LA RUTA SEGURA: LAS GRIETAS MUESTRAN LOSAS FALSAS";
-    DrawRectangle(0, altoPantalla - 38, GetScreenWidth(), 38, Fade(BLACK, 0.78f));
-    DrawText(ayuda, centro - MeasureText(ayuda, 16) / 2, altoPantalla - 29, 16, RAYWHITE);
+    const char* ayuda = "MOVER: WASD / FLECHAS / STICK   SALTAR: ESPACIO / ENTER / A   BUSCÁ LA RUTA SEGURA: LAS GRIETAS MUESTRAN LOSAS FALSAS";
+    DrawRectangle(0, altoPantalla - 38 - MargenBarraRondaMinijuegos(), GetScreenWidth(), 38, Fade(BLACK, 0.78f));
+    DrawText(ayuda, centro - MeasureText(ayuda, 16) / 2, altoPantalla - 29 - MargenBarraRondaMinijuegos(), 16, RAYWHITE);
 
     if (fase == FASE_SENDERO_PREPARACION)
     {
@@ -1354,17 +1354,17 @@ void MinijuegoSenderoInvisible::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, centro - MeasureText(texto, 96) / 2, altoPantalla / 2 - 160, 96, GOLD);
 
-        const char* aviso = "PREPARATE: MEMORIZA EL CAMINO DE LOS FUEGOS FATUOS";
+        const char* aviso = "PREPARATE: MEMORIZÁ EL CAMINO DE LOS FUEGOS FATUOS";
         DrawText(aviso, centro - MeasureText(aviso, 22) / 2, altoPantalla / 2 - 50, 22, COLOR_LLAMA);
     }
     else if (fase == FASE_SENDERO_MEMORIZAR)
     {
-        const char* texto = TextFormat("MEMORIZA LA RUTA  %.1f", tiempoMemorizar);
+        const char* texto = TextFormat("MEMORIZÁ LA RUTA  %.1f", tiempoMemorizar);
         DrawText(texto, centro - MeasureText(texto, 34) / 2, altoPantalla / 2 - 150, 34, COLOR_LLAMA);
     }
     else if (fase == FASE_SENDERO_JUGANDO && tiempoYa > 0.0f)
     {
-        DrawText("YA!", centro - MeasureText("YA!", 80) / 2, altoPantalla / 2 - 150, 80, GOLD);
+        DrawText("¡YA!", centro - MeasureText("¡YA!", 80) / 2, altoPantalla / 2 - 150, 80, GOLD);
     }
     else if (
         fase == FASE_SENDERO_TERMINADO &&
@@ -1396,7 +1396,7 @@ void MinijuegoSenderoInvisible::Dibujar(
                     "%d.  J%d   %s",
                     posicion,
                     numero,
-                    estadosJugadores[i].llego ? "LLEGO A LA META" : TextFormat("RUTA %d / %d", estadosJugadores[i].progreso, cantidadRuta + 1)
+                    estadosJugadores[i].llego ? "LLEGÓ A LA META" : TextFormat("RUTA %d / %d", estadosJugadores[i].progreso, cantidadRuta + 1)
                 );
 
                 DrawText(texto, centro - ancho / 2 + 40, py + 60 + linea * 26, 20, ColorJugador(participantes, i));

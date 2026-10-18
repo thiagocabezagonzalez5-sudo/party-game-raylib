@@ -1589,15 +1589,15 @@ void MinijuegoBalsasRapido::Dibujar(
 
         if (balsas[e].tiempoSync > 0.0f)
         {
-            TextoCentrado("SINCRO!", x, y - 46, 20, WHITE);
+            TextoCentrado("¡SINCRO!", x, y - 46, 20, WHITE);
         }
         else if (balsas[e].tiempoBoost > 0.0f)
         {
-            TextoCentrado("BOOST!", x, y - 46, 20, YELLOW);
+            TextoCentrado("¡BOOST!", x, y - 46, 20, YELLOW);
         }
         else if (balsas[e].tiempoImpacto > 0.0f)
         {
-            TextoCentrado("CHOQUE!", x, y - 46, 20, RED);
+            TextoCentrado("¡CHOQUE!", x, y - 46, 20, RED);
         }
     }
 
@@ -1634,12 +1634,12 @@ void MinijuegoBalsasRapido::Dibujar(
 
     if (fase == FASE_BALSAS_JUGANDO && mayorP > 34.0f && menorP < RAPIDO_FIN)
     {
-        TextoCentrado("RAPIDO: IZQ = CASCADA CORTA CON ROCAS   DER = REMANSO LARGO Y SEGURO", centro, 94, 18, Color{ 180, 255, 240, 255 });
+        TextoCentrado("RÁPIDO: IZQ = CASCADA CORTA CON ROCAS   DER = REMANSO LARGO Y SEGURO", centro, 94, 18, Color{ 180, 255, 240, 255 });
     }
 
     const char* ayuda = "REMAR: E / SHIFT DER / X (cada uno en su lado)   SOLO: IZQ/DER + REMAR PARA GIRAR   PALADAS JUNTAS = BONUS";
-    DrawRectangle(0, altoPantalla - 38, GetScreenWidth(), 38, Fade(BLACK, 0.78f));
-    TextoCentrado(ayuda, centro, altoPantalla - 29, 16, RAYWHITE);
+    DrawRectangle(0, altoPantalla - 38 - MargenBarraRondaMinijuegos(), GetScreenWidth(), 38, Fade(BLACK, 0.78f));
+    TextoCentrado(ayuda, centro, altoPantalla - 29 - MargenBarraRondaMinijuegos(), 16, RAYWHITE);
 
     if (fase == FASE_BALSAS_PREPARACION)
     {

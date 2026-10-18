@@ -1245,7 +1245,7 @@ static const char* TextoMensajeBateo(MensajeBateo mensaje)
         case MENSAJE_BATEO_FLOJO: return "FLOJO";
         case MENSAJE_BATEO_FALLO: return "FALLASTE";
         case MENSAJE_BATEO_SIN_GOLPE: return "SIN GOLPE";
-        case MENSAJE_BATEO_ROJO: return "ROJO! -50";
+        case MENSAJE_BATEO_ROJO: return "¡ROJO! -50";
         case MENSAJE_BATEO_EVITADO: return "EVITADO";
         default: return "";
     }
@@ -1283,7 +1283,7 @@ void MinijuegoBateoMeteorico::Dibujar(
     int anchoPantalla = GetScreenWidth();
     int altoPantalla = GetScreenHeight();
 
-    DrawText("BATEO METEORICO", 28, 20, 28, GOLD);
+    DrawText("BATEO METEÓRICO", 28, 20, 28, GOLD);
     {
         const char* subtitulo = "ANILLOS: 100 / 60 / 30 / 10   DORADO x2   ROJO: NO LO GOLPEES (-50)";
         DrawRectangle(20, 50, MeasureText(subtitulo, 20) + 16, 28, Fade(BLACK, 0.7f));
@@ -1315,7 +1315,7 @@ void MinijuegoBateoMeteorico::Dibujar(
         int anchoTarjeta = 210;
         int altoTarjeta = 104;
         int px = (int)base.x - anchoTarjeta / 2;
-        int py = altoPantalla - altoTarjeta - 12;
+        int py = altoPantalla - altoTarjeta - 12 - MargenBarraRondaMinijuegos();
 
         if (px < 6) px = 6;
         if (px + anchoTarjeta > anchoPantalla - 6) px = anchoPantalla - 6 - anchoTarjeta;
@@ -1367,7 +1367,7 @@ void MinijuegoBateoMeteorico::Dibujar(
         }
         else
         {
-            DrawText("AUTOMATICO", px + 10, py + 64, 16, LIGHTGRAY);
+            DrawText("AUTOMÁTICO", px + 10, py + 64, 16, LIGHTGRAY);
         }
 
         // Puntos flotantes en el lugar donde aterrizo el meteorito.
@@ -1396,7 +1396,7 @@ void MinijuegoBateoMeteorico::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, anchoPantalla / 2 - MeasureText(texto, 96) / 2, altoPantalla / 2 - 110, 96, GOLD);
 
-        const char* ayuda = "PULSA GOLPE cuando el meteorito llegue al aro verde";
+        const char* ayuda = "PULSÁ GOLPE cuando el meteorito llegue al aro verde";
         DrawText(ayuda, anchoPantalla / 2 - MeasureText(ayuda, 22) / 2, altoPantalla / 2 - 10, 22, RAYWHITE);
     }
     else if (fase == FASE_BATEO_JUGANDO && etapa == ETAPA_BATEO_AVISO)

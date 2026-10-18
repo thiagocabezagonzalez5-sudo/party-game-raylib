@@ -838,11 +838,11 @@ void MinijuegoTormentaMagnetica::Dibujar(
     const float e = (float)alto / 720.0f;
 
     DrawRectangle(0, 0, ancho, (int)(76 * e), Fade(BLACK, 0.55f));
-    DrawText("TORMENTA MAGNETICA", (int)(24 * e), (int)(10 * e), (int)(30 * e), RAYWHITE);
+    DrawText("TORMENTA MAGNÉTICA", (int)(24 * e), (int)(10 * e), (int)(30 * e), RAYWHITE);
     DrawText(
         campoAtrae
-            ? "CAMPO: ATRACCION - MUCHO MAS FUERTE"
-            : "CAMPO: REPULSION - ALEJATE DEL BORDE",
+            ? "CAMPO: ATRACCIÓN - MUCHO MÁS FUERTE"
+            : "CAMPO: REPULSIÓN - ALEJATE DEL BORDE",
         (int)(24 * e),
         (int)(46 * e),
         (int)(19 * e),
@@ -871,7 +871,7 @@ void MinijuegoTormentaMagnetica::Dibujar(
 
         if (avisoCambio)
         {
-            const char* aviso = "CAMBIO DE CAMPO!";
+            const char* aviso = "¡CAMBIO DE CAMPO!";
             int tam = (int)(34 * e);
             int x = ancho / 2 - MeasureText(aviso, tam) / 2;
             DrawText(aviso, x + 3, (int)(96 * e) + 3, tam, Fade(BLACK, 0.7f));
@@ -879,7 +879,7 @@ void MinijuegoTormentaMagnetica::Dibujar(
         }
         else if (tiempoDesdeCambio < 1.2f)
         {
-            const char* aviso = campoAtrae ? "AHORA: ATRACCION" : "AHORA: REPULSION";
+            const char* aviso = campoAtrae ? "AHORA: ATRACCIÓN" : "AHORA: REPULSIÓN";
             int tam = (int)(30 * e);
             int x = ancho / 2 - MeasureText(aviso, tam) / 2;
             DrawText(aviso, x + 3, (int)(96 * e) + 3, tam, Fade(BLACK, 0.7f));
@@ -897,7 +897,7 @@ void MinijuegoTormentaMagnetica::Dibujar(
     int altoTarjeta = (int)(44 * e);
     int separacion = (int)(14 * e);
     int xTarjeta = ancho / 2 - (cantidadTarjetas * anchoTarjeta + (cantidadTarjetas - 1) * separacion) / 2;
-    int yTarjeta = alto - altoTarjeta - (int)(18 * e);
+    int yTarjeta = alto - altoTarjeta - (int)(18 * e) - MargenBarraRondaMinijuegos();
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -979,7 +979,7 @@ void MinijuegoTormentaMagnetica::Dibujar(
             if (!resultado.participantes[i].participo) continue;
             DrawText(
                 TextFormat(
-                    "J%d  POSICION %d  SOBREVIVIO %.1f s",
+                    "J%d  POSICIÓN %d  SOBREVIVIÓ %.1f s",
                     participantes[i].numeroJugador,
                     resultado.participantes[i].posicionFinal,
                     (float)estadosJugadores[i].tiempoSobrevividoMs / 1000.0f

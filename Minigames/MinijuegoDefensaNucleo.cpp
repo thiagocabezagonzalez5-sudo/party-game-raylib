@@ -93,7 +93,7 @@ static const DatosTemaDefensa TEMAS_DEFENSA[CANTIDAD_TEMAS_DEFENSA] =
         3.4f, 1.0f
     },
     {
-        "CENTRAL ELECTRICA",
+        "CENTRAL ELÉCTRICA",
         Color{ 58, 52, 40, 255 }, Color{ 96, 98, 92, 255 }, Color{ 84, 86, 80, 255 },
         Color{ 214, 176, 40, 255 }, Color{ 255, 226, 80, 255 }, Color{ 40, 36, 28, 255 },
         1.6f, 1.5f
@@ -1728,7 +1728,7 @@ void MinijuegoDefensaNucleo::Dibujar(
     );
 
     // HUD: controles de cada jugador.
-    int y = alto - 30;
+    int y = alto - 30 - MargenBarraRondaMinijuegos();
 
     for (int i = limite - 1; i >= 0; i--)
     {

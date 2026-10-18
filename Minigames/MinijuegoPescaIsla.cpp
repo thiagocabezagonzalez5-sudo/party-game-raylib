@@ -1344,8 +1344,8 @@ void MinijuegoPescaIsla::Dibujar(
 
     // Cabecera.
     DrawRectangle(14, 12, 650, 66, Fade(BLACK, 0.74f));
-    DrawText("PESCA ISLENA", 28, 18, 28, GOLD);
-    DrawText("APUNTA: WASD/FLECHAS/STICK   ACCION: LANZAR / ENGANCHAR / ALTERNAR TIRON", 28, 52, 14, RAYWHITE);
+    DrawText("PESCA ISLEÑA", 28, 18, 28, GOLD);
+    DrawText("APUNTÁ: WASD/FLECHAS/STICK   ACCIÓN: LANZAR / ENGANCHAR / ALTERNAR TIRÓN", 28, 52, 14, RAYWHITE);
 
     if (fase == FASE_PESCA_JUGANDO)
     {
@@ -1385,7 +1385,7 @@ void MinijuegoPescaIsla::Dibujar(
             }
 
             int x = xInicial + k * (anchoTarjeta + separacion);
-            int y = altoPantalla - 86;
+            int y = altoPantalla - 86 - MargenBarraRondaMinijuegos();
             const EstadoJugadorPesca& estado = estados[i];
 
             DrawRectangle(x, y, anchoTarjeta, 76, Fade(BLACK, 0.78f));
@@ -1393,7 +1393,7 @@ void MinijuegoPescaIsla::Dibujar(
             DrawText(NombreJugadorPesca(participantes[i], i), x + 18, y + 6, 18, coloresJugadores[i]);
             DrawText(TextFormat("%d PTS", estado.puntos), x + anchoTarjeta - 90, y + 6, 20, RAYWHITE);
 
-            const char* texto = "APUNTA Y LANZA";
+            const char* texto = "APUNTÁ Y LANZÁ";
             Color colorTexto = LIGHTGRAY;
 
             if (estado.bloqueo > 0.0f && estado.estado == PESCA_LIBRE)
@@ -1407,17 +1407,17 @@ void MinijuegoPescaIsla::Dibujar(
             }
             else if (estado.estado == PESCA_ESPERANDO)
             {
-                texto = "ESPERA EL PIQUE...";
+                texto = "ESPERÁ EL PIQUE...";
                 colorTexto = SKYBLUE;
             }
             else if (estado.estado == PESCA_PICADA)
             {
-                texto = "PICO! ACCION YA!";
+                texto = "¡PICÓ! ¡ACCIÓN YA!";
                 colorTexto = RED;
             }
             else if (estado.estado == PESCA_TENSION)
             {
-                texto = estado.recogiendo ? "RECOGIENDO (ACCION: SOLTAR)" : "AFLOJANDO (ACCION: RECOGER)";
+                texto = estado.recogiendo ? "RECOGIENDO (ACCIÓN: SOLTAR)" : "AFLOJANDO (ACCIÓN: RECOGER)";
                 colorTexto = estado.recogiendo ? YELLOW : LIME;
             }
 
@@ -1434,7 +1434,7 @@ void MinijuegoPescaIsla::Dibujar(
             else if (!participantes[i].esBot)
             {
                 DrawText(
-                    TextFormat("ACCION: %s / %s", ObtenerTextoBotonPrincipal(participantes[i]), TextoGolpePesca(participantes[i])),
+                    TextFormat("ACCIÓN: %s / %s", ObtenerTextoBotonPrincipal(participantes[i]), TextoGolpePesca(participantes[i])),
                     x + 18,
                     y + 54,
                     14,
@@ -1455,7 +1455,7 @@ void MinijuegoPescaIsla::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, anchoPantalla / 2 - MeasureText(texto, 96) / 2, altoPantalla / 2 - 150, 96, GOLD);
 
-        const char* ayuda = "LANZA, ESPERA EL '!' Y ENGANCHA. DORADO = 5. CUIDADO CON LAS BOTAS!";
+        const char* ayuda = "LANZÁ, ESPERÁ EL '!' Y ENGANCHÁ. DORADO = 5. ¡CUIDADO CON LAS BOTAS!";
         DrawText(ayuda, anchoPantalla / 2 - MeasureText(ayuda, 20) / 2, altoPantalla / 2 - 40, 20, RAYWHITE);
     }
     else if (

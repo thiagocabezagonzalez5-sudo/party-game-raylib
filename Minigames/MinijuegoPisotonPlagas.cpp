@@ -2325,7 +2325,7 @@ void MinijuegoPisotonPlagas::Dibujar(
 
     // Cabecera.
     DrawRectangle(14, 12, 520, 92, Fade(BLACK, 0.74f));
-    DrawText("PISOTON DE PLAGAS", 28, 20, 28, GOLD);
+    DrawText("PISOTÓN DE PLAGAS", 28, 20, 28, GOLD);
     DrawText("SALTO + SALTO EN EL AIRE = POUND   GOLPE ESPANTA AVISPAS", 28, 54, 15, RAYWHITE);
     DrawText("MOVER: WASD/FLECHAS/STICK   CUIDADO CON LAS AVISPAS (-2)", 28, 76, 14, LIGHTGRAY);
 
@@ -2345,7 +2345,7 @@ void MinijuegoPisotonPlagas::Dibujar(
 
         if (tiempoFlor <= AVISO_FLOR_PISOTON && tiempoFlor > 0.0f)
         {
-            aviso = "LA FLOR VA A FLORECER: PARATE DEBAJO!";
+            aviso = "LA FLOR VA A FLORECER: ¡PARATE DEBAJO!";
             colorAviso = Color{ 255, 160, 220, 255 };
         }
         else
@@ -2354,7 +2354,7 @@ void MinijuegoPisotonPlagas::Dibujar(
             {
                 if (madrigueras[k].aviso > 0.0f && madrigueras[k].tipoPendiente == PLAGA_PISOTON_BABOSA)
                 {
-                    aviso = "SE MUEVE LA TIERRA... BABOSA DORADA!";
+                    aviso = "SE MUEVE LA TIERRA... ¡BABOSA DORADA!";
                     colorAviso = GOLD;
                 }
             }
@@ -2394,7 +2394,7 @@ void MinijuegoPisotonPlagas::Dibujar(
             }
 
             int x = xInicial + k * (anchoTarjeta + separacion);
-            int y = altoPantalla - 92;
+            int y = altoPantalla - 92 - MargenBarraRondaMinijuegos();
 
             DrawRectangle(x, y, anchoTarjeta, 80, Fade(BLACK, 0.78f));
             DrawRectangle(x, y, 8, 80, participantes[i].color);
@@ -2404,7 +2404,7 @@ void MinijuegoPisotonPlagas::Dibujar(
 
             if (inmunidadAvispa[i] > 0.5f)
             {
-                DrawText("PICADO!", x + anchoTarjeta - 80, y + 10, 16, RED);
+                DrawText("¡PICADO!", x + anchoTarjeta - 80, y + 10, 16, RED);
             }
 
             if (participantes[i].esBot)
@@ -2435,7 +2435,7 @@ void MinijuegoPisotonPlagas::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, anchoPantalla / 2 - MeasureText(texto, 96) / 2, altoPantalla / 2 - 90, 96, GOLD);
 
-        const char* ayuda = "PISA PLAGAS CON GROUND POUND: SALTA Y SALTA DE NUEVO EN EL AIRE";
+        const char* ayuda = "PISÁ PLAGAS CON GROUND POUND: SALTÁ Y SALTÁ DE NUEVO EN EL AIRE";
         DrawText(ayuda, anchoPantalla / 2 - MeasureText(ayuda, 20) / 2, altoPantalla / 2 + 20, 20, RAYWHITE);
 
         const char* ayuda2 = "ESCARABAJO 1 / ORUGA 2 POR SEGMENTO / BABOSA DORADA 5";

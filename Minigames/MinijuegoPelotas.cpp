@@ -1079,7 +1079,7 @@ void MinijuegoPelotas::Dibujar(
     DrawRectangle(0, 0, ancho, (int)(76 * e), Fade(BLACK, 0.55f));
     DrawText("PELOTAS - EMPUJONES", (int)(24 * e), (int)(10 * e), (int)(30 * e), RAYWHITE);
     DrawText(
-        "EMPUJA A LOS DEMAS FUERA. MAS VELOCIDAD = MAS EMPUJE. SI SE ACABA EL TIEMPO GANA EL MAS CERCANO AL CENTRO",
+        "EMPUJÁ A LOS DEMÁS FUERA. MÁS VELOCIDAD = MÁS EMPUJE. SI SE ACABA EL TIEMPO GANA EL MÁS CERCANO AL CENTRO",
         (int)(24 * e),
         (int)(46 * e),
         (int)(18 * e),
@@ -1110,7 +1110,7 @@ void MinijuegoPelotas::Dibujar(
     int altoTarjeta = (int)(50 * e);
     int separacion = (int)(14 * e);
     int xTarjeta = ancho / 2 - (cantidadTarjetas * anchoTarjeta + (cantidadTarjetas - 1) * separacion) / 2;
-    int yTarjeta = alto - altoTarjeta - (int)(18 * e);
+    int yTarjeta = alto - altoTarjeta - (int)(18 * e) - MargenBarraRondaMinijuegos();
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
@@ -1212,7 +1212,7 @@ void MinijuegoPelotas::Dibujar(
         );
 
         const char* motivo = terminoPorTiempo
-            ? "TIEMPO AGOTADO: GANA EL MAS CERCANO AL CENTRO"
+            ? "TIEMPO AGOTADO: GANA EL MÁS CERCANO AL CENTRO"
             : "QUEDA UN SOLO JUGADOR EN PIE";
         DrawText(
             motivo,
@@ -1229,7 +1229,7 @@ void MinijuegoPelotas::Dibujar(
 
             DrawText(
                 TextFormat(
-                    "J%d  POSICION %d  %.3f s",
+                    "J%d  POSICIÓN %d  %.3f s",
                     participantes[i].numeroJugador,
                     resultado.participantes[i].posicionFinal,
                     resultado.participantes[i].puntuacionMinijuego / 1000.0f

@@ -989,7 +989,7 @@ void MinijuegoBanqueteTurbo::Dibujar(
         {
             if (p.tos > 0.0f)
             {
-                estado = "COF COF!";
+                estado = "¡COF COF!";
                 colorEstado = Color{ 255, 120, 90, 255 };
             }
             else if (p.rechazo > 0.0f)
@@ -999,7 +999,7 @@ void MinijuegoBanqueteTurbo::Dibujar(
             }
             else if (racion.tipo == RACION_BANQUETE_PICANTE && p.bocadosRestantes > 0)
             {
-                estado = participantes[i].esBot ? "PICANTE!" : TextFormat("PICANTE! SALTA: %s", ObtenerTextoBotonPrincipal(participantes[i]));
+                estado = participantes[i].esBot ? "¡PICANTE!" : TextFormat("¡PICANTE! SALTÁ: %s", ObtenerTextoBotonPrincipal(participantes[i]));
                 colorEstado = std::fmod(tiempoAnimacion * 6.0f, 1.0f) < 0.5f ? RED : ORANGE;
             }
             else if (racion.tipo == RACION_BANQUETE_DORADA && p.bocadosRestantes > 0)
@@ -1009,7 +1009,7 @@ void MinijuegoBanqueteTurbo::Dibujar(
             }
             else if (p.tiempoMensaje > 0.0f)
             {
-                estado = "BIEN!";
+                estado = "¡BIEN!";
                 colorEstado = LIME;
             }
         }
@@ -1025,8 +1025,8 @@ void MinijuegoBanqueteTurbo::Dibujar(
     // Cabecera.
     DrawRectangle(14, 12, 560, 92, Fade(BLACK, 0.74f));
     DrawText("BANQUETE TURBO", 28, 20, 28, GOLD);
-    DrawText("MACHACA EL BOTON DE COMER: CADA PULSACION ES UN BOCADO", 28, 54, 15, RAYWHITE);
-    DrawText("RACION ROJA = PICANTE: RECHAZALA CON SALTO   DORADA VALE x2", 28, 76, 14, LIGHTGRAY);
+    DrawText("MACHACÁ EL BOTÓN DE COMER: CADA PULSACIÓN ES UN BOCADO", 28, 54, 15, RAYWHITE);
+    DrawText("RACIÓN ROJA = PICANTE: RECHAZALA CON SALTO   DORADA VALE x2", 28, 76, 14, LIGHTGRAY);
 
     if (fase == FASE_BANQUETE_JUGANDO)
     {
@@ -1066,7 +1066,7 @@ void MinijuegoBanqueteTurbo::Dibujar(
             }
 
             int x = xInicial + k * (anchoTarjeta + separacion);
-            int y = altoPantalla - 92;
+            int y = altoPantalla - 92 - MargenBarraRondaMinijuegos();
             const PuestoBanquete& p = puestos[i];
 
             DrawRectangle(x, y, anchoTarjeta, 80, Fade(BLACK, 0.78f));
@@ -1104,7 +1104,7 @@ void MinijuegoBanqueteTurbo::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, anchoPantalla / 2 - MeasureText(texto, 96) / 2, altoPantalla / 2 - 150, 96, GOLD);
 
-        const char* ayuda = "MACHACA EL BOTON DE COMER Y VIGILA LAS RACIONES ROJAS";
+        const char* ayuda = "MACHACÁ EL BOTÓN DE COMER Y VIGILÁ LAS RACIONES ROJAS";
         DrawText(ayuda, anchoPantalla / 2 - MeasureText(ayuda, 20) / 2, altoPantalla / 2 - 50, 20, RAYWHITE);
     }
     else if (

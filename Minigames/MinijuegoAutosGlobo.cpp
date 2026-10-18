@@ -1430,7 +1430,7 @@ void MinijuegoAutosGlobo::Dibujar(
     // Cabecera.
     DrawRectangle(14, 12, 560, 92, Fade(BLACK, 0.74f));
     DrawText("AUTOS DE GLOBO", 28, 20, 28, GOLD);
-    DrawText("EMBISTE CON EL FRENTE EL LADO O LA COLA DE UN RIVAL", 28, 54, 15, RAYWHITE);
+    DrawText("EMBESTI CON EL FRENTE EL LADO O LA COLA DE UN RIVAL", 28, 54, 15, RAYWHITE);
     DrawText("ACELERAR / GIRAR: WASD, FLECHAS O STICK   PLACA VERDE: +1 GLOBO", 28, 76, 14, LIGHTGRAY);
 
     if (fase == FASE_AUTOS_GLOBO_JUGANDO)
@@ -1478,7 +1478,7 @@ void MinijuegoAutosGlobo::Dibujar(
             }
 
             int x = xInicial + k * (anchoTarjeta + separacion);
-            int y = altoPantalla - 92;
+            int y = altoPantalla - 92 - MargenBarraRondaMinijuegos();
             const AutoGlobo& a = autos[i];
 
             DrawRectangle(x, y, anchoTarjeta, 80, Fade(BLACK, 0.78f));
@@ -1536,7 +1536,7 @@ void MinijuegoAutosGlobo::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, anchoPantalla / 2 - MeasureText(texto, 96) / 2, altoPantalla / 2 - 90, 96, GOLD);
 
-        const char* ayuda = "REVIENTA LOS GLOBOS RIVALES CHOCANDO CON EL FRENTE DE TU AUTO";
+        const char* ayuda = "REVENTÁ LOS GLOBOS RIVALES CHOCANDO CON EL FRENTE DE TU AUTO";
         DrawText(ayuda, anchoPantalla / 2 - MeasureText(ayuda, 20) / 2, altoPantalla / 2 + 20, 20, RAYWHITE);
 
         const char* ayuda2 = "TURBO CORTO: RECARGA 2.5 S";

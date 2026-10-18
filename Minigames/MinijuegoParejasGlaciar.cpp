@@ -1204,7 +1204,7 @@ void MinijuegoParejasGlaciar::Dibujar(
         );
     }
 
-    DrawText("MOVER = CURSOR  |  ACCION (E / SHIFT DER / X) = REVELAR BLOQUE", 32, 84, 15, RAYWHITE);
+    DrawText("MOVER = CURSOR  |  ACCIÓN (E / SHIFT DER / X) = REVELAR BLOQUE", 32, 84, 15, RAYWHITE);
     DrawText("AURORA = 3 PUNTOS  |  CADA 4 FALLOS SEGUIDOS EL GLACIAR CRUJE", 32, 104, 15, RAYWHITE);
 
     if (fase != FASE_GLACIAR_PREPARACION)
@@ -1221,7 +1221,7 @@ void MinijuegoParejasGlaciar::Dibujar(
     if (fase == FASE_GLACIAR_ELEGIR)
     {
         DrawText(
-            TextFormat("ELIGE %.1f", tiempoTurno > 0.0f ? tiempoTurno : 0.0f),
+            TextFormat("ELEGI %.1f", tiempoTurno > 0.0f ? tiempoTurno : 0.0f),
             ancho - 190,
             54,
             20,
@@ -1236,7 +1236,7 @@ void MinijuegoParejasGlaciar::Dibujar(
         int numero = participantes[ultimoJugador].numeroJugador;
 
         if (ultimoEvento == EVENTO_GLACIAR_AURORA)
-            mensaje = TextFormat("J%d ENCONTRO LA AURORA: +3", numero);
+            mensaje = TextFormat("J%d ENCONTRÓ LA AURORA: +3", numero);
         else if (ultimoEvento == EVENTO_GLACIAR_PAREJA)
             mensaje = TextFormat("J%d HIZO PAREJA: +1", numero);
         else if (ultimoEvento == EVENTO_GLACIAR_FALLO)

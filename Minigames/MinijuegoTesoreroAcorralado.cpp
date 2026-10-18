@@ -1848,7 +1848,7 @@ void MinijuegoTesoreroAcorralado::Dibujar(
 
     const char* subtitulo = aviso
         ? "CUIDADO: BAJAN LAS REJAS"
-        : TextFormat("CONSERVAR MAS DE 50  -  %.0f s  -  SUELTAS %d", tiempoRestante, ContarMonedasSueltasTesorero(*this));
+        : TextFormat("CONSERVAR MÁS DE 50  -  %.0f s  -  SUELTAS %d", tiempoRestante, ContarMonedasSueltasTesorero(*this));
 
     DrawText(
         subtitulo,
@@ -1859,7 +1859,7 @@ void MinijuegoTesoreroAcorralado::Dibujar(
     );
 
     // HUD: controles de cada jugador.
-    int y = alto - 30;
+    int y = alto - 30 - MargenBarraRondaMinijuegos();
 
     for (int i = limite - 1; i >= 0; i--)
     {
@@ -1883,7 +1883,7 @@ void MinijuegoTesoreroAcorralado::Dibujar(
         else if (estado.equipo == 0)
         {
             linea = TextFormat(
-                "J%d TESORERO  HUYE Y USA LAS REJAS  SALTO [%s]  2o SALTO EN AIRE: GOLPE AL SUELO",
+                "J%d TESORERO  HUI Y USÁ LAS REJAS  SALTO [%s]  2o SALTO EN AIRE: GOLPE AL SUELO",
                 participantes[i].numeroJugador,
                 ObtenerTextoBotonPrincipal(participantes[i])
             );
@@ -1911,7 +1911,7 @@ void MinijuegoTesoreroAcorralado::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, ancho / 2 - MeasureText(texto, 90) / 2, alto / 2 - 50, 90, YELLOW);
 
-        const char* pista = "TRIO: GOLPEA AL TESORERO PARA QUE SUELTE MONEDAS  -  TESORERO: CONSERVA MAS DE LA MITAD";
+        const char* pista = "TRIO: GOLPEÁ AL TESORERO PARA QUE SUELTE MONEDAS  -  TESORERO: CONSERVÁ MÁS DE LA MITAD";
         DrawText(pista, ancho / 2 - MeasureText(pista, 18) / 2, alto / 2 + 60, 18, RAYWHITE);
     }
     else if (

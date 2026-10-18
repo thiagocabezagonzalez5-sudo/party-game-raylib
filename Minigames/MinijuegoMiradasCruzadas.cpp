@@ -769,7 +769,7 @@ void MinijuegoMiradasCruzadas::Dibujar(
     else if (fase == FASE_MIRADAS_ELECCION)
     {
         // Arriba a la derecha (cielo libre): abajo pisaba la etiqueta de J3.
-        const char* ronda = TextFormat("RONDA %d / %d - ELIGE", numeroRonda, MAX_RONDAS_MIRADAS);
+        const char* ronda = TextFormat("RONDA %d / %d - ELEGI", numeroRonda, MAX_RONDAS_MIRADAS);
         int xPanel = ancho - 384;
 
         DrawRectangle(xPanel, 14, 366, 76, Fade(BLACK, 0.70f));
@@ -792,7 +792,7 @@ void MinijuegoMiradasCruzadas::Dibujar(
     {
         const char* texto =
             TextFormat(
-                "SOLO MIRO: %s",
+                "SOLO MIRÓ: %s",
                 NombreDireccionMirada(jugadores[indiceSolo].direccion)
             );
 

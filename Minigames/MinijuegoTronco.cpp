@@ -1213,7 +1213,7 @@ static void DibujarBarraEquipoTronco(
     {
         const char* texto =
             minijuego.equipos[equipo].ultimoGolpeCorrecto
-            ? "CORTE!"
+            ? "¡CORTE!"
             : "DESCOORDINADOS";
 
         int tamano = 21;
@@ -1347,7 +1347,7 @@ static void DibujarTarjetasEquipoTronco(
         )
         {
             DrawText(
-                "ESPERANDO COMPANERO",
+                "ESPERANDO COMPAÑERO",
                 x + 10,
                 y + 74,
                 14,
@@ -1510,7 +1510,7 @@ void MinijuegoTronco::Dibujar(
         const char* texto =
             numero > 1
             ? TextFormat("%d", numero)
-            : "YA!";
+            : "¡YA!";
 
         int tamano = 58;
 
@@ -1545,7 +1545,7 @@ void MinijuegoTronco::Dibujar(
             empate
             ? "EMPATE"
             : TextFormat(
-                "EQUIPO %d GANA!",
+                "¡EQUIPO %d GANA!",
                 equipoGanador + 1
             );
 

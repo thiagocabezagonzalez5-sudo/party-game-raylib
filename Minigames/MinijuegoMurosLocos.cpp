@@ -880,7 +880,7 @@ void MinijuegoMurosLocos::Dibujar(
 
     DrawText("MUROS LOCOS - RUINAS DEL DESIERTO", 24, 22, 30, RAYWHITE);
     DrawText(
-        "BUSCA EL HUECO ANTES DE QUE EL MURO DE ADOBE TE EMPUJE.",
+        "BUSCÁ EL HUECO ANTES DE QUE EL MURO DE ADOBE TE EMPUJE.",
         24,
         60,
         18,

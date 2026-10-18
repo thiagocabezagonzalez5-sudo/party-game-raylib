@@ -101,7 +101,7 @@ static const TemaLluvia TEMAS_LLUVIA[CANTIDAD_TEMAS_LLUVIA] =
         FORMA_LLUVIA_CILINDRO, FORMA_LLUVIA_ESFERA, FORMA_LLUVIA_CUBO
     },
     {
-        "DESIERTO", "GEMAS DE AMBAR", "CACTUS RODANTES",
+        "DESIERTO", "GEMAS DE ÁMBAR", "CACTUS RODANTES",
         Color{ 238, 206, 150, 255 }, Color{ 222, 190, 124, 255 },
         Color{ 214, 178, 112, 255 }, Color{ 190, 152, 90, 255 },
         Color{ 188, 140, 84, 255 }, Color{ 196, 150, 96, 255 },
@@ -1927,20 +1927,20 @@ void MinijuegoLluviaApilada::Dibujar(
     DrawText(TextFormat("LLUVIA APILADA - %s", tema.nombre), (int)(26 * e), (int)(20 * e), (int)(28 * e), GOLD);
     DrawText(
         TextFormat(
-            "ATRAPA %s: MAS PILA = MAS LENTO Y TORPE. SOLO CUENTAN LAS ASEGURADAS (RARA = 3).",
+            "ATRAPÁ %s: MÁS PILA = MÁS LENTO Y TORPE. SOLO CUENTAN LAS ASEGURADAS (RARA = 3).",
             tema.piezas
         ),
         (int)(26 * e), (int)(52 * e), (int)(15 * e), RAYWHITE
     );
     DrawText(
         TextFormat(
-            "ASEGURA: BOTON PRINCIPAL EN TU BASE DE COLOR  |  GOLPEA PARA TIRAR LA PILA RIVAL  |  EVITA %s (ROJO)",
+            "ASEGURÁ: BOTÓN PRINCIPAL EN TU BASE DE COLOR  |  GOLPEÁ PARA TIRAR LA PILA RIVAL  |  EVITÁ %s (ROJO)",
             tema.peligro
         ),
         (int)(26 * e), (int)(72 * e), (int)(13 * e), Color{ 255, 190, 170, 255 }
     );
     DrawText(
-        "LA SOMBRA EN EL SUELO MARCA DONDE CAE. LA PILA NO ASEGURADA AL TERMINAR SE PIERDE.",
+        "LA SOMBRA EN EL SUELO MARCA DÓNDE CAE. LA PILA NO ASEGURADA AL TERMINAR SE PIERDE.",
         (int)(26 * e), (int)(88 * e), (int)(13 * e), Color{ 190, 215, 240, 255 }
     );
 
@@ -1952,7 +1952,7 @@ void MinijuegoLluviaApilada::Dibujar(
 
         if (tiempoRestante <= 8.0f && ((int)(tiempoAnimacion * 4.0f)) % 2 == 0)
         {
-            const char* aviso = "ASEGURA TU PILA!";
+            const char* aviso = "¡ASEGURÁ TU PILA!";
             DrawText(
                 aviso,
                 GetScreenWidth() / 2 - MeasureText(aviso, 30) / 2,
@@ -1968,7 +1968,7 @@ void MinijuegoLluviaApilada::Dibujar(
         if (resultado.participantes[i].participo) filasHud++;
     }
 
-    int fila = GetScreenHeight() - 14 - 27 * filasHud;
+    int fila = GetScreenHeight() - 14 - 27 * filasHud - MargenBarraRondaMinijuegos();
     for (int i = 0; i < limite; i++)
     {
         if (!resultado.participantes[i].participo) continue;

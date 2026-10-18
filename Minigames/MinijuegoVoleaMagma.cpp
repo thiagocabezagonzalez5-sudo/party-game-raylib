@@ -1718,21 +1718,21 @@ void MinijuegoVoleaMagma::Dibujar(
         int cx = equipo == 0 ? anchoPantalla / 4 : (anchoPantalla * 3) / 4;
         bool aviso = avisoToques > 0.0f && equipoUltimoToque == equipo;
         const char* texto = aviso
-            ? "MAXIMO 2 TOQUES"
+            ? "MÁXIMO 2 TOQUES"
             : TextFormat("TOQUES %d/2", toques[equipo]);
         DrawText(
             texto,
             cx - MeasureText(texto, 20) / 2,
-            altoPantalla - 70,
+            altoPantalla - 70 - MargenBarraRondaMinijuegos(),
             20,
             aviso ? RED : ColorEquipoVolea(equipo)
         );
     }
 
-    const char* ayuda = "MOVER: WASD / FLECHAS / STICK   SALTAR: ESPACIO / ENTER / A   GOLPE: E / SHIFT DER / X (apunta con la direccion)   SALTO + GOLPE = REMATE";
+    const char* ayuda = "MOVER: WASD / FLECHAS / STICK   SALTAR: ESPACIO / ENTER / A   GOLPE: E / SHIFT DER / X (apuntá con la dirección)   SALTO + GOLPE = REMATE";
     int ayudaAncho = MeasureText(ayuda, 14);
-    DrawRectangle(centro - ayudaAncho / 2 - 12, altoPantalla - 34, ayudaAncho + 24, 28, Fade(BLACK, 0.78f));
-    DrawText(ayuda, centro - ayudaAncho / 2, altoPantalla - 28, 14, RAYWHITE);
+    DrawRectangle(centro - ayudaAncho / 2 - 12, altoPantalla - 34 - MargenBarraRondaMinijuegos(), ayudaAncho + 24, 28, Fade(BLACK, 0.78f));
+    DrawText(ayuda, centro - ayudaAncho / 2, altoPantalla - 28 - MargenBarraRondaMinijuegos(), 14, RAYWHITE);
 
     // Etiqueta del boton de golpe de cada humano durante la cuenta atras.
     if (fase == FASE_VOLEA_PREPARACION)
@@ -1781,7 +1781,7 @@ void MinijuegoVoleaMagma::Dibujar(
 
         if (mensaje == MENSAJE_VOLEA_CHARCO)
         {
-            const char* extra = "CHARCO DE LAVA!";
+            const char* extra = "¡CHARCO DE LAVA!";
             DrawText(extra, centro - MeasureText(extra, 22) / 2, altoPantalla / 2 - 106, 22, ORANGE);
         }
     }
@@ -1814,7 +1814,7 @@ void MinijuegoVoleaMagma::Dibujar(
         DrawRectangle(px, py, panelAncho, panelAlto, Fade(BLACK, 0.9f));
 
         const char* titulo = empate
-            ? "EMPATE EN EL VOLCAN"
+            ? "EMPATE EN EL VOLCÁN"
             : TextFormat("GANA EL EQUIPO %d", equipoGanador + 1);
         DrawText(
             titulo,

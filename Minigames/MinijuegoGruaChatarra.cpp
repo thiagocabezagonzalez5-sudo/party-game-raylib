@@ -1340,7 +1340,7 @@ void MinijuegoGruaChatarra::Dibujar(
 
     DrawRectangle(panelX, 10, anchoPanel, 78, Fade(BLACK, 0.78f));
 
-    const char* titulo = TextFormat("GRUA DE CHATARRA  -  %.0f s", tiempoRestante);
+    const char* titulo = TextFormat("GRÚA DE CHATARRA  -  %.0f s", tiempoRestante);
     DrawText(titulo, ancho / 2 - MeasureText(titulo, 18) / 2, 14, 18, RAYWHITE);
 
     int columna = 0;
@@ -1402,7 +1402,7 @@ void MinijuegoGruaChatarra::Dibujar(
     }
 
     // HUD: controles.
-    int y = alto - 34;
+    int y = alto - 34 - MargenBarraRondaMinijuegos();
     for (int i = limite - 1; i >= 0; i--)
     {
         const EstadoJugadorGrua& estado = estadosJugadores[i];
@@ -1436,7 +1436,7 @@ void MinijuegoGruaChatarra::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, ancho / 2 - MeasureText(texto, 90) / 2, alto / 2 - 50, 90, YELLOW);
 
-        const char* pista = "CENTRA LA GARRA SOBRE EL OBJETO Y BAJA  -  BATERIA 8  MOTOR 5  ENGRANAJE 3  TUERCA 1  CARTUCHO -2";
+        const char* pista = "CENTRÁ LA GARRA SOBRE EL OBJETO Y BAJÁ  -  BATERIA 8  MOTOR 5  ENGRANAJE 3  TUERCA 1  CARTUCHO -2";
         DrawText(pista, ancho / 2 - MeasureText(pista, 18) / 2, alto / 2 + 60, 18, RAYWHITE);
     }
     else if (

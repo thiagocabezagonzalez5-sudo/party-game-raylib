@@ -1483,7 +1483,7 @@ void MinijuegoUltimoAsiento::Dibujar(
 
     // Cabecera.
     DrawRectangle(14, 12, 520, 92, Fade(BLACK, 0.74f));
-    DrawText("ULTIMO ASIENTO", 28, 20, 28, GOLD);
+    DrawText("ÚLTIMO ASIENTO", 28, 20, 28, GOLD);
     DrawText(TextFormat("VIVOS: %d    RONDA: %d", vivos, ronda > 0 ? ronda : 1), 28, 52, 18, RAYWHITE);
     DrawText("MOVER: WASD/FLECHAS/STICK   SALTO: ESPACIO/ENTER/A", 28, 74, 14, LIGHTGRAY);
 
@@ -1498,17 +1498,17 @@ void MinijuegoUltimoAsiento::Dibujar(
             tiempoRestante <= 6.0f ? RED : GOLD
         );
 
-        const char* aviso = "SUENA EL ORGANILLO: CORRE Y PREPARATE";
+        const char* aviso = "SUENA EL ORGANILLO: CORRÉ Y PREPARATE";
         Color colorAviso = RAYWHITE;
 
         if (subfase == SUBFASE_ULTIMO_ASIENTO_TAZAS)
         {
-            aviso = TextFormat("A UNA TAZA!  CIERRAN EN %.1f", tiempoSubfase > 0.0f ? tiempoSubfase : 0.0f);
+            aviso = TextFormat("¡A UNA TAZA!  CIERRAN EN %.1f", tiempoSubfase > 0.0f ? tiempoSubfase : 0.0f);
             colorAviso = YELLOW;
 
             if (indiceTrampa >= 0 && tiempoSubfase <= DURACION_AVISO_TRAMPA_ASIENTO)
             {
-                aviso = "CUIDADO: LA TAZA ROJA ES TRAMPA!";
+                aviso = "CUIDADO: ¡LA TAZA ROJA ES TRAMPA!";
                 colorAviso = RED;
             }
         }
@@ -1549,7 +1549,7 @@ void MinijuegoUltimoAsiento::Dibujar(
             }
 
             int x = xInicial + k * (anchoTarjeta + separacion);
-            int y = altoPantalla - 92;
+            int y = altoPantalla - 92 - MargenBarraRondaMinijuegos();
 
             DrawRectangle(x, y, anchoTarjeta, 80, Fade(BLACK, 0.78f));
             DrawRectangle(x, y, 8, 80, coloresJugadores[i]);
@@ -1599,7 +1599,7 @@ void MinijuegoUltimoAsiento::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, anchoPantalla / 2 - MeasureText(texto, 96) / 2, altoPantalla / 2 - 90, 96, GOLD);
 
-        const char* ayuda = "CUANDO PARE LA MUSICA OCUPA UNA TAZA. EMPUJA A LOS RIVALES!";
+        const char* ayuda = "CUANDO PARE LA MÚSICA, OCUPÁ UNA TAZA. ¡EMPUJÁ A LOS RIVALES!";
         DrawText(ayuda, anchoPantalla / 2 - MeasureText(ayuda, 20) / 2, altoPantalla / 2 + 20, 20, RAYWHITE);
     }
     else if (

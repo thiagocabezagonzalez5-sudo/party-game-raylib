@@ -981,7 +981,7 @@ static void DibujarHudEquipo67(
     {
         const char* texto =
             minijuego.equipos[equipo].ultimoAcierto
-            ? "BIEN!"
+            ? "¡BIEN!"
             : "ORDEN INCORRECTO";
 
         DrawText(
@@ -1532,8 +1532,8 @@ void Minijuego67::Dibujar(
         );
 
         DrawText(
-            "FABRICA 67 - EQUIPOS",
-            ancho / 2 - MeasureText("FABRICA 67 - EQUIPOS", 30) / 2,
+            "FÁBRICA 67 - EQUIPOS",
+            ancho / 2 - MeasureText("FÁBRICA 67 - EQUIPOS", 30) / 2,
             alto / 2 - 48,
             30,
             ORANGE

@@ -545,6 +545,37 @@ static float PosicionXPalanca(const MinijuegoInterruptoresCaos& minijuego, int i
 }
 
 
+// Ayuda con las teclas reales del jugador en turno: con teclado completo o
+// WASD la seleccion solo se mueve con A/D (AccionDireccionalControlPresionada)
+// y activar es E; con flechas, IZQ/DER y SHIFT DER; con mando, cruceta o
+// stick y X.
+static const char* TextoAyudaInterruptores(const Participante& participante)
+{
+    if (participante.esBot)
+    {
+        return "EL BOT ESTÁ ELIGIENDO";
+    }
+
+    switch (participante.control)
+    {
+        case CONTROL_GAMEPAD:
+            return "IZQ/DER ELEGIR  |  X ACTIVAR";
+
+        case CONTROL_TECLADO_FLECHAS:
+            return "IZQ/DER ELEGIR  |  SHIFT DER ACTIVAR";
+
+        case CONTROL_TECLADO_COMPLETO:
+        case CONTROL_TECLADO_WASD:
+            return "A/D ELEGIR  |  E ACTIVAR";
+
+        case CONTROL_NINGUNO:
+            break;
+    }
+
+    return "";
+}
+
+
 // Rayo con zigzag entre dos puntos (cambia rapido con el tiempo).
 static void DibujarRayoInterruptores(Vector3 origen, Vector3 destino, float tiempo, float semilla, Color color)
 {
@@ -896,16 +927,16 @@ void MinijuegoInterruptoresCaos::Dibujar(
             22,
             participantes[jugadorTurno].color
         );
-        DrawText("IZQ/DER ELEGIR  |  GOLPEAR ACTIVAR", 32, 101, 17, LIGHTGRAY);
+        DrawText(TextoAyudaInterruptores(participantes[jugadorTurno]), 32, 101, 17, LIGHTGRAY);
     }
     else if (fase == FASE_INTERRUPTORES_SEGURO)
     {
-        DrawText("SEGURO! PASA EL TURNO", 32, 76, 22, LIME);
+        DrawText("¡SEGURO! PASA EL TURNO", 32, 76, 22, LIME);
     }
     else if (fase == FASE_INTERRUPTORES_EXPLOSION)
     {
         DrawText(
-            TextFormat("J%d ACTIVO LA SOBRECARGA", participantes[jugadorExplosion].numeroJugador),
+            TextFormat("J%d ACTIVÓ LA SOBRECARGA", participantes[jugadorExplosion].numeroJugador),
             32,
             76,
             22,
@@ -914,7 +945,7 @@ void MinijuegoInterruptoresCaos::Dibujar(
     }
     else
     {
-        DrawText(TextFormat("ULTIMO EN PIE  %s", TextoReinicioMinijuego()), 32, 76, 20, RAYWHITE);
+        DrawText(TextFormat("ÚLTIMO EN PIE  %s", TextoReinicioMinijuego()), 32, 76, 20, RAYWHITE);
 
         if (jugadorTurno >= 0)
         {

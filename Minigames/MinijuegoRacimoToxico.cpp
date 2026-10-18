@@ -961,7 +961,7 @@ void MinijuegoRacimoToxico::Dibujar(
 
         // Etiqueta y vidas se anclan sobre el borde inferior para no cortarse.
         int baseY = (int)pantalla.y;
-        int maxBaseY = GetScreenHeight() - 62;
+        int maxBaseY = GetScreenHeight() - 62 - MargenBarraRondaMinijuegos();
         if (baseY > maxBaseY) baseY = maxBaseY;
 
         DrawText(
@@ -985,7 +985,7 @@ void MinijuegoRacimoToxico::Dibujar(
     }
 
     DrawRectangle(18, 16, 700, 112, Fade(BLACK, 0.79f));
-    DrawText("RACIMO TOXICO", 32, 24, 28, GOLD);
+    DrawText("RACIMO TÓXICO", 32, 24, 28, GOLD);
 
     if (turno >= 0 && fase != FASE_RACIMO_PREPARACION && fase != FASE_RACIMO_TERMINADO)
     {
@@ -1003,8 +1003,8 @@ void MinijuegoRacimoToxico::Dibujar(
         );
     }
 
-    DrawText("IZQ = 1 FRUTO  |  DER = 2 FRUTOS  |  ACCION (E / SHIFT DER / X) = CONFIRMAR", 32, 84, 15, RAYWHITE);
-    DrawText("MORADO = BAYA TOXICA (-1 VIDA)  |  DORADO = SALTA AL SIGUIENTE", 32, 104, 15, RAYWHITE);
+    DrawText("IZQ = 1 FRUTO  |  DER = 2 FRUTOS  |  ACCIÓN (E / SHIFT DER / X) = CONFIRMAR", 32, 84, 15, RAYWHITE);
+    DrawText("MORADO = BAYA TÓXICA (-1 VIDA)  |  DORADO = SALTA AL SIGUIENTE", 32, 104, 15, RAYWHITE);
 
     if (fase == FASE_RACIMO_TURNO || fase == FASE_RACIMO_ANIMACION)
     {
@@ -1037,13 +1037,13 @@ void MinijuegoRacimoToxico::Dibujar(
         switch (ultimoEvento)
         {
         case EVENTO_RACIMO_TOXICA:
-            mensaje = TextFormat("J%d TOMO UNA BAYA TOXICA", numero);
+            mensaje = TextFormat("J%d TOMÓ UNA BAYA TÓXICA", numero);
             break;
         case EVENTO_RACIMO_ELIMINADO:
             mensaje = TextFormat("J%d QUEDA ELIMINADO", numero);
             break;
         case EVENTO_RACIMO_DORADA:
-            mensaje = TextFormat("J%d TOMO EL FRUTO DORADO: SE SALTA UN TURNO", numero);
+            mensaje = TextFormat("J%d TOMÓ EL FRUTO DORADO: SE SALTA UN TURNO", numero);
             break;
         default:
             break;
@@ -1051,7 +1051,7 @@ void MinijuegoRacimoToxico::Dibujar(
     }
     else if (fase == FASE_RACIMO_TURNO && racimoRepuesto)
     {
-        mensaje = "EL RACIMO REBROTO";
+        mensaje = "EL RACIMO REBROTÓ";
     }
 
     if (mensaje != nullptr)

@@ -1726,11 +1726,13 @@ void Juego::Dibujar()
                 break;
             }
 
+            // Barra fina: los minijuegos de HUD viejo suben su HUD inferior
+            // MargenBarraRondaMinijuegos() para que no tape sus tarjetas.
             DrawRectangle(
                 0,
-                GetScreenHeight() - 58,
+                GetScreenHeight() - ALTO_BARRA_RONDA_MINIJUEGOS,
                 GetScreenWidth(),
-                58,
+                ALTO_BARRA_RONDA_MINIJUEGOS,
                 Fade(BLACK, 0.82f)
             );
 
@@ -1744,9 +1746,9 @@ void Juego::Dibujar()
 
             DrawText(
                 texto,
-                GetScreenWidth() / 2 - MeasureText(texto, 18) / 2,
-                GetScreenHeight() - 39,
-                18,
+                GetScreenWidth() / 2 - MeasureText(texto, 16) / 2,
+                GetScreenHeight() - ALTO_BARRA_RONDA_MINIJUEGOS + 6,
+                16,
                 RAYWHITE
             );
 

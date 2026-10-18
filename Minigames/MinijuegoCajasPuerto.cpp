@@ -1457,7 +1457,7 @@ void MinijuegoCajasPuerto::Dibujar(
     case FASE_CAJAS_PREPARACION: nombreFase = "PREPARANDO"; break;
     case FASE_CAJAS_ESCONDER: nombreFase = "ESCONDERSE"; break;
     case FASE_CAJAS_CIERRE: nombreFase = "CERRANDO PUERTAS"; break;
-    case FASE_CAJAS_ELEGIR: nombreFase = "LA GRUA ELIGE"; break;
+    case FASE_CAJAS_ELEGIR: nombreFase = "LA GRÚA ELIGE"; break;
     case FASE_CAJAS_RESOLVER: nombreFase = "RESULTADO"; break;
     case FASE_CAJAS_TERMINADO: nombreFase = "FIN"; break;
     }
@@ -1474,7 +1474,7 @@ void MinijuegoCajasPuerto::Dibujar(
     {
         DrawText(
             TextFormat(
-                "J%d EN LA GRUA%s - SOBREVIVIENTES: %d",
+                "J%d EN LA GRÚA%s - SOBREVIVIENTES: %d",
                 participantes[indiceSolo].numeroJugador,
                 participantes[indiceSolo].esBot ? " (BOT)" : "",
                 ContarVivosCajas(*this)
@@ -1486,11 +1486,11 @@ void MinijuegoCajasPuerto::Dibujar(
         );
     }
 
-    const char* controles = "TRIO: MOVER + ACCION (E / SHIFT DER / X) ENTRA  |  GRUA: IZQ/DER + ACCION";
+    const char* controles = "TRIO: MOVER + ACCIÓN (E / SHIFT DER / X) ENTRA  |  GRÚA: IZQ/DER + ACCIÓN";
     int anchoControles = MeasureText(controles, 16);
 
-    DrawRectangle(ancho / 2 - anchoControles / 2 - 12, alto - 86, anchoControles + 24, 26, Fade(BLACK, 0.79f));
-    DrawText(controles, ancho / 2 - anchoControles / 2, alto - 82, 16, RAYWHITE);
+    DrawRectangle(ancho / 2 - anchoControles / 2 - 12, alto - 86 - MargenBarraRondaMinijuegos(), anchoControles + 24, 26, Fade(BLACK, 0.79f));
+    DrawText(controles, ancho / 2 - anchoControles / 2, alto - 82 - MargenBarraRondaMinijuegos(), 16, RAYWHITE);
 
     if (fase == FASE_CAJAS_ESCONDER || fase == FASE_CAJAS_ELEGIR)
     {
@@ -1505,18 +1505,18 @@ void MinijuegoCajasPuerto::Dibujar(
 
     if (fase == FASE_CAJAS_ESCONDER)
     {
-        const char* aviso = "NIEBLA: LA GRUA NO VE QUIEN ENTRA. ANCLA DORADA = DOBLE FONDO";
-        DrawText(aviso, ancho / 2 - MeasureText(aviso, 20) / 2, alto - 46, 20, GOLD);
+        const char* aviso = "NIEBLA: LA GRÚA NO VE QUIÉN ENTRA. ANCLA DORADA = DOBLE FONDO";
+        DrawText(aviso, ancho / 2 - MeasureText(aviso, 20) / 2, alto - 46 - MargenBarraRondaMinijuegos(), 20, GOLD);
     }
     else if (fase == FASE_CAJAS_ELEGIR)
     {
         const char* aviso = TextFormat("CARGAS POR SOLTAR: %d", eleccionesRestantes);
-        DrawText(aviso, ancho / 2 - MeasureText(aviso, 24) / 2, alto - 46, 24, YELLOW);
+        DrawText(aviso, ancho / 2 - MeasureText(aviso, 24) / 2, alto - 46 - MargenBarraRondaMinijuegos(), 24, YELLOW);
     }
     else if (fase == FASE_CAJAS_RESOLVER && revelacionHecha)
     {
         const char* aviso = TextFormat("ELIMINADOS EN LA RONDA: %d", eliminadosRonda);
-        DrawText(aviso, ancho / 2 - MeasureText(aviso, 24) / 2, alto - 46, 24, YELLOW);
+        DrawText(aviso, ancho / 2 - MeasureText(aviso, 24) / 2, alto - 46 - MargenBarraRondaMinijuegos(), 24, YELLOW);
     }
 
     if (fase == FASE_CAJAS_PREPARACION)
@@ -1540,7 +1540,7 @@ void MinijuegoCajasPuerto::Dibujar(
     {
         bool ganaSolo = resultado.participantes[indiceSolo].posicionFinal == 1;
         const char* titulo = ganaSolo
-            ? "GANA LA GRUA"
+            ? "GANA LA GRÚA"
             : "GANA EL TRIO";
 
         DrawRectangle(ancho / 2 - 290, alto / 2 - 92, 580, 184, Fade(BLACK, 0.91f));

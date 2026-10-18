@@ -922,7 +922,7 @@ void MinijuegoSecuenciaNeon::Dibujar(
     DrawText(largo, (int)centroHub.x - MeasureText(largo, 30) / 2, (int)centroHub.y - 15, 30, RAYWHITE);
 
     DrawRectangle(18, 16, 540, 116, Fade(BLACK, 0.76f));
-    DrawText("SECUENCIA NEON", 32, 28, 30, GOLD);
+    DrawText("SECUENCIA NEÓN", 32, 28, 30, GOLD);
 
     int ancho = GetScreenWidth();
     int alto = GetScreenHeight();
@@ -943,7 +943,7 @@ void MinijuegoSecuenciaNeon::Dibujar(
     }
     else if (fase == FASE_SECUENCIA_MOSTRANDO)
     {
-        DrawText("MEMORIZA LOS PULSOS", 32, 68, 21, SKYBLUE);
+        DrawText("MEMORIZÁ LOS PULSOS", 32, 68, 21, SKYBLUE);
         DrawText(
             TextFormat("RONDA %d  -  LONGITUD %d", numeroRonda, cantidadPulsos),
             32,
@@ -954,7 +954,7 @@ void MinijuegoSecuenciaNeon::Dibujar(
     }
     else if (fase == FASE_SECUENCIA_RESPONDIENDO)
     {
-        DrawText("REPITE LA SECUENCIA CON LAS DIRECCIONES", 32, 68, 19, LIME);
+        DrawText("REPETI LA SECUENCIA CON LAS DIRECCIONES", 32, 68, 19, LIME);
         DrawText(
             TextFormat("TIEMPO: %.1f", tiempoRespuesta),
             32,
@@ -978,7 +978,7 @@ void MinijuegoSecuenciaNeon::Dibujar(
     int anchoTotal = cantidad * anchoPanel + (cantidad - 1) * separacion;
     int xInicial = (ancho - anchoTotal) / 2;
     int altoPanel = 38;
-    int y = alto - altoPanel - 8;
+    int y = alto - altoPanel - 8 - MargenBarraRondaMinijuegos();
     orden = 0;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)

@@ -1363,7 +1363,7 @@ void MinijuegoDescensoNubes::Dibujar(
     // Cabecera.
     DrawRectangle(14, 12, 520, 66, Fade(BLACK, 0.74f));
     DrawText("DESCENSO EN NUBES", 28, 18, 28, GOLD);
-    DrawText("MOVER: WASD/FLECHAS/STICK   FRENAR: BOTON PRINCIPAL O GOLPE", 28, 52, 14, RAYWHITE);
+    DrawText("MOVER: WASD/FLECHAS/STICK   FRENAR: BOTÓN PRINCIPAL O GOLPE", 28, 52, 14, RAYWHITE);
 
     if (fase == FASE_NUBES_JUGANDO)
     {
@@ -1379,7 +1379,7 @@ void MinijuegoDescensoNubes::Dibujar(
             if (distancia > MITAD_BANDA_VIENTO_NUBES && distancia < 8.0f)
             {
                 const char* direccion = vientos[v].dirX > 0.0f ? "DERECHA" : (vientos[v].dirX < 0.0f ? "IZQUIERDA" : (vientos[v].dirZ > 0.0f ? "HACIA ABAJO" : "HACIA ARRIBA"));
-                const char* aviso = TextFormat("RAFAGA DE VIENTO: %s", direccion);
+                const char* aviso = TextFormat("RÁFAGA DE VIENTO: %s", direccion);
                 int a = MeasureText(aviso, 24);
                 DrawRectangle(anchoPantalla / 2 - a / 2 - 14, 88, a + 28, 38, Fade(BLACK, 0.8f));
                 DrawText(aviso, anchoPantalla / 2 - a / 2, 94, 24, SKYBLUE);
@@ -1433,7 +1433,7 @@ void MinijuegoDescensoNubes::Dibujar(
             }
 
             int x = xInicial + k * (anchoTarjeta + separacion);
-            int y = altoPantalla - 80;
+            int y = altoPantalla - 80 - MargenBarraRondaMinijuegos();
             const EstadoJugadorNubes& estado = estados[i];
 
             DrawRectangle(x, y, anchoTarjeta, 70, Fade(BLACK, 0.78f));
@@ -1447,7 +1447,7 @@ void MinijuegoDescensoNubes::Dibujar(
 
             if (estado.aterrizo)
             {
-                textoFreno = estado.bonusCentro ? "ATERRIZO EN EL CENTRO +5" : "ATERRIZO";
+                textoFreno = estado.bonusCentro ? "ATERRIZÓ EN EL CENTRO +5" : "ATERRIZÓ";
                 colorFreno = estado.bonusCentro ? GOLD : LIGHTGRAY;
             }
             else if (estado.aturdido > 0.0f)
@@ -1492,7 +1492,7 @@ void MinijuegoDescensoNubes::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, anchoPantalla / 2 - MeasureText(texto, 96) / 2, altoPantalla / 2 - 130, 96, GOLD);
 
-        const char* ayuda = "RECOGE ANILLOS (DORADOS x3), EVITA TORMENTAS Y ATERRIZA EN EL CENTRO";
+        const char* ayuda = "RECOGÉ ANILLOS (DORADOS x3), EVITÁ TORMENTAS Y ATERRIZÁ EN EL CENTRO";
         int anchoAyuda = MeasureText(ayuda, 20);
         DrawRectangle(anchoPantalla / 2 - anchoAyuda / 2 - 12, altoPantalla / 2 - 28, anchoAyuda + 24, 36, Fade(BLACK, 0.75f));
         DrawText(ayuda, anchoPantalla / 2 - MeasureText(ayuda, 20) / 2, altoPantalla / 2 - 20, 20, RAYWHITE);

@@ -1185,9 +1185,9 @@ void MinijuegoCapsulasBarajadas::Dibujar(
 
     // Cabecera.
     DrawRectangle(14, 12, 480, 66, Fade(BLACK, 0.74f));
-    DrawText("CAPSULAS BARAJADAS", 28, 18, 28, GOLD);
+    DrawText("CÁPSULAS BARAJADAS", 28, 18, 28, GOLD);
     DrawText(
-        TextFormat("RONDA %d/%d    CAPSULAS: %d", ronda < RONDAS_CAPSULAS ? ronda + 1 : RONDAS_CAPSULAS, RONDAS_CAPSULAS, cantidadCapsulas),
+        TextFormat("RONDA %d/%d    CÁPSULAS: %d", ronda < RONDAS_CAPSULAS ? ronda + 1 : RONDAS_CAPSULAS, RONDAS_CAPSULAS, cantidadCapsulas),
         28,
         50,
         18,
@@ -1196,18 +1196,18 @@ void MinijuegoCapsulasBarajadas::Dibujar(
 
     if (fase == FASE_CAPSULAS_JUGANDO)
     {
-        const char* aviso = "OBSERVA DONDE VA EL NUCLEO";
+        const char* aviso = "OBSERVÁ DÓNDE VA EL NÚCLEO";
         Color colorAviso = RAYWHITE;
 
         if (subfase == SUBFASE_CAPSULAS_BARAJAR)
         {
-            aviso = "BARAJANDO... SIGUE LA CAPSULA";
+            aviso = "BARAJANDO... SEGUI LA CÁPSULA";
             colorAviso = ORANGE;
         }
         else if (subfase == SUBFASE_CAPSULAS_ELEGIR)
         {
             float restante = DURACION_ELEGIR_CAPSULAS - tiempoSubfase;
-            aviso = TextFormat("ELIGE!  %.1f", restante > 0.0f ? restante : 0.0f);
+            aviso = TextFormat("¡ELEGI!  %.1f", restante > 0.0f ? restante : 0.0f);
             colorAviso = LIME;
 
             DrawRectangle(anchoPantalla - 214, 12, 200, 44, Fade(BLACK, 0.74f));
@@ -1233,8 +1233,8 @@ void MinijuegoCapsulasBarajadas::Dibujar(
         {
             bool doble = tiempoSubfase <= VENTANA_APUESTA_DOBLE_CAPSULAS;
             const char* ayuda = doble
-                ? "APUESTA DOBLE: CONFIRMA YA Y VALE 2 PUNTOS!"
-                : "IZQ/DER: MOVER MARCADOR   CONFIRMAR: BOTON PRINCIPAL";
+                ? "APUESTA DOBLE: ¡CONFIRMÁ YA Y VALE 2 PUNTOS!"
+                : "IZQ/DER: MOVER MARCADOR   CONFIRMAR: BOTÓN PRINCIPAL";
             int b = MeasureText(ayuda, 20);
             DrawRectangle(anchoPantalla / 2 - b / 2 - 10, 56, b + 20, 28, Fade(BLACK, 0.7f));
             DrawText(ayuda, anchoPantalla / 2 - b / 2, 60, 20, doble ? YELLOW : LIGHTGRAY);
@@ -1267,7 +1267,7 @@ void MinijuegoCapsulasBarajadas::Dibujar(
             }
 
             int x = xInicial + k * (anchoTarjeta + separacion);
-            int y = altoPantalla - 70;
+            int y = altoPantalla - 70 - MargenBarraRondaMinijuegos();
 
             DrawRectangle(x, y, anchoTarjeta, 60, Fade(BLACK, 0.78f));
             DrawRectangle(x, y, 8, 60, coloresJugadores[i]);
@@ -1311,7 +1311,7 @@ void MinijuegoCapsulasBarajadas::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, anchoPantalla / 2 - MeasureText(texto, 96) / 2, altoPantalla / 2 - 150, 96, GOLD);
 
-        const char* ayuda = "SIGUE LA CAPSULA CON EL NUCLEO. IZQ/DER MUEVE, BOTON PRINCIPAL CONFIRMA";
+        const char* ayuda = "SEGUI LA CÁPSULA CON EL NÚCLEO. IZQ/DER MUEVE, BOTÓN PRINCIPAL CONFIRMA";
         DrawText(ayuda, anchoPantalla / 2 - MeasureText(ayuda, 20) / 2, altoPantalla / 2 - 40, 20, RAYWHITE);
     }
     else if (

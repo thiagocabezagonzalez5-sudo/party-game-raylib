@@ -1256,7 +1256,7 @@ static PaletaTerritorio ObtenerPaletaTerritorio(TemaTerritorio tema)
             Color{ 90, 120, 60, 255 }, Color{ 46, 130, 58, 255 },
             Color{ 255, 190, 60, 255 }, Color{ 70, 50, 30, 255 },
             Color{ 255, 120, 160, 255 },
-            "JARDIN GIGANTE", "FUMIGACION"
+            "JARDIN GIGANTE", "FUMIGACIÓN"
         };
     case TEMA_TERRITORIO_TOXICO:
         return {
@@ -1265,7 +1265,7 @@ static PaletaTerritorio ObtenerPaletaTerritorio(TemaTerritorio tema)
             Color{ 36, 44, 30, 255 }, Color{ 236, 200, 30, 255 },
             Color{ 36, 36, 36, 255 }, Color{ 60, 90, 20, 255 },
             Color{ 150, 255, 60, 255 },
-            "ZONA TOXICA", "FUGA TOXICA"
+            "ZONA TÓXICA", "FUGA TÓXICA"
         };
     case TEMA_TERRITORIO_VOLCAN:
     default:
@@ -1275,7 +1275,7 @@ static PaletaTerritorio ObtenerPaletaTerritorio(TemaTerritorio tema)
             Color{ 38, 28, 28, 255 }, Color{ 60, 46, 44, 255 },
             Color{ 255, 120, 20, 255 }, Color{ 40, 20, 20, 255 },
             Color{ 255, 190, 40, 255 },
-            "VOLCAN", "COLADA DE LAVA"
+            "VOLCÁN", "COLADA DE LAVA"
         };
     }
 }
@@ -1879,7 +1879,7 @@ void MinijuegoTerritorioConquista::Dibujar(
 
     // Cabecera.
     const char* textoAyuda =
-        "CAMINA PARA MARCAR BALDOSAS. SALTA Y PULSA SALTO EN EL AIRE: GROUND POUND";
+        "CAMINÁ PARA MARCAR BALDOSAS. SALTÁ Y PULSÁ SALTO EN EL AIRE: GROUND POUND";
     int anchoCabecera = MeasureText(textoAyuda, 16) + 28;
     if (anchoCabecera < 640) anchoCabecera = 640;
 
@@ -1936,7 +1936,7 @@ void MinijuegoTerritorioConquista::Dibujar(
             }
 
             int x = xInicial + k * (anchoTarjeta + separacion);
-            int y = altoPantalla - 92;
+            int y = altoPantalla - 92 - MargenBarraRondaMinijuegos();
             float porcentaje = PorcentajeTerritorio(*this, i);
 
             DrawRectangle(x, y, anchoTarjeta, 80, Fade(BLACK, 0.78f));

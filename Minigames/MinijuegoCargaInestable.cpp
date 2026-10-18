@@ -951,11 +951,11 @@ void MinijuegoCargaInestable::Dibujar(
     }
     else if (fase == FASE_CARGA_EXPLOSION)
     {
-        DrawText("SOBRECARGA!", 32, 74, 26, RED);
+        DrawText("¡SOBRECARGA!", 32, 74, 26, RED);
     }
     else
     {
-        DrawText("ULTIMO EN PIE", 32, 68, 22, RAYWHITE);
+        DrawText("ÚLTIMO EN PIE", 32, 68, 22, RAYWHITE);
         DrawText(TextoReinicioMinijuego(), 32, 100, 18, LIGHTGRAY);
     }
 

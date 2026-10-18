@@ -1016,7 +1016,7 @@ void MinijuegoBarraGiratoria::Dibujar(
 
     DrawText("BARRA GIRATORIA", 25, 25, 30, RAYWHITE);
     DrawText(
-        "ULTIMO EN LA PLATAFORMA GANA. A LOS 10 s CAE UNA SEGUNDA BARRA.",
+        "ÚLTIMO EN LA PLATAFORMA GANA. A LOS 10 s CAE UNA SEGUNDA BARRA.",
         25,
         66,
         19,

@@ -743,11 +743,11 @@ void MinijuegoPasarelasVacio::Dibujar(
 
     DrawRectangle(18, 16, 620, 108, Fade(BLACK, 0.78f));
     DrawText("PASARELAS DEL VACIO", 32, 28, 30, Color{ 151, 202, 255, 255 });
-    DrawText("CORRE A LA META: LAS PLATAFORMAS SE ROMPEN SI LAS PISAS MUCHO", 32, 68, 16, RAYWHITE);
+    DrawText("CORRÉ A LA META: LAS PLATAFORMAS SE ROMPEN SI LAS PISÁS MUCHO", 32, 68, 16, RAYWHITE);
 
     const char* ayuda = "MOVER: WASD / FLECHAS / STICK   SALTAR: ESPACIO / ENTER / A   NO TE QUEDES QUIETO: LA PLATAFORMA SE PONE ROJA Y CAE";
-    DrawRectangle(0, GetScreenHeight() - 38, GetScreenWidth(), 38, Fade(BLACK, 0.78f));
-    DrawText(ayuda, GetScreenWidth() / 2 - MeasureText(ayuda, 16) / 2, GetScreenHeight() - 29, 16, RAYWHITE);
+    DrawRectangle(0, GetScreenHeight() - 38 - MargenBarraRondaMinijuegos(), GetScreenWidth(), 38, Fade(BLACK, 0.78f));
+    DrawText(ayuda, GetScreenWidth() / 2 - MeasureText(ayuda, 16) / 2, GetScreenHeight() - 29 - MargenBarraRondaMinijuegos(), 16, RAYWHITE);
 
     if (fase == FASE_PASARELAS_CARRERA)
     {

@@ -93,7 +93,7 @@ static const CristalAmbientePinchos CRISTALES_AMBIENTE_PINCHOS[4] =
 
 static const char* NOMBRES_PATRON_PINCHOS[PATRON_TOTAL] =
 {
-    "SALVA", "OLA", "ALTERNO", "RAFAGA", "TENAZA", "CRUCE", "VAIVEN"
+    "SALVA", "OLA", "ALTERNO", "RÁFAGA", "TENAZA", "CRUCE", "VAIVÉN"
 };
 
 
@@ -3684,7 +3684,7 @@ void MinijuegoRefugioPinchos::Dibujar(
 
         if (MuerteSubitaPinchos(*this))
         {
-            const char* subita = "MUERTE SUBITA";
+            const char* subita = "MUERTE SÚBITA";
             int tamano = (int)(16 * e);
             DibujarTextoSombraPinchos(
                 subita, ancho - MeasureText(subita, tamano) - (int)(26 * e), (int)(46 * e), tamano,
@@ -3708,7 +3708,7 @@ void MinijuegoRefugioPinchos::Dibujar(
 
     // Estado del equipo (abajo a la izquierda).
     {
-        int y = alto - (int)(32 * e);
+        int y = alto - (int)(32 * e) - MargenBarraRondaMinijuegos();
         int x = (int)(22 * e);
 
         for (int i = 0; i < MAX_PARTICIPANTES; i++)
@@ -3753,7 +3753,7 @@ void MinijuegoRefugioPinchos::Dibujar(
     }
     else if (fase == FASE_PINCHOS_ESPERANDO && indiceSolo >= 0 && !ControlaIAPinchos(participantes[indiceSolo]) && cooldownAtaque <= 0.0f)
     {
-        const char* linea = TextFormat("ELIGE EL LADO DEL ATAQUE  %.0f", std::ceil(ESPERA_AUTOMATICA_PINCHOS - tiempoEleccion));
+        const char* linea = TextFormat("ELEGI EL LADO DEL ATAQUE  %.0f", std::ceil(ESPERA_AUTOMATICA_PINCHOS - tiempoEleccion));
         DibujarTextoCentradoPinchos(linea, ancho / 2, (int)(12 * e), (int)(22 * e), RAYWHITE);
     }
 
@@ -3766,7 +3766,7 @@ void MinijuegoRefugioPinchos::Dibujar(
         int tamano = (int)(100 * e);
         DibujarTextoCentradoPinchos(texto, ancho / 2, (int)((float)alto * 0.38f), tamano, GOLD);
 
-        DibujarTextoCentradoPinchos("LA FRANJA ROJA ES MORTAL: ESCONDETE DETRAS DE LAS ROCAS", ancho / 2, alto - (int)(40 * e), (int)(18 * e), RAYWHITE);
+        DibujarTextoCentradoPinchos("LA FRANJA ROJA ES MORTAL: ESCONDETE DETRÁS DE LAS ROCAS", ancho / 2, alto - (int)(40 * e) - MargenBarraRondaMinijuegos(), (int)(18 * e), RAYWHITE);
     }
 
     if (fase == FASE_PINCHOS_TERMINADO && resultado.estado == RESULTADO_MINIJUEGO_FINALIZADO)
@@ -3774,7 +3774,7 @@ void MinijuegoRefugioPinchos::Dibujar(
         bool ganaSolo = ContarRivalesVivosPinchos(*this) <= 0;
         const char* titulo = ganaSolo ? "GANA EL OPERADOR" : "GANA EL EQUIPO";
         const char* detalle = ganaSolo
-            ? "TODO EL EQUIPO QUEDO APLASTADO"
+            ? "TODO EL EQUIPO QUEDÓ APLASTADO"
             : TextFormat("SOBREVIVIERON %d DEL EQUIPO", ContarRivalesVivosPinchos(*this));
 
         int anchoPanel = (int)(560 * e);

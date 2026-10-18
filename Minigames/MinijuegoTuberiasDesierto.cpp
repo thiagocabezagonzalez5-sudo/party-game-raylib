@@ -1189,12 +1189,12 @@ void MinijuegoTuberiasDesierto::Dibujar(
 
     if (fase == FASE_TUBERIAS_OBSERVAR)
     {
-        aviso = TextFormat("OBSERVA LAS TUBERIAS: %d", (int)std::ceil(DURACION_OBSERVAR - tiempoFase));
+        aviso = TextFormat("OBSERVÁ LAS TUBERIAS: %d", (int)std::ceil(DURACION_OBSERVAR - tiempoFase));
         colorAviso = Color{ 90, 50, 20, 255 };
     }
     else if (fase == FASE_TUBERIAS_ELEGIR)
     {
-        aviso = TextFormat("ELIGE UNA ENTRADA: %d", (int)std::ceil(DURACION_ELEGIR - tiempoFase));
+        aviso = TextFormat("ELEGI UNA ENTRADA: %d", (int)std::ceil(DURACION_ELEGIR - tiempoFase));
         colorAviso = Color{ 90, 50, 20, 255 };
     }
     else if (fase == FASE_TUBERIAS_COMPUERTA || fase == FASE_TUBERIAS_FLUJO)
@@ -1204,15 +1204,15 @@ void MinijuegoTuberiasDesierto::Dibujar(
     }
     else if (fase == FASE_TUBERIAS_REVELAR)
     {
-        aviso = "CANTARO DORADO +3   ESPEJISMO -1";
+        aviso = "CÁNTARO DORADO +3   ESPEJISMO -1";
         colorAviso = Color{ 120, 60, 10, 255 };
     }
 
     DrawText(aviso, centro - MeasureText(aviso, 30) / 2, 14, 30, colorAviso);
 
-    const char* ayuda = "IZQ / DER: MOVER SELECTOR   ACCION (E / SHIFT DER / X): CONFIRMAR   BUSCA LA TUBERIA QUE LLEGA AL CANTARO DORADO";
-    DrawRectangle(0, altoPantalla - 32, anchoPantalla, 32, Fade(BLACK, 0.7f));
-    DrawText(ayuda, centro - MeasureText(ayuda, 14) / 2, altoPantalla - 24, 14, RAYWHITE);
+    const char* ayuda = "IZQ / DER: MOVER SELECTOR   ACCIÓN (E / SHIFT DER / X): CONFIRMAR   BUSCÁ LA TUBERIA QUE LLEGA AL CÁNTARO DORADO";
+    DrawRectangle(0, altoPantalla - 32 - MargenBarraRondaMinijuegos(), anchoPantalla, 32, Fade(BLACK, 0.7f));
+    DrawText(ayuda, centro - MeasureText(ayuda, 14) / 2, altoPantalla - 24 - MargenBarraRondaMinijuegos(), 14, RAYWHITE);
 
     if (fase == FASE_TUBERIAS_PREPARACION)
     {

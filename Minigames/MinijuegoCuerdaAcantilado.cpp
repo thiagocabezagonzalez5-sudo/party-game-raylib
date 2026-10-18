@@ -983,7 +983,7 @@ void MinijuegoCuerdaAcantilado::Dibujar(
     {
         DrawText(
             TextFormat(
-                "SOLITARIO: J%d%s  |  PULSA EN LA ZONA VERDE",
+                "SOLITARIO: J%d%s  |  PULSÁ EN LA ZONA VERDE",
                 participantes[indiceSolo].numeroJugador,
                 participantes[indiceSolo].esBot ? " (BOT)" : ""
             ),
@@ -1048,7 +1048,7 @@ void MinijuegoCuerdaAcantilado::Dibujar(
 
         const EstadoJugadorCuerdaAcantilado& estado = estadosJugadores[i];
         int px = inicioX + columna * (panelAncho + 8);
-        int py = alto - panelAlto - 12;
+        int py = alto - panelAlto - 12 - MargenBarraRondaMinijuegos();
         columna++;
 
         DrawRectangle(px, py, panelAncho, panelAlto, Fade(BLACK, 0.8f));
@@ -1067,7 +1067,7 @@ void MinijuegoCuerdaAcantilado::Dibujar(
             participantes[i].color
         );
         DrawText(
-            TextFormat("BOTON: %s", ObtenerTextoBotonPrincipal(participantes[i])),
+            TextFormat("BOTÓN: %s", ObtenerTextoBotonPrincipal(participantes[i])),
             px + 8,
             py + 26,
             14,
@@ -1104,7 +1104,7 @@ void MinijuegoCuerdaAcantilado::Dibujar(
             }
             else if (estado.feedback == FEEDBACK_CUERDA_RACHA)
             {
-                texto = "RACHA! TIRON EXTRA";
+                texto = "¡RACHA! TIRÓN EXTRA";
                 colorTexto = GOLD;
             }
             else if (estado.feedback == FEEDBACK_CUERDA_TROPIEZO)

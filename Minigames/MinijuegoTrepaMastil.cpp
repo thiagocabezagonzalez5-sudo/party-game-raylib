@@ -989,9 +989,9 @@ void MinijuegoTrepaMastil::Dibujar(
 
     // Cabecera.
     DrawRectangle(14, 12, 560, 92, Fade(BLACK, 0.74f));
-    DrawText("TREPA EL MASTIL", 28, 20, 28, GOLD);
-    DrawText("ALTERNA SALTO Y ACCION PARA TREPAR: LA MISMA TECLA RESBALA", 28, 54, 15, RAYWHITE);
-    DrawText("INCLINACION A TU FAVOR = BONUS   CUERVO (!) = CAES 1 M", 28, 76, 14, LIGHTGRAY);
+    DrawText("TREPÁ EL MÁSTIL", 28, 20, 28, GOLD);
+    DrawText("ALTERNÁ SALTO Y ACCIÓN PARA TREPAR: LA MISMA TECLA RESBALA", 28, 54, 15, RAYWHITE);
+    DrawText("INCLINACIÓN A TU FAVOR = BONUS   CUERVO (!) = CAÉS 1 M", 28, 76, 14, LIGHTGRAY);
 
     if (fase == FASE_MASTIL_JUGANDO)
     {
@@ -1050,7 +1050,7 @@ void MinijuegoTrepaMastil::Dibujar(
             }
 
             int x = xInicial + k * (anchoTarjeta + separacion);
-            int y = altoPantalla - 92;
+            int y = altoPantalla - 92 - MargenBarraRondaMinijuegos();
             const TrepadorMastil& t = trepadores[i];
 
             DrawRectangle(x, y, anchoTarjeta, 80, Fade(BLACK, 0.78f));
@@ -1069,7 +1069,7 @@ void MinijuegoTrepaMastil::Dibujar(
 
             if (t.inmunidad > 0.4f)
             {
-                estado = "CUERVO!";
+                estado = "¡CUERVO!";
                 colorEstado = RED;
             }
             else if (fase == FASE_MASTIL_JUGANDO && intensidadOlas > 0.05f)
@@ -1095,7 +1095,7 @@ void MinijuegoTrepaMastil::Dibujar(
             else
             {
                 DrawText(
-                    TextFormat("ALTERNA %s / %s", ObtenerTextoBotonPrincipal(participantes[i]), TextoAccionMastil(participantes[i])),
+                    TextFormat("ALTERNÁ %s / %s", ObtenerTextoBotonPrincipal(participantes[i]), TextoAccionMastil(participantes[i])),
                     x + 18,
                     y + 60,
                     14,
@@ -1116,7 +1116,7 @@ void MinijuegoTrepaMastil::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, anchoPantalla / 2 - MeasureText(texto, 96) / 2, altoPantalla / 2 - 110, 96, GOLD);
 
-        const char* ayuda = "ALTERNA SALTO Y ACCION: UNA MANO Y LA OTRA";
+        const char* ayuda = "ALTERNÁ SALTO Y ACCIÓN: UNA MANO Y LA OTRA";
         DrawText(ayuda, anchoPantalla / 2 - MeasureText(ayuda, 20) / 2, altoPantalla / 2 - 10, 20, RAYWHITE);
     }
     else if (
@@ -1162,7 +1162,7 @@ void MinijuegoTrepaMastil::Dibujar(
                         posicion,
                         NombreJugadorMastil(participantes[i], i),
                         trepadores[i].altura,
-                        trepadores[i].llego ? "   LLEGO A LA COFA" : ""
+                        trepadores[i].llego ? "   LLEGÓ A LA COFA" : ""
                     ),
                     px + 40,
                     py + 62 + fila * 30,

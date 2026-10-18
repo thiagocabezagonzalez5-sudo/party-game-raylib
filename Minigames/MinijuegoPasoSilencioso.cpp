@@ -649,8 +649,8 @@ void MinijuegoPasoSilencioso::Dibujar(
     {
         DrawText(
             centinelaAlerta
-                ? "ALTO! TE ESTA MIRANDO"
-                : (avisoPrevio ? "CUIDADO... VA A MIRAR" : "AVANZA! ESTA DORMIDO"),
+                ? "¡ALTO! TE ESTÁ MIRANDO"
+                : (avisoPrevio ? "CUIDADO... VA A MIRAR" : "¡AVANZÁ! ESTÁ DORMIDO"),
             32,
             68,
             23,
@@ -747,7 +747,7 @@ void MinijuegoPasoSilencioso::Dibujar(
         );
 
         DrawText(
-            "MANTEN ADELANTE PARA AVANZAR. SUELTA CUANDO SE PONGA ROJO.",
+            "MANTENÉ ADELANTE PARA AVANZAR. SOLTÁ CUANDO SE PONGA ROJO.",
             GetScreenWidth() / 2 - 338,
             158,
             18,

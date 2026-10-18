@@ -1741,7 +1741,7 @@ void MinijuegoEsferasCanon::Dibujar(
 
     DrawRectangle(barraX - 20, 10, 480, 70, Fade(BLACK, 0.78f));
 
-    const char* titulo = TextFormat("ESFERAS DEL CANON  -  %.0f s", tiempoRestante);
+    const char* titulo = TextFormat("ESFERAS DEL CAÑÓN  -  %.0f s", tiempoRestante);
     DrawText(titulo, ancho / 2 - MeasureText(titulo, 20) / 2, 14, 20, RAYWHITE);
 
     DrawRectangle(barraX, 52, 440, 6, Color{ 80, 70, 64, 255 });
@@ -1769,7 +1769,7 @@ void MinijuegoEsferasCanon::Dibujar(
 
     if (hayGanadorPorMeta && tiempoCierre >= 0.0f && fase == FASE_ESFERAS_JUGANDO)
     {
-        const char* cierre = TextFormat("LLEGO EL PRIMERO  -  QUEDAN %.0f s", tiempoCierre);
+        const char* cierre = TextFormat("LLEGÓ EL PRIMERO  -  QUEDAN %.0f s", tiempoCierre);
         DrawText(cierre, ancho / 2 - MeasureText(cierre, 16) / 2, 62, 16, ORANGE);
     }
 
@@ -1783,9 +1783,9 @@ void MinijuegoEsferasCanon::Dibujar(
     }
     if (lineasJugadores > 0)
     {
-        DrawRectangle(8, alto - 30 - (lineasJugadores - 1) * 24 - 8, anchoHud, lineasJugadores * 24 + 10, Fade(BLACK, 0.72f));
+        DrawRectangle(8, alto - 30 - MargenBarraRondaMinijuegos() - (lineasJugadores - 1) * 24 - 8, anchoHud, lineasJugadores * 24 + 10, Fade(BLACK, 0.72f));
     }
-    int y = alto - 30;
+    int y = alto - 30 - MargenBarraRondaMinijuegos();
 
     for (int i = limite - 1; i >= 0; i--)
     {
@@ -1822,7 +1822,7 @@ void MinijuegoEsferasCanon::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, ancho / 2 - MeasureText(texto, 90) / 2, alto / 2 - 50, 90, YELLOW);
 
-        const char* pista = "RUEDA HASTA LA META  -  PUENTES: SOLO POR LA FRANJA DE TABLONES  -  RAMPA DERECHA: ATAJO";
+        const char* pista = "RODÁ HASTA LA META  -  PUENTES: SOLO POR LA FRANJA DE TABLONES  -  RAMPA DERECHA: ATAJO";
         DrawText(pista, ancho / 2 - MeasureText(pista, 18) / 2, alto / 2 + 60, 18, RAYWHITE);
     }
     else if (

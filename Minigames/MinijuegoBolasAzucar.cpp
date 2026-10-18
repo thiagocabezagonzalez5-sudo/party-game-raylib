@@ -1496,24 +1496,24 @@ void MinijuegoBolasAzucar::Dibujar(
 
     // Titulo arriba y ayuda abajo: el panel grande tapaba al jugador noroeste.
     DrawRectangle(18, 16, 430, 44, Fade(BLACK, 0.79f));
-    DrawText("BOLAS DE AZUCAR", 32, 24, 28, GOLD);
+    DrawText("BOLAS DE AZÚCAR", 32, 24, 28, GOLD);
 
     {
         const char* ayuda[3] =
         {
-            "MOVER + ACCION (E / SHIFT DER / X): CREAR BOLA, LUEGO LANZAR",
-            "EMPUJA LA BOLA POR EL AZUCAR (BLANCO) PARA QUE CREZCA",
+            "MOVER + ACCIÓN (E / SHIFT DER / X): CREAR BOLA, LUEGO LANZAR",
+            "EMPUJÁ LA BOLA POR EL AZÚCAR (BLANCO) PARA QUE CREZCA",
             "CHOCOLATE: DERRITE Y RALENTIZA  |  GOMINOLAS: REBOTAN"
         };
 
-        DrawRectangle(0, alto - 68, ancho, 68, Fade(BLACK, 0.55f));
+        DrawRectangle(0, alto - 68 - MargenBarraRondaMinijuegos(), ancho, 68, Fade(BLACK, 0.55f));
 
         for (int k = 0; k < 3; k++)
         {
             DrawText(
                 ayuda[k],
                 ancho / 2 - MeasureText(ayuda[k], 16) / 2,
-                alto - 62 + k * 19,
+                alto - 62 - MargenBarraRondaMinijuegos() + k * 19,
                 16,
                 RAYWHITE
             );
@@ -1549,7 +1549,7 @@ void MinijuegoBolasAzucar::Dibujar(
 
         if (mensaje != nullptr)
         {
-            DrawText(mensaje, ancho / 2 - MeasureText(mensaje, 24) / 2, alto - 100, 24, YELLOW);
+            DrawText(mensaje, ancho / 2 - MeasureText(mensaje, 24) / 2, alto - 100 - MargenBarraRondaMinijuegos(), 24, YELLOW);
         }
     }
 

@@ -209,8 +209,8 @@ static const char* TextoFaseConteo(
     switch (fase)
     {
         case FASE_CONTEO_PREPARACION: return "PREPARATE";
-        case FASE_CONTEO_OBSERVACION: return "CUENTA LOS DRONES";
-        case FASE_CONTEO_RESPUESTA: return "CUANTOS VISTE?";
+        case FASE_CONTEO_OBSERVACION: return "CONTÁ LOS DRONES";
+        case FASE_CONTEO_RESPUESTA: return "¿CUÁNTOS VISTE?";
         case FASE_CONTEO_TERMINADO: return "RESULTADOS";
     }
 
@@ -639,7 +639,7 @@ void MinijuegoConteoExplosivo::Dibujar(
     if (fase == FASE_CONTEO_RESPUESTA)
     {
         DrawText(
-            "GOLPEAR +1  SALTAR -1  |  DERECHA/IZQ: MANTEN PARA ACELERAR  |  ARRIBA/ABAJO: +-5",
+            "GOLPEAR +1  SALTAR -1  |  DERECHA/IZQ: MANTENÉ PARA ACELERAR  |  ARRIBA/ABAJO: +-5",
             GetScreenWidth() / 2 - 380,
             148,
             19,

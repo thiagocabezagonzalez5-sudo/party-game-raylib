@@ -792,12 +792,12 @@ void MinijuegoCircuitoVoltaje::Dibujar(
         const char* numero = TextFormat("%d", (int)std::ceil(tiempoPreparacion));
         DrawText(numero, ancho / 2 - MeasureText(numero, 120) / 2, alto / 2 - 60, 120, Fade(GOLD, 0.9f));
 
-        const char* controles = "MANTEN ADELANTE = ACELERAR   |   SUELTA EN LAS CURVAS (MARCA ROJA)";
+        const char* controles = "MANTENÉ ADELANTE = ACELERAR   |   SOLTÁ EN LAS CURVAS (MARCA ROJA)";
         DrawText(controles, ancho / 2 - MeasureText(controles, 22) / 2, alto - 60, 22, RAYWHITE);
     }
     else if (fase == FASE_CIRCUITO_CARRERA)
     {
-        DrawText("MANTEN ADELANTE; SUELTA EN CURVAS", 32, 68, 19, RAYWHITE);
+        DrawText("MANTENÉ ADELANTE; SOLTÁ EN CURVAS", 32, 68, 19, RAYWHITE);
         DrawText(
             TextFormat("TIEMPO: %.1f", tiempoCarrera),
             32,
@@ -889,7 +889,7 @@ void MinijuegoCircuitoVoltaje::Dibujar(
         }
         else if (jugadores[i].tiempoTrompo > 0.0f)
         {
-            DrawText("TROMPO!", panelX + 18, panelY + 32, 17, RED);
+            DrawText("¡TROMPO!", panelX + 18, panelY + 32, 17, RED);
         }
         else
         {

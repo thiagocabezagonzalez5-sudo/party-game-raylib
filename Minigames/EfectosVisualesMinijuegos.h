@@ -255,6 +255,21 @@ inline const char* TextoReinicioMinijuego()
 }
 
 
+// Alto de la barra de ronda que Juego dibuja al pie de la pantalla en una
+// ronda oficial de tablero (solo con los minijuegos de HUD viejo).
+static const int ALTO_BARRA_RONDA_MINIJUEGOS = 28;
+
+
+// Espacio que el HUD inferior de un minijuego de HUD viejo debe dejar libre
+// al pie de la pantalla: la barra de ronda en una ronda oficial, 0 si no.
+inline int MargenBarraRondaMinijuegos()
+{
+    return ObtenerEstadoEfectosVisualesMinijuegos().rondaOficialTablero
+        ? ALTO_BARRA_RONDA_MINIJUEGOS
+        : 0;
+}
+
+
 // Opcion de accesibilidad (la aplica Juego desde ConfiguracionJuego).
 inline void EstablecerReducirMovimientoMinijuegos(
     bool reducir

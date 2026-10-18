@@ -1409,7 +1409,7 @@ void MinijuegoGuardianRuinas::Dibujar(
             camara
         );
         int numero = participantes[i].numeroJugador > 0 ? participantes[i].numeroJugador : i + 1;
-        const char* texto = estado.equipo == 0 ? TextFormat("J%d GUARDIAN", numero) : TextFormat("J%d", numero);
+        const char* texto = estado.equipo == 0 ? TextFormat("J%d GUARDIÁN", numero) : TextFormat("J%d", numero);
         Color colorEquipo = estado.equipo == 0 ? COLOR_GUARDIAN : COLOR_ATACANTES;
 
         DrawText(texto, (int)pantalla.x - MeasureText(texto, 16) / 2, (int)pantalla.y - 14, 16, colorEquipo);
@@ -1443,16 +1443,16 @@ void MinijuegoGuardianRuinas::Dibujar(
     {
         if (columnas[c].estado == COLUMNA_GUARDIAN_AVISO && (int)(tiempoAnimacion * 6.0f) % 2 == 0)
         {
-            const char* aviso = "UNA COLUMNA VA A CAER!";
+            const char* aviso = "¡UNA COLUMNA VA A CAER!";
             DrawText(aviso, centro - MeasureText(aviso, 26) / 2, 92, 26, ORANGE);
             break;
         }
     }
 
-    DrawRectangle(0, altoPantalla - 32, anchoPantalla, 32, Fade(BLACK, 0.7f));
+    DrawRectangle(0, altoPantalla - 32 - MargenBarraRondaMinijuegos(), anchoPantalla, 32, Fade(BLACK, 0.7f));
 
-    const char* ayuda = "GUARDIAN: IZQ/DER MOVER, ACCION EMBESTIR   ATACANTES: MOVER + ACCION (E / SHIFT DER / X) LANZA, IZQ/DER AL LANZAR DESVIAN";
-    DrawText(ayuda, centro - MeasureText(ayuda, 14) / 2, altoPantalla - 24, 14, RAYWHITE);
+    const char* ayuda = "GUARDIÁN: IZQ/DER MOVER, ACCIÓN EMBESTIR   ATACANTES: MOVER + ACCIÓN (E / SHIFT DER / X) LANZA, IZQ/DER AL LANZAR DESVIAN";
+    DrawText(ayuda, centro - MeasureText(ayuda, 14) / 2, altoPantalla - 24 - MargenBarraRondaMinijuegos(), 14, RAYWHITE);
 
     if (fase == FASE_GUARDIAN_PREPARACION)
     {
@@ -1480,7 +1480,7 @@ void MinijuegoGuardianRuinas::Dibujar(
                 TextFormat(
                     "J%d %s: %s",
                     participantes[i].numeroJugador > 0 ? participantes[i].numeroJugador : i + 1,
-                    estadosJugadores[i].equipo == 0 ? "GUARDIAN EMBESTIDA" : "LANZAR ORBE",
+                    estadosJugadores[i].equipo == 0 ? "GUARDIÁN EMBESTIDA" : "LANZAR ORBE",
                     boton
                 ),
                 28, altoPantalla / 2 + 40 + linea * 22, 20,
@@ -1500,7 +1500,7 @@ void MinijuegoGuardianRuinas::Dibujar(
 
         DrawRectangle(centro - ancho / 2, py, ancho, alto, Fade(BLACK, 0.9f));
 
-        const char* titulo = equipoGanador == 0 ? "GANA EL GUARDIAN" : "GANAN LOS ATACANTES";
+        const char* titulo = equipoGanador == 0 ? "GANA EL GUARDIÁN" : "GANAN LOS ATACANTES";
         Color colorTitulo = equipoGanador == 0 ? COLOR_GUARDIAN : COLOR_ATACANTES;
 
         DrawText(titulo, centro - MeasureText(titulo, 32) / 2, py + 16, 32, colorTitulo);

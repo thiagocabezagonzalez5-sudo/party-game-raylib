@@ -1736,7 +1736,7 @@ void MinijuegoVetaCristal::Dibujar(
     }
 
     // HUD: controles de cada jugador.
-    int y = alto - 30;
+    int y = alto - 30 - MargenBarraRondaMinijuegos();
 
     for (int i = limite - 1; i >= 0; i--)
     {
@@ -1750,7 +1750,7 @@ void MinijuegoVetaCristal::Dibujar(
         const char* linea = EsControladoPorBotVeta(participantes[i])
             ? TextFormat("J%d BOT  EQ%d", participantes[i].numeroJugador, estado.equipo + 1)
             : TextFormat(
-                "J%d  EQ%d  SALTA [%s] DEBAJO DE UNA GEODA  2o SALTO EN AIRE: GOLPE AL SUELO",
+                "J%d  EQ%d  SALTÁ [%s] DEBAJO DE UNA GEODA  2o SALTO EN AIRE: GOLPE AL SUELO",
                 participantes[i].numeroJugador,
                 estado.equipo + 1,
                 ObtenerTextoBotonPrincipal(participantes[i])
@@ -1768,7 +1768,7 @@ void MinijuegoVetaCristal::Dibujar(
         const char* texto = TextFormat("%d", numero);
         DrawText(texto, ancho / 2 - MeasureText(texto, 90) / 2, alto / 2 - 50, 90, YELLOW);
 
-        const char* pista = "GOLPEA GEODAS CON LA CABEZA  -  GEODA GRANDE: DOS A LA VEZ  -  EVITA LA VAGONETA";
+        const char* pista = "GOLPEÁ GEODAS CON LA CABEZA  -  GEODA GRANDE: DOS A LA VEZ  -  EVITÁ LA VAGONETA";
         DrawText(pista, ancho / 2 - MeasureText(pista, 18) / 2, alto / 2 + 60, 18, RAYWHITE);
     }
     else if (

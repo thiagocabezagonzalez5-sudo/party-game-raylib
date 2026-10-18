@@ -733,9 +733,9 @@ void MinijuegoCapitanManda::Dibujar(
     const int anchoPantalla = GetScreenWidth();
 
     DrawRectangle(15, 12, 745, 66, Fade(BLACK, 0.55f));
-    DrawText("MINIJUEGO 9 - CAPITAN MANDA", 25, 20, 30, RAYWHITE);
+    DrawText("MINIJUEGO 9 - CAPITÁN MANDA", 25, 20, 30, RAYWHITE);
     DrawText(
-        "LA PAUSA ENTRE RONDAS ES ALEATORIA. CUANDO SUBE LA BANDERA, REACCIONA.",
+        "LA PAUSA ENTRE RONDAS ES ALEATORIA. CUANDO SUBE LA BANDERA, REACCIONÁ.",
         25,
         54,
         18,
@@ -803,7 +803,7 @@ void MinijuegoCapitanManda::Dibujar(
             : ORANGE
         );
 
-        const char* reaccion = "REACCIONA!";
+        const char* reaccion = "¡REACCIONÁ!";
         DrawText(
             reaccion,
             anchoPantalla / 2 - MeasureText(reaccion, 26) / 2,

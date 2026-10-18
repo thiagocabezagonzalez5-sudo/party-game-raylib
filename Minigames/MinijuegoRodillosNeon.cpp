@@ -1419,8 +1419,8 @@ void MinijuegoRodillosNeon::Dibujar(
     // Paneles oscuros para que el HUD no se mezcle con los hologramas.
     DrawRectangle(16, 12, 600, 68, Fade(BLACK, 0.72f));
     DrawRectangle(anchoPantalla - 196, 12, 180, 66, Fade(BLACK, 0.72f));
-    DrawText("RODILLOS NEON", 28, 20, 28, Color{ 0, 230, 255, 255 });
-    DrawText("DETIENE LOS RODILLOS: 3 IGUALES = 10 (ESTRELLA = 20), 2 IGUALES = 3", 28, 52, 16, Color{ 255, 120, 220, 255 });
+    DrawText("RODILLOS NEÓN", 28, 20, 28, Color{ 0, 230, 255, 255 });
+    DrawText("DETENÉ LOS RODILLOS: 3 IGUALES = 10 (ESTRELLA = 20), 2 IGUALES = 3", 28, 52, 16, Color{ 255, 120, 220, 255 });
 
     const char* textoRonda = TextFormat(
         "RONDA %d / %d",
@@ -1471,7 +1471,7 @@ void MinijuegoRodillosNeon::Dibujar(
         int anchoTarjeta = 230;
         int altoTarjeta = 92;
         int px = (int)pie.x - anchoTarjeta / 2;
-        int py = altoPantalla - altoTarjeta - 36;
+        int py = altoPantalla - altoTarjeta - 36 - MargenBarraRondaMinijuegos();
 
         if (px < 6) px = 6;
         if (px + anchoTarjeta > anchoPantalla - 6) px = anchoPantalla - 6 - anchoTarjeta;
@@ -1501,7 +1501,7 @@ void MinijuegoRodillosNeon::Dibujar(
         }
         else if (JugadorEsBot(participantes[i]))
         {
-            DrawText("AUTOMATICO", px + 10, py + 62, 18, LIGHTGRAY);
+            DrawText("AUTOMÁTICO", px + 10, py + 62, 18, LIGHTGRAY);
         }
         else
         {
@@ -1509,8 +1509,8 @@ void MinijuegoRodillosNeon::Dibujar(
         }
     }
 
-    const char* ayuda = "ACCION: detener el rodillo actual (izquierda a derecha). Parar justo en la linea = COMODIN";
-    DrawText(ayuda, centro - MeasureText(ayuda, 16) / 2, altoPantalla - 26, 16, LIGHTGRAY);
+    const char* ayuda = "ACCIÓN: detener el rodillo actual (izquierda a derecha). Parar justo en la línea = COMODIN";
+    DrawText(ayuda, centro - MeasureText(ayuda, 16) / 2, altoPantalla - 26 - MargenBarraRondaMinijuegos(), 16, LIGHTGRAY);
 
     if (fase == FASE_RODILLOS_PREPARACION)
     {

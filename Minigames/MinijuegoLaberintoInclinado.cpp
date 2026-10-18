@@ -1733,25 +1733,26 @@ void MinijuegoLaberintoInclinado::Dibujar(
 
     // Encabezado y tiempo.
     DrawText("LABERINTO JADE", 28, 20, 28, GOLD);
-    DrawText("TEMPLO ANTIGUO: INCLINA TU LOSA Y LLEGA AL ALTAR DORADO", 28, 52, 16, Color{ 120, 220, 170, 255 });
+    DrawText("TEMPLO ANTIGUO: INCLINÁ TU LOSA Y LLEGÁ AL ALTAR DORADO", 28, 52, 16, Color{ 120, 220, 170, 255 });
 
+    // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
     const char* textoTiempo = TextFormat("TIEMPO %02d", (int)std::ceil(tiempoRestante));
     DrawText(
         textoTiempo,
         anchoPantalla - MeasureText(textoTiempo, 26) - 28,
-        22,
+        48,
         26,
         tiempoRestante <= 6.0f ? RED : GOLD
     );
 
     if (plazoAcortado && fase == FASE_LABERINTO_JUGANDO)
     {
-        const char* aviso = "ALGUIEN LLEGO AL ALTAR: SE ACABA EL TIEMPO";
+        const char* aviso = "ALGUIEN LLEGÓ AL ALTAR: SE ACABA EL TIEMPO";
         DrawText(aviso, anchoPantalla / 2 - MeasureText(aviso, 20) / 2, 56, 20, ORANGE);
     }
 
-    const char* ayuda = "MOVER: inclina la losa (WASD / FLECHAS / STICK)   -   Evita los agujeros y los dardos";
-    DrawText(ayuda, anchoPantalla / 2 - MeasureText(ayuda, 16) / 2, altoPantalla - 28, 16, LIGHTGRAY);
+    const char* ayuda = "MOVER: inclina la losa (WASD / FLECHAS / STICK)   -   Evitá los agujeros y los dardos";
+    DrawText(ayuda, anchoPantalla / 2 - MeasureText(ayuda, 16) / 2, altoPantalla - 28 - MargenBarraRondaMinijuegos(), 16, LIGHTGRAY);
 
     if (fase == FASE_LABERINTO_PREPARACION)
     {
