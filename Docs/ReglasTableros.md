@@ -23,6 +23,7 @@ Un tablero que no cumpla la regla **sigue jugándose**, pero registra un aviso e
 |---|---|---|---|---|---|---|---|
 | Isla Arboleda | 5 | 2 | 3 | 2 | 2 | 4 | Cumple |
 | Forja del Volcán | 2 | 1 | 1 | 1 | 1 | 4 | Cumple |
+| Mercado Flotante | 2 | 1 | 2 | 1 | 2 | 2 | Cumple |
 | Feria Nocturna | 2 | 1 | 1 | 1 | 1 | 2 | Cumple |
 
 En Forja del Volcán el Escudo también cubre sus pérdidas propias: la llama de la erupción y el robo del duende (protege a la víctima).
@@ -33,6 +34,7 @@ Cada tablero define SU evento en el hook `ResolverCasilla`; para uno con present
 
 - **Isla Arboleda** (al azar entre dos): el Gran Roble tira dos objetos, uno bueno (+3 casillas) y uno malo (−5 monedas), y el jugador elige cuál atrapa sin saber cuál es cuál; o unas abejas lo persiguen y lo llevan al inicio del tablero.
 - **Forja del Volcán** (al azar entre tres): veta de oro (+7 monedas), duende ladrón (roba 5 monedas a un rival al azar; si nadie tiene monedas, deja la veta) o géiser (lanza al jugador a otra casilla del anillo). Gimmick: el puente de basalto se levanta en las rondas pares y cierra el atajo; cada ronda una llama cae en una casilla básica del anillo (−5, o −10 en la última ronda: la gran erupción).
+- **Mercado Flotante** (la Campana del Mercado, al azar entre dos): día de feria (cada dueño cobra 1 moneda por puesto, máximo 5; si nadie tiene puestos, quien cayó recibe 2) o inspección (quien tiene más puestos pierde uno, que queda libre; el Escudo no lo cubre porque no es una pérdida de monedas ni de trofeos). Gimmick: las casillas azules son puestos; caer en uno libre lo abre por 3 monedas, en el de un rival se pagan 3 de alquiler (el Escudo lo bloquea) y en el propio se cobran 2.
 - **Feria Nocturna** (la Gran Rueda): 40 % te llevás todo el pozo (vuelve a 5), 40 % la mitad del pozo, 20 % la rueda se traba y pagás 3 al pozo (el Escudo lo bloquea). Gimmick: las monedas perdidas en las casillas rojas caen al pozo, y desde la ronda 2 el trofeo se remata a 15, 20 o 25 monedas (en la última ronda nunca menos de 20).
 
 ## Objetos (inventario de 3 espacios por jugador)

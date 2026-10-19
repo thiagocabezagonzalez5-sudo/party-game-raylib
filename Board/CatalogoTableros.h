@@ -27,6 +27,7 @@ enum IdTablero
 {
     TABLERO_ISLA_ARBOLEDA = 0,
     TABLERO_FORJA_VOLCAN,
+    TABLERO_MERCADO_FLOTANTE,
     TABLERO_FERIA_NOCTURNA,
     CANTIDAD_TABLEROS
 };
@@ -147,6 +148,7 @@ struct DefinicionTablero
 // Definiciones concretas (una por archivo Board/TableroXxx.cpp).
 const DefinicionTablero& ObtenerDefinicionTableroArboleda();
 const DefinicionTablero& ObtenerDefinicionTableroForjaVolcan();
+const DefinicionTablero& ObtenerDefinicionTableroMercadoFlotante();
 const DefinicionTablero& ObtenerDefinicionTableroFeriaNocturna();
 
 

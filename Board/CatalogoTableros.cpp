@@ -32,6 +32,11 @@ const DefinicionTablero& ObtenerDefinicionTablero(
         return ObtenerDefinicionTableroForjaVolcan();
     }
 
+    if (id == TABLERO_MERCADO_FLOTANTE)
+    {
+        return ObtenerDefinicionTableroMercadoFlotante();
+    }
+
     if (id == TABLERO_FERIA_NOCTURNA)
     {
         return ObtenerDefinicionTableroFeriaNocturna();
