@@ -67,10 +67,17 @@ struct RuletaMinijuegos
 
     AudioJuego* audio = nullptr;
 
+    // opcionesFijas (opcional): lista propia de minijuegos en lugar de
+    // todos los de tablero (p. ej. los 3 de duelo). tituloRuleta va arriba.
     void Iniciar(
         IdMinijuego elegido,
-        AudioJuego* audioJuego
+        AudioJuego* audioJuego,
+        const IdMinijuego* opcionesFijas = nullptr,
+        int cantidadFijas = 0,
+        const char* tituloRuleta = "MINIJUEGO DE LA RONDA"
     );
+
+    const char* titulo = "MINIJUEGO DE LA RONDA";
 
     // confirmar acelera el frenado; participantes alimentan la previa.
     void Actualizar(

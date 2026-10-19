@@ -108,17 +108,24 @@ static void CambiarEstadoRuleta(
 
 void RuletaMinijuegos::Iniciar(
     IdMinijuego elegido,
-    AudioJuego* audioJuego
+    AudioJuego* audioJuego,
+    const IdMinijuego* opcionesFijas,
+    int cantidadFijas,
+    const char* tituloRuleta
 )
 {
     audio = audioJuego;
+    titulo = tituloRuleta;
     Descargar();
     minijuegoElegido = elegido;
 
     cantidadOpciones = 0;
     indiceElegido = -1;
 
-    int disponibles = ObtenerCantidadMinijuegosDisponiblesTablero();
+    int disponibles =
+        opcionesFijas != nullptr
+        ? cantidadFijas
+        : ObtenerCantidadMinijuegosDisponiblesTablero();
 
     for (
         int i = 0;
@@ -126,7 +133,10 @@ void RuletaMinijuegos::Iniciar(
         i++
     )
     {
-        IdMinijuego id = ObtenerMinijuegoDisponibleTablero(i);
+        IdMinijuego id =
+            opcionesFijas != nullptr
+            ? opcionesFijas[i]
+            : ObtenerMinijuegoDisponibleTablero(i);
 
         if (id == elegido)
         {
@@ -779,12 +789,12 @@ void RuletaMinijuegos::DibujarTendedero() const
             ? aparicion
             : Limitar01Ruleta((aparicion - 0.6f) / 0.4f);
 
-        Vector2 titulo = PuntoRefRuleta(X_CENTRO_RULETA, 22.0f);
+        Vector2 posTitulo = PuntoRefRuleta(X_CENTRO_RULETA, 22.0f);
 
         DibujarTituloRuleta(
-            "MINIJUEGO DE LA RONDA",
-            titulo.x,
-            titulo.y,
+            titulo,
+            posTitulo.x,
+            posTitulo.y,
             aparicionTitulo
         );
     }

@@ -232,6 +232,7 @@ static void PrepararInicioTurno(
     partida.textoEvento[0] = '\0';
     partida.evento = EventoInteractivo{};
     partida.movimientoDeEvento = false;
+    partida.duelo = DueloTablero{};
     partida.menuObjetos = MenuObjetosTablero{};
     partida.botRevisoObjetos = false;
     partida.detalleDado[0] = '\0';
@@ -746,6 +747,14 @@ static void ResolverEventoCasillaTableroFinal(
     {
         ResolverRegaloCasilla(partida, indiceParticipante);
     }
+    else if (casilla->tipo == CASILLA_DUELO)
+    {
+        IniciarEventoInteractivo(
+            partida,
+            indiceParticipante,
+            EVENTO_INTERACTIVO_DUELO
+        );
+    }
     else if (casilla->tipo == CASILLA_TIENDA)
     {
         IniciarEventoInteractivo(
@@ -790,6 +799,23 @@ static void ContinuarTrasEventoInteractivo(
 )
 {
     int pasos = partida.evento.pasosExtra;
+
+    // Duelo aceptado: pasa a la fase de espera (Juego sortea y juega el
+    // minijuego 1v1 y devuelve el resultado).
+    if (
+        partida.evento.tipo == EVENTO_INTERACTIVO_DUELO &&
+        partida.evento.dueloSel.aceptado
+    )
+    {
+        const EstadoDueloSeleccion& seleccion = partida.evento.dueloSel;
+        int retador = seleccion.retador;
+        int rival = seleccion.rivales[seleccion.rivalSeleccion];
+        OpcionApuestaDuelo apuesta = seleccion.opciones[seleccion.opcionSeleccion];
+
+        partida.evento = EventoInteractivo{};
+        IniciarDueloTablero(partida, retador, rival, apuesta);
+        return;
+    }
 
     partida.evento = EventoInteractivo{};
 
@@ -871,6 +897,7 @@ void PartidaTablero::Reiniciar()
     jugadorIntercambioEvento = -1;
     evento = EventoInteractivo{};
     movimientoDeEvento = false;
+    duelo = DueloTablero{};
     menuObjetos = MenuObjetosTablero{};
     botRevisoObjetos = false;
     detalleDado[0] = '\0';
@@ -1378,6 +1405,18 @@ void PartidaTablero::Actualizar(
             );
         }
     }
+    else if (fase == FASE_PARTIDA_TABLERO_DUELO_RESULTADO)
+    {
+        InputSeleccionParticipante entrada{};
+
+        if (puedeDecidir)
+        {
+            entrada = lectorEntrada(participante);
+        }
+
+        ActualizarDueloResultado(*this, deltaTime, esBot, puedeDecidir, entrada);
+    }
+    // DUELO_PENDIENTE: Juego juega el minijuego 1v1 y devuelve el resultado.
     else if (fase == FASE_PARTIDA_TABLERO_MENU_OBJETOS)
     {
         InputSeleccionParticipante entrada{};
@@ -1656,8 +1695,17 @@ void PartidaTablero::Actualizar(
 bool PartidaTablero::SolicitaMinijuego() const
 {
     return
-        fase == FASE_PARTIDA_TABLERO_FIN_RONDA &&
-        minijuegoSolicitado;
+        (
+            fase == FASE_PARTIDA_TABLERO_FIN_RONDA &&
+            minijuegoSolicitado
+        ) ||
+        EsDueloPendiente();
+}
+
+
+bool PartidaTablero::EsDueloPendiente() const
+{
+    return fase == FASE_PARTIDA_TABLERO_DUELO_PENDIENTE;
 }
 
 
@@ -1665,6 +1713,13 @@ void PartidaTablero::AplicarResultadoMinijuego(
     const ResultadoMinijuego& resultado
 )
 {
+    // Un duelo paga solo la apuesta: sin los premios de ronda.
+    if (EsDueloPendiente())
+    {
+        ResolverDueloTablero(*this, &resultado);
+        return;
+    }
+
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         jugadores[i].premioUltimoMinijuego = 0;
@@ -1692,6 +1747,20 @@ void PartidaTablero::AplicarResultadoMinijuego(
 
 void PartidaTablero::ContinuarTrasMinijuego()
 {
+    // Duelo sin resultado (ronda cancelada o fallida): se devuelve la
+    // apuesta. Con el resultado ya aplicado no hay nada mas que hacer: la
+    // partida sigue en su fase de resultado del duelo.
+    if (EsDueloPendiente())
+    {
+        ResolverDueloTablero(*this, nullptr);
+        return;
+    }
+
+    if (fase == FASE_PARTIDA_TABLERO_DUELO_RESULTADO)
+    {
+        return;
+    }
+
     minijuegoSolicitado = false;
 
     if (rondaActual >= cantidadRondas)
@@ -2629,6 +2698,7 @@ static void TextoFaseHud(
     bool fasePideDecidir =
         partida.fase == FASE_PARTIDA_TABLERO_ESPERANDO_DADO ||
         partida.fase == FASE_PARTIDA_TABLERO_MENU_OBJETOS ||
+        partida.fase == FASE_PARTIDA_TABLERO_DUELO_RESULTADO ||
         partida.fase == FASE_PARTIDA_TABLERO_ELIGIENDO_RUTA ||
         (
             partida.fase == FASE_PARTIDA_TABLERO_DECISION_TROFEO &&
@@ -2674,6 +2744,11 @@ static void TextoFaseHud(
 
         case FASE_PARTIDA_TABLERO_MENU_OBJETOS:
             TextoMenuObjetos(partida, destino, capacidad);
+            return;
+
+        case FASE_PARTIDA_TABLERO_DUELO_PENDIENTE:
+        case FASE_PARTIDA_TABLERO_DUELO_RESULTADO:
+            TextoDuelo(partida, destino, capacidad);
             return;
 
         case FASE_PARTIDA_TABLERO_MOSTRANDO_DADO:
@@ -2789,6 +2864,25 @@ static void TextoAyudaHud(
     if (
         partida.fase == FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO &&
         decide &&
+        PedidoDelEventoInteractivo(partida) == PEDIDO_EVENTO_DUELO
+    )
+    {
+        std::snprintf(
+            destino, capacidad, "%s: ELEGIR   |   %s: CONFIRMAR   |   %s: NO DESAFIAR",
+            TextoElegirHud(participante), TextoConfirmarHud(participante), TextoCancelarHud(participante)
+        );
+        return;
+    }
+
+    if (partida.fase == FASE_PARTIDA_TABLERO_DUELO_RESULTADO && decide)
+    {
+        std::snprintf(destino, capacidad, "%s: CONTINUAR   |   %s", TextoConfirmarHud(participante), pausa);
+        return;
+    }
+
+    if (
+        partida.fase == FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO &&
+        decide &&
         PedidoDelEventoInteractivo(partida) == PEDIDO_EVENTO_TIENDA
     )
     {
@@ -2837,6 +2931,7 @@ static void TextoAyudaHud(
                 std::snprintf(destino, capacidad, "%s: CONTINUAR   |   %s", TextoConfirmarHud(participante), pausa);
                 return;
 
+            case PEDIDO_EVENTO_DUELO:
             case PEDIDO_EVENTO_TIENDA:
             case PEDIDO_EVENTO_NADA:
                 break;
@@ -4147,8 +4242,12 @@ static void DibujarAnunciosHud(
         return;
     }
 
-    // Comienzo de ronda.
-    if (e.tiempoRonda < T_ANUNCIO_RONDA && partida.fase != FASE_PARTIDA_TABLERO_TERMINADA)
+    // Comienzo de ronda (no tapa el resultado de un duelo).
+    if (
+        e.tiempoRonda < T_ANUNCIO_RONDA &&
+        partida.fase != FASE_PARTIDA_TABLERO_TERMINADA &&
+        partida.fase != FASE_PARTIDA_TABLERO_DUELO_RESULTADO
+    )
     {
         bool ultima = partida.rondaActual >= partida.cantidadRondas && partida.cantidadRondas > 1;
         int token = (int)(UI_TEXTO_TITULO * EscalaReboteHud(e.tiempoRonda, 0.25f, 0.35f, reducir));
@@ -4388,6 +4487,7 @@ static void DibujarHudTablero(
     // bajo el tendedero para que las monedas sigan a la vista.
     DibujarEventoInteractivo2D(partida);
     DibujarMenuObjetos2D(partida);
+    DibujarDueloResultado2D(partida);
 
     DibujarTendederoHud(estilo, partida);
 

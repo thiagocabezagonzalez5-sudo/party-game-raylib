@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Gameplay/DueloTablero.h"
 #include "Gameplay/TiendaTablero.h"
 #include "Systems/Input.h"
 #include "UI/RuletaOpciones.h"
@@ -39,7 +40,8 @@ enum TipoEventoInteractivo
     EVENTO_INTERACTIVO_INTERCAMBIO,
     EVENTO_INTERACTIVO_OBJETOS_ARBOL,
     EVENTO_INTERACTIVO_ABEJAS,
-    EVENTO_INTERACTIVO_TIENDA
+    EVENTO_INTERACTIVO_TIENDA,
+    EVENTO_INTERACTIVO_DUELO
 };
 
 
@@ -51,6 +53,7 @@ enum PedidoEventoInteractivo
     PEDIDO_EVENTO_DADOS,
     PEDIDO_EVENTO_ELEGIR_OBJETO,
     PEDIDO_EVENTO_TIENDA,
+    PEDIDO_EVENTO_DUELO,
     PEDIDO_EVENTO_CONTINUAR
 };
 
@@ -150,6 +153,9 @@ struct EventoInteractivo
 
     // TIENDA
     EstadoTienda tienda;
+
+    // DUELO (seleccion de rival y apuesta)
+    EstadoDueloSeleccion dueloSel;
 
     // ABEJAS
     Vector3 origenVuelo{};

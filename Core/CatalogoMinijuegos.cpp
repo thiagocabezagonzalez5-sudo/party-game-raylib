@@ -471,7 +471,11 @@ int ObtenerCantidadMinijuegosDisponiblesTablero()
 
     for (int i = 0; i < CANTIDAD_MINIJUEGOS; i++)
     {
-        if (DATOS_MINIJUEGOS[i].disponibleEnTablero)
+        // Los de duelo (esDuelo) son exclusivos: no salen en las rondas.
+        if (
+            DATOS_MINIJUEGOS[i].disponibleEnTablero &&
+            !DATOS_MINIJUEGOS[i].esDuelo
+        )
         {
             cantidad++;
         }
@@ -494,7 +498,10 @@ IdMinijuego ObtenerMinijuegoDisponibleTablero(
 
     for (int i = 0; i < CANTIDAD_MINIJUEGOS; i++)
     {
-        if (!DATOS_MINIJUEGOS[i].disponibleEnTablero)
+        if (
+            !DATOS_MINIJUEGOS[i].disponibleEnTablero ||
+            DATOS_MINIJUEGOS[i].esDuelo
+        )
         {
             continue;
         }
@@ -521,10 +528,75 @@ bool MinijuegoAdmiteCantidadJugadores(
         return false;
     }
 
+    // Un minijuego de duelo es 1 contra 1: solo admite dos participantes.
+    if (ObtenerDatosMinijuego(id).esDuelo)
+    {
+        return cantidadJugadores == 2;
+    }
+
     if (ObtenerDatosMinijuego(id).requiereParDeJugadores)
     {
         return cantidadJugadores % 2 == 0;
     }
 
     return true;
+}
+
+
+// Solo para pruebas (harness): reemplaza el pool de duelo sin tocar el
+// catalogo. Cantidad 0 o negativa vuelve a leer los marcados esDuelo.
+static IdMinijuego poolDueloPruebas[CANTIDAD_MINIJUEGOS];
+static int cantidadPoolDueloPruebas = 0;
+
+void ForzarMinijuegosDueloParaPruebas(
+    const IdMinijuego ids[],
+    int cantidad
+)
+{
+    cantidadPoolDueloPruebas = 0;
+
+    for (int i = 0; i < cantidad && i < CANTIDAD_MINIJUEGOS; i++)
+    {
+        poolDueloPruebas[cantidadPoolDueloPruebas++] = ids[i];
+    }
+}
+
+
+int ObtenerMinijuegosDuelo(
+    IdMinijuego salida[],
+    int capacidad
+)
+{
+    int cantidad = 0;
+
+    if (cantidadPoolDueloPruebas > 0)
+    {
+        for (int i = 0; i < cantidadPoolDueloPruebas && i < capacidad; i++)
+        {
+            salida[cantidad++] = poolDueloPruebas[i];
+        }
+
+        return cantidad;
+    }
+
+    for (int i = 0; i < CANTIDAD_MINIJUEGOS && cantidad < capacidad; i++)
+    {
+        const DatosMinijuegoCatalogo& datos = ObtenerDatosMinijuegoPorIndice(i);
+
+        if (datos.esDuelo && MinijuegoAdmiteCantidadJugadores(datos.id, 2))
+        {
+            salida[cantidad] = datos.id;
+            cantidad++;
+        }
+    }
+
+    return cantidad;
+}
+
+
+bool EsMinijuegoDuelo(
+    IdMinijuego id
+)
+{
+    return EsIdMinijuegoValido(id) && ObtenerDatosMinijuego(id).esDuelo;
 }

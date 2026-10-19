@@ -4,6 +4,7 @@
 #include "Board/Tablero.h"
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
+#include "Gameplay/DueloTablero.h"
 #include "Gameplay/EventosCasillas.h"
 #include "Gameplay/ObjetosTablero.h"
 #include "Systems/Audio.h"
@@ -22,6 +23,8 @@ enum FasePartidaTablero
     FASE_PARTIDA_TABLERO_EVENTO_CASILLA,
     FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO,
     FASE_PARTIDA_TABLERO_MENU_OBJETOS,
+    FASE_PARTIDA_TABLERO_DUELO_PENDIENTE,
+    FASE_PARTIDA_TABLERO_DUELO_RESULTADO,
     FASE_PARTIDA_TABLERO_FIN_TURNO,
     FASE_PARTIDA_TABLERO_FIN_RONDA,
     FASE_PARTIDA_TABLERO_TERMINADA
@@ -118,6 +121,9 @@ struct PartidaTablero
     // Evento interactivo en curso (CAOS, INTERCAMBIO, eventos del tablero).
     EventoInteractivo evento;
 
+    // Duelo aceptado (de la seleccion al pago) y su resultado.
+    DueloTablero duelo;
+
     // Menu de uso de objetos antes de tirar y avisos de objetos.
     MenuObjetosTablero menuObjetos;
     bool botRevisoObjetos = false;
@@ -188,6 +194,11 @@ struct PartidaTablero
     void Dibujar() const;
 
     bool SolicitaMinijuego() const;
+
+    // true mientras se espera el minijuego 1v1 de un duelo (Juego lo sortea
+    // entre los esDuelo, activa solo a retador y rival y devuelve el
+    // resultado con AplicarResultadoMinijuego / ContinuarTrasMinijuego).
+    bool EsDueloPendiente() const;
 
     void AplicarResultadoMinijuego(
         const ResultadoMinijuego& resultado

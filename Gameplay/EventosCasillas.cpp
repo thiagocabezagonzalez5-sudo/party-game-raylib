@@ -699,6 +699,10 @@ void IniciarEventoInteractivo(
             IniciarTienda(partida, jugador, evento.tienda);
             break;
 
+        case EVENTO_INTERACTIVO_DUELO:
+            IniciarSeleccionDuelo(partida, jugador, evento.dueloSel);
+            break;
+
         case EVENTO_INTERACTIVO_NINGUNO:
             break;
     }
@@ -1081,6 +1085,13 @@ void ActualizarEventoInteractivo(
             }
             break;
 
+        case EVENTO_INTERACTIVO_DUELO:
+            if (ActualizarSeleccionDuelo(partida, evento.dueloSel, deltaTime, esAutomatico, puedeDecidir, entrada))
+            {
+                evento.terminado = true;
+            }
+            break;
+
         case EVENTO_INTERACTIVO_NINGUNO:
             evento.terminado = true;
             break;
@@ -1128,6 +1139,12 @@ PedidoEventoInteractivo PedidoDelEventoInteractivo(const PartidaTablero& partida
 
         case EVENTO_INTERACTIVO_TIENDA:
             return PEDIDO_EVENTO_TIENDA;
+
+        case EVENTO_INTERACTIVO_DUELO:
+            return
+                evento.dueloSel.paso == PASO_DUELO_RIVAL || evento.dueloSel.paso == PASO_DUELO_APUESTA
+                ? PEDIDO_EVENTO_DUELO
+                : PEDIDO_EVENTO_NADA;
 
         case EVENTO_INTERACTIVO_ABEJAS:
         case EVENTO_INTERACTIVO_NINGUNO:
@@ -1215,6 +1232,10 @@ void TextoEventoInteractivo(
 
         case EVENTO_INTERACTIVO_TIENDA:
             TextoTienda(partida, evento.tienda, evento.jugador, destino, capacidad);
+            return;
+
+        case EVENTO_INTERACTIVO_DUELO:
+            TextoSeleccionDuelo(partida, evento.dueloSel, destino, capacidad);
             return;
 
         case EVENTO_INTERACTIVO_NINGUNO:
@@ -1744,6 +1765,10 @@ void DibujarEventoInteractivo2D(const PartidaTablero& partida)
 
         case EVENTO_INTERACTIVO_TIENDA:
             DibujarTienda2D(partida, evento.tienda, evento.jugador, evento.tiempoTotal);
+            break;
+
+        case EVENTO_INTERACTIVO_DUELO:
+            DibujarSeleccionDuelo2D(partida, evento.dueloSel, evento.tiempoTotal);
             break;
 
         case EVENTO_INTERACTIVO_ABEJAS:

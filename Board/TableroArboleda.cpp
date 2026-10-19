@@ -3732,7 +3732,7 @@ static int ValorCasillaBotArboleda(
         case CASILLA_CAOS: return -4;           // ruleta de castigos
         case CASILLA_INTERCAMBIO: return -1;    // azar: algo arriesgada
         case CASILLA_EVENTO: return 1;          // objeto bueno o abejas
-        case CASILLA_DUELO: return 0;           // pendiente (etapa de duelos)
+        case CASILLA_DUELO: return 0;           // apuesta voluntaria: ni premio ni castigo
         case CASILLA_TIENDA: return 1;          // compra objetos: algo util, no un premio
         case CASILLA_NEUTRA: return 0;
         case CANTIDAD_TIPOS_CASILLA: return 0;

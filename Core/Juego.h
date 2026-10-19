@@ -50,6 +50,11 @@ struct Juego
     ZonaPruebas zonaPruebas;
     PartidaTablero partidaTablero;
 
+    // Ronda de duelo: copia de los participantes con solo los dos duelistas
+    // activos (ver PrepararParticipantesDuelo en Juego.cpp).
+    Participante participantesDuelo[MAX_PARTICIPANTES];
+    bool rondaEsDuelo = false;
+
     AudioJuego audio;
     ConfiguracionJuego config;
 

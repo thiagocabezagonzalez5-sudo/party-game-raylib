@@ -164,11 +164,52 @@ static void PrepararPartidaTablero(
 
     juego.partidaTablero.cantidadRondas = rondas;
 
+    juego.rondaEsDuelo = false;
     juego.zonaPruebas.modoCatalogo = false;
     juego.zonaPruebas.modoTablero = false;
     juego.tiempoResultadoMinijuegoTablero = 0.0f;
     juego.tiempoRondaMinijuegoTablero = 0.0f;
     juego.confirmandoSalida = false;
+}
+
+
+// Duelo: copia de los participantes con SOLO el retador y el rival activos.
+// La ronda del duelo (ruleta, previa, minijuego y resultado) trabaja sobre
+// esta copia; los demas conservan su estado de participacion en la
+// partida de tablero, que no se toca.
+static void PrepararParticipantesDuelo(
+    Juego& juego
+)
+{
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        juego.participantesDuelo[i] = juego.participantes[i];
+
+        juego.participantesDuelo[i].activo =
+            juego.participantes[i].activo &&
+            (
+                i == juego.partidaTablero.duelo.retador ||
+                i == juego.partidaTablero.duelo.rival
+            );
+    }
+}
+
+
+// ZonaPruebas actualiza la conexion de los mandos sobre la copia: se
+// devuelve a los participantes reales (un humano desconectado juega como
+// bot hasta que reconecte, igual que en una ronda normal).
+static void SincronizarConexionDuelo(
+    Juego& juego
+)
+{
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (juego.participantesDuelo[i].activo)
+        {
+            juego.participantes[i].conectado =
+                juego.participantesDuelo[i].conectado;
+        }
+    }
 }
 
 
@@ -330,14 +371,20 @@ static void DibujarConfirmacionSalida(
 static void DibujarAyudaRondaTablero(
     bool terminado,
     float tiempoResultado,
-    const Participante participantes[]
+    const Participante participantes[],
+    bool duelo
 )
 {
     const EstiloUI& estilo = ObtenerEstiloUI();
 
     if (!terminado)
     {
-        DibujarAyudaUI(estilo, "MINIJUEGO DE RONDA: JUGÁ HASTA EL FINAL PARA VOLVER AL TABLERO");
+        DibujarAyudaUI(
+            estilo,
+            duelo
+                ? "DUELO: JUGÁ HASTA EL FINAL, EL GANADOR SE LLEVA LA APUESTA"
+                : "MINIJUEGO DE RONDA: JUGÁ HASTA EL FINAL PARA VOLVER AL TABLERO"
+        );
         return;
     }
 
@@ -1367,10 +1414,44 @@ void Juego::Actualizar(
             {
                 // El resultado se decide aca, antes de la animacion.
                 // La ruleta solo lo presenta.
-                ruletaMinijuegos.Iniciar(
-                    ElegirMinijuegoAleatorioTablero(participantes),
-                    &audio
-                );
+                rondaEsDuelo = partidaTablero.EsDueloPendiente();
+
+                IdMinijuego duelos[CANTIDAD_MINIJUEGOS]{};
+                int cantidadDuelos = 0;
+
+                if (rondaEsDuelo)
+                {
+                    cantidadDuelos = ObtenerMinijuegosDuelo(duelos, CANTIDAD_MINIJUEGOS);
+                }
+
+                if (rondaEsDuelo && cantidadDuelos <= 0)
+                {
+                    // Sin minijuegos de duelo en el catalogo: se devuelve la apuesta.
+                    TraceLog(LOG_WARNING, "Duelo sin minijuegos marcados esDuelo: se cancela.");
+                    partidaTablero.ContinuarTrasMinijuego();
+                    rondaEsDuelo = false;
+                    break;
+                }
+
+                if (rondaEsDuelo)
+                {
+                    PrepararParticipantesDuelo(*this);
+
+                    ruletaMinijuegos.Iniciar(
+                        duelos[GetRandomValue(0, cantidadDuelos - 1)],
+                        &audio,
+                        duelos,
+                        cantidadDuelos,
+                        "MINIJUEGO DEL DUELO"
+                    );
+                }
+                else
+                {
+                    ruletaMinijuegos.Iniciar(
+                        ElegirMinijuegoAleatorioTablero(participantes),
+                        &audio
+                    );
+                }
 
                 estado = ESTADO_RULETA_MINIJUEGO;
             }
@@ -1388,7 +1469,7 @@ void Juego::Actualizar(
             ruletaMinijuegos.Actualizar(
                 deltaTime,
                 ConfirmarConParticipanteHumano(participantes),
-                participantes,
+                rondaEsDuelo ? participantesDuelo : participantes,
                 MAX_PARTICIPANTES
             );
 
@@ -1398,7 +1479,7 @@ void Juego::Actualizar(
                     ruletaMinijuegos.ObtenerMinijuegoElegido();
 
                 zonaPruebas.Inicializar(
-                    participantes,
+                    rondaEsDuelo ? participantesDuelo : participantes,
                     MAX_PARTICIPANTES,
                     &audio
                 );
@@ -1418,6 +1499,13 @@ void Juego::Actualizar(
         case ESTADO_MINIJUEGO:
         {
             zonaPruebas.Actualizar(deltaTime);
+
+            // En un duelo ZonaPruebas trabaja sobre la copia de los dos
+            // duelistas: lo que cambie de conexion vuelve a la partida.
+            if (rondaEsDuelo)
+            {
+                SincronizarConexionDuelo(*this);
+            }
 
             // En ronda de tablero ZonaPruebas nunca pide salir (modoTablero),
             // pero se conserva como red de seguridad.
@@ -1490,7 +1578,12 @@ void Juego::Actualizar(
             {
                 // Un resultado inconsistente no se premia; la partida
                 // continua igual que al salir del minijuego sin resultado.
-                if (ValidarResultadoMinijuego(*resultado, participantes))
+                if (
+                    ValidarResultadoMinijuego(
+                        *resultado,
+                        rondaEsDuelo ? participantesDuelo : participantes
+                    )
+                )
                 {
                     partidaTablero.AplicarResultadoMinijuego(*resultado);
                 }
@@ -1700,7 +1793,10 @@ void Juego::Dibujar()
 
         case ESTADO_RULETA_MINIJUEGO:
             partidaTablero.Dibujar();
-            ruletaMinijuegos.Dibujar(participantes, MAX_PARTICIPANTES);
+            ruletaMinijuegos.Dibujar(
+                rondaEsDuelo ? participantesDuelo : participantes,
+                MAX_PARTICIPANTES
+            );
             break;
 
         case ESTADO_MINIJUEGO:
@@ -1721,7 +1817,8 @@ void Juego::Dibujar()
                 DibujarAyudaRondaTablero(
                     terminado,
                     tiempoResultadoMinijuegoTablero,
-                    participantes
+                    rondaEsDuelo ? participantesDuelo : participantes,
+                    rondaEsDuelo
                 );
                 break;
             }
@@ -1742,7 +1839,7 @@ void Juego::Dibujar()
                         "RESULTADO | VUELTA AL TABLERO EN %d s (CONFIRMAR PARA SEGUIR YA)",
                         (int)std::ceil(std::fmax(0.0f, 7.0f - tiempoResultadoMinijuegoTablero))
                     )
-                    : "MINIJUEGO DE RONDA | JUGÁ HASTA EL FINAL PARA VOLVER AL TABLERO";
+                    : (rondaEsDuelo ? "DUELO | JUGÁ HASTA EL FINAL, EL GANADOR SE LLEVA LA APUESTA" : "MINIJUEGO DE RONDA | JUGÁ HASTA EL FINAL PARA VOLVER AL TABLERO");
 
             DrawText(
                 texto,

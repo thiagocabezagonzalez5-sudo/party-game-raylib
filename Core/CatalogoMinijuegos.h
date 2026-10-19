@@ -73,6 +73,11 @@ struct DatosMinijuegoCatalogo
 
     // Formatos 2 vs 2 estrictos: solo se juegan con 2 o 4 participantes.
     bool requiereParDeJugadores = false;
+
+    // Minijuego EXCLUSIVO de los duelos 1v1 de la casilla DUELO: no sale en
+    // las rondas normales del tablero (ni en su ruleta), solo admite 2
+    // participantes y sigue listado en el catalogo libre.
+    bool esDuelo = false;
 };
 
 
@@ -103,4 +108,23 @@ IdMinijuego ObtenerMinijuegoDisponibleTablero(
 bool MinijuegoAdmiteCantidadJugadores(
     IdMinijuego id,
     int cantidadJugadores
+);
+
+
+// Minijuegos de duelo (marcados esDuelo; pool vacio = los duelos se cancelan
+// al empezar, sin costo). Devuelve cuantos escribio.
+int ObtenerMinijuegosDuelo(
+    IdMinijuego salida[],
+    int capacidad
+);
+
+bool EsMinijuegoDuelo(
+    IdMinijuego id
+);
+
+
+// SOLO PRUEBAS: fuerza el pool de duelo (cantidad 0 = volver al catalogo).
+void ForzarMinijuegosDueloParaPruebas(
+    const IdMinijuego ids[],
+    int cantidad
 );
