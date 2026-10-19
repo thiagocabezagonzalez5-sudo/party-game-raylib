@@ -910,6 +910,7 @@ void PartidaTablero::Reiniciar()
     // opcionales y el gimmick como al principio de la partida.
     tablero.recorridoValido = false;
     definicion->Construir(tablero);
+    ValidarCasillasObligatoriasTablero(*definicion, tablero);
 
     tiempoTablero = 0.0f;
     gimmickActivo = false;

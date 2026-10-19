@@ -155,6 +155,30 @@ const DefinicionTablero& ObtenerDefinicionTablero(
 );
 
 
+//==================================================
+// REGLA OBLIGATORIA DE CASILLAS (Docs/ReglasTableros.md)
+//==================================================
+
+// Todo tablero debe tener al menos una casilla de cada tipo especial
+// (REGALO, CAOS, INTERCAMBIO, DUELO, TIENDA y EVENTO) y, si tiene EVENTO,
+// el hook ResolverCasilla que define SU evento. Escribe en `faltantes` los
+// tipos ausentes (hasta `capacidad`) y devuelve cuantos faltan. Un EVENTO
+// sin hook se informa aparte (ver ValidarCasillasObligatoriasTablero).
+int ContarCasillasObligatoriasFaltantes(
+    const DefinicionTablero& definicion,
+    const Tablero& tablero,
+    TipoCasilla faltantes[],
+    int capacidad
+);
+
+// Avisa por log (una sola vez por tablero) de lo que incumpla la regla.
+// No bloquea la partida: un tablero pendiente se sigue jugando.
+void ValidarCasillasObligatoriasTablero(
+    const DefinicionTablero& definicion,
+    const Tablero& tablero
+);
+
+
 // Atajos para la pantalla de seleccion.
 const char* ObtenerNombreTablero(IdTablero id);
 const char* ObtenerHistoriaTablero(IdTablero id);

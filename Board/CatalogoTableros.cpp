@@ -37,6 +37,107 @@ const DefinicionTablero& ObtenerDefinicionTablero(
 }
 
 
+//==================================================
+// REGLA OBLIGATORIA DE CASILLAS
+//==================================================
+
+static const TipoCasilla CASILLAS_OBLIGATORIAS[] =
+{
+    CASILLA_REGALO,
+    CASILLA_CAOS,
+    CASILLA_INTERCAMBIO,
+    CASILLA_DUELO,
+    CASILLA_TIENDA,
+    CASILLA_EVENTO
+};
+
+static const int CANTIDAD_CASILLAS_OBLIGATORIAS =
+    (int)(sizeof(CASILLAS_OBLIGATORIAS) / sizeof(CASILLAS_OBLIGATORIAS[0]));
+
+
+int ContarCasillasObligatoriasFaltantes(
+    const DefinicionTablero& definicion,
+    const Tablero& tablero,
+    TipoCasilla faltantes[],
+    int capacidad
+)
+{
+    (void)definicion;
+
+    int cantidadFaltantes = 0;
+
+    for (int t = 0; t < CANTIDAD_CASILLAS_OBLIGATORIAS; t++)
+    {
+        bool presente = false;
+
+        for (int i = 0; i < tablero.cantidadCasillas && !presente; i++)
+        {
+            presente = tablero.casillas[i].tipo == CASILLAS_OBLIGATORIAS[t];
+        }
+
+        if (!presente)
+        {
+            if (cantidadFaltantes < capacidad)
+            {
+                faltantes[cantidadFaltantes] = CASILLAS_OBLIGATORIAS[t];
+            }
+
+            cantidadFaltantes++;
+        }
+    }
+
+    return cantidadFaltantes;
+}
+
+
+void ValidarCasillasObligatoriasTablero(
+    const DefinicionTablero& definicion,
+    const Tablero& tablero
+)
+{
+    // Una sola vez por tablero: Reiniciar() reconstruye la partida muchas veces.
+    static bool avisado[CANTIDAD_TABLEROS] = {};
+
+    if (definicion.id < 0 || definicion.id >= CANTIDAD_TABLEROS || avisado[definicion.id])
+    {
+        return;
+    }
+
+    avisado[definicion.id] = true;
+
+    TipoCasilla faltantes[CANTIDAD_CASILLAS_OBLIGATORIAS] = {};
+    int cantidad = ContarCasillasObligatoriasFaltantes(
+        definicion, tablero, faltantes, CANTIDAD_CASILLAS_OBLIGATORIAS
+    );
+
+    for (int i = 0; i < cantidad && i < CANTIDAD_CASILLAS_OBLIGATORIAS; i++)
+    {
+        TraceLog(
+            LOG_WARNING,
+            "Tablero '%s' incumple la regla de casillas (Docs/ReglasTableros.md): falta %s.",
+            definicion.nombre,
+            ObtenerNombreTipoCasilla(faltantes[i])
+        );
+    }
+
+    bool tieneEvento = false;
+
+    for (int i = 0; i < tablero.cantidadCasillas && !tieneEvento; i++)
+    {
+        tieneEvento = tablero.casillas[i].tipo == CASILLA_EVENTO;
+    }
+
+    if (tieneEvento && definicion.ResolverCasilla == nullptr)
+    {
+        TraceLog(
+            LOG_WARNING,
+            "Tablero '%s' tiene casillas EVENTO pero no define el hook ResolverCasilla.",
+            definicion.nombre
+        );
+    }
+}
+
+
 const char* ObtenerNombreTablero(IdTablero id)
 {
     return ObtenerDefinicionTablero(id).nombre;
