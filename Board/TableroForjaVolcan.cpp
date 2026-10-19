@@ -1,6 +1,8 @@
 #include "Board/CatalogoTableros.h"
 
 #include "Gameplay/PartidaTablero.h"
+
+#include "Board/MallaTablero.h"
 #include "Systems/CalidadGrafica.h"
 
 #include "rlgl.h"
@@ -13,21 +15,30 @@
 // FORJA DEL VOLCAN (tablero 2)
 //==================================================
 //
-// Un anillo exterior de 26 casillas rodea un lago de lava y un volcan.
-// Dos atajos atraviesan el centro y se parten del anillo en una
-// bifurcacion:
+// Un anillo exterior de 26 casillas (ANILLO DE LA FORJA) rodea un lago de
+// lava y un volcan. Dos atajos atraviesan el centro y se parten del anillo
+// en una bifurcacion (opcion 0 = anillo, largo y seguro; 1 = atajo):
 //
-//   - PUENTE DE BASALTO (casilla 6 -> 26..29 -> 15): cruza la lava.
-//     Es el GIMMICK principal: se levanta y se baja cada ronda; con el
-//     puente levantado la casilla 6 deja de ser bifurcacion.
-//   - GALERIA MINERA (casilla 18 -> 30..33 -> 3): siempre abierta,
-//     corta y llena de casillas rojas, con un geiser al final.
+//   - PUENTE DE BASALTO (casilla 6 -> 26..29 -> 15): cruza la lava, con
+//     CAOS y casillas rojas. Es el GIMMICK principal: se levanta y se baja
+//     cada ronda; con el puente levantado la casilla 6 deja de ser
+//     bifurcacion y el tramo 6 -> 26 queda cortado sobre la lava.
+//   - GALERIA MINERA (casilla 18 -> 30..33 -> 3): siempre abierta, corta,
+//     con casillas rojas y un INTERCAMBIO a la salida.
 //
-// Segundo gimmick: cada ronda el volcan escupe una llama sobre una
-// casilla del anillo; quien termina su turno ahi pierde 5 monedas.
+// Segundo gimmick: cada ronda el volcan escupe una llama sobre una casilla
+// basica del anillo; quien termina su turno ahi pierde 5 monedas (10 en la
+// ultima ronda: GRAN ERUPCION). El Escudo la bloquea.
 //
-// Casillas especiales (eventos propios): veta de oro, duende ladron
-// y geiser teletransportador.
+// Casillas obligatorias (Docs/ReglasTableros.md): la TIENDA es el puesto
+// del herrero junto al inicio; REGALO y DUELO en el anillo; CAOS en el
+// puente; INTERCAMBIO en la galeria. Las cuatro casillas EVENTO resuelven
+// el evento propio de la Forja: veta de oro, duende ladron (respeta el
+// Escudo de la victima) o geiser teletransportador.
+//
+// Presentacion: el camino de losas de basalto entre casillas se hornea una
+// vez en una malla (calzada sobre la lava en el puente y durmientes en la
+// galeria); el tramo levadizo lo dibuja el gimmick.
 
 static const int CASILLAS_ANILLO = 26;
 
@@ -42,6 +53,7 @@ static const int GALERIA_ULTIMA = 33;
 static const int UNION_GALERIA = 3;
 
 static const int PERDIDA_ERUPCION = 5;
+static const int PERDIDA_GRAN_ERUPCION = 10;
 static const int PREMIO_VETA = 7;
 static const int ROBO_DUENDE = 5;
 
@@ -50,17 +62,53 @@ static const float VELOCIDAD_ANIMACION_PUENTE = 1.1f;
 
 static const Vector3 CENTRO_VOLCAN = { -5.6f, 0.0f, 0.0f };
 
+enum ZonaForja
+{
+    ZONA_ANILLO_FORJA = 0,
+    ZONA_PUENTE_BASALTO,
+    ZONA_GALERIA_MINERA,
+    CANTIDAD_ZONAS_FORJA
+};
+
+static const char* const NOMBRES_ZONAS_FORJA[CANTIDAD_ZONAS_FORJA] =
+{
+    "ANILLO DE LA FORJA",
+    "PUENTE DE BASALTO",
+    "GALERIA MINERA"
+};
+
+// Candidatas del trofeo: casillas azules/verdes repartidas por el anillo
+// (los atajos no: el puente puede estar levantado).
 static const int CASILLAS_TROFEO_FORJA[] =
 {
     1,
     5,
+    7,
     9,
-    11,
     14,
-    20,
-    23,
-    31
+    19,
+    21,
+    25
 };
+
+
+// En la ultima ronda la erupcion es mayor.
+static bool EsGranErupcion(
+    const PartidaTablero& partida
+)
+{
+    return partida.rondaActual >= partida.cantidadRondas;
+}
+
+
+static int PerdidaErupcion(
+    const PartidaTablero& partida
+)
+{
+    return EsGranErupcion(partida)
+        ? PERDIDA_GRAN_ERUPCION
+        : PERDIDA_ERUPCION;
+}
 
 
 //==================================================
@@ -96,6 +144,43 @@ static Vector3 PosicionAnillo(
 }
 
 
+// Tipo de casilla a partir de su letra en la tabla de diseno.
+static TipoCasilla TipoDesdeLetraForja(char letra)
+{
+    switch (letra)
+    {
+        case '+': return CASILLA_POSITIVA;
+        case '-': return CASILLA_NEGATIVA;
+        case 'E': return CASILLA_ESPECIAL;
+        case 'R': return CASILLA_REGALO;
+        case 'C': return CASILLA_CAOS;
+        case 'I': return CASILLA_INTERCAMBIO;
+        case 'D': return CASILLA_DUELO;
+        case 'T': return CASILLA_TIENDA;
+        case 'V': return CASILLA_EVENTO;
+        default: break;
+    }
+
+    return CASILLA_NEUTRA;
+}
+
+
+static void NodoForja(
+    Tablero& tablero,
+    ZonaForja zona,
+    char tipo,
+    Vector3 posicion
+)
+{
+    int indice = tablero.AgregarCasilla(posicion, TipoDesdeLetraForja(tipo));
+
+    if (indice >= 0)
+    {
+        tablero.casillas[indice].zona = (int)zona;
+    }
+}
+
+
 static void ConstruirForjaVolcan(
     Tablero& tablero
 )
@@ -108,42 +193,43 @@ static void ConstruirForjaVolcan(
         tablero.casillas[i] = Casilla{};
     }
 
-    // N neutra, P positiva, G negativa, E especial.
-    const char* tiposAnillo = "NPNPGNPNGPENGPNPGNPNGPNEGP";
+    // Letras: + verde, - roja, n neutra, R regalo, C caos, I intercambio,
+    // D duelo, T tienda, V evento de la Forja.
+    //
+    // Anillo (seguro, mayoria azul/verde): 0 inicio, 2 puesto del herrero
+    // (tienda), 11 y 22 regalos, 17 duelo, 10 y 23 eventos.
+    const char* tiposAnillo = "n+T+-n+n-+VR-+n+-D+n-+RV-+";
+
+    // Puente de basalto 26..29: roja, evento, CAOS y verde al final.
+    const char* tiposPuente = "-VC+";
+
+    // Galeria minera 30..33: roja, evento, roja e intercambio a la salida.
+    const char* tiposGaleria = "-V-I";
 
     for (int i = 0; i < CASILLAS_ANILLO; i++)
     {
-        TipoCasilla tipo = CASILLA_NEUTRA;
-
-        if (tiposAnillo[i] == 'P')
-        {
-            tipo = CASILLA_POSITIVA;
-        }
-        else if (tiposAnillo[i] == 'G')
-        {
-            tipo = CASILLA_NEGATIVA;
-        }
-        else if (tiposAnillo[i] == 'E')
-        {
-            tipo = CASILLA_ESPECIAL;
-        }
-
-        tablero.AgregarCasilla(PosicionAnillo(i), tipo);
+        NodoForja(tablero, ZONA_ANILLO_FORJA, tiposAnillo[i], PosicionAnillo(i));
     }
 
     const float y = ALTURA_CASILLA_FORJA;
 
-    // Puente de basalto: 26..29 (columna x = 4.5).
-    tablero.AgregarCasilla({ 4.5f, y,  3.6f }, CASILLA_NEGATIVA); // 26
-    tablero.AgregarCasilla({ 4.5f, y,  1.2f }, CASILLA_ESPECIAL); // 27
-    tablero.AgregarCasilla({ 4.5f, y, -1.2f }, CASILLA_NEGATIVA); // 28
-    tablero.AgregarCasilla({ 4.5f, y, -3.6f }, CASILLA_POSITIVA); // 29
+    // Puente de basalto: 26..29 (columna x = 4.5, de sur a norte).
+    for (int k = 0; k <= PUENTE_ULTIMA - PUENTE_PRIMERA; k++)
+    {
+        NodoForja(
+            tablero, ZONA_PUENTE_BASALTO, tiposPuente[k],
+            Vector3{ 4.5f, y, 3.6f - 2.4f * k }
+        );
+    }
 
-    // Galeria minera: 30..33 (columna x = -2.25).
-    tablero.AgregarCasilla({ -2.25f, y, -3.6f }, CASILLA_NEGATIVA); // 30
-    tablero.AgregarCasilla({ -2.25f, y, -1.2f }, CASILLA_ESPECIAL); // 31
-    tablero.AgregarCasilla({ -2.25f, y,  1.2f }, CASILLA_NEGATIVA); // 32
-    tablero.AgregarCasilla({ -2.25f, y,  3.6f }, CASILLA_POSITIVA); // 33
+    // Galeria minera: 30..33 (columna x = -2.25, de norte a sur).
+    for (int k = 0; k <= GALERIA_ULTIMA - GALERIA_PRIMERA; k++)
+    {
+        NodoForja(
+            tablero, ZONA_GALERIA_MINERA, tiposGaleria[k],
+            Vector3{ -2.25f, y, -3.6f + 2.4f * k }
+        );
+    }
 
     // El anillo es un circuito cerrado.
     for (int i = 0; i < CASILLAS_ANILLO; i++)
@@ -221,6 +307,225 @@ static void DibujarCristalForja(
         6,
         color
     );
+}
+
+
+//==================================================
+// CAMINO DE BASALTO (malla horneada una vez)
+//==================================================
+//
+// Una tira entre cada par de casillas conectadas, segun la zona:
+//   - anillo: lecho oscuro con vetas de brasa y losas de basalto encima;
+//   - puente: calzada elevada sobre la lava con pretiles;
+//   - galeria: lecho de grava con durmientes de madera bajo los rieles.
+// El tramo 6 -> 26 no se hornea: es el tablon del puente levadizo, que el
+// gimmick dibuja bajado o levantado (camino cortado).
+
+static const float LARGO_LOSA_CAMINO = 0.6f;
+static const float RADIO_LOSA_FORJA = 0.84f;
+
+static MallaGpu mallaCaminoForja;
+
+
+// Tablero completo (todo abierto) solo para el dibujo del camino.
+static const Tablero& TableroReferenciaForja()
+{
+    static Tablero referencia;
+    static bool lista = false;
+
+    if (!lista)
+    {
+        ConstruirForjaVolcan(referencia);
+        lista = true;
+    }
+
+    return referencia;
+}
+
+
+static unsigned char SumarCanal(
+    unsigned char canal,
+    int variacion
+)
+{
+    int v = canal + variacion;
+    return (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+}
+
+
+// Variacion determinista pequena (+-10) para que las losas no se vean
+// todas iguales.
+static Color VariarTono(
+    Color color,
+    int semilla
+)
+{
+    int variacion = ((semilla * 37 + 11) % 21) - 10;
+
+    return Color
+    {
+        SumarCanal(color.r, variacion),
+        SumarCanal(color.g, variacion),
+        SumarCanal(color.b, variacion),
+        color.a
+    };
+}
+
+
+static void AgregarTramoCaminoForja(
+    ConstructorMalla& m,
+    const Casilla& a,
+    const Casilla& b,
+    int semilla
+)
+{
+    float dx = b.posicion.x - a.posicion.x;
+    float dz = b.posicion.z - a.posicion.z;
+    float largo = std::sqrt(dx * dx + dz * dz);
+
+    if (largo < 0.001f)
+    {
+        return;
+    }
+
+    // Espacio local del tramo: x avanza de a hacia b, z es el lateral.
+    TransformacionMalla t;
+    t.tx = a.posicion.x;
+    t.tz = a.posicion.z;
+    t.giroY = std::atan2(-dz, dx) * RAD2DEG;
+
+    m.EstablecerTransformacion(t);
+
+    bool puente =
+        a.zona == ZONA_PUENTE_BASALTO ||
+        b.zona == ZONA_PUENTE_BASALTO;
+
+    bool galeria =
+        a.zona == ZONA_GALERIA_MINERA ||
+        b.zona == ZONA_GALERIA_MINERA;
+
+    float mitad = largo * 0.5f;
+    int losas = (int)(largo / LARGO_LOSA_CAMINO);
+
+    if (losas < 1)
+    {
+        losas = 1;
+    }
+
+    float paso = largo / (float)losas;
+
+    if (puente)
+    {
+        // Calzada elevada: su tapa queda por encima del borde del lago.
+        m.Caja({ mitad, 0.0f, 0.0f }, { largo, 0.24f, 1.25f }, Color{ 48, 40, 44, 255 });
+
+        for (int k = 0; k < losas; k++)
+        {
+            float x = paso * (k + 0.5f);
+
+            m.Caja(
+                { x, 0.14f, 0.0f },
+                { paso - 0.07f, 0.04f, 1.0f },
+                VariarTono(Color{ 104, 90, 92, 255 }, semilla + k)
+            );
+
+            // Pretiles solo donde no los tapa la losa de una casilla.
+            if (x > RADIO_LOSA_FORJA && x < largo - RADIO_LOSA_FORJA)
+            {
+                for (int lado = -1; lado <= 1; lado += 2)
+                {
+                    m.Caja(
+                        { x, 0.22f, lado * 0.56f },
+                        { paso * 0.7f, 0.12f, 0.12f },
+                        Color{ 66, 56, 60, 255 }
+                    );
+                }
+            }
+        }
+    }
+    else if (galeria)
+    {
+        // Grava y durmientes: los rieles de la decoracion quedan encima.
+        m.Caja({ mitad, -0.05f, 0.0f }, { largo, 0.10f, 1.15f }, Color{ 70, 62, 58, 255 });
+
+        int durmientes = (int)(largo / 0.42f);
+
+        for (int k = 0; k < durmientes; k++)
+        {
+            m.Caja(
+                { (largo / durmientes) * (k + 0.5f), 0.02f, 0.0f },
+                { 0.16f, 0.04f, 1.05f },
+                VariarTono(Color{ 112, 74, 44, 255 }, semilla + k)
+            );
+        }
+    }
+    else
+    {
+        // Lecho con brasas: asoma entre las losas como vetas rojizas.
+        m.Caja({ mitad, -0.05f, 0.0f }, { largo, 0.10f, 1.22f }, Color{ 92, 40, 30, 255 });
+
+        for (int k = 0; k < losas; k++)
+        {
+            m.Caja(
+                { paso * (k + 0.5f), 0.02f, 0.0f },
+                { paso - 0.08f, 0.04f, 0.96f },
+                VariarTono(Color{ 86, 74, 76, 255 }, semilla + k)
+            );
+        }
+    }
+
+    m.QuitarTransformacion();
+}
+
+
+static void ConstruirMallaCaminoForja()
+{
+    const Tablero& t = TableroReferenciaForja();
+
+    ConstructorMalla m;
+    m.Limpiar();
+
+    for (int i = 0; i < t.cantidadCasillas; i++)
+    {
+        const Casilla& a = t.casillas[i];
+
+        for (int c = 0; c < a.cantidadConexiones; c++)
+        {
+            int destino = a.conexiones[c].destino;
+
+            // El tramo levadizo lo dibuja el gimmick.
+            if (i == BIFURCACION_PUENTE && destino == PUENTE_PRIMERA)
+            {
+                continue;
+            }
+
+            const Casilla* b = t.ObtenerCasilla(destino);
+
+            if (b != nullptr)
+            {
+                AgregarTramoCaminoForja(m, a, *b, i * 7 + c * 3);
+            }
+        }
+    }
+
+    ActualizarMallaGpu(mallaCaminoForja, m);
+}
+
+
+static void DibujarCaminoForja()
+{
+    if (!mallaCaminoForja.cargada)
+    {
+        ConstruirMallaCaminoForja();
+    }
+
+    DibujarMallaGpu(mallaCaminoForja);
+}
+
+
+static void DescargarRecursosForjaVolcan()
+{
+    DescargarMalla(mallaCaminoForja);
 }
 
 
@@ -303,6 +608,9 @@ static void DibujarDecoracionForjaVolcan(
     DrawCube({ 7.8f, 0.02f, 0.0f }, 0.25f, 0.18f, 10.0f, rocaOscura);
     DrawCube({ 4.5f, 0.02f, -5.0f }, 6.6f, 0.18f, 0.25f, rocaOscura);
     DrawCube({ 4.5f, 0.02f, 5.0f }, 6.6f, 0.18f, 0.25f, rocaOscura);
+
+    // Camino de basalto entre casillas (malla horneada).
+    DibujarCaminoForja();
 
     // Pilares bajo el puente.
     for (int i = PUENTE_PRIMERA; i <= PUENTE_ULTIMA; i++)
@@ -552,22 +860,28 @@ static void DibujarPeligroForja(
 
     float pulso = Parpadeo(partida.tiempoTablero, 7.0f);
 
+    // Gran erupcion (ultima ronda): llama mas alta y ancha.
+    float escala =
+        EsGranErupcion(partida)
+        ? 1.45f
+        : 1.0f;
+
     Vector3 base = casilla->posicion;
     base.y += 0.45f;
 
     DrawCylinder(
         base,
         0.05f,
-        0.55f,
-        1.5f + 0.5f * pulso,
+        0.55f * escala,
+        (1.5f + 0.5f * pulso) * escala,
         10,
         Color{ 255, (unsigned char)(90 + (int)(pulso * 90.0f)), 30, 255 }
     );
 
     Vector3 punta = base;
-    punta.y += 1.6f + 0.5f * pulso;
+    punta.y += (1.6f + 0.5f * pulso) * escala;
 
-    DrawSphere(punta, 0.16f, Color{ 255, 220, 90, 255 });
+    DrawSphere(punta, 0.16f * escala, Color{ 255, 220, 90, 255 });
 
     DrawCubeWires(
         casilla->posicion,
@@ -638,9 +952,18 @@ static void ElegirCasillaPeligro(
         const Casilla* casilla =
             partida.tablero.ObtenerCasilla(candidata);
 
-        if (
+        // Solo casillas basicas: la llama no tapa tiendas, regalos ni
+        // eventos (el hook se resuelve antes que la regla comun).
+        bool basica =
             casilla != nullptr &&
-            casilla->tipo != CASILLA_ESPECIAL &&
+            (
+                casilla->tipo == CASILLA_NEUTRA ||
+                casilla->tipo == CASILLA_POSITIVA ||
+                casilla->tipo == CASILLA_NEGATIVA
+            );
+
+        if (
+            basica &&
             candidata != partida.casillaTrofeo &&
             candidata != anterior
         )
@@ -674,22 +997,48 @@ static void AlIniciarRondaForjaVolcan(
 
     ElegirCasillaPeligro(partida);
 
+    bool gran = EsGranErupcion(partida);
+
     std::snprintf(
         partida.estadoGimmick,
         sizeof(partida.estadoGimmick),
-        "%s | LLAMA EN EL ANILLO: -%d MONEDAS",
+        "%s | %s: -%d MONEDAS",
         levantado
             ? "PUENTE LEVANTADO (ATAJO CERRADO)"
             : "PUENTE BAJADO (ATAJO ABIERTO)",
-        PERDIDA_ERUPCION
+        gran
+            ? "GRAN ERUPCIÓN"
+            : "LLAMA EN EL ANILLO",
+        PerdidaErupcion(partida)
     );
 
-    EstablecerMensajeGimmick(
-        partida,
-        levantado
-            ? "¡EL PUENTE SE LEVANTA! ATAJO CERRADO"
-            : "¡EL PUENTE BAJA! ATAJO ABIERTO"
-    );
+    char mensaje[96];
+
+    if (gran)
+    {
+        std::snprintf(
+            mensaje,
+            sizeof(mensaje),
+            "¡GRAN ERUPCIÓN! LA LLAMA QUITA %d. %s",
+            PERDIDA_GRAN_ERUPCION,
+            levantado
+                ? "PUENTE LEVANTADO"
+                : "PUENTE BAJADO"
+        );
+    }
+    else
+    {
+        std::snprintf(
+            mensaje,
+            sizeof(mensaje),
+            "%s",
+            levantado
+                ? "¡EL PUENTE SE LEVANTA! ATAJO CERRADO"
+                : "¡EL PUENTE BAJA! ATAJO ABIERTO"
+        );
+    }
+
+    EstablecerMensajeGimmick(partida, mensaje);
 }
 
 
@@ -728,7 +1077,8 @@ static int ElegirRivalForja(
 }
 
 
-static void ResolverEventoEspecialForja(
+// Casilla EVENTO de la Forja: veta de oro, duende ladron o geiser.
+static void ResolverEventoForja(
     PartidaTablero& partida,
     int participante
 )
@@ -774,6 +1124,22 @@ static void ResolverEventoEspecialForja(
             victima.monedas < ROBO_DUENDE
             ? victima.monedas
             : ROBO_DUENDE;
+
+        // El Escudo de la victima frena al duende: no roba nada.
+        if (robo > 0 && EscudoAbsorbePerdida(partida, rival))
+        {
+            partida.ultimoEventoEspecial = EVENTO_TABLERO_NINGUNO;
+            partida.variacionMonedasEvento = 0;
+
+            std::snprintf(
+                partida.textoEvento,
+                sizeof(partida.textoEvento),
+                "¡EL ESCUDO DE J%d FRENA AL DUENDE LADRÓN!",
+                rival + 1
+            );
+
+            return;
+        }
 
         victima.monedas -= robo;
         jugador.monedas += robo;
@@ -843,18 +1209,36 @@ static bool ResolverCasillaForjaVolcan(
         return false;
     }
 
-    if (casilla->tipo == CASILLA_ESPECIAL)
+    if (casilla->tipo == CASILLA_EVENTO)
     {
-        ResolverEventoEspecialForja(partida, participante);
+        ResolverEventoForja(partida, participante);
         return true;
     }
 
     if (jugador.casillaActual == partida.casillaPeligro)
     {
+        int quemadura = PerdidaErupcion(partida);
+
         int perdida =
-            jugador.monedas < PERDIDA_ERUPCION
+            jugador.monedas < quemadura
             ? jugador.monedas
-            : PERDIDA_ERUPCION;
+            : quemadura;
+
+        if (perdida > 0 && EscudoAbsorbePerdida(partida, participante))
+        {
+            partida.variacionMonedasEvento = 0;
+
+            std::snprintf(
+                partida.textoEvento,
+                sizeof(partida.textoEvento),
+                "¡EL ESCUDO DE J%d BLOQUEA LA LLAMA!",
+                participante + 1
+            );
+
+            ReproducirSonidoTablero(partida, SONIDO_EVENTO_TABLERO);
+
+            return true;
+        }
 
         jugador.monedas -= perdida;
         partida.variacionMonedasEvento = -perdida;
@@ -862,7 +1246,10 @@ static bool ResolverCasillaForjaVolcan(
         std::snprintf(
             partida.textoEvento,
             sizeof(partida.textoEvento),
-            "¡ERUPCIÓN! LA LLAMA TE QUEMA: -%d MONEDAS",
+            "%s LA LLAMA TE QUEMA: -%d MONEDAS",
+            EsGranErupcion(partida)
+                ? "¡GRAN ERUPCIÓN!"
+                : "¡ERUPCIÓN!",
             perdida
         );
 
@@ -879,70 +1266,155 @@ static bool ResolverCasillaForjaVolcan(
 // BOTS Y TEXTOS DE RUTA
 //==================================================
 
+// Valor aproximado de pisar una casilla (para que los bots elijan ruta).
+static int ValorCasillaBotForja(
+    const PartidaTablero& partida,
+    int indice
+)
+{
+    const Casilla* casilla = partida.tablero.ObtenerCasilla(indice);
+
+    if (casilla == nullptr)
+    {
+        return 0;
+    }
+
+    // La llama del volcan manda sobre el tipo de la casilla.
+    if (indice == partida.casillaPeligro)
+    {
+        return -PerdidaErupcion(partida);
+    }
+
+    // Sin "default": un tipo nuevo de casilla obliga a puntuarlo aqui.
+    switch (casilla->tipo)
+    {
+        case CASILLA_POSITIVA: return MONEDAS_CASILLA_POSITIVA;
+        case CASILLA_NEGATIVA: return -MONEDAS_CASILLA_NEGATIVA;
+        case CASILLA_ESPECIAL: return 1;
+        case CASILLA_REGALO: return MONEDAS_REGALO;
+        case CASILLA_CAOS: return -4;           // ruleta de castigos
+        case CASILLA_INTERCAMBIO: return -1;    // azar: algo arriesgada
+        case CASILLA_EVENTO: return 3;          // veta, duende o geiser: casi siempre suma
+        case CASILLA_DUELO: return 0;           // apuesta voluntaria: ni premio ni castigo
+        case CASILLA_TIENDA: return 1;          // compra objetos: algo util, no un premio
+        case CASILLA_NEUTRA: return 0;
+        case CANTIDAD_TIPOS_CASILLA: return 0;
+    }
+
+    return 0;
+}
+
+
+// Valor de los proximos pasos desde una casilla (media de las ramas).
+static float ValorRutaBotForja(
+    const PartidaTablero& partida,
+    int casilla,
+    int profundidad
+)
+{
+    const Casilla* actual = partida.tablero.ObtenerCasilla(casilla);
+
+    if (actual == nullptr || profundidad <= 0)
+    {
+        return 0.0f;
+    }
+
+    float resto = 0.0f;
+
+    for (int c = 0; c < actual->cantidadConexiones; c++)
+    {
+        resto +=
+            ValorRutaBotForja(
+                partida, actual->conexiones[c].destino, profundidad - 1
+            );
+    }
+
+    if (actual->cantidadConexiones > 0)
+    {
+        resto /= (float)actual->cantidadConexiones;
+    }
+
+    return (float)ValorCasillaBotForja(partida, casilla) + resto;
+}
+
+
+// Con monedas para el trofeo, el bot toma el camino mas corto hasta el;
+// sin ellas elige la rama con mejores casillas por delante. Siempre deja
+// algo de azar (y ante un empate elige al azar).
 static int DecidirRutaBotForja(
     const PartidaTablero& partida,
     int participante
 )
 {
-    int casilla =
-        partida.jugadores[participante].casillaActual;
+    const EstadoJugadorPartidaTablero& jugador =
+        partida.jugadores[participante];
 
-    int primeraAtajo = 0;
-    int ultimaAtajo = 0;
-    bool trofeoEnLargo = false;
+    const Casilla* actual =
+        partida.tablero.ObtenerCasilla(jugador.casillaActual);
 
-    int trofeo = partida.casillaTrofeo;
-
-    if (casilla == BIFURCACION_PUENTE)
-    {
-        primeraAtajo = PUENTE_PRIMERA;
-        ultimaAtajo = PUENTE_ULTIMA;
-        trofeoEnLargo = trofeo >= 7 && trofeo <= 14;
-    }
-    else if (casilla == BIFURCACION_GALERIA)
-    {
-        primeraAtajo = GALERIA_PRIMERA;
-        ultimaAtajo = GALERIA_ULTIMA;
-
-        trofeoEnLargo =
-            (trofeo >= 19 && trofeo <= 25) ||
-            (trofeo >= 0 && trofeo <= 2);
-    }
-    else
+    if (actual == nullptr || actual->cantidadConexiones < 2)
     {
         return -1;
     }
 
-    bool trofeoEnAtajo =
-        trofeo >= primeraAtajo &&
-        trofeo <= ultimaAtajo;
-
-    int monedas =
-        partida.jugadores[participante].monedas;
-
-    // Con dinero para el trofeo, va hacia donde esta.
-    if (monedas >= partida.costoTrofeo)
+    if (GetRandomValue(0, 99) < 20)
     {
-        if (trofeoEnAtajo)
+        return -1;
+    }
+
+    int mejor = -1;
+
+    if (
+        jugador.monedas >= partida.costoTrofeo &&
+        partida.casillaTrofeo >= 0
+    )
+    {
+        int mejorPasos = 1000000;
+
+        for (int c = 0; c < actual->cantidadConexiones; c++)
         {
-            return 1;
+            int pasos =
+                DistanciaEntreCasillas(
+                    partida,
+                    actual->conexiones[c].destino,
+                    partida.casillaTrofeo
+                );
+
+            if (pasos >= 0 && pasos < mejorPasos)
+            {
+                mejorPasos = pasos;
+                mejor = c;
+            }
+            else if (pasos >= 0 && pasos == mejorPasos)
+            {
+                mejor = -1;
+            }
         }
 
-        if (trofeoEnLargo)
+        return mejor;
+    }
+
+    float mejorValor = -1.0e9f;
+
+    for (int c = 0; c < actual->cantidadConexiones; c++)
+    {
+        float valor =
+            ValorRutaBotForja(
+                partida, actual->conexiones[c].destino, 5
+            );
+
+        if (valor > mejorValor + 0.01f)
         {
-            return 0;
+            mejorValor = valor;
+            mejor = c;
+        }
+        else if (valor > mejorValor - 0.01f)
+        {
+            mejor = -1;
         }
     }
 
-    // Pobre: arriesga mas; con dinero: prefiere el anillo.
-    int probabilidadAtajo =
-        monedas < 8
-        ? 65
-        : 35;
-
-    return GetRandomValue(0, 99) < probabilidadAtajo
-        ? 1
-        : 0;
+    return mejor;
 }
 
 
@@ -994,7 +1466,8 @@ const DefinicionTablero& ObtenerDefinicionTableroForjaVolcan()
             "Reuní más trofeos (20 monedas cada uno) en 5 rondas.";
 
         definicion.gimmick =
-            "Puente de basalto: sube y baja cada ronda y abre o cierra el atajo.";
+            "Puente levadizo: abre o cierra el atajo cada ronda. "
+            "La llama del volcán quita 5 monedas (10 en la última ronda).";
 
         definicion.dificultad = "MEDIA";
 
@@ -1004,6 +1477,14 @@ const DefinicionTablero& ObtenerDefinicionTableroForjaVolcan()
         definicion.camaraPosicion = { 0.0f, 17.5f, 18.5f };
         definicion.camaraObjetivo = { 0.0f, 0.0f, 0.0f };
         definicion.camaraFovy = 48.0f;
+
+        // Landmark: el volcan (enfoque al levantarse el puente).
+        definicion.camaraLandmark =
+            { CENTRO_VOLCAN.x, 2.0f, CENTRO_VOLCAN.z };
+        definicion.tieneLandmark = true;
+
+        definicion.nombresZonas = NOMBRES_ZONAS_FORJA;
+        definicion.cantidadZonas = CANTIDAD_ZONAS_FORJA;
 
         definicion.casillasTrofeo = CASILLAS_TROFEO_FORJA;
         definicion.cantidadCasillasTrofeo =
@@ -1015,6 +1496,7 @@ const DefinicionTablero& ObtenerDefinicionTableroForjaVolcan()
 
         definicion.Construir = ConstruirForjaVolcan;
         definicion.DibujarDecoracion = DibujarDecoracionForjaVolcan;
+        definicion.DescargarRecursos = DescargarRecursosForjaVolcan;
         definicion.AlIniciarRonda = AlIniciarRondaForjaVolcan;
         definicion.ResolverCasilla = ResolverCasillaForjaVolcan;
         definicion.ActualizarGimmick = ActualizarGimmickForjaVolcan;
