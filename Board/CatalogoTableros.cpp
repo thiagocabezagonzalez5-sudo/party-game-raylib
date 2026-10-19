@@ -32,6 +32,11 @@ const DefinicionTablero& ObtenerDefinicionTablero(
         return ObtenerDefinicionTableroForjaVolcan();
     }
 
+    if (id == TABLERO_FERIA_NOCTURNA)
+    {
+        return ObtenerDefinicionTableroFeriaNocturna();
+    }
+
     // Cualquier id invalido cae en el primer tablero.
     return ObtenerDefinicionTableroArboleda();
 }
