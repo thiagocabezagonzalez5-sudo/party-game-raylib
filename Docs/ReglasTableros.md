@@ -70,5 +70,5 @@ Marcados `esDuelo` en `Core/CatalogoMinijuegos.cpp`: exclusivos del duelo (2 jug
 2. Hook `ResolverCasilla` con el evento propio y `TextoLeyendaCasilla` si cambia algún valor común.
 3. `DecidirRutaBot` y valor de bot para **todos** los tipos (sin `default` que oculte alguno).
 4. Camino físico visible entre casillas, bifurcaciones que se dividan en rutas visibles y rendimiento estable (mallas horneadas en GPU, respetar `Systems/CalidadGrafica.h`).
-5. Partidas con 2, 3 y 4 bots que terminen siempre, y capturas revisadas a 1280x720 y 1920x1080.
+5. Partidas con 2, 3 y 4 bots que terminen siempre (se comprueba sin ventana con `Tests/SimularTableros.ps1`, que también valida la regla de casillas, las conexiones y que nadie quede en negativo), y capturas revisadas a 1280x720 y 1920x1080.
 6. Sin avisos de la regla obligatoria al cargar el tablero.
