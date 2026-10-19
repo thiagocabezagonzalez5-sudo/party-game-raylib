@@ -38,7 +38,8 @@
 //
 // Presentacion: el camino de losas de basalto entre casillas se hornea una
 // vez en una malla (calzada sobre la lava en el puente y durmientes en la
-// galeria); el tramo levadizo lo dibuja el gimmick.
+// galeria); el tramo levadizo lo dibuja el gimmick. Las losas usan un
+// estilo de basalto con brasas en el borde.
 
 static const int CASILLAS_ANILLO = 26;
 
@@ -1445,6 +1446,29 @@ static const char* DescribirRutaForja(
 
 
 //==================================================
+// ESTILO DE LAS LOSAS
+//==================================================
+
+// Losas de basalto oscuro con brasas en el borde (en lugar de musgo).
+// Mismas proporciones que la piedra comun: el camino horneado cuenta con
+// RADIO_LOSA_FORJA.
+static EstiloCasilla ObtenerEstiloCasillaBasalto()
+{
+    EstiloCasilla estilo = ObtenerEstiloCasillaPiedra();
+
+    estilo.piedraLado = Color{ 64, 54, 58, 255 };
+    estilo.piedraTapa = Color{ 108, 96, 98, 255 };
+    estilo.borde = Color{ 34, 28, 30, 255 };
+    estilo.detalle = Color{ 214, 96, 40, 255 };
+
+    estilo.sendero = Color{ 86, 74, 76, 255 };
+    estilo.senderoBorde = Color{ 48, 40, 44, 255 };
+
+    return estilo;
+}
+
+
+//==================================================
 // DEFINICION
 //==================================================
 
@@ -1478,10 +1502,13 @@ const DefinicionTablero& ObtenerDefinicionTableroForjaVolcan()
         definicion.camaraObjetivo = { 0.0f, 0.0f, 0.0f };
         definicion.camaraFovy = 48.0f;
 
-        // Landmark: el volcan (enfoque al levantarse el puente).
-        definicion.camaraLandmark =
-            { CENTRO_VOLCAN.x, 2.0f, CENTRO_VOLCAN.z };
+        // Landmark: el puente levadizo. El sistema comun lo enfoca cuando
+        // gimmickActivo (puente levantado) y hay aviso de ronda, asi que la
+        // camara muestra justo el mecanismo que acaba de cerrar el atajo.
+        definicion.camaraLandmark = { 4.5f, 1.0f, 4.6f };
         definicion.tieneLandmark = true;
+
+        definicion.estiloCasilla = ObtenerEstiloCasillaBasalto();
 
         definicion.nombresZonas = NOMBRES_ZONAS_FORJA;
         definicion.cantidadZonas = CANTIDAD_ZONAS_FORJA;
