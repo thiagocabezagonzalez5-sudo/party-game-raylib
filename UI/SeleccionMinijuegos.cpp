@@ -830,8 +830,10 @@ static void DibujarLeyendaFormatos(
 {
     const int tamano = TamanoTexto(UI_TEXTO_PEQUENO);
     const float altoIcono = Px(13.0f);
-    const float anchoIcono = Px(50.0f);
-    const float separacion = Px(24.0f);
+    // Con cuatro formatos la leyenda es larga: iconos y separaciones
+    // compactos para no pisar el texto de turno de la cabecera.
+    const float anchoIcono = Px(38.0f);
+    const float separacion = Px(12.0f);
 
     float x = xFin;
 

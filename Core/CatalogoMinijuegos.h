@@ -55,6 +55,9 @@ enum IdMinijuego
     MINIJUEGO_TUBERIAS_DESIERTO,
     MINIJUEGO_TREPA_MASTIL,
     MINIJUEGO_GUARDIAN_RUINAS,
+    MINIJUEGO_CABLES_CRUZADOS,
+    MINIJUEGO_VAGONETAS_DUELO,
+    MINIJUEGO_GEMAS_DESLIZANTES,
 
     // Debe ser siempre el ultimo valor: el catalogo, el selector y la
     // ruleta recorren los minijuegos desde 0 hasta CANTIDAD_MINIJUEGOS.

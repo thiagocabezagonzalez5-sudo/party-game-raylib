@@ -56,6 +56,9 @@ void GestorMinijuegos::Inicializar()
     minijuegoTuberiasDesierto.Inicializar();
     minijuegoTrepaMastil.Inicializar();
     minijuegoGuardianRuinas.Inicializar();
+    minijuegoCablesCruzados.Inicializar();
+    minijuegoVagonetasDuelo.Inicializar();
+    minijuegoGemasDeslizantes.Inicializar();
 }
 
 
@@ -111,6 +114,9 @@ void GestorMinijuegos::ActivarMinijuego(
     minijuegoTuberiasDesierto.audio = contexto.audio;
     minijuegoTrepaMastil.audio = contexto.audio;
     minijuegoGuardianRuinas.audio = contexto.audio;
+    minijuegoCablesCruzados.audio = contexto.audio;
+    minijuegoVagonetasDuelo.audio = contexto.audio;
+    minijuegoGemasDeslizantes.audio = contexto.audio;
     minijuegoTormentaMagnetica.audio = contexto.audio;
     minijuegoRefugioPinchos.audio = contexto.audio;
 
@@ -360,6 +366,18 @@ void GestorMinijuegos::ActivarMinijuego(
 
         case MINIJUEGO_GUARDIAN_RUINAS:
             minijuegoGuardianRuinas.Inicializar();
+            break;
+
+        case MINIJUEGO_CABLES_CRUZADOS:
+            minijuegoCablesCruzados.Inicializar();
+            break;
+
+        case MINIJUEGO_VAGONETAS_DUELO:
+            minijuegoVagonetasDuelo.Inicializar();
+            break;
+
+        case MINIJUEGO_GEMAS_DESLIZANTES:
+            minijuegoGemasDeslizantes.Inicializar();
             break;
 
         case CANTIDAD_MINIJUEGOS:
@@ -632,6 +650,30 @@ void GestorMinijuegos::ActivarMinijuego(
 
         case MINIJUEGO_GUARDIAN_RUINAS:
             minijuegoGuardianRuinas.Reiniciar(
+                contexto.jugadores,
+                contexto.participantes,
+                contexto.cantidadJugadores
+            );
+            break;
+
+        case MINIJUEGO_CABLES_CRUZADOS:
+            minijuegoCablesCruzados.Reiniciar(
+                contexto.jugadores,
+                contexto.participantes,
+                contexto.cantidadJugadores
+            );
+            break;
+
+        case MINIJUEGO_VAGONETAS_DUELO:
+            minijuegoVagonetasDuelo.Reiniciar(
+                contexto.jugadores,
+                contexto.participantes,
+                contexto.cantidadJugadores
+            );
+            break;
+
+        case MINIJUEGO_GEMAS_DESLIZANTES:
+            minijuegoGemasDeslizantes.Reiniciar(
                 contexto.jugadores,
                 contexto.participantes,
                 contexto.cantidadJugadores
@@ -1015,6 +1057,30 @@ void GestorMinijuegos::ReiniciarActivo(
 
         case MINIJUEGO_GUARDIAN_RUINAS:
             minijuegoGuardianRuinas.Reiniciar(
+                contexto.jugadores,
+                contexto.participantes,
+                contexto.cantidadJugadores
+            );
+            break;
+
+        case MINIJUEGO_CABLES_CRUZADOS:
+            minijuegoCablesCruzados.Reiniciar(
+                contexto.jugadores,
+                contexto.participantes,
+                contexto.cantidadJugadores
+            );
+            break;
+
+        case MINIJUEGO_VAGONETAS_DUELO:
+            minijuegoVagonetasDuelo.Reiniciar(
+                contexto.jugadores,
+                contexto.participantes,
+                contexto.cantidadJugadores
+            );
+            break;
+
+        case MINIJUEGO_GEMAS_DESLIZANTES:
+            minijuegoGemasDeslizantes.Reiniciar(
                 contexto.jugadores,
                 contexto.participantes,
                 contexto.cantidadJugadores
@@ -1481,6 +1547,33 @@ void GestorMinijuegos::ActualizarActivo(
             );
             break;
 
+        case MINIJUEGO_CABLES_CRUZADOS:
+            minijuegoCablesCruzados.Actualizar(
+                deltaTime,
+                contexto.jugadores,
+                contexto.cantidadJugadores,
+                contexto.participantes
+            );
+            break;
+
+        case MINIJUEGO_VAGONETAS_DUELO:
+            minijuegoVagonetasDuelo.Actualizar(
+                deltaTime,
+                contexto.jugadores,
+                contexto.cantidadJugadores,
+                contexto.participantes
+            );
+            break;
+
+        case MINIJUEGO_GEMAS_DESLIZANTES:
+            minijuegoGemasDeslizantes.Actualizar(
+                deltaTime,
+                contexto.jugadores,
+                contexto.cantidadJugadores,
+                contexto.participantes
+            );
+            break;
+
         case CANTIDAD_MINIJUEGOS:
             break;
     }
@@ -1923,6 +2016,33 @@ void GestorMinijuegos::DibujarActivo(
             );
             break;
 
+        case MINIJUEGO_CABLES_CRUZADOS:
+            minijuegoCablesCruzados.Dibujar(
+                contexto.jugadores,
+                contexto.cantidadJugadores,
+                contexto.participantes,
+                mostrarDebug
+            );
+            break;
+
+        case MINIJUEGO_VAGONETAS_DUELO:
+            minijuegoVagonetasDuelo.Dibujar(
+                contexto.jugadores,
+                contexto.cantidadJugadores,
+                contexto.participantes,
+                mostrarDebug
+            );
+            break;
+
+        case MINIJUEGO_GEMAS_DESLIZANTES:
+            minijuegoGemasDeslizantes.Dibujar(
+                contexto.jugadores,
+                contexto.cantidadJugadores,
+                contexto.participantes,
+                mostrarDebug
+            );
+            break;
+
         case CANTIDAD_MINIJUEGOS:
             break;
     }
@@ -2034,6 +2154,12 @@ GestorMinijuegos::ObtenerResultadoActivo() const
             return &minijuegoTrepaMastil.ObtenerResultado();
         case MINIJUEGO_GUARDIAN_RUINAS:
             return &minijuegoGuardianRuinas.ObtenerResultado();
+        case MINIJUEGO_CABLES_CRUZADOS:
+            return &minijuegoCablesCruzados.ObtenerResultado();
+        case MINIJUEGO_VAGONETAS_DUELO:
+            return &minijuegoVagonetasDuelo.ObtenerResultado();
+        case MINIJUEGO_GEMAS_DESLIZANTES:
+            return &minijuegoGemasDeslizantes.ObtenerResultado();
         case CANTIDAD_MINIJUEGOS:
             break;
     }
@@ -2108,7 +2234,10 @@ bool GestorMinijuegos::MantieneControlIAEnReconexion() const
         minijuegoActivo == MINIJUEGO_BANQUETE_TURBO ||
         minijuegoActivo == MINIJUEGO_TUBERIAS_DESIERTO ||
         minijuegoActivo == MINIJUEGO_TREPA_MASTIL ||
-        minijuegoActivo == MINIJUEGO_GUARDIAN_RUINAS;
+        minijuegoActivo == MINIJUEGO_GUARDIAN_RUINAS ||
+        minijuegoActivo == MINIJUEGO_CABLES_CRUZADOS ||
+        minijuegoActivo == MINIJUEGO_VAGONETAS_DUELO ||
+        minijuegoActivo == MINIJUEGO_GEMAS_DESLIZANTES;
 }
 
 

@@ -13,6 +13,12 @@ FormatoMinijuego ObtenerFormatoMinijuego(
     IdMinijuego id
 )
 {
+    // Los duelos de la casilla DUELO son siempre 1 contra 1.
+    if (ObtenerDatosMinijuego(id).esDuelo)
+    {
+        return FORMATO_UNO_CONTRA_UNO;
+    }
+
     // Los formatos con equipos fijos de 2 se juegan solo con 2 o 4.
     if (ObtenerDatosMinijuego(id).requiereParDeJugadores)
     {
@@ -58,6 +64,9 @@ const char* ObtenerNombreFormatoMinijuego(
         case FORMATO_DOS_CONTRA_DOS:
             return "2 VS 2";
 
+        case FORMATO_UNO_CONTRA_UNO:
+            return "1 VS 1";
+
         case FORMATO_TODOS_CONTRA_TODOS:
         case CANTIDAD_FORMATOS_MINIJUEGO:
             break;
@@ -79,6 +88,9 @@ Color ObtenerColorFormatoMinijuego(
         case FORMATO_DOS_CONTRA_DOS:
             return Color{ 66, 132, 210, 255 };
 
+        case FORMATO_UNO_CONTRA_UNO:
+            return Color{ 124, 92, 208, 255 };
+
         case FORMATO_TODOS_CONTRA_TODOS:
         case CANTIDAD_FORMATOS_MINIJUEGO:
             break;
@@ -92,6 +104,11 @@ const char* ObtenerTextoJugadoresMinijuego(
     IdMinijuego id
 )
 {
+    if (ObtenerDatosMinijuego(id).esDuelo)
+    {
+        return "SOLO 2 JUGADORES";
+    }
+
     if (!MinijuegoAdmiteCantidadJugadores(id, 3))
     {
         return "2 O 4 JUGADORES";
@@ -145,8 +162,9 @@ void DibujarIconoFormatoMinijuego(
         return;
     }
 
-    int izquierda = formato == FORMATO_UNO_CONTRA_TRES ? 1 : 2;
-    int derecha = formato == FORMATO_UNO_CONTRA_TRES ? 3 : 2;
+    bool unoContra = formato == FORMATO_UNO_CONTRA_TRES || formato == FORMATO_UNO_CONTRA_UNO;
+    int izquierda = unoContra ? 1 : 2;
+    int derecha = formato == FORMATO_UNO_CONTRA_TRES ? 3 : (formato == FORMATO_UNO_CONTRA_UNO ? 1 : 2);
     float hueco = paso * 1.1f;
 
     // Fichas de cada bando, separadas por una raya vertical.
@@ -1302,6 +1320,69 @@ static void DibujarArteMinijuego(
             DrawRectangle((int)(cx - 20), (int)(cy + 28), 6, 10, Color{ 255, 170, 60, 255 });
             DrawRectangle((int)(cx + 2), (int)(cy + 24), 6, 10, Color{ 255, 170, 60, 255 });
             DrawRectangle((int)(cx + 22), (int)(cy + 28), 6, 10, Color{ 255, 170, 60, 255 });
+            break;
+        }
+
+        case MINIJUEGO_CABLES_CRUZADOS:
+        {
+            // Banco oscuro con dos paneles de cables (rojo y azul), pila y bombilla.
+            DrawRectangle((int)(cx - 60), (int)(cy - 48), 120, 96, Color{ 38, 52, 68, 255 });
+            for (int lado = 0; lado < 2; lado++)
+            {
+                float px = cx + (lado == 0 ? -31.0f : 31.0f);
+                Color marco = lado == 0 ? Color{ 230, 70, 70, 255 } : Color{ 70, 130, 235, 255 };
+                DrawRectangle((int)(px - 26), (int)(cy - 28), 52, 52, marco);
+                DrawRectangle((int)(px - 23), (int)(cy - 25), 46, 46, Color{ 22, 34, 40, 255 });
+                for (int i = 0; i < 3; i++)
+                {
+                    DrawRectangle((int)(px - 20 + i * 14), (int)(cy - 6), 12, 4, i < 2 && lado == 1 ? Color{ 255, 226, 120, 255 } : Color{ 150, 100, 60, 255 });
+                }
+                DrawRectangle((int)(px - 3), (int)(cy - 20), 4, 14, Color{ 150, 100, 60, 255 });
+                DrawRectangle((int)(px - 22), (int)(cy + 6), 8, 8, Color{ 210, 60, 50, 255 });
+            }
+            DrawCircle((int)(cx + 53), (int)(cy - 6), 5.0f, Color{ 255, 240, 160, 255 });
+            break;
+        }
+
+        case MINIJUEGO_VAGONETAS_DUELO:
+        {
+            // Cueva con lava a los lados y rieles que se juntan en la distancia.
+            DrawRectangle((int)(cx - 60), (int)(cy - 50), 120, 100, Color{ 52, 36, 52, 255 });
+            DrawTriangle({ cx - 60.0f, cy + 50.0f }, { cx - 60.0f, cy - 10.0f }, { cx - 18.0f, cy + 50.0f }, Color{ 255, 120, 40, 255 });
+            DrawTriangle({ cx + 60.0f, cy + 50.0f }, { cx + 60.0f, cy - 10.0f }, { cx + 18.0f, cy + 50.0f }, Color{ 255, 120, 40, 255 });
+            DrawTriangle({ cx - 20.0f, cy + 50.0f }, { cx, cy - 18.0f }, { cx + 20.0f, cy + 50.0f }, Color{ 120, 84, 60, 255 });
+            DrawLineEx({ cx - 14.0f, cy + 50.0f }, { cx - 1.0f, cy - 18.0f }, 2.0f, Color{ 210, 214, 224, 255 });
+            DrawLineEx({ cx + 14.0f, cy + 50.0f }, { cx + 1.0f, cy - 18.0f }, 2.0f, Color{ 210, 214, 224, 255 });
+            DrawRectangle((int)(cx - 14), (int)(cy + 14), 28, 16, Color{ 120, 126, 140, 255 });
+            DrawRectangle((int)(cx - 12), (int)(cy + 22), 24, 4, Color{ 230, 70, 70, 255 });
+            DrawRectangle((int)(cx + 30), (int)(cy - 22), 6, 12, Color{ 90, 230, 255, 255 });
+            DrawRectangle((int)(cx - 38), (int)(cy - 26), 6, 14, Color{ 230, 100, 240, 255 });
+            break;
+        }
+
+        case MINIJUEGO_GEMAS_DESLIZANTES:
+        {
+            // Mesa de joyero: tablero 3x3 de gemas con un hueco y el dibujo de referencia.
+            DrawRectangle((int)(cx - 60), (int)(cy - 48), 120, 96, Color{ 28, 48, 70, 255 });
+            const Color gemas[8] = {
+                Color{ 250, 210, 60, 255 }, Color{ 80, 200, 110, 255 }, Color{ 250, 210, 60, 255 },
+                Color{ 230, 70, 70, 255 },  Color{ 160, 110, 230, 255 },
+                Color{ 70, 130, 235, 255 }, Color{ 70, 130, 235, 255 }, Color{ 230, 70, 70, 255 }
+            };
+            DrawRectangle((int)(cx - 42), (int)(cy - 30), 60, 60, Color{ 70, 150, 235, 255 });
+            for (int i = 0; i < 9; i++)
+            {
+                if (i == 5)
+                {
+                    continue;
+                }
+                int g = i < 5 ? i : i - 1;
+                DrawRectangle((int)(cx - 39 + (i % 3) * 19), (int)(cy - 27 + (i / 3) * 19), 16, 16, gemas[g]);
+            }
+            DrawRectangle((int)(cx + 26), (int)(cy - 18), 28, 28, Color{ 120, 84, 52, 255 });
+            DrawRectangle((int)(cx + 30), (int)(cy - 14), 8, 8, Color{ 250, 210, 60, 255 });
+            DrawRectangle((int)(cx + 42), (int)(cy - 14), 8, 8, Color{ 250, 210, 60, 255 });
+            DrawRectangle((int)(cx + 36), (int)(cy - 2), 8, 8, Color{ 70, 130, 235, 255 });
             break;
         }
 

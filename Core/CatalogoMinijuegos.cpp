@@ -404,6 +404,36 @@ static const DatosMinijuegoCatalogo DATOS_MINIJUEGOS[] =
         Color{ 100, 220, 200, 255 },
         "CATÁLOGO - GUARDIÁN DE RUINAS",
         true
+    },
+    {
+        MINIJUEGO_CABLES_CRUZADOS,
+        "CABLES CRUZADOS",
+        "Duelo 1 contra 1: girá las piezas de cable para conectar la pila con la bombilla antes que tu rival. Gana quien llegue a 2 rondas.",
+        Color{ 255, 205, 80, 255 },
+        "CATÁLOGO - CABLES CRUZADOS",
+        true,
+        false,
+        true
+    },
+    {
+        MINIJUEGO_VAGONETAS_DUELO,
+        "VAGONETAS DE MINA",
+        "Duelo 1 contra 1: carrera en vagonetas por una mina de lava. Cambiá de riel, saltá las vías rotas y gastá el turbo con cabeza. Gana quien cruce la meta primero.",
+        Color{ 255, 120, 50, 255 },
+        "CATÁLOGO - VAGONETAS DE MINA",
+        true,
+        false,
+        true
+    },
+    {
+        MINIJUEGO_GEMAS_DESLIZANTES,
+        "GEMAS DESLIZANTES",
+        "Duelo 1 contra 1: deslizá las gemas y armá el dibujo del centro antes que tu rival. Mejor de 3 rondas.",
+        Color{ 150, 110, 235, 255 },
+        "CATÁLOGO - GEMAS DESLIZANTES",
+        true,
+        false,
+        true
     }
 };
 

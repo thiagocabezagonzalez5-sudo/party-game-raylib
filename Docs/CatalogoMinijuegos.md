@@ -2,9 +2,9 @@
 
 ## Estado general
 
-- Objetivo: 50 minijuegos
-- Implementados e integrados: 50
-- Faltantes: 0 (objetivo alcanzado)
+- Objetivo original: 50 minijuegos (alcanzado)
+- Implementados e integrados: 53 (50 + 3 duelos 1v1 pedidos después por el usuario)
+- Faltantes: 0
 
 | # | Nombre | Mecánica | Formato | Tablero | Inspiración | Estado |
 |---|---|---|---|---|---|---|
@@ -58,11 +58,19 @@
 | 48 | Tuberías Desierto | Observación / seguir tuberías | 2-4 | Sí | Mario Party 4 — Mystery Pipes | Terminado |
 | 49 | Trepa el Mástil | Ritmo / escalada alternando botones | 2-4 | Sí | Mario Party 2 — Abandon Ship | Terminado |
 | 50 | Guardián de Ruinas | Defensa / lanzamientos con rebote | 1v3 | Sí | Mario Party 1 — Paddle Battle | Terminado |
+| 51 | Cables Cruzados | Puzzle de circuitos, mejor de 3 rondas | 1v1 (duelo) | Solo duelo | Mario Party (duelos 1v1, estilo general) | Terminado |
+| 52 | Vagonetas de Mina | Carrera de vagonetas por rieles, turbo con energía | 1v1 (duelo) | Solo duelo | Mario Party (duelos 1v1, estilo general) | Terminado |
+| 53 | Gemas Deslizantes | Puzzle deslizante, mejor de 3 rondas | 1v1 (duelo) | Solo duelo | Mario Party (duelos 1v1, estilo general) | Terminado |
+
+Los minijuegos 51–53 son **exclusivos de duelo** (`esDuelo` en `Core/CatalogoMinijuegos`): solo se juegan con 2 participantes, no salen en las rondas normales del tablero ni en su ruleta, y sí aparecen en el catálogo libre. Los sortea la casilla DUELO del tablero: el ganador se lleva la apuesta. Se les marca `FORMATO 1 VS 1` en el selector.
 
 ## Modelo futuro (minijuegos nuevos)
 
 Elementos a reemplazar por GLB más adelante (la lógica no depende del visual):
 
+- **Cables Cruzados:** banco de trabajo, paneles con marco, piezas de cable, pila y bombilla.
+- **Vagonetas de Mina:** cueva volcánica, rieles, vagonetas con el modelo del jugador, cristales, antorchas, vigas.
+- **Gemas Deslizantes:** bandejas de terciopelo, gemas con símbolo, pedestal de referencia, lámparas y frascos.
 - **Último Asiento:** carrusel con caballitos, tazas, valla de bombillas, noria, montaña rusa, puestos, gradas.
 - **Cajas del Puerto:** muelle de madera, grúa con cabina y gancho, contenedores, faroles, barco de fondo.
 - **Laberinto Jade:** losa y marco, bloques de muro, altar, esfera de jade, columnas y antorchas.

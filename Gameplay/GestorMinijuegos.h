@@ -54,6 +54,9 @@
 #include "Minigames/MinijuegoTuberiasDesierto.h"
 #include "Minigames/MinijuegoTrepaMastil.h"
 #include "Minigames/MinijuegoGuardianRuinas.h"
+#include "Minigames/MinijuegoCablesCruzados.h"
+#include "Minigames/MinijuegoVagonetasDuelo.h"
+#include "Minigames/MinijuegoGemasDeslizantes.h"
 
 
 // Punto unico de propiedad y dispatch de los minijuegos.
@@ -112,6 +115,9 @@ struct GestorMinijuegos
     MinijuegoTuberiasDesierto minijuegoTuberiasDesierto;
     MinijuegoTrepaMastil minijuegoTrepaMastil;
     MinijuegoGuardianRuinas minijuegoGuardianRuinas;
+    MinijuegoCablesCruzados minijuegoCablesCruzados;
+    MinijuegoVagonetasDuelo minijuegoVagonetasDuelo;
+    MinijuegoGemasDeslizantes minijuegoGemasDeslizantes;
 
     void Inicializar();
 
