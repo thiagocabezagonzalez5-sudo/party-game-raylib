@@ -5,6 +5,7 @@
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
 #include "Gameplay/EventosCasillas.h"
+#include "Gameplay/ObjetosTablero.h"
 #include "Systems/Audio.h"
 #include "Systems/Input.h"
 
@@ -20,6 +21,7 @@ enum FasePartidaTablero
     FASE_PARTIDA_TABLERO_DECISION_TROFEO,
     FASE_PARTIDA_TABLERO_EVENTO_CASILLA,
     FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO,
+    FASE_PARTIDA_TABLERO_MENU_OBJETOS,
     FASE_PARTIDA_TABLERO_FIN_TURNO,
     FASE_PARTIDA_TABLERO_FIN_RONDA,
     FASE_PARTIDA_TABLERO_TERMINADA
@@ -53,6 +55,12 @@ struct EstadoJugadorPartidaTablero
     int trofeos = 0;
 
     int premioUltimoMinijuego = 0;
+
+    // Objetos (ver Gameplay/ObjetosTablero.h): inventario y efectos ya
+    // armados que se consumen en la proxima tirada.
+    int inventario[MAX_OBJETOS_INVENTARIO] = { OBJETO_VACIO, OBJETO_VACIO, OBJETO_VACIO };
+    bool botasActivas = false;
+    bool dadoDobleActivo = false;
 
     Vector3 posicionVisual{};
 };
@@ -109,6 +117,13 @@ struct PartidaTablero
 
     // Evento interactivo en curso (CAOS, INTERCAMBIO, eventos del tablero).
     EventoInteractivo evento;
+
+    // Menu de uso de objetos antes de tirar y avisos de objetos.
+    MenuObjetosTablero menuObjetos;
+    bool botRevisoObjetos = false;
+    char detalleDado[48] = {};
+    char avisoObjeto[96] = {};
+    float tiempoAvisoObjeto = 0.0f;
 
     // true mientras el jugador avanza por un evento: al caer en una casilla
     // EVENTO de ese movimiento no se encadena otro evento interactivo.

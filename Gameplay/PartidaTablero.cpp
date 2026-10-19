@@ -232,6 +232,9 @@ static void PrepararInicioTurno(
     partida.textoEvento[0] = '\0';
     partida.evento = EventoInteractivo{};
     partida.movimientoDeEvento = false;
+    partida.menuObjetos = MenuObjetosTablero{};
+    partida.botRevisoObjetos = false;
+    partida.detalleDado[0] = '\0';
     partida.fase = FASE_PARTIDA_TABLERO_ESPERANDO_DADO;
     partida.tiempoFase = 0.0f;
 }
@@ -531,6 +534,21 @@ static void ActualizarMovimientoTableroFinal(
 }
 
 
+// Texto del evento cuando el escudo bloquea la perdida de la casilla.
+static void EscribirTextoEscudo(
+    PartidaTablero& partida,
+    int indiceParticipante
+)
+{
+    std::snprintf(
+        partida.textoEvento,
+        sizeof(partida.textoEvento),
+        "¡EL ESCUDO DE J%d BLOQUEA LA PÉRDIDA!",
+        indiceParticipante + 1
+    );
+}
+
+
 // ESPECIAL: bonificacion o multa (el intercambio de monedas ahora es de
 // la casilla INTERCAMBIO).
 static void ResolverEventoEspecialTablero(
@@ -555,23 +573,33 @@ static void ResolverEventoEspecialTablero(
             ? jugador.monedas
             : MONEDAS_ESPECIAL_MULTA;
 
+        if (perdida > 0 && EscudoAbsorbePerdida(partida, indiceParticipante))
+        {
+            perdida = 0;
+            EscribirTextoEscudo(partida, indiceParticipante);
+        }
+
         jugador.monedas -= perdida;
         partida.variacionMonedasEvento = -perdida;
     }
 }
 
 
-// REGALO: lo que entrega la casilla. Tabla de premios; la etapa de
-// objetos agrega aqui los suyos (un premio de tipo objeto) sin tocar el
-// resto de la resolucion.
+// REGALO: lo que entrega la casilla. Tabla de premios: monedas (la mitad
+// de las veces) u objeto barato (botas o escudo). Con el inventario lleno
+// el objeto se convierte en monedas.
 struct PremioRegalo
 {
     int monedas;
+    int objeto;     // OBJETO_VACIO = solo monedas
 };
 
 static const PremioRegalo PREMIOS_REGALO[] =
 {
-    { MONEDAS_REGALO }
+    { MONEDAS_REGALO, OBJETO_VACIO },
+    { MONEDAS_REGALO, OBJETO_VACIO },
+    { 0, OBJETO_BOTAS },
+    { 0, OBJETO_ESCUDO }
 };
 
 static void ResolverRegaloCasilla(
@@ -585,8 +613,31 @@ static void ResolverRegaloCasilla(
     const int cantidadPremios =
         (int)(sizeof(PREMIOS_REGALO) / sizeof(PREMIOS_REGALO[0]));
 
-    const PremioRegalo& premio =
+    PremioRegalo premio =
         PREMIOS_REGALO[GetRandomValue(0, cantidadPremios - 1)];
+
+    // Mochila llena: el objeto se cambia por monedas.
+    if (
+        premio.objeto != OBJETO_VACIO &&
+        !AgregarObjetoInventario(jugador.inventario, premio.objeto)
+    )
+    {
+        premio = PremioRegalo{ MONEDAS_REGALO, OBJETO_VACIO };
+    }
+
+    if (premio.objeto != OBJETO_VACIO)
+    {
+        std::snprintf(
+            partida.textoEvento,
+            sizeof(partida.textoEvento),
+            "¡REGALO! J%d RECIBE: %s",
+            indiceParticipante + 1,
+            ObtenerDefinicionObjeto(premio.objeto).nombre
+        );
+
+        ReproducirSonidoTablero(partida, SONIDO_RECOGER_OBJETO);
+        return;
+    }
 
     jugador.monedas += premio.monedas;
     partida.variacionMonedasEvento = premio.monedas;
@@ -673,6 +724,12 @@ static void ResolverEventoCasillaTableroFinal(
             ? jugador.monedas
             : MONEDAS_CASILLA_NEGATIVA;
 
+        if (perdida > 0 && EscudoAbsorbePerdida(partida, indiceParticipante))
+        {
+            perdida = 0;
+            EscribirTextoEscudo(partida, indiceParticipante);
+        }
+
         jugador.monedas -= perdida;
         partida.variacionMonedasEvento = -perdida;
         ReproducirSonidoTablero(partida, SONIDO_CASILLA_NEGATIVA);
@@ -688,6 +745,14 @@ static void ResolverEventoCasillaTableroFinal(
     else if (casilla->tipo == CASILLA_REGALO)
     {
         ResolverRegaloCasilla(partida, indiceParticipante);
+    }
+    else if (casilla->tipo == CASILLA_TIENDA)
+    {
+        IniciarEventoInteractivo(
+            partida,
+            indiceParticipante,
+            EVENTO_INTERACTIVO_TIENDA
+        );
     }
     else if (casilla->tipo == CASILLA_CAOS)
     {
@@ -806,6 +871,11 @@ void PartidaTablero::Reiniciar()
     jugadorIntercambioEvento = -1;
     evento = EventoInteractivo{};
     movimientoDeEvento = false;
+    menuObjetos = MenuObjetosTablero{};
+    botRevisoObjetos = false;
+    detalleDado[0] = '\0';
+    avisoObjeto[0] = '\0';
+    tiempoAvisoObjeto = 0.0f;
     minijuegoSolicitado = false;
     salidaSolicitada = false;
 
@@ -1176,6 +1246,11 @@ void PartidaTablero::Actualizar(
         tiempoMensajeGimmick -= deltaTime;
     }
 
+    if (tiempoAvisoObjeto > 0.0f)
+    {
+        tiempoAvisoObjeto -= deltaTime;
+    }
+
     if (definicion->ActualizarGimmick != nullptr)
     {
         definicion->ActualizarGimmick(*this, deltaTime);
@@ -1245,6 +1320,24 @@ void PartidaTablero::Actualizar(
 
         if (esBot)
         {
+            // Antes de tirar, el bot decide si usa un objeto (una vez por
+            // turno) y espera un instante para que se vea el aviso.
+            if (!botRevisoObjetos && tiempoFase >= 0.35f)
+            {
+                botRevisoObjetos = true;
+
+                int rival = -1;
+                int espacio = DecidirObjetoBot(*this, indiceParticipante, rival);
+
+                if (espacio >= 0)
+                {
+                    char resumen[96];
+
+                    UsarObjeto(*this, indiceParticipante, espacio, rival, resumen, (int)sizeof(resumen));
+                    tiempoFase = 0.0f;
+                }
+            }
+
             lanzar = tiempoFase >= 0.70f;
         }
         else if (puedeDecidir)
@@ -1253,11 +1346,28 @@ void PartidaTablero::Actualizar(
                 lectorEntrada(participante);
 
             lanzar = entrada.confirmar;
+
+            // Cancelar abre el menu de objetos (si hay algo para usar).
+            if (
+                !lanzar &&
+                entrada.cancelar &&
+                HayObjetoUsableAhora(*this, indiceParticipante)
+            )
+            {
+                ReproducirSonidoTablero(*this, SONIDO_UI_CONFIRMAR);
+                IniciarMenuObjetos(*this, indiceParticipante);
+                fase = FASE_PARTIDA_TABLERO_MENU_OBJETOS;
+                tiempoFase = 0.0f;
+                return;
+            }
         }
 
         if (lanzar)
         {
-            valorDado = GetRandomValue(1, 10);
+            valorDado = TirarDadoDeJugador(
+                *this, indiceParticipante,
+                detalleDado, (int)sizeof(detalleDado)
+            );
             pasosPendientes = valorDado;
             fase = FASE_PARTIDA_TABLERO_MOSTRANDO_DADO;
             tiempoFase = 0.0f;
@@ -1266,6 +1376,34 @@ void PartidaTablero::Actualizar(
                 *this,
                 SONIDO_DADO
             );
+        }
+    }
+    else if (fase == FASE_PARTIDA_TABLERO_MENU_OBJETOS)
+    {
+        InputSeleccionParticipante entrada{};
+
+        if (puedeDecidir)
+        {
+            entrada = lectorEntrada(participante);
+        }
+
+        ActualizarMenuObjetos(
+            *this,
+            deltaTime,
+            esBot,
+            puedeDecidir,
+            entrada
+        );
+
+        if (menuObjetos.terminado || !menuObjetos.activo)
+        {
+            menuObjetos = MenuObjetosTablero{};
+            fase = FASE_PARTIDA_TABLERO_ESPERANDO_DADO;
+
+            // El humano no pierde su turno por usar un objeto: la espera
+            // del dado vuelve a empezar (sin reloj de bot).
+            tiempoFase = 0.0f;
+            botRevisoObjetos = true;
         }
     }
     else if (fase == FASE_PARTIDA_TABLERO_MOSTRANDO_DADO)
@@ -2275,6 +2413,30 @@ static const char* TextoElegirHud(const Participante& participante)
 }
 
 
+// Cancelar (fase de objetos, tienda): abre el menu de objetos antes de
+// tirar y sale de los menus. Fiel a Systems/Input.cpp.
+static const char* TextoCancelarHud(const Participante& participante)
+{
+    switch (participante.control)
+    {
+        case CONTROL_GAMEPAD:
+            return "B";
+
+        case CONTROL_TECLADO_FLECHAS:
+            return "SHIFT DER";
+
+        case CONTROL_TECLADO_WASD:
+        case CONTROL_TECLADO_COMPLETO:
+            return "RETROCESO";
+
+        case CONTROL_NINGUNO:
+            break;
+    }
+
+    return "";
+}
+
+
 // Compra del trofeo: confirmar o Y compran; cancelar, N o ESC no.
 // Y, N y ESC son del teclado: solo se anuncian a quien juega con teclado.
 static void TextosCompraTrofeoHud(
@@ -2466,6 +2628,7 @@ static void TextoFaseHud(
     // Humano sin mando en una fase que pide decidir: avisa del bot.
     bool fasePideDecidir =
         partida.fase == FASE_PARTIDA_TABLERO_ESPERANDO_DADO ||
+        partida.fase == FASE_PARTIDA_TABLERO_MENU_OBJETOS ||
         partida.fase == FASE_PARTIDA_TABLERO_ELIGIENDO_RUTA ||
         (
             partida.fase == FASE_PARTIDA_TABLERO_DECISION_TROFEO &&
@@ -2493,11 +2656,35 @@ static void TextoFaseHud(
     switch (partida.fase)
     {
         case FASE_PARTIDA_TABLERO_ESPERANDO_DADO:
-            std::snprintf(destino, capacidad, "%s", humano ? "TIRÁ EL DADO" : "EL BOT TIRA EL DADO...");
+            if (partida.jugadores[turno].botasActivas || partida.jugadores[turno].dadoDobleActivo)
+            {
+                std::snprintf(
+                    destino, capacidad, "%s: %s%s%s",
+                    humano ? "TIRÁ EL DADO" : "EL BOT TIRA EL DADO...",
+                    partida.jugadores[turno].botasActivas ? "BOTAS +3" : "",
+                    partida.jugadores[turno].botasActivas && partida.jugadores[turno].dadoDobleActivo ? " Y " : "",
+                    partida.jugadores[turno].dadoDobleActivo ? "DADO DOBLE" : ""
+                );
+            }
+            else
+            {
+                std::snprintf(destino, capacidad, "%s", humano ? "TIRÁ EL DADO" : "EL BOT TIRA EL DADO...");
+            }
+            return;
+
+        case FASE_PARTIDA_TABLERO_MENU_OBJETOS:
+            TextoMenuObjetos(partida, destino, capacidad);
             return;
 
         case FASE_PARTIDA_TABLERO_MOSTRANDO_DADO:
-            std::snprintf(destino, capacidad, humano ? "¡SACASTE %d!" : "¡SACÓ %d!", partida.valorDado);
+            if (partida.detalleDado[0] != '\0')
+            {
+                std::snprintf(destino, capacidad, humano ? "¡SACASTE %d! (%s)" : "¡SACÓ %d! (%s)", partida.valorDado, partida.detalleDado);
+            }
+            else
+            {
+                std::snprintf(destino, capacidad, humano ? "¡SACASTE %d!" : "¡SACÓ %d!", partida.valorDado);
+            }
             return;
 
         case FASE_PARTIDA_TABLERO_ELIGIENDO_RUTA:
@@ -2575,7 +2762,40 @@ static void TextoAyudaHud(
 
     if (partida.fase == FASE_PARTIDA_TABLERO_ESPERANDO_DADO && decide)
     {
-        std::snprintf(destino, capacidad, "%s: TIRAR EL DADO   |   %s", TextoConfirmarHud(participante), pausa);
+        if (HayObjetoUsableAhora(partida, turno))
+        {
+            std::snprintf(
+                destino, capacidad, "%s: TIRAR EL DADO   |   %s: OBJETOS   |   %s",
+                TextoConfirmarHud(participante), TextoCancelarHud(participante), pausa
+            );
+        }
+        else
+        {
+            std::snprintf(destino, capacidad, "%s: TIRAR EL DADO   |   %s", TextoConfirmarHud(participante), pausa);
+        }
+
+        return;
+    }
+
+    if (partida.fase == FASE_PARTIDA_TABLERO_MENU_OBJETOS && decide)
+    {
+        std::snprintf(
+            destino, capacidad, "%s: ELEGIR   |   %s: USAR   |   %s: CERRAR",
+            TextoElegirHud(participante), TextoConfirmarHud(participante), TextoCancelarHud(participante)
+        );
+        return;
+    }
+
+    if (
+        partida.fase == FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO &&
+        decide &&
+        PedidoDelEventoInteractivo(partida) == PEDIDO_EVENTO_TIENDA
+    )
+    {
+        std::snprintf(
+            destino, capacidad, "%s: ELEGIR   |   %s: COMPRAR O SALIR   |   %s: SALIR",
+            TextoElegirHud(participante), TextoConfirmarHud(participante), TextoCancelarHud(participante)
+        );
         return;
     }
 
@@ -2617,6 +2837,7 @@ static void TextoAyudaHud(
                 std::snprintf(destino, capacidad, "%s: CONTINUAR   |   %s", TextoConfirmarHud(participante), pausa);
                 return;
 
+            case PEDIDO_EVENTO_TIENDA:
             case PEDIDO_EVENTO_NADA:
                 break;
         }
@@ -4166,6 +4387,7 @@ static void DibujarHudTablero(
     // Eventos interactivos (ruleta, dados, objetos): velo y escena propia,
     // bajo el tendedero para que las monedas sigan a la vista.
     DibujarEventoInteractivo2D(partida);
+    DibujarMenuObjetos2D(partida);
 
     DibujarTendederoHud(estilo, partida);
 
@@ -4190,7 +4412,9 @@ static void DibujarHudTablero(
     }
 
     DibujarLeyendaHud(estilo, partida);
+    DibujarInventariosHud(partida);
     DibujarAnunciosHud(estilo, partida);
+    DibujarAvisoObjeto(partida);
 }
 
 

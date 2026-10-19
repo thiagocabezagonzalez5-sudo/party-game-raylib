@@ -188,7 +188,11 @@ void AplicarOpcionCaos(
     switch (opcion)
     {
         case CAOS_PIERDE_TROFEO:
-            if (estado.trofeos > 0)
+            if (estado.trofeos > 0 && EscudoAbsorbePerdida(partida, jugador))
+            {
+                std::snprintf(resumen, capacidad, "¡EL ESCUDO DE J%d BLOQUEA LA PÉRDIDA DEL TROFEO!", jugador + 1);
+            }
+            else if (estado.trofeos > 0)
             {
                 estado.trofeos--;
                 std::snprintf(resumen, capacidad, "¡J%d PIERDE 1 TROFEO!", jugador + 1);
@@ -209,6 +213,12 @@ void AplicarOpcionCaos(
 
             int perdida = MinimoEvento(pedido, estado.monedas);
 
+            if (perdida > 0 && EscudoAbsorbePerdida(partida, jugador))
+            {
+                std::snprintf(resumen, capacidad, "¡EL ESCUDO DE J%d BLOQUEA LA PÉRDIDA DE MONEDAS!", jugador + 1);
+                return;
+            }
+
             estado.monedas -= perdida;
             partida.variacionMonedasEvento = -perdida;
 
@@ -226,6 +236,12 @@ void AplicarOpcionCaos(
         case CAOS_PIERDE_TODAS:
         {
             int perdida = estado.monedas;
+
+            if (perdida > 0 && EscudoAbsorbePerdida(partida, jugador))
+            {
+                std::snprintf(resumen, capacidad, "¡EL ESCUDO DE J%d BLOQUEA LA PÉRDIDA DE MONEDAS!", jugador + 1);
+                return;
+            }
 
             estado.monedas = 0;
             partida.variacionMonedasEvento = -perdida;
@@ -245,11 +261,18 @@ void AplicarOpcionCaos(
         {
             int lista[MAX_PARTICIPANTES];
             int cantidad = ListarJugadoresEvento(partida, lista);
+            int bloqueados = 0;
 
             for (int i = 0; i < cantidad; i++)
             {
                 EstadoJugadorPartidaTablero& otro = partida.jugadores[lista[i]];
                 int perdida = MinimoEvento(CAOS_MONEDAS_GLOBAL, otro.monedas);
+
+                if (perdida > 0 && EscudoAbsorbePerdida(partida, lista[i]))
+                {
+                    perdida = 0;
+                    bloqueados++;
+                }
 
                 otro.monedas -= perdida;
 
@@ -259,11 +282,23 @@ void AplicarOpcionCaos(
                 }
             }
 
-            std::snprintf(
-                resumen, capacidad,
-                "¡CAOS GLOBAL! TODOS PIERDEN HASTA %d MONEDAS",
-                CAOS_MONEDAS_GLOBAL
-            );
+            if (bloqueados > 0)
+            {
+                std::snprintf(
+                    resumen, capacidad,
+                    "¡CAOS GLOBAL! -%d A TODOS (%d ESCUDO%s LO BLOQUEA%s)",
+                    CAOS_MONEDAS_GLOBAL, bloqueados,
+                    bloqueados == 1 ? "" : "S", bloqueados == 1 ? "" : "N"
+                );
+            }
+            else
+            {
+                std::snprintf(
+                    resumen, capacidad,
+                    "¡CAOS GLOBAL! TODOS PIERDEN HASTA %d MONEDAS",
+                    CAOS_MONEDAS_GLOBAL
+                );
+            }
             return;
         }
 
@@ -434,6 +469,13 @@ void AplicarIntercambio(
         int destino = da ? b : a;
         int disponible = da ? totalA : totalB;
         int movido = MinimoEvento(evento.cantidad, disponible);
+
+        if (movido > 0 && EscudoAbsorbePerdida(partida, origen))
+        {
+            evento.movido = 0;
+            std::snprintf(texto, capacidad, "¡EL ESCUDO DE J%d BLOQUEA LA ENTREGA!", origen + 1);
+            return;
+        }
 
         evento.movido = movido;
 
@@ -653,6 +695,10 @@ void IniciarEventoInteractivo(
             IniciarAbejas(partida, evento);
             break;
 
+        case EVENTO_INTERACTIVO_TIENDA:
+            IniciarTienda(partida, jugador, evento.tienda);
+            break;
+
         case EVENTO_INTERACTIVO_NINGUNO:
             break;
     }
@@ -817,11 +863,25 @@ static void ElegirLadoObjetos(
     else
     {
         int perdida = MinimoEvento(OBJETO_MALO_MONEDAS, estado.monedas);
+        bool escudo = perdida > 0 && EscudoAbsorbePerdida(partida, evento.jugador);
+
+        if (escudo)
+        {
+            perdida = 0;
+        }
 
         estado.monedas -= perdida;
         partida.variacionMonedasEvento = -perdida;
 
-        if (perdida > 0)
+        if (escudo)
+        {
+            std::snprintf(
+                evento.resumen, sizeof(evento.resumen),
+                "¡J%d ATRAPA EL OBJETO MALO, PERO SU ESCUDO LO BLOQUEA!",
+                evento.jugador + 1
+            );
+        }
+        else if (perdida > 0)
         {
             std::snprintf(
                 evento.resumen, sizeof(evento.resumen),
@@ -1009,13 +1069,27 @@ void ActualizarEventoInteractivo(
             ActualizarAbejas(partida, evento);
             break;
 
+        case EVENTO_INTERACTIVO_TIENDA:
+            ActualizarTienda(
+                partida, evento.jugador, evento.tienda, deltaTime,
+                esAutomatico, puedeDecidir, entrada
+            );
+
+            if (evento.tienda.terminado)
+            {
+                evento.terminado = true;
+            }
+            break;
+
         case EVENTO_INTERACTIVO_NINGUNO:
             evento.terminado = true;
             break;
     }
 
     // Red de seguridad: un evento no puede durar para siempre.
-    if (!evento.terminado && evento.tiempoTotal > LIMITE_TOTAL_EVENTO)
+    float limiteTotal = evento.tipo == EVENTO_INTERACTIVO_TIENDA ? 4.0f * LIMITE_TOTAL_EVENTO : LIMITE_TOTAL_EVENTO;
+
+    if (!evento.terminado && evento.tiempoTotal > limiteTotal)
     {
         evento.terminado = true;
     }
@@ -1051,6 +1125,9 @@ PedidoEventoInteractivo PedidoDelEventoInteractivo(const PartidaTablero& partida
             if (evento.paso == PASO_OBJETOS_ELIGE) return PEDIDO_EVENTO_ELEGIR_OBJETO;
             if (evento.paso == PASO_OBJETOS_REVELA) return PEDIDO_EVENTO_CONTINUAR;
             break;
+
+        case EVENTO_INTERACTIVO_TIENDA:
+            return PEDIDO_EVENTO_TIENDA;
 
         case EVENTO_INTERACTIVO_ABEJAS:
         case EVENTO_INTERACTIVO_NINGUNO:
@@ -1134,6 +1211,10 @@ void TextoEventoInteractivo(
 
         case EVENTO_INTERACTIVO_ABEJAS:
             std::snprintf(destino, capacidad, "%s", evento.resumen);
+            return;
+
+        case EVENTO_INTERACTIVO_TIENDA:
+            TextoTienda(partida, evento.tienda, evento.jugador, destino, capacidad);
             return;
 
         case EVENTO_INTERACTIVO_NINGUNO:
@@ -1659,6 +1740,10 @@ void DibujarEventoInteractivo2D(const PartidaTablero& partida)
 
         case EVENTO_INTERACTIVO_OBJETOS_ARBOL:
             DibujarObjetos2D(partida, estilo, entrada);
+            break;
+
+        case EVENTO_INTERACTIVO_TIENDA:
+            DibujarTienda2D(partida, evento.tienda, evento.jugador, evento.tiempoTotal);
             break;
 
         case EVENTO_INTERACTIVO_ABEJAS:

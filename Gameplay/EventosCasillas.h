@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Gameplay/TiendaTablero.h"
 #include "Systems/Input.h"
 #include "UI/RuletaOpciones.h"
 
@@ -37,7 +38,8 @@ enum TipoEventoInteractivo
     EVENTO_INTERACTIVO_CAOS,
     EVENTO_INTERACTIVO_INTERCAMBIO,
     EVENTO_INTERACTIVO_OBJETOS_ARBOL,
-    EVENTO_INTERACTIVO_ABEJAS
+    EVENTO_INTERACTIVO_ABEJAS,
+    EVENTO_INTERACTIVO_TIENDA
 };
 
 
@@ -48,6 +50,7 @@ enum PedidoEventoInteractivo
     PEDIDO_EVENTO_GIRAR,
     PEDIDO_EVENTO_DADOS,
     PEDIDO_EVENTO_ELEGIR_OBJETO,
+    PEDIDO_EVENTO_TIENDA,
     PEDIDO_EVENTO_CONTINUAR
 };
 
@@ -144,6 +147,9 @@ struct EventoInteractivo
     int ladoBueno = 0;
     int ladoResaltado = 0;
     int ladoElegido = -1;
+
+    // TIENDA
+    EstadoTienda tienda;
 
     // ABEJAS
     Vector3 origenVuelo{};
