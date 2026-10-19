@@ -167,6 +167,81 @@ void DibujarCintaSuelo(
 
 
 //==================================================
+// SIMBOLOS DE CASILLA
+//==================================================
+//
+// Los tipos nuevos (regalo, caos, intercambio, duelo, tienda, evento) se
+// dibujan con segmentos planos (cajas finas) relativos al centro de la
+// casilla. Lo comparten la version por frame y la version en malla: solo
+// cambia como se emite cada segmento.
+
+template <typename F>
+static void EmitirSimboloCasilla(
+    TipoCasilla tipo,
+    F segmento
+)
+{
+    switch (tipo)
+    {
+        case CASILLA_REGALO:
+            // Caja: tapa ancha, cuerpo con cinta vertical y lazo.
+            segmento(-0.27f, -0.08f, 0.27f, -0.08f, 0.13f);
+            segmento(-0.21f, -0.02f, -0.21f, 0.28f, 0.08f);
+            segmento(0.21f, -0.02f, 0.21f, 0.28f, 0.08f);
+            segmento(-0.21f, 0.27f, 0.21f, 0.27f, 0.08f);
+            segmento(0.0f, -0.08f, 0.0f, 0.27f, 0.09f);
+            segmento(0.0f, -0.14f, -0.15f, -0.29f, 0.07f);
+            segmento(0.0f, -0.14f, 0.15f, -0.29f, 0.07f);
+            break;
+
+        case CASILLA_CAOS:
+            // Rayo en zigzag.
+            segmento(0.14f, -0.30f, -0.10f, 0.02f, 0.10f);
+            segmento(-0.16f, 0.02f, 0.16f, 0.02f, 0.09f);
+            segmento(0.10f, 0.02f, -0.14f, 0.30f, 0.10f);
+            break;
+
+        case CASILLA_INTERCAMBIO:
+            // Dos flechas opuestas.
+            segmento(-0.28f, -0.13f, 0.26f, -0.13f, 0.08f);
+            segmento(0.29f, -0.13f, 0.12f, -0.28f, 0.08f);
+            segmento(0.29f, -0.13f, 0.12f, 0.02f, 0.08f);
+            segmento(0.28f, 0.13f, -0.26f, 0.13f, 0.08f);
+            segmento(-0.29f, 0.13f, -0.12f, 0.28f, 0.08f);
+            segmento(-0.29f, 0.13f, -0.12f, -0.02f, 0.08f);
+            break;
+
+        case CASILLA_DUELO:
+            // Dos espadas cruzadas con guarda.
+            segmento(-0.26f, -0.30f, 0.26f, 0.22f, 0.10f);
+            segmento(-0.26f, 0.22f, 0.26f, -0.30f, 0.10f);
+            segmento(0.09f, 0.31f, 0.31f, 0.09f, 0.08f);
+            segmento(-0.09f, 0.31f, -0.31f, 0.09f, 0.08f);
+            break;
+
+        case CASILLA_TIENDA:
+            // Signo "$".
+            segmento(-0.15f, -0.18f, 0.15f, -0.18f, 0.08f);
+            segmento(-0.15f, -0.18f, -0.15f, 0.0f, 0.08f);
+            segmento(-0.15f, 0.0f, 0.15f, 0.0f, 0.08f);
+            segmento(0.15f, 0.0f, 0.15f, 0.18f, 0.08f);
+            segmento(-0.15f, 0.18f, 0.15f, 0.18f, 0.08f);
+            segmento(0.0f, -0.31f, 0.0f, 0.31f, 0.06f);
+            break;
+
+        case CASILLA_EVENTO:
+            // Signo de exclamacion.
+            segmento(0.0f, -0.31f, 0.0f, -0.02f, 0.12f);
+            segmento(0.0f, 0.25f, 0.0f, 0.27f, 0.13f);
+            break;
+
+        default:
+            break;
+    }
+}
+
+
+//==================================================
 // CASILLA TEMATICA
 //==================================================
 
@@ -303,6 +378,28 @@ void DibujarCasillaTematica(
         rlRotatef(45.0f, 0.0f, 1.0f, 0.0f);
         DrawCubeV(Vector3{ 0.0f, 0.0f, 0.0f }, Vector3{ 0.30f, 0.04f, 0.30f }, simbolo);
         rlPopMatrix();
+    }
+    else
+    {
+        EmitirSimboloCasilla(
+            casilla.tipo,
+            [&](float x1, float z1, float x2, float z2, float ancho)
+            {
+                float dx = x2 - x1;
+                float dz = z2 - z1;
+                float largo = std::sqrt(dx * dx + dz * dz);
+
+                rlPushMatrix();
+                rlTranslatef(p.x + (x1 + x2) * 0.5f, ys, p.z + (z1 + z2) * 0.5f);
+                rlRotatef(-std::atan2(dz, dx) * RAD2DEG, 0.0f, 1.0f, 0.0f);
+                DrawCubeV(
+                    Vector3{ 0.0f, 0.0f, 0.0f },
+                    Vector3{ largo + ancho * 0.9f, 0.04f, ancho },
+                    simbolo
+                );
+                rlPopMatrix();
+            }
+        );
     }
 }
 
@@ -497,5 +594,31 @@ void AgregarCasillaTematicaMalla(
         incrustacion.EstablecerTransformacion(giro);
         incrustacion.Caja(Vector3{ 0.0f, 0.0f, 0.0f }, Vector3{ 0.30f, 0.04f, 0.30f }, simbolo);
         incrustacion.QuitarTransformacion();
+    }
+    else
+    {
+        EmitirSimboloCasilla(
+            casilla.tipo,
+            [&](float x1, float z1, float x2, float z2, float ancho)
+            {
+                float dx = x2 - x1;
+                float dz = z2 - z1;
+                float largo = std::sqrt(dx * dx + dz * dz);
+
+                TransformacionMalla giro;
+                giro.tx = p.x + (x1 + x2) * 0.5f;
+                giro.ty = ys;
+                giro.tz = p.z + (z1 + z2) * 0.5f;
+                giro.giroY = -std::atan2(dz, dx) * RAD2DEG;
+
+                incrustacion.EstablecerTransformacion(giro);
+                incrustacion.Caja(
+                    Vector3{ 0.0f, 0.0f, 0.0f },
+                    Vector3{ largo + ancho * 0.9f, 0.04f, ancho },
+                    simbolo
+                );
+                incrustacion.QuitarTransformacion();
+            }
+        );
     }
 }
