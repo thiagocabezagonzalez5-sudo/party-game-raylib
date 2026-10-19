@@ -92,9 +92,23 @@ struct DefinicionTablero
 
     // Al caer en una casilla, antes de la regla comun. Devuelve true
     // si el hook resolvio todo (monedas, sonido y partida.textoEvento).
+    // Casilla EVENTO: el tablero define aqui SU evento. Para uno con
+    // presentacion e interaccion llama a IniciarEventoInteractivo()
+    // (Gameplay/EventosCasillas.h) y devuelve true; PartidaTablero pasa
+    // a la fase de evento interactivo y despues termina el turno.
     bool (*ResolverCasilla)(
         PartidaTablero& partida,
         int participante
+    ) = nullptr;
+
+    // Texto de la leyenda del HUD para un tipo de casilla cuando el tablero
+    // cambia su valor comun (p. ej. "+5" con la floracion). Devuelve true
+    // si escribio el texto; false = se usa el valor comun.
+    bool (*TextoLeyendaCasilla)(
+        const PartidaTablero& partida,
+        TipoCasilla tipo,
+        char* texto,
+        int capacidad
     ) = nullptr;
 
     // Cada frame (animacion de gimmickAnim hacia gimmickActivo, etc.).

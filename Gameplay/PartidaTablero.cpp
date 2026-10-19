@@ -230,6 +230,8 @@ static void PrepararInicioTurno(
     partida.variacionMonedasEvento = 0;
     partida.jugadorIntercambioEvento = -1;
     partida.textoEvento[0] = '\0';
+    partida.evento = EventoInteractivo{};
+    partida.movimientoDeEvento = false;
     partida.fase = FASE_PARTIDA_TABLERO_ESPERANDO_DADO;
     partida.tiempoFase = 0.0f;
 }
@@ -529,34 +531,8 @@ static void ActualizarMovimientoTableroFinal(
 }
 
 
-static int ElegirRivalIntercambio(
-    const PartidaTablero& partida,
-    int indiceParticipante
-)
-{
-    int candidatos[MAX_PARTICIPANTES]{};
-    int cantidad = 0;
-
-    for (int i = 0; i < partida.cantidadJugadores; i++)
-    {
-        int indice = partida.ordenParticipantes[i];
-
-        if (indice != indiceParticipante)
-        {
-            candidatos[cantidad] = indice;
-            cantidad++;
-        }
-    }
-
-    if (cantidad <= 0)
-    {
-        return -1;
-    }
-
-    return candidatos[GetRandomValue(0, cantidad - 1)];
-}
-
-
+// ESPECIAL: bonificacion o multa (el intercambio de monedas ahora es de
+// la casilla INTERCAMBIO).
 static void ResolverEventoEspecialTablero(
     PartidaTablero& partida,
     int indiceParticipante
@@ -565,45 +541,66 @@ static void ResolverEventoEspecialTablero(
     EstadoJugadorPartidaTablero& jugador =
         partida.jugadores[indiceParticipante];
 
-    int evento = GetRandomValue(0, 2);
-
-    if (evento == 0)
+    if (GetRandomValue(0, 1) == 0)
     {
         partida.ultimoEventoEspecial = EVENTO_TABLERO_BONIFICACION;
-        partida.variacionMonedasEvento = 6;
-        jugador.monedas += 6;
+        partida.variacionMonedasEvento = MONEDAS_ESPECIAL_BONIFICACION;
+        jugador.monedas += MONEDAS_ESPECIAL_BONIFICACION;
     }
-    else if (evento == 1)
+    else
     {
         partida.ultimoEventoEspecial = EVENTO_TABLERO_MULTA;
 
-        int perdida = jugador.monedas < 4
+        int perdida = jugador.monedas < MONEDAS_ESPECIAL_MULTA
             ? jugador.monedas
-            : 4;
+            : MONEDAS_ESPECIAL_MULTA;
 
         jugador.monedas -= perdida;
         partida.variacionMonedasEvento = -perdida;
     }
-    else
-    {
-        int rival =
-            ElegirRivalIntercambio(partida, indiceParticipante);
+}
 
-        if (rival < 0)
-        {
-            partida.ultimoEventoEspecial = EVENTO_TABLERO_BONIFICACION;
-            partida.variacionMonedasEvento = 4;
-            jugador.monedas += 4;
-            return;
-        }
 
-        partida.ultimoEventoEspecial = EVENTO_TABLERO_INTERCAMBIO;
-        partida.jugadorIntercambioEvento = rival;
+// REGALO: lo que entrega la casilla. Tabla de premios; la etapa de
+// objetos agrega aqui los suyos (un premio de tipo objeto) sin tocar el
+// resto de la resolucion.
+struct PremioRegalo
+{
+    int monedas;
+};
 
-        int temporal = jugador.monedas;
-        jugador.monedas = partida.jugadores[rival].monedas;
-        partida.jugadores[rival].monedas = temporal;
-    }
+static const PremioRegalo PREMIOS_REGALO[] =
+{
+    { MONEDAS_REGALO }
+};
+
+static void ResolverRegaloCasilla(
+    PartidaTablero& partida,
+    int indiceParticipante
+)
+{
+    EstadoJugadorPartidaTablero& jugador =
+        partida.jugadores[indiceParticipante];
+
+    const int cantidadPremios =
+        (int)(sizeof(PREMIOS_REGALO) / sizeof(PREMIOS_REGALO[0]));
+
+    const PremioRegalo& premio =
+        PREMIOS_REGALO[GetRandomValue(0, cantidadPremios - 1)];
+
+    jugador.monedas += premio.monedas;
+    partida.variacionMonedasEvento = premio.monedas;
+
+    std::snprintf(
+        partida.textoEvento,
+        sizeof(partida.textoEvento),
+        "¡REGALO! J%d RECIBE %d MONEDAS",
+        indiceParticipante + 1,
+        premio.monedas
+    );
+
+    ReproducirSonidoTablero(partida, SONIDO_RECOGER_OBJETO);
+    ReproducirSonidoTablero(partida, SONIDO_MONEDA);
 }
 
 
@@ -634,6 +631,22 @@ static void ResolverEventoCasillaTableroFinal(
     partida.variacionMonedasEvento = 0;
     partida.jugadorIntercambioEvento = -1;
     partida.textoEvento[0] = '\0';
+    partida.evento = EventoInteractivo{};
+
+    // Tras un movimiento causado por un evento no se encadena otro evento
+    // de tablero: la casilla EVENTO queda sin efecto esa vez.
+    if (
+        partida.movimientoDeEvento &&
+        casilla->tipo == CASILLA_EVENTO
+    )
+    {
+        std::snprintf(
+            partida.textoEvento,
+            sizeof(partida.textoEvento),
+            "CASILLA DE EVENTO: SIN EFECTO TRAS UN EVENTO"
+        );
+        return;
+    }
 
     // Reglas propias del tablero (gimmick) antes de la regla comun.
     if (
@@ -650,15 +663,15 @@ static void ResolverEventoCasillaTableroFinal(
 
     if (casilla->tipo == CASILLA_POSITIVA)
     {
-        jugador.monedas += 3;
-        partida.variacionMonedasEvento = 3;
+        jugador.monedas += MONEDAS_CASILLA_POSITIVA;
+        partida.variacionMonedasEvento = MONEDAS_CASILLA_POSITIVA;
         ReproducirSonidoTablero(partida, SONIDO_CASILLA_POSITIVA);
     }
     else if (casilla->tipo == CASILLA_NEGATIVA)
     {
-        int perdida = jugador.monedas < 3
+        int perdida = jugador.monedas < MONEDAS_CASILLA_NEGATIVA
             ? jugador.monedas
-            : 3;
+            : MONEDAS_CASILLA_NEGATIVA;
 
         jugador.monedas -= perdida;
         partida.variacionMonedasEvento = -perdida;
@@ -672,6 +685,61 @@ static void ResolverEventoCasillaTableroFinal(
             indiceParticipante
         );
     }
+    else if (casilla->tipo == CASILLA_REGALO)
+    {
+        ResolverRegaloCasilla(partida, indiceParticipante);
+    }
+    else if (casilla->tipo == CASILLA_CAOS)
+    {
+        IniciarEventoInteractivo(
+            partida,
+            indiceParticipante,
+            EVENTO_INTERACTIVO_CAOS
+        );
+    }
+    else if (casilla->tipo == CASILLA_INTERCAMBIO)
+    {
+        IniciarEventoInteractivo(
+            partida,
+            indiceParticipante,
+            EVENTO_INTERACTIVO_INTERCAMBIO
+        );
+    }
+    else if (casilla->tipo == CASILLA_EVENTO)
+    {
+        // El hook del tablero no resolvio el evento: este tablero no
+        // define uno propio.
+        std::snprintf(
+            partida.textoEvento,
+            sizeof(partida.textoEvento),
+            "EVENTO: ESTE TABLERO NO TIENE EVENTO PROPIO"
+        );
+    }
+}
+
+
+// Cierra el evento interactivo: avanza las casillas que haya ganado o
+// termina el turno.
+static void ContinuarTrasEventoInteractivo(
+    PartidaTablero& partida
+)
+{
+    int pasos = partida.evento.pasosExtra;
+
+    partida.evento = EventoInteractivo{};
+
+    if (pasos > 0)
+    {
+        // Usa el movimiento normal: bifurcaciones, trofeo y efecto de la
+        // casilla de llegada se resuelven como en cualquier tirada.
+        partida.movimientoDeEvento = true;
+        partida.pasosPendientes = pasos;
+        PrepararSiguientePasoTableroFinal(partida);
+        return;
+    }
+
+    partida.fase = FASE_PARTIDA_TABLERO_FIN_TURNO;
+    partida.tiempoFase = 0.0f;
 }
 
 
@@ -736,6 +804,8 @@ void PartidaTablero::Reiniciar()
     ultimoEventoEspecial = EVENTO_TABLERO_NINGUNO;
     variacionMonedasEvento = 0;
     jugadorIntercambioEvento = -1;
+    evento = EventoInteractivo{};
+    movimientoDeEvento = false;
     minijuegoSolicitado = false;
     salidaSolicitada = false;
 
@@ -1180,7 +1250,7 @@ void PartidaTablero::Actualizar(
         else if (puedeDecidir)
         {
             InputSeleccionParticipante entrada =
-                LeerInputSeleccionParticipante(participante);
+                lectorEntrada(participante);
 
             lanzar = entrada.confirmar;
         }
@@ -1267,7 +1337,7 @@ void PartidaTablero::Actualizar(
         }
 
         InputSeleccionParticipante entrada =
-            LeerInputSeleccionParticipante(participante);
+            lectorEntrada(participante);
 
         bool direccionPresionada =
             entrada.izquierda ||
@@ -1361,7 +1431,7 @@ void PartidaTablero::Actualizar(
         }
 
         InputSeleccionParticipante entrada =
-            LeerInputSeleccionParticipante(participante);
+            lectorEntrada(participante);
 
         if (entrada.confirmar || IsKeyPressed(KEY_Y))
         {
@@ -1386,12 +1456,43 @@ void PartidaTablero::Actualizar(
         if (tiempoFase <= deltaTime + 0.0001f)
         {
             ResolverEventoCasillaTableroFinal(*this);
+
+            // CAOS, INTERCAMBIO y los eventos del tablero siguen en su
+            // propia fase con presentacion e interaccion.
+            if (evento.activo)
+            {
+                fase = FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO;
+                tiempoFase = 0.0f;
+                return;
+            }
         }
 
         if (tiempoFase >= 1.35f)
         {
             fase = FASE_PARTIDA_TABLERO_FIN_TURNO;
             tiempoFase = 0.0f;
+        }
+    }
+    else if (fase == FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO)
+    {
+        InputSeleccionParticipante entrada{};
+
+        if (puedeDecidir)
+        {
+            entrada = lectorEntrada(participante);
+        }
+
+        ActualizarEventoInteractivo(
+            *this,
+            deltaTime,
+            esBot,
+            puedeDecidir,
+            entrada
+        );
+
+        if (evento.terminado || !evento.activo)
+        {
+            ContinuarTrasEventoInteractivo(*this);
         }
     }
     else if (fase == FASE_PARTIDA_TABLERO_FIN_TURNO)
@@ -2369,6 +2470,10 @@ static void TextoFaseHud(
         (
             partida.fase == FASE_PARTIDA_TABLERO_DECISION_TROFEO &&
             partida.compraTrofeoDisponible
+        ) ||
+        (
+            partida.fase == FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO &&
+            PedidoDelEventoInteractivo(partida) != PEDIDO_EVENTO_NADA
         );
 
     if (sinMando && fasePideDecidir)
@@ -2417,6 +2522,10 @@ static void TextoFaseHud(
 
         case FASE_PARTIDA_TABLERO_EVENTO_CASILLA:
             TextoEventoHud(partida, turno, destino, capacidad);
+            return;
+
+        case FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO:
+            TextoEventoInteractivo(partida, destino, capacidad);
             return;
 
         case FASE_PARTIDA_TABLERO_FIN_TURNO:
@@ -2480,6 +2589,37 @@ static void TextoAyudaHud(
             pausa
         );
         return;
+    }
+
+    if (partida.fase == FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO && decide)
+    {
+        switch (PedidoDelEventoInteractivo(partida))
+        {
+            case PEDIDO_EVENTO_GIRAR:
+                std::snprintf(destino, capacidad, "%s: GIRAR LA RULETA   |   %s", TextoConfirmarHud(participante), pausa);
+                return;
+
+            case PEDIDO_EVENTO_DADOS:
+                std::snprintf(destino, capacidad, "%s: TIRAR LOS DADOS   |   %s", TextoConfirmarHud(participante), pausa);
+                return;
+
+            case PEDIDO_EVENTO_ELEGIR_OBJETO:
+                std::snprintf(
+                    destino, capacidad,
+                    "%s: ELEGIR OBJETO   |   %s: ATRAPAR   |   %s",
+                    TextoElegirHud(participante),
+                    TextoConfirmarHud(participante),
+                    pausa
+                );
+                return;
+
+            case PEDIDO_EVENTO_CONTINUAR:
+                std::snprintf(destino, capacidad, "%s: CONTINUAR   |   %s", TextoConfirmarHud(participante), pausa);
+                return;
+
+            case PEDIDO_EVENTO_NADA:
+                break;
+        }
     }
 
     std::snprintf(destino, capacidad, "%s", pausa);
@@ -3485,33 +3625,185 @@ static void DibujarTablonTrofeoHud(
 }
 
 
-// Leyenda de casillas y precio del trofeo (abajo a la derecha).
+// Texto de la leyenda de un tipo de casilla con su valor REAL: primero lo
+// que diga el tablero (p. ej. la floracion) y, si no, el valor comun.
+static void TextoLeyendaCasillaHud(
+    const PartidaTablero& partida,
+    TipoCasilla tipo,
+    char* texto,
+    int capacidad
+)
+{
+    if (
+        partida.definicion != nullptr &&
+        partida.definicion->TextoLeyendaCasilla != nullptr &&
+        partida.definicion->TextoLeyendaCasilla(partida, tipo, texto, capacidad)
+    )
+    {
+        return;
+    }
+
+    switch (tipo)
+    {
+        case CASILLA_POSITIVA:
+            std::snprintf(texto, capacidad, "+%d", MONEDAS_CASILLA_POSITIVA);
+            return;
+
+        case CASILLA_NEGATIVA:
+            std::snprintf(texto, capacidad, "-%d", MONEDAS_CASILLA_NEGATIVA);
+            return;
+
+        case CASILLA_ESPECIAL:
+            // Un tablero con regla propia para ESPECIAL (ResolverCasilla)
+            // debe describirla con TextoLeyendaCasilla; si no, solo "AZAR".
+            if (
+                partida.definicion == nullptr ||
+                partida.definicion->ResolverCasilla == nullptr ||
+                partida.definicion->TextoLeyendaCasilla != nullptr
+            )
+            {
+                std::snprintf(texto, capacidad, "AZAR +%d/-%d", MONEDAS_ESPECIAL_BONIFICACION, MONEDAS_ESPECIAL_MULTA);
+            }
+            else
+            {
+                std::snprintf(texto, capacidad, "AZAR");
+            }
+            return;
+
+        case CASILLA_REGALO:
+            std::snprintf(texto, capacidad, "REGALO +%d", MONEDAS_REGALO);
+            return;
+
+        case CASILLA_CAOS:
+            std::snprintf(texto, capacidad, "CAOS");
+            return;
+
+        case CASILLA_INTERCAMBIO:
+            std::snprintf(texto, capacidad, "TRUEQUE");
+            return;
+
+        case CASILLA_DUELO:
+            std::snprintf(texto, capacidad, "DUELO");
+            return;
+
+        case CASILLA_TIENDA:
+            std::snprintf(texto, capacidad, "TIENDA");
+            return;
+
+        case CASILLA_EVENTO:
+            std::snprintf(texto, capacidad, "EVENTO");
+            return;
+
+        case CASILLA_NEUTRA:
+        case CANTIDAD_TIPOS_CASILLA:
+            break;
+    }
+
+    texto[0] = '\0';
+}
+
+
+// Leyenda de las casillas PRESENTES en este tablero y precio del trofeo
+// (abajo a la derecha). Las entradas se acomodan en filas de ancho
+// limitado para quedar a la derecha del cartel del turno sin tapar el
+// tablero.
 static void DibujarLeyendaHud(
     const EstiloUI& estilo,
     const PartidaTablero& partida
 )
 {
-    const TipoCasilla tipos[3] = { CASILLA_POSITIVA, CASILLA_NEGATIVA, CASILLA_ESPECIAL };
-    const char* nombres[3] = { "+3", "-3", "EVENTO" };
-
-    int tamano = TamanoTexto(UI_TEXTO_PEQUENO - 2);
-    const char* precio = TextFormat("%d", partida.costoTrofeo);
-
-    // Ancho: (punto + texto) por casilla, copa + precio, y aire.
-    float ancho = Px(12.0f);
-
-    for (int i = 0; i < 3; i++)
+    const TipoCasilla orden[] =
     {
-        ancho += Px(16.0f) + MeasureText(nombres[i], tamano) + Px(12.0f);
+        CASILLA_POSITIVA, CASILLA_NEGATIVA, CASILLA_ESPECIAL, CASILLA_REGALO,
+        CASILLA_CAOS, CASILLA_INTERCAMBIO, CASILLA_DUELO, CASILLA_TIENDA,
+        CASILLA_EVENTO
+    };
+
+    const int cantidadOrden = (int)(sizeof(orden) / sizeof(orden[0]));
+
+    bool presentes[CANTIDAD_TIPOS_CASILLA] = {};
+
+    for (int i = 0; i < partida.tablero.cantidadCasillas; i++)
+    {
+        int tipo = (int)partida.tablero.casillas[i].tipo;
+
+        if (tipo >= 0 && tipo < CANTIDAD_TIPOS_CASILLA)
+        {
+            presentes[tipo] = true;
+        }
     }
 
-    ancho += Px(18.0f) + MeasureText(precio, tamano) + Px(12.0f);
+    // Entradas: tipos presentes y, al final, el precio del trofeo.
+    struct EntradaLeyenda
+    {
+        TipoCasilla tipo;
+        char texto[24];
+        float ancho;
+    };
+
+    EntradaLeyenda entradas[CANTIDAD_TIPOS_CASILLA + 1] = {};
+    int cantidad = 0;
+    int tamano = TamanoTexto(UI_TEXTO_PEQUENO - 2);
+
+    for (int i = 0; i < cantidadOrden; i++)
+    {
+        if (!presentes[orden[i]])
+        {
+            continue;
+        }
+
+        EntradaLeyenda& entrada = entradas[cantidad++];
+
+        entrada.tipo = orden[i];
+        TextoLeyendaCasillaHud(partida, orden[i], entrada.texto, (int)sizeof(entrada.texto));
+        entrada.ancho = Px(16.0f) + (float)MeasureText(entrada.texto, tamano) + Px(12.0f);
+    }
+
+    EntradaLeyenda& trofeo = entradas[cantidad++];
+
+    trofeo.tipo = CASILLA_NEUTRA;
+    std::snprintf(trofeo.texto, sizeof(trofeo.texto), "%d", partida.costoTrofeo);
+    trofeo.ancho = Px(18.0f) + (float)MeasureText(trofeo.texto, tamano) + Px(12.0f);
+
+    // Reparto en filas: el cartel del turno termina en x = 910 (ref), asi
+    // que la leyenda ocupa a lo sumo los 340 de la derecha.
+    const float anchoMaximo = Px(340.0f) - Px(12.0f);
+    const float altoFila = Px(20.0f);
+
+    int filaDe[CANTIDAD_TIPOS_CASILLA + 1] = {};
+    float anchoFila[CANTIDAD_TIPOS_CASILLA + 1] = {};
+    int filas = 1;
+
+    for (int i = 0; i < cantidad; i++)
+    {
+        if (anchoFila[filas - 1] > 0.0f && anchoFila[filas - 1] + entradas[i].ancho > anchoMaximo)
+        {
+            filas++;
+        }
+
+        filaDe[i] = filas - 1;
+        anchoFila[filas - 1] += entradas[i].ancho;
+    }
+
+    float ancho = 0.0f;
+
+    for (int f = 0; f < filas; f++)
+    {
+        if (anchoFila[f] > ancho)
+        {
+            ancho = anchoFila[f];
+        }
+    }
+
+    ancho += Px(12.0f);
+
+    float alto = altoFila * (float)filas + Px(8.0f);
 
     Rectangle rect = {
         XHud(UI_REF_ANCHO - 14.0f) - ancho,
-        YAbajoHud(636.0f),
+        YAbajoHud(664.0f) - alto,
         ancho,
-        Px(28.0f)
+        alto
     };
 
     DrawRectangleRec(
@@ -3521,21 +3813,34 @@ static void DibujarLeyendaHud(
     DibujarNueveCortes(estilo.placa, 8, rect, EscalaUI(), WHITE);
     DrawRectangleLinesEx(rect, GrosorLineaHud(1.0f), Fade(UI_MADERA_OSCURA, 0.6f));
 
-    float x = rect.x + Px(12.0f);
-    float cy = rect.y + rect.height * 0.5f;
+    float xFila[CANTIDAD_TIPOS_CASILLA + 1] = {};
 
-    for (int i = 0; i < 3; i++)
+    for (int f = 0; f < filas; f++)
     {
-        DrawCircleV(Vector2{ x + Px(5.0f), cy }, Px(6.0f), UI_TINTA);
-        DrawCircleV(Vector2{ x + Px(5.0f), cy }, Px(5.0f), ObtenerColorCasilla(tipos[i]));
-        x += Px(16.0f);
-        DrawText(nombres[i], (int)x, (int)(cy - tamano * 0.5f), tamano, UI_TINTA);
-        x += MeasureText(nombres[i], tamano) + Px(12.0f);
+        xFila[f] = rect.x + Px(12.0f);
     }
 
-    DibujarTrofeoUI(Vector2{ x + Px(6.0f), cy }, 14.0f);
-    x += Px(18.0f);
-    DrawText(precio, (int)x, (int)(cy - tamano * 0.5f), tamano, UI_TINTA);
+    for (int i = 0; i < cantidad; i++)
+    {
+        float x = xFila[filaDe[i]];
+        float cy = rect.y + Px(4.0f) + altoFila * ((float)filaDe[i] + 0.5f);
+        bool esTrofeo = i == cantidad - 1;
+
+        if (esTrofeo)
+        {
+            DibujarTrofeoUI(Vector2{ x + Px(6.0f), cy }, 14.0f);
+            x += Px(18.0f);
+        }
+        else
+        {
+            DrawCircleV(Vector2{ x + Px(5.0f), cy }, Px(6.0f), UI_TINTA);
+            DrawCircleV(Vector2{ x + Px(5.0f), cy }, Px(5.0f), ObtenerColorCasilla(entradas[i].tipo));
+            x += Px(16.0f);
+        }
+
+        DrawText(entradas[i].texto, (int)x, (int)(cy - (float)tamano * 0.5f), tamano, UI_TINTA);
+        xFila[filaDe[i]] += entradas[i].ancho;
+    }
 }
 
 
@@ -3858,6 +4163,10 @@ static void DibujarHudTablero(
     DibujarEtiquetasRutaHud(estilo, partida);
     DibujarDadoHud(estilo, partida);
 
+    // Eventos interactivos (ruleta, dados, objetos): velo y escena propia,
+    // bajo el tendedero para que las monedas sigan a la vista.
+    DibujarEventoInteractivo2D(partida);
+
     DibujarTendederoHud(estilo, partida);
 
     if (turno >= 0)
@@ -3913,6 +4222,7 @@ void DibujarEscenaTablero3D(
     DibujarRutaSeleccionadaTableroFinal(partida);
     DibujarFichasTableroFinal(partida);
     DibujarEfectosTrofeoTableroFinal(partida);
+    DibujarEventosCasillas3D(partida);
 }
 
 

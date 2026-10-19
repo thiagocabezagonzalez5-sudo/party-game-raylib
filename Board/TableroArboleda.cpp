@@ -3671,6 +3671,22 @@ static bool ResolverCasillaArboleda(
     const Casilla* casilla =
         partida.tablero.ObtenerCasilla(jugador.casillaActual);
 
+    // EVENTO de la isla: el Gran Roble tira dos objetos o las abejas
+    // llevan al jugador al inicio (uno de los dos, al azar).
+    if (casilla != nullptr && casilla->tipo == CASILLA_EVENTO)
+    {
+        IniciarEventoInteractivo(
+            partida,
+            participante,
+            GetRandomValue(0, 1) == 0
+                ? EVENTO_INTERACTIVO_OBJETOS_ARBOL
+                : EVENTO_INTERACTIVO_ABEJAS,
+            "EL GRAN ROBLE"
+        );
+
+        return true;
+    }
+
     if (
         casilla == nullptr ||
         casilla->tipo != CASILLA_POSITIVA ||
@@ -3702,21 +3718,53 @@ static int ValorCasillaBotArboleda(
     const Casilla& casilla
 )
 {
+    // Sin "default": un tipo nuevo de casilla obliga a puntuarlo aqui.
     switch (casilla.tipo)
     {
         case CASILLA_POSITIVA:
-            return partida.gimmickActivo ? MONEDAS_VERDE_FLORACION : 3;
+            return partida.gimmickActivo
+                ? MONEDAS_VERDE_FLORACION
+                : MONEDAS_CASILLA_POSITIVA;
 
-        case CASILLA_REGALO: return 4;
-        case CASILLA_NEGATIVA: return -3;
-        case CASILLA_CAOS: return -3;
-        case CASILLA_TIENDA: return 1;
-        case CASILLA_EVENTO: return 1;
+        case CASILLA_NEGATIVA: return -MONEDAS_CASILLA_NEGATIVA;
         case CASILLA_ESPECIAL: return 1;
-        default: break;
+        case CASILLA_REGALO: return MONEDAS_REGALO;
+        case CASILLA_CAOS: return -4;           // ruleta de castigos
+        case CASILLA_INTERCAMBIO: return -1;    // azar: algo arriesgada
+        case CASILLA_EVENTO: return 1;          // objeto bueno o abejas
+        case CASILLA_DUELO: return 0;           // pendiente (etapa de duelos)
+        case CASILLA_TIENDA: return 0;          // pendiente (etapa de objetos)
+        case CASILLA_NEUTRA: return 0;
+        case CANTIDAD_TIPOS_CASILLA: return 0;
     }
 
     return 0;
+}
+
+
+// Leyenda del HUD: la floracion cambia lo que pagan las casillas verdes.
+static bool TextoLeyendaCasillaArboleda(
+    const PartidaTablero& partida,
+    TipoCasilla tipo,
+    char* texto,
+    int capacidad
+)
+{
+    if (tipo == CASILLA_POSITIVA)
+    {
+        std::snprintf(
+            texto,
+            capacidad,
+            "+%d",
+            partida.gimmickActivo
+                ? MONEDAS_VERDE_FLORACION
+                : MONEDAS_CASILLA_POSITIVA
+        );
+
+        return true;
+    }
+
+    return false;
 }
 
 
@@ -3968,6 +4016,7 @@ const DefinicionTablero& ObtenerDefinicionTableroArboleda()
         definicion.DibujarCapaPantalla = DibujarCapaPantallaArboleda;
         definicion.AlIniciarRonda = AlIniciarRondaArboleda;
         definicion.ResolverCasilla = ResolverCasillaArboleda;
+        definicion.TextoLeyendaCasilla = TextoLeyendaCasillaArboleda;
         definicion.ActualizarGimmick = ActualizarGimmickArboleda;
         definicion.DescribirOpcionRuta = DescribirRutaArboleda;
         definicion.DecidirRutaBot = DecidirRutaBotArboleda;

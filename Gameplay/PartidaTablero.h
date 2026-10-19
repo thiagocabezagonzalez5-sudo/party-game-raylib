@@ -4,7 +4,9 @@
 #include "Board/Tablero.h"
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
+#include "Gameplay/EventosCasillas.h"
 #include "Systems/Audio.h"
+#include "Systems/Input.h"
 
 #include "raylib.h"
 
@@ -17,6 +19,7 @@ enum FasePartidaTablero
     FASE_PARTIDA_TABLERO_MOVIENDO,
     FASE_PARTIDA_TABLERO_DECISION_TROFEO,
     FASE_PARTIDA_TABLERO_EVENTO_CASILLA,
+    FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO,
     FASE_PARTIDA_TABLERO_FIN_TURNO,
     FASE_PARTIDA_TABLERO_FIN_RONDA,
     FASE_PARTIDA_TABLERO_TERMINADA
@@ -30,6 +33,15 @@ enum EventoEspecialTablero
     EVENTO_TABLERO_MULTA,
     EVENTO_TABLERO_INTERCAMBIO
 };
+
+
+// Monedas de las casillas comunes (la leyenda del HUD y las reglas leen
+// los mismos valores; un tablero puede cambiarlas con sus hooks).
+inline constexpr int MONEDAS_CASILLA_POSITIVA = 3;
+inline constexpr int MONEDAS_CASILLA_NEGATIVA = 3;
+inline constexpr int MONEDAS_ESPECIAL_BONIFICACION = 6;
+inline constexpr int MONEDAS_ESPECIAL_MULTA = 4;
+inline constexpr int MONEDAS_REGALO = 4;
 
 
 struct EstadoJugadorPartidaTablero
@@ -94,6 +106,18 @@ struct PartidaTablero
 
     int variacionMonedasEvento = 0;
     int jugadorIntercambioEvento = -1;
+
+    // Evento interactivo en curso (CAOS, INTERCAMBIO, eventos del tablero).
+    EventoInteractivo evento;
+
+    // true mientras el jugador avanza por un evento: al caer en una casilla
+    // EVENTO de ese movimiento no se encadena otro evento interactivo.
+    bool movimientoDeEvento = false;
+
+    // Lectura de entrada de los humanos (las pruebas la reemplazan por un
+    // guion; en el juego es la lectura real).
+    InputSeleccionParticipante (*lectorEntrada)(const Participante&) =
+        LeerInputSeleccionParticipante;
 
     bool minijuegoSolicitado = false;
     bool salidaSolicitada = false;
