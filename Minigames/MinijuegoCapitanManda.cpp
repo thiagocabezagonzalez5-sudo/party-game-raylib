@@ -836,13 +836,15 @@ void MinijuegoCapitanManda::Dibujar(
         );
     }
 
+    // RONDA alineada con el subtitulo para no quedar bajo el contador de FPS
+    // de Juego (esquina superior derecha, y 20..40).
     DrawRectangle(anchoPantalla - 270, 12, 255, 66, Fade(BLACK, 0.55f));
 
     DrawText(
         fase == FASE_CAPITAN_PREPARACION
             ? "RONDA 0"
             : TextFormat("RONDA %d", numeroRonda),
-        anchoPantalla - 180,
+        anchoPantalla - 245,
         18,
         24,
         RAYWHITE

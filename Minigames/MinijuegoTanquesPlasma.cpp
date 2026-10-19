@@ -1118,7 +1118,7 @@ void MinijuegoTanquesPlasma::Dibujar(
         const char* numero = TextFormat("%d", (int)std::ceil(tiempoPreparacion));
         DrawText(numero, ancho / 2 - MeasureText(numero, 120) / 2, alto / 2 - 60, 120, Fade(GOLD, 0.9f));
 
-        const char* controles = "MOVER = DIRECCION   |   GOLPEAR = DISPARAR";
+        const char* controles = "MOVER = DIRECCIÓN   |   GOLPEAR = DISPARAR";
         DrawText(controles, ancho / 2 - MeasureText(controles, 22) / 2, alto - 60, 22, RAYWHITE);
     }
     else if (fase == FASE_TANQUES_COMBATE)
@@ -1159,8 +1159,9 @@ void MinijuegoTanquesPlasma::Dibujar(
         DrawText(titulo, ancho / 2 - MeasureText(titulo, 44) / 2, alto / 2 - 30, 44, colorTitulo);
     }
 
+    // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
     int panelX = ancho - 225;
-    DrawRectangle(panelX - 12, 15, 219, 96, Fade(BLACK, 0.82f));
+    DrawRectangle(panelX - 12, 48, 219, 96, Fade(BLACK, 0.82f));
 
     int fila = 0;
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
@@ -1168,7 +1169,7 @@ void MinijuegoTanquesPlasma::Dibujar(
         if (!resultado.participantes[i].participo) continue;
 
         int x = panelX + (fila % 2) * 100;
-        int y = 28 + (fila / 2) * 36;
+        int y = 61 + (fila / 2) * 36;
         Color color = tanques[i].eliminado ? DARKGRAY : participantes[i].color;
 
         DrawText(TextFormat("J%d", participantes[i].numeroJugador), x, y, 18, color);

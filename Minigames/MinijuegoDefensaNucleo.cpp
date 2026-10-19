@@ -87,7 +87,7 @@ struct DatosTemaDefensa
 static const DatosTemaDefensa TEMAS_DEFENSA[CANTIDAD_TEMAS_DEFENSA] =
 {
     {
-        "ESTACION ESPACIAL",
+        "ESTACIÓN ESPACIAL",
         Color{ 8, 10, 26, 255 }, Color{ 74, 86, 110, 255 }, Color{ 62, 73, 96, 255 },
         Color{ 170, 182, 200, 255 }, Color{ 90, 220, 255, 255 }, Color{ 10, 12, 28, 255 },
         3.4f, 1.0f

@@ -546,6 +546,9 @@ void ZonaPruebas::Dibujar() const
 {
     PrepararTemaVisualZona(*this);
     EstablecerRondaOficialTableroMinijuegos(modoTablero);
+    EstablecerBarraAyudaCatalogoMinijuegos(
+        modoCatalogo && !modoTablero && modoActual == PRUEBA_MINIJUEGO
+    );
     ReiniciarMarcaHudMinijuego();
 
     switch (modoActual)
@@ -584,19 +587,23 @@ void ZonaPruebas::Dibujar() const
             return;
         }
 
+        // Barra fina al pie, como la de ronda de Juego: los minijuegos de HUD
+        // viejo dejan libre MargenBarraRondaMinijuegos() para sus tarjetas.
+        const char* ayuda = "R REINICIAR   F3 DEBUG   ESC VOLVER AL CATÁLOGO";
+
         DrawRectangle(
-            18,
-            GetScreenHeight() - 54,
-            430,
-            36,
-            Fade(BLACK, 0.60f)
+            0,
+            GetScreenHeight() - ALTO_BARRA_RONDA_MINIJUEGOS,
+            GetScreenWidth(),
+            ALTO_BARRA_RONDA_MINIJUEGOS,
+            Fade(BLACK, 0.82f)
         );
 
         DrawText(
-            "R REINICIAR   F3 DEBUG   ESC VOLVER AL CATÁLOGO",
-            28,
-            GetScreenHeight() - 45,
-            17,
+            ayuda,
+            GetScreenWidth() / 2 - MeasureText(ayuda, 16) / 2,
+            GetScreenHeight() - ALTO_BARRA_RONDA_MINIJUEGOS + 6,
+            16,
             RAYWHITE
         );
 

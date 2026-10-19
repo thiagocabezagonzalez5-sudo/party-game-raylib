@@ -835,8 +835,9 @@ void MinijuegoCircuitoVoltaje::Dibujar(
         DrawText(titulo, ancho / 2 - MeasureText(titulo, 44) / 2, alto / 2 - 30, 44, colorTitulo);
     }
 
+    // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
     int panelX = ancho - 250;
-    int panelY = 20;
+    int panelY = 48;
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {

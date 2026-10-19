@@ -1295,7 +1295,8 @@ void MinijuegoBateoMeteorico::Dibujar(
         ronda < LANZAMIENTOS_BATEO ? ronda + 1 : LANZAMIENTOS_BATEO,
         LANZAMIENTOS_BATEO
     );
-    DrawText(textoRonda, anchoPantalla - MeasureText(textoRonda, 24) - 28, 22, 24, GOLD);
+    // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
+    DrawText(textoRonda, anchoPantalla - MeasureText(textoRonda, 24) - 28, 48, 24, GOLD);
 
     int activos = 0;
 

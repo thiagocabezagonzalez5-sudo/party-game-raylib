@@ -1522,17 +1522,18 @@ void MinijuegoBolasAzucar::Dibujar(
 
     if (fase != FASE_BOLAS_PREPARACION)
     {
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
         DrawText(
             TextFormat("TIEMPO %.0f", tiempoRestante > 0.0f ? tiempoRestante : 0.0f),
             ancho - 190,
-            24,
+            48,
             23,
             tiempoRestante <= 10.0f ? RED : GOLD
         );
         DrawText(
             TextFormat("EN PIE: %d", ContarVivosBolas(*this)),
             ancho - 190,
-            54,
+            76,
             20,
             RAYWHITE
         );

@@ -70,6 +70,10 @@ struct EstadoEfectosVisualesMinijuegos
     // ahi R no reinicia, asi que los minijuegos no deben ofrecerlo.
     bool rondaOficialTablero = false;
 
+    // Modo libre del catalogo: ZonaPruebas dibuja su ayuda en una barra
+    // fina al pie, del mismo alto que la barra de ronda.
+    bool barraAyudaCatalogo = false;
+
     int direccionTaladros = 0;
     float progresoTaladros = 0.0f;
     bool taladrosSeleccionados = false;
@@ -244,6 +248,15 @@ inline void EstablecerRondaOficialTableroMinijuegos(
 }
 
 
+// ZonaPruebas lo actualiza cada frame: true en modo libre del catalogo.
+inline void EstablecerBarraAyudaCatalogoMinijuegos(
+    bool activa
+)
+{
+    ObtenerEstadoEfectosVisualesMinijuegos().barraAyudaCatalogo = activa;
+}
+
+
 // Texto del aviso de reinicio en la pantalla final de cada minijuego.
 // En una ronda oficial de tablero se devuelve vacio: R esta bloqueada y
 // Juego ya muestra como se vuelve al tablero.
@@ -256,15 +269,20 @@ inline const char* TextoReinicioMinijuego()
 
 
 // Alto de la barra de ronda que Juego dibuja al pie de la pantalla en una
-// ronda oficial de tablero (solo con los minijuegos de HUD viejo).
+// ronda oficial de tablero (solo con los minijuegos de HUD viejo); ZonaPruebas
+// usa el mismo alto para la barra de ayuda del modo libre del catalogo.
 static const int ALTO_BARRA_RONDA_MINIJUEGOS = 28;
 
 
 // Espacio que el HUD inferior de un minijuego de HUD viejo debe dejar libre
-// al pie de la pantalla: la barra de ronda en una ronda oficial, 0 si no.
+// al pie de la pantalla: la barra de ronda en una ronda oficial o la barra de
+// ayuda en el modo libre del catalogo, 0 si no hay ninguna.
 inline int MargenBarraRondaMinijuegos()
 {
-    return ObtenerEstadoEfectosVisualesMinijuegos().rondaOficialTablero
+    const EstadoEfectosVisualesMinijuegos& estado =
+        ObtenerEstadoEfectosVisualesMinijuegos();
+
+    return estado.rondaOficialTablero || estado.barraAyudaCatalogo
         ? ALTO_BARRA_RONDA_MINIJUEGOS
         : 0;
 }
@@ -391,6 +409,7 @@ inline void ReiniciarEstadoVisualMinijuegos()
     estado.progresoTaladros = 0.0f;
     estado.taladrosSeleccionados = false;
     estado.rondaOficialTablero = false;
+    estado.barraAyudaCatalogo = false;
 }
 
 

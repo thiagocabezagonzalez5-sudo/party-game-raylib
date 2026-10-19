@@ -1090,10 +1090,11 @@ void MinijuegoPelotas::Dibujar(
     {
         const char* reloj = TextFormat("%.0f", tiempoRestante > 0.0f ? tiempoRestante : 0.0f);
         int tamanoReloj = (int)(46 * e);
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
         DrawText(
             reloj,
             ancho - MeasureText(reloj, tamanoReloj) - (int)(30 * e),
-            (int)(14 * e),
+            (int)(48 * e),
             tamanoReloj,
             tiempoRestante <= 10.0f ? Color{ 255, 90, 80, 255 } : RAYWHITE
         );

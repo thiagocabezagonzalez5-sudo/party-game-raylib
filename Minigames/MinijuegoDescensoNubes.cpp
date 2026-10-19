@@ -1368,8 +1368,9 @@ void MinijuegoDescensoNubes::Dibujar(
     if (fase == FASE_NUBES_JUGANDO)
     {
         float restante = TIEMPO_LIMITE_NUBES - tiempoJuego;
-        DrawRectangle(anchoPantalla - 214, 12, 200, 44, Fade(BLACK, 0.74f));
-        DrawText(TextFormat("TIEMPO %.0f", restante > 0.0f ? restante : 0.0f), anchoPantalla - 200, 22, 26, restante <= 6.0f ? RED : GOLD);
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
+        DrawRectangle(anchoPantalla - 214, 48, 200, 44, Fade(BLACK, 0.74f));
+        DrawText(TextFormat("TIEMPO %.0f", restante > 0.0f ? restante : 0.0f), anchoPantalla - 200, 58, 26, restante <= 6.0f ? RED : GOLD);
 
         // Aviso de viento cercano.
         for (int v = 0; v < cantidadVientos; v++)

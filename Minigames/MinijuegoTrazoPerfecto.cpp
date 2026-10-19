@@ -769,12 +769,13 @@ void MinijuegoTrazoPerfecto::Dibujar(
         LIGHTGRAY
     );
 
+    // A la derecha, debajo del contador de FPS de Juego (y 20..40).
     if (fase == FASE_TRAZO_PREPARACION)
     {
         DrawText(
             TextFormat("PREPARATE: %.1f", tiempoPreparacion),
             ancho - 260,
-            26,
+            46,
             22,
             RAYWHITE
         );
@@ -787,18 +788,18 @@ void MinijuegoTrazoPerfecto::Dibujar(
         DrawText(
             TextFormat("TIEMPO: %.1f", tiempoTrazo),
             ancho - 218,
-            26,
+            46,
             22,
             tiempoTrazo <= 5.0f ? ORANGE : RAYWHITE
         );
 
         const char* ayuda = "MOVÉ TU PINCEL (WASD / FLECHAS / STICK) Y SEGUI LA ESTRELLA DORADA";
-        DrawText(ayuda, ancho - MeasureText(ayuda, 17) - 24, 60, 17, GOLD);
+        DrawText(ayuda, ancho - MeasureText(ayuda, 17) - 24, 72, 17, GOLD);
     }
     else
     {
-        DrawText("RESULTADOS", ancho - 190, 26, 22, RAYWHITE);
-        DrawText(TextoReinicioMinijuego(), ancho - 190, 60, 17, LIGHTGRAY);
+        DrawText("RESULTADOS", ancho - 190, 46, 22, RAYWHITE);
+        DrawText(TextoReinicioMinijuego(), ancho - 190, 72, 17, LIGHTGRAY);
     }
 
     for (int i = 0; i < MAX_PARTICIPANTES; i++)

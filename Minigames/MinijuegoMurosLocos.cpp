@@ -896,11 +896,12 @@ void MinijuegoMurosLocos::Dibujar(
 
     if (fase == FASE_MUROS_JUGANDO)
     {
-        DrawRectangle(GetScreenWidth() - 204, 12, 190, 40, Fade(BLACK, 0.62f));
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
+        DrawRectangle(GetScreenWidth() - 204, 48, 190, 40, Fade(BLACK, 0.62f));
         DrawText(
             TextFormat("MURO %d", numeroMuro),
             GetScreenWidth() - 190,
-            22,
+            58,
             20,
             RAYWHITE
         );

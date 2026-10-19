@@ -1012,7 +1012,8 @@ void MinijuegoBarraGiratoria::Dibujar(
 
     DrawRectangle(15, 15, 700, 148, Fade(BLACK, 0.55f));
     DrawRectangle(15, 170, 270, 24 * 4 + 8, Fade(BLACK, 0.55f));
-    if (fase == FASE_BARRA_JUGANDO) DrawRectangle(GetScreenWidth() - 345, 17, 335, 36, Fade(BLACK, 0.55f));
+    // El aviso de la derecha va debajo del contador de FPS de Juego (y 20..40).
+    if (fase == FASE_BARRA_JUGANDO) DrawRectangle(GetScreenWidth() - 345, 48, 335, 36, Fade(BLACK, 0.55f));
 
     DrawText("BARRA GIRATORIA", 25, 25, 30, RAYWHITE);
     DrawText(
@@ -1061,7 +1062,7 @@ void MinijuegoBarraGiratoria::Dibujar(
             DrawText(
                 TextFormat("SEGUNDA BARRA EN: %.1f s", falta),
                 GetScreenWidth() - 280,
-                25,
+                56,
                 20,
                 ORANGE
             );
@@ -1071,7 +1072,7 @@ void MinijuegoBarraGiratoria::Dibujar(
             DrawText(
                 "SEGUNDA BARRA: CAYENDO",
                 GetScreenWidth() - 300,
-                25,
+                56,
                 20,
                 Color{ 255, 110, 100, 255 }
             );
@@ -1084,7 +1085,7 @@ void MinijuegoBarraGiratoria::Dibujar(
                     velocidadAngularSegunda
                 ),
                 GetScreenWidth() - 335,
-                25,
+                56,
                 20,
                 Color{ 255, 110, 100, 255 }
             );

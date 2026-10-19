@@ -1676,16 +1676,16 @@ void MinijuegoVoleaMagma::Dibujar(
     DrawText("VOLEA DE MAGMA", 28, 20, 26, GOLD);
     DrawText(TextFormat("PRIMERO A %d PUNTOS", PUNTOS_PARA_GANAR_VOLEA), 28, 50, 16, Color{ 255, 190, 120, 255 });
 
-    // Termometro de la roca.
+    // Termometro de la roca, debajo del contador de FPS de Juego (y 20..40).
     int barraX = anchoPantalla - 190;
-    DrawText("ROCA", barraX, 20, 16, LIGHTGRAY);
-    DrawRectangle(barraX, 40, 150, 12, Fade(BLACK, 0.7f));
-    DrawRectangle(barraX, 40, (int)(150.0f * pelota.temperatura), 12, ColorRoca(pelota.temperatura, tiempoAnimacion));
-    DrawRectangleLines(barraX, 40, 150, 12, LIGHTGRAY);
+    DrawText("ROCA", barraX, 48, 16, LIGHTGRAY);
+    DrawRectangle(barraX, 68, 150, 12, Fade(BLACK, 0.7f));
+    DrawRectangle(barraX, 68, (int)(150.0f * pelota.temperatura), 12, ColorRoca(pelota.temperatura, tiempoAnimacion));
+    DrawRectangleLines(barraX, 68, 150, 12, LIGHTGRAY);
 
     if (pelota.temperatura >= TEMPERATURA_SOBRECALENTADA)
     {
-        DrawText("SOBRECALENTADA", barraX, 56, 16, ORANGE);
+        DrawText("SOBRECALENTADA", barraX, 84, 16, ORANGE);
     }
 
     // Nombres sobre los jugadores.

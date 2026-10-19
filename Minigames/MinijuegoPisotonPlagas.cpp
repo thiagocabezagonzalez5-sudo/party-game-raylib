@@ -2331,11 +2331,12 @@ void MinijuegoPisotonPlagas::Dibujar(
 
     if (fase == FASE_PISOTON_JUGANDO)
     {
-        DrawRectangle(anchoPantalla - 214, 12, 200, 44, Fade(BLACK, 0.74f));
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
+        DrawRectangle(anchoPantalla - 214, 48, 200, 44, Fade(BLACK, 0.74f));
         DrawText(
             TextFormat("TIEMPO %.1f", tiempoRestante),
             anchoPantalla - 200,
-            22,
+            58,
             26,
             tiempoRestante <= 6.0f ? RED : GOLD
         );

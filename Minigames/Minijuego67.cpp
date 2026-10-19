@@ -915,11 +915,12 @@ static void DibujarHudEquipo67(
     DrawText(TextFormat("EQUIPO %d", equipo + 1), 29, 17, 23, RAYWHITE);
     DrawText(TextFormat("PUNTOS %d", minijuego.equipos[equipo].puntos), 29, 48, 18, LIME);
 
+    // A la derecha, debajo de la franja del contador de FPS de Juego (y 20..40).
     const char* tiempo = TextFormat("%.1f s", minijuego.tiempoPartida);
     DrawText(
         tiempo,
         ancho - MeasureText(tiempo, 21) - 22,
-        19,
+        46,
         21,
         minijuego.tiempoPartida <= 7.0f ? RED : SKYBLUE
     );
@@ -928,7 +929,7 @@ static void DibujarHudEquipo67(
     DrawText(
         mesa,
         ancho - MeasureText(mesa, 15) - 22,
-        50,
+        68,
         15,
         LIGHTGRAY
     );

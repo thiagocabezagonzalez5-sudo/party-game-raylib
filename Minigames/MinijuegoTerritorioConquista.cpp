@@ -1891,8 +1891,9 @@ void MinijuegoTerritorioConquista::Dibujar(
     if (fase == FASE_TERRITORIO_JUGANDO)
     {
         const char* textoTiempo = TextFormat("TIEMPO %.1f", tiempoRestante);
-        DrawRectangle(anchoPantalla - 214, 12, 200, 44, Fade(BLACK, 0.74f));
-        DrawText(textoTiempo, anchoPantalla - 200, 22, 26, tiempoRestante <= 6.0f ? RED : GOLD);
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
+        DrawRectangle(anchoPantalla - 214, 48, 200, 44, Fade(BLACK, 0.74f));
+        DrawText(textoTiempo, anchoPantalla - 200, 58, 26, tiempoRestante <= 6.0f ? RED : GOLD);
 
         if (estadoSector == SECTOR_TERRITORIO_AVISO)
         {

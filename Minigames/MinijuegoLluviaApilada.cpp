@@ -1947,8 +1947,9 @@ void MinijuegoLluviaApilada::Dibujar(
     if (fase == FASE_LLUVIA_JUGANDO)
     {
         const char* textoTiempo = TextFormat("TIEMPO %.1f", tiempoRestante);
-        DrawRectangle(GetScreenWidth() - 210, 12, 196, 44, Fade(BLACK, 0.72f));
-        DrawText(textoTiempo, GetScreenWidth() - 196, 22, 24, tiempoRestante <= 8.0f ? RED : GOLD);
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
+        DrawRectangle(GetScreenWidth() - 210, 48, 196, 44, Fade(BLACK, 0.72f));
+        DrawText(textoTiempo, GetScreenWidth() - 196, 58, 24, tiempoRestante <= 8.0f ? RED : GOLD);
 
         if (tiempoRestante <= 8.0f && ((int)(tiempoAnimacion * 4.0f)) % 2 == 0)
         {

@@ -1417,8 +1417,9 @@ void MinijuegoRodillosNeon::Dibujar(
     int centro = anchoPantalla / 2;
 
     // Paneles oscuros para que el HUD no se mezcle con los hologramas.
+    // El de la derecha va debajo del contador de FPS de Juego (y 20..40).
     DrawRectangle(16, 12, 600, 68, Fade(BLACK, 0.72f));
-    DrawRectangle(anchoPantalla - 196, 12, 180, 66, Fade(BLACK, 0.72f));
+    DrawRectangle(anchoPantalla - 196, 48, 180, 66, Fade(BLACK, 0.72f));
     DrawText("RODILLOS NEÓN", 28, 20, 28, Color{ 0, 230, 255, 255 });
     DrawText("DETENÉ LOS RODILLOS: 3 IGUALES = 10 (ESTRELLA = 20), 2 IGUALES = 3", 28, 52, 16, Color{ 255, 120, 220, 255 });
 
@@ -1427,13 +1428,13 @@ void MinijuegoRodillosNeon::Dibujar(
         ronda < RONDAS_RODILLOS_NEON ? ronda + 1 : RONDAS_RODILLOS_NEON,
         RONDAS_RODILLOS_NEON
     );
-    DrawText(textoRonda, anchoPantalla - MeasureText(textoRonda, 26) - 28, 20, 26, GOLD);
+    DrawText(textoRonda, anchoPantalla - MeasureText(textoRonda, 26) - 28, 56, 26, GOLD);
 
     if (fase == FASE_RODILLOS_JUGANDO)
     {
         int nivel = ronda < RONDAS_RODILLOS_NEON ? ronda + 1 : RONDAS_RODILLOS_NEON;
         const char* velocidad = TextFormat("VELOCIDAD x%d", nivel);
-        DrawText(velocidad, anchoPantalla - MeasureText(velocidad, 18) - 28, 50, 18, LIGHTGRAY);
+        DrawText(velocidad, anchoPantalla - MeasureText(velocidad, 18) - 28, 86, 18, LIGHTGRAY);
     }
 
     // Aviso de fallo de sistema.

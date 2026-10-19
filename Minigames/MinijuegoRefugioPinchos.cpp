@@ -3677,8 +3677,9 @@ void MinijuegoRefugioPinchos::Dibujar(
     {
         const char* reloj = TextFormat("%.1f", tiempoRestante);
         int tamanoReloj = (int)(36 * e);
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
         DibujarTextoSombraPinchos(
-            reloj, ancho - MeasureText(reloj, tamanoReloj) - (int)(26 * e), (int)(8 * e), tamanoReloj,
+            reloj, ancho - MeasureText(reloj, tamanoReloj) - (int)(26 * e), (int)(48 * e), tamanoReloj,
             tiempoRestante <= 5.0f ? Color{ 255, 90, 80, 255 } : GOLD
         );
 
@@ -3687,7 +3688,7 @@ void MinijuegoRefugioPinchos::Dibujar(
             const char* subita = "MUERTE SÚBITA";
             int tamano = (int)(16 * e);
             DibujarTextoSombraPinchos(
-                subita, ancho - MeasureText(subita, tamano) - (int)(26 * e), (int)(46 * e), tamano,
+                subita, ancho - MeasureText(subita, tamano) - (int)(26 * e), (int)(88 * e), tamano,
                 ParpadeoRojoPinchos(*this) ? Color{ 255, 90, 70, 255 } : Color{ 255, 170, 90, 255 }
             );
         }

@@ -772,17 +772,18 @@ void MinijuegoMiradasCruzadas::Dibujar(
         const char* ronda = TextFormat("RONDA %d / %d - ELEGI", numeroRonda, MAX_RONDAS_MIRADAS);
         int xPanel = ancho - 384;
 
-        DrawRectangle(xPanel, 14, 366, 76, Fade(BLACK, 0.70f));
-        DrawText(ronda, xPanel + 183 - MeasureText(ronda, 28) / 2, 24, 28, GOLD);
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
+        DrawRectangle(xPanel, 48, 366, 76, Fade(BLACK, 0.70f));
+        DrawText(ronda, xPanel + 183 - MeasureText(ronda, 28) / 2, 58, 28, GOLD);
 
-        DrawRectangle(xPanel + 13, 64, 340, 14, Fade(WHITE, 0.25f));
+        DrawRectangle(xPanel + 13, 98, 340, 14, Fade(WHITE, 0.25f));
 
         float porcentaje = tiempoFase / DURACION_ELECCION_MIRADAS;
         if (porcentaje < 0.0f) porcentaje = 0.0f;
 
         DrawRectangle(
             xPanel + 13,
-            64,
+            98,
             (int)(340.0f * porcentaje),
             14,
             porcentaje < 0.25f ? RED : YELLOW
@@ -805,7 +806,8 @@ void MinijuegoMiradasCruzadas::Dibujar(
             ? "GANA EL JUGADOR SOLITARIO"
             : "GANA EL EQUIPO";
 
-        const int py = 16;
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
+        const int py = 48;
         const int cx = ancho - 300;
         DrawRectangle(cx - 280, py, 560, 110, Fade(BLACK, 0.88f));
         DrawText(titulo, cx - MeasureText(titulo, 32) / 2, py + 16, 32, GOLD);

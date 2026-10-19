@@ -1008,10 +1008,11 @@ void MinijuegoRacimoToxico::Dibujar(
 
     if (fase == FASE_RACIMO_TURNO || fase == FASE_RACIMO_ANIMACION)
     {
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
         DrawText(
             TextFormat("TIEMPO %.0f", tiempoRestante),
             ancho - 190,
-            24,
+            48,
             23,
             tiempoRestante <= 10.0f ? RED : GOLD
         );
@@ -1022,7 +1023,7 @@ void MinijuegoRacimoToxico::Dibujar(
         DrawText(
             TextFormat("TURNO %.1f", tiempoTurno > 0.0f ? tiempoTurno : 0.0f),
             ancho - 190,
-            54,
+            76,
             20,
             tiempoTurno <= 2.0f ? RED : RAYWHITE
         );

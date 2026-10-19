@@ -955,8 +955,9 @@ void MinijuegoInterruptoresCaos::Dibujar(
         }
     }
 
+    // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
     int tarjetaX = ancho - 236;
-    int tarjetaY = 22;
+    int tarjetaY = 56;
     DrawRectangle(tarjetaX - 12, tarjetaY - 8, 222, 40 + resultado.cantidadParticipantes * 42, Fade(BLACK, 0.76f));
     DrawText("ORDEN", tarjetaX, tarjetaY, 18, LIGHTGRAY);
 

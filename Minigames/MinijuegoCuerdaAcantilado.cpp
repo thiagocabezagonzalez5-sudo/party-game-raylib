@@ -1011,11 +1011,12 @@ void MinijuegoCuerdaAcantilado::Dibujar(
         float restante = DURACION_PARTIDA_CUERDA - tiempoJuego;
         if (restante < 0.0f) restante = 0.0f;
 
-        DrawRectangle(ancho - 212, 16, 196, 40, Fade(BLACK, 0.75f));
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
+        DrawRectangle(ancho - 212, 48, 196, 40, Fade(BLACK, 0.75f));
         DrawText(
             TextFormat("TIEMPO %.1f", restante),
             ancho - 200,
-            24,
+            56,
             24,
             restante <= 8.0f ? RED : GOLD
         );

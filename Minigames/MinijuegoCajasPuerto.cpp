@@ -1494,10 +1494,11 @@ void MinijuegoCajasPuerto::Dibujar(
 
     if (fase == FASE_CAJAS_ESCONDER || fase == FASE_CAJAS_ELEGIR)
     {
+        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
         DrawText(
             TextFormat("TIEMPO %.1f", tiempoFase > 0.0f ? tiempoFase : 0.0f),
             ancho - 190,
-            28,
+            48,
             23,
             tiempoFase <= 3.0f ? RED : GOLD
         );

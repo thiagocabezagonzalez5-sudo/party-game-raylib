@@ -854,16 +854,18 @@ void MinijuegoTormentaMagnetica::Dibujar(
         int dificultad = (int)std::lround(ProgresoDificultadMagnetica(*this) * 100.0f);
         const char* textoDificultad = TextFormat("DIFICULTAD %d%%", dificultad);
         const char* textoCambio = TextFormat("CAMBIO EN %.1f", tiempoHastaCambioCampo);
+        // Corridos 100 px a la izquierda: la franja no deja bajarlos y el
+        // contador de FPS de Juego ocupa la esquina superior derecha.
         DrawText(
             textoDificultad,
-            ancho - MeasureText(textoDificultad, (int)(22 * e)) - (int)(30 * e),
+            ancho - MeasureText(textoDificultad, (int)(22 * e)) - (int)(30 * e) - 100,
             (int)(12 * e),
             (int)(22 * e),
             GOLD
         );
         DrawText(
             textoCambio,
-            ancho - MeasureText(textoCambio, (int)(20 * e)) - (int)(30 * e),
+            ancho - MeasureText(textoCambio, (int)(20 * e)) - (int)(30 * e) - 100,
             (int)(44 * e),
             (int)(20 * e),
             tiempoHastaCambioCampo < 0.9f ? Color{ 255, 210, 60, 255 } : LIGHTGRAY
