@@ -37,6 +37,11 @@ const DefinicionTablero& ObtenerDefinicionTablero(
         return ObtenerDefinicionTableroMercadoFlotante();
     }
 
+    if (id == TABLERO_TORRE_RELOJ)
+    {
+        return ObtenerDefinicionTableroTorreReloj();
+    }
+
     if (id == TABLERO_FERIA_NOCTURNA)
     {
         return ObtenerDefinicionTableroFeriaNocturna();
