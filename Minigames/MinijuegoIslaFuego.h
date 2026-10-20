@@ -58,6 +58,65 @@ struct EstadoBotIslaFuego
 };
 
 
+// Particulas propias (pool fijo): humo, chispas, arena y agua. Solo visuales.
+inline constexpr int MAX_PARTICULAS_ISLA = 320;
+
+enum TipoParticulaIslaFuego
+{
+    PARTICULA_ISLA_HUMO = 0,
+    PARTICULA_ISLA_CHISPA,
+    PARTICULA_ISLA_ARENA,
+    PARTICULA_ISLA_AGUA,
+    PARTICULA_ISLA_CONFETI
+};
+
+
+struct ParticulaIslaFuego
+{
+    bool activa = false;
+    TipoParticulaIslaFuego tipo = PARTICULA_ISLA_HUMO;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 0.0f;
+    float tamano = 0.1f;
+    Color color = { 200, 200, 200, 255 };
+};
+
+
+// Estado puramente visual (animaciones y reacciones). No interviene en la
+// logica: solo lo leen Dibujar y los emisores de efectos.
+struct EfectosIslaFuego
+{
+    ParticulaIslaFuego particulas[MAX_PARTICULAS_ISLA];
+
+    unsigned int semilla = 12345u;
+    float tiempoAnimacion = 0.0f;
+    float temporizadorEstela = 0.0f;
+
+    // Disparo del barco (coincide con la aparicion de la bomba).
+    bool disparoPendiente = false;
+    int canonDisparo = 0;
+    float tiempoDesdeDisparo = 99.0f;
+
+    // Ultima explosion.
+    Vector3 puntoExplosion{};
+    bool explosionEspecial = false;
+    float tiempoDesdeExplosion = 99.0f;
+
+    // Reacciones por jugador.
+    float tiempoDesdeGolpe[MAX_PARTICIPANTES]{};
+    bool golpeDirecto[MAX_PARTICIPANTES]{};
+    float temporizadorRastro[MAX_PARTICIPANTES]{};
+    bool salpico[MAX_PARTICIPANTES]{};
+    Vector3 puntoSalpicadura[MAX_PARTICIPANTES]{};
+    float tiempoDesdeSalpicadura[MAX_PARTICIPANTES]{};
+    bool eliminadoVisto[MAX_PARTICIPANTES]{};
+    Vector3 puntoEliminacion[MAX_PARTICIPANTES]{};
+    float tiempoDesdeEliminacion[MAX_PARTICIPANTES]{};
+};
+
+
 struct MinijuegoIslaFuego
 {
     ResultadoMinijuego resultado;
@@ -83,6 +142,8 @@ struct MinijuegoIslaFuego
     float tiempoHastaSiguienteDisparo = 0.8f;
 
     bool disparoFinalRealizado = false;
+
+    EfectosIslaFuego efectos;
 
     void Inicializar();
 
