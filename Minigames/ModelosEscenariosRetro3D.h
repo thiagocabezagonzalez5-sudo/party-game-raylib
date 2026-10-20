@@ -108,6 +108,13 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D gruaChatarra[CANTIDAD_MODELOS_GRUA_CHATARRA_3D];
     RecursoModeloEscenarioRetro3D pisotonPlagas[CANTIDAD_MODELOS_PISOTON_PLAGAS_3D];
     ReposoMallaPisotonRetro3D animacionesPisoton[4]; // patas, cola, petalos pares/impares
+    RecursoModeloEscenarioRetro3D balsasRapido[CANTIDAD_MODELOS_BALSAS_RAPIDO_3D];
+    RecursoModeloEscenarioRetro3D autosGlobo[CANTIDAD_MODELOS_AUTOS_GLOBO_3D];
+    RecursoModeloEscenarioRetro3D senderoInvisible[CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D];
+    RecursoModeloEscenarioRetro3D banqueteTurbo[CANTIDAD_MODELOS_BANQUETE_TURBO_3D];
+    RecursoModeloEscenarioRetro3D tuberiasDesierto[CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D];
+    RecursoModeloEscenarioRetro3D trepaMastil[CANTIDAD_MODELOS_TREPA_MASTIL_3D];
+    RecursoModeloEscenarioRetro3D guardianRuinas[CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D];
     float* franjasCintaGrua = nullptr; // Reposo CPU; una unica malla/VBO para ambas cintas.
     AnimacionRodillosRetro3D animacionesRodillos[4]; // suelo, dos LEDs, linea
     AnimacionMallaPescaRetro3D animacionesPesca[5]; // gaviota, humo y tres colas
@@ -1688,6 +1695,275 @@ inline bool DibujarFlorAbiertaPisotonRetro3D(Vector3 posicion, float alto, float
     return true;
 }
 
+// Descarta las piezas cuyo GLB no coincide con la cantidad de primitives del
+// paquete v1 (indices de color y orden de mallas dependen de ella).
+inline void ValidarMallasPaqueteEscenarioRetro3D(PaqueteModelosEscenarioRetro3D paquete,
+    const int* esperadas, const char* nombre)
+{
+    for (int i = 0; i < paquete.cantidad; i++)
+    {
+        auto& r = paquete.recursos[i];
+        if (!r.cargado || r.modelo.meshCount == esperadas[i]) continue;
+        UnloadModel(r.modelo); r.modelo = {}; r.cargado = false;
+        TraceLog(LOG_WARNING, "Paquete %s incompatible; se usan primitivas: %s", nombre, r.ruta);
+    }
+}
+
+// BALSAS DEL RAPIDO
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteBalsasRapidoRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_BALSAS_RAPIDO_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_BALSAS_RAPIDO_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_BALSAS_RAPIDO_3D[i];
+        definiciones[MODELO_BALSAS_BALSA].mallaColor = 4; // Bandera COLOR_DINAMICO.
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().balsasRapido,
+        definiciones, CANTIDAD_MODELOS_BALSAS_RAPIDO_3D};
+}
+
+inline void CargarPaqueteBalsasRapidoRetro3D()
+{
+    static constexpr int esperadas[] =
+        {3,3,4,6,2,3,5,2,2,3,3,3,2,2,4,3,4,2,1,2,5,3,5,2};
+    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_BALSAS_RAPIDO_3D,
+        "Mallas esperadas de Balsas del Rapido");
+    auto paquete = ObtenerPaqueteBalsasRapidoRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Balsas del Rapido");
+}
+
+inline bool DibujarModeloBalsasRapidoRetro3D(ModeloBalsasRapido3D pieza,
+    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
+    Vector3 escala = {1,1,1}, Color color = WHITE)
+{
+    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_BALSAS_RAPIDO_3D) return false;
+    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().balsasRapido[pieza],
+        posicion, eje, angulo, escala, color);
+}
+
+// AUTOS DE GLOBO
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteAutosGloboRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_AUTOS_GLOBO_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_AUTOS_GLOBO_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_AUTOS_GLOBO_3D[i];
+        // Primitives COLOR_DINAMICO del paquete v1 (BOMBILLAS queda fijo).
+        definiciones[MODELO_AUTOGLOBO_VEHICULO_TRAFICO].mallaColor = 0;
+        definiciones[MODELO_AUTOGLOBO_HOLOGRAMA_ANILLOS].mallaColor = 0;
+        definiciones[MODELO_AUTOGLOBO_AUTO].mallaColor = 0;
+        definiciones[MODELO_AUTOGLOBO_GLOBO].mallaColor = 0;
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().autosGlobo,
+        definiciones, CANTIDAD_MODELOS_AUTOS_GLOBO_3D};
+}
+
+inline void CargarPaqueteAutosGloboRetro3D()
+{
+    static constexpr int esperadas[] =
+        {4,3,5,5,5,6,5,3,3,3,3,3,3,4,2,3,3,3,7,4,1,2,1};
+    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_AUTOS_GLOBO_3D,
+        "Mallas esperadas de Autos de Globo");
+    auto paquete = ObtenerPaqueteAutosGloboRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Autos de Globo");
+}
+
+inline bool DibujarModeloAutosGloboRetro3D(ModeloAutosGlobo3D pieza,
+    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
+    Vector3 escala = {1,1,1}, Color color = WHITE)
+{
+    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_AUTOS_GLOBO_3D) return false;
+    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().autosGlobo[pieza],
+        posicion, eje, angulo, escala, color);
+}
+
+// SENDERO INVISIBLE
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteSenderoInvisibleRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_SENDERO_INVISIBLE_3D[i];
+        definiciones[MODELO_SENDERO_LOSA_SALIDA].mallaColor = 2; // Marcas del jugador.
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().senderoInvisible,
+        definiciones, CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D};
+}
+
+inline void CargarPaqueteSenderoInvisibleRetro3D()
+{
+    static constexpr int esperadas[] =
+        {3,4,3,3,2,2,3,2,3,3,6,2,2,4,3,3,4,2,3};
+    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D,
+        "Mallas esperadas de Sendero Invisible");
+    auto paquete = ObtenerPaqueteSenderoInvisibleRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Sendero Invisible");
+}
+
+inline bool DibujarModeloSenderoInvisibleRetro3D(ModeloSenderoInvisible3D pieza,
+    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
+    Vector3 escala = {1,1,1}, Color color = WHITE)
+{
+    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D) return false;
+    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().senderoInvisible[pieza],
+        posicion, eje, angulo, escala, color);
+}
+
+// BANQUETE TURBO
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteBanqueteTurboRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_BANQUETE_TURBO_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_BANQUETE_TURBO_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_BANQUETE_TURBO_3D[i];
+        // Primitives COLOR_JUGADOR del paquete v1.
+        definiciones[MODELO_BANQUETE_MESA].mallaColor = 4;
+        definiciones[MODELO_BANQUETE_TABURETE].mallaColor = 1;
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().banqueteTurbo,
+        definiciones, CANTIDAD_MODELOS_BANQUETE_TURBO_3D};
+}
+
+inline void CargarPaqueteBanqueteTurboRetro3D()
+{
+    static constexpr int esperadas[] =
+        {6,6,4,3,3,3,4,6,3,4,7,3,3,3,6};
+    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_BANQUETE_TURBO_3D,
+        "Mallas esperadas de Banquete Turbo");
+    auto paquete = ObtenerPaqueteBanqueteTurboRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Banquete Turbo");
+}
+
+inline bool DibujarModeloBanqueteTurboRetro3D(ModeloBanqueteTurbo3D pieza,
+    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
+    Vector3 escala = {1,1,1}, Color color = WHITE)
+{
+    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_BANQUETE_TURBO_3D) return false;
+    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().banqueteTurbo[pieza],
+        posicion, eje, angulo, escala, color);
+}
+
+// TUBERIAS DEL DESIERTO
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteTuberiasDesiertoRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_TUBERIAS_DESIERTO_3D[i];
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().tuberiasDesierto,
+        definiciones, CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D};
+}
+
+inline void CargarPaqueteTuberiasDesiertoRetro3D()
+{
+    static constexpr int esperadas[] =
+        {3,4,5,2,3,3,2,2,4,3,3,3,2,4,2,2,5,2,2,2};
+    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D,
+        "Mallas esperadas de Tuberias del Desierto");
+    auto paquete = ObtenerPaqueteTuberiasDesiertoRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Tuberias del Desierto");
+}
+
+inline bool DibujarModeloTuberiasDesiertoRetro3D(ModeloTuberiasDesierto3D pieza,
+    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
+    Vector3 escala = {1,1,1}, Color color = WHITE)
+{
+    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D) return false;
+    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().tuberiasDesierto[pieza],
+        posicion, eje, angulo, escala, color);
+}
+
+// TREPA EL MASTIL
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteTrepaMastilRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_TREPA_MASTIL_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_TREPA_MASTIL_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_TREPA_MASTIL_3D[i];
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().trepaMastil,
+        definiciones, CANTIDAD_MODELOS_TREPA_MASTIL_3D};
+}
+
+inline void CargarPaqueteTrepaMastilRetro3D()
+{
+    static constexpr int esperadas[] =
+        {5,4,4,4,3,1,1,1,1,4,3,3,3,3,3,4,4,4,1,3,4,3,1,1,4};
+    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_TREPA_MASTIL_3D,
+        "Mallas esperadas de Trepa el Mastil");
+    auto paquete = ObtenerPaqueteTrepaMastilRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Trepa el Mastil");
+}
+
+inline bool DibujarModeloTrepaMastilRetro3D(ModeloTrepaMastil3D pieza,
+    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
+    Vector3 escala = {1,1,1}, Color color = WHITE)
+{
+    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_TREPA_MASTIL_3D) return false;
+    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().trepaMastil[pieza],
+        posicion, eje, angulo, escala, color);
+}
+
+// GUARDIAN DE RUINAS
+inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteGuardianRuinasRetro3D()
+{
+    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D];
+    static bool definidas = false;
+    if (!definidas)
+    {
+        for (int i = 0; i < CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D; i++)
+            definiciones[i].ruta = RUTAS_MODELOS_GUARDIAN_RUINAS_3D[i];
+        definidas = true;
+    }
+    return {ObtenerModelosEscenariosRetro3D().guardianRuinas,
+        definiciones, CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D};
+}
+
+inline void CargarPaqueteGuardianRuinasRetro3D()
+{
+    static constexpr int esperadas[] =
+        {3,4,3,3,5,3,4,2,4,2,6,2,3,4,3,2,3,3,4,4};
+    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D,
+        "Mallas esperadas de Guardian de Ruinas");
+    auto paquete = ObtenerPaqueteGuardianRuinasRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Guardian de Ruinas");
+}
+
+inline bool DibujarModeloGuardianRuinasRetro3D(ModeloGuardianRuinas3D pieza,
+    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
+    Vector3 escala = {1,1,1}, Color color = WHITE)
+{
+    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D) return false;
+    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().guardianRuinas[pieza],
+        posicion, eje, angulo, escala, color);
+}
+
 inline void DescargarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -1736,6 +2012,20 @@ inline void DescargarModelosEscenariosRetro3D()
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.racimoToxico)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.tesoreroCercado)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.balsasRapido)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.autosGlobo)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.senderoInvisible)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.banqueteTurbo)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.tuberiasDesierto)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.trepaMastil)
+        DescargarSlotModeloEscenarioRetro3D(recurso);
+    for (RecursoModeloEscenarioRetro3D& recurso : recursos.guardianRuinas)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     recursos.inicializados = false;
 }
