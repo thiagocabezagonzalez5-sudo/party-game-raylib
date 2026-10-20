@@ -19,6 +19,7 @@
 
 inline constexpr int RONDAS_CAPSULAS = 5;
 inline constexpr int MAX_CAPSULAS = 5;
+inline constexpr int MAX_PARTICULAS_CAPSULAS = 200;
 
 
 enum FaseCapsulas
@@ -62,6 +63,21 @@ struct EstadoJugadorCapsulas
 };
 
 
+// Particula de efecto (chispas, polvo, confeti, motas de luz). Solo dibujo:
+// la logica del juego nunca las lee.
+struct ParticulaCapsulas
+{
+    bool activa = false;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+    Color color{ 255, 255, 255, 255 };
+};
+
+
 struct MinijuegoCapsulasBarajadas
 {
     ResultadoMinijuego resultado{};
@@ -94,6 +110,14 @@ struct MinijuegoCapsulasBarajadas
     float tiempoSubfase = 0.0f;
     float tiempoAnimacion = 0.0f;
     float revelado = 0.0f;
+
+    // Estado solo visual (no influye en reglas ni puntuacion).
+    ParticulaCapsulas particulas[MAX_PARTICULAS_CAPSULAS];
+    float destelloConfirmar[MAX_PARTICIPANTES]{};
+    float reaccionRevelado[MAX_PARTICIPANTES]{};
+    bool efectosRevelado = false;
+    float tiempoEfectosRevelado = 0.0f;
+    float acumuladorAmbiente = 0.0f;
 
     void Inicializar();
 
