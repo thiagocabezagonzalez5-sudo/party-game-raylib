@@ -119,6 +119,7 @@ void GestorMinijuegos::ActivarMinijuego(
     minijuegoGemasDeslizantes.audio = contexto.audio;
     minijuegoTormentaMagnetica.audio = contexto.audio;
     minijuegoRefugioPinchos.audio = contexto.audio;
+    minijuegoCanteraFuga.audio = contexto.audio;
 
     switch (minijuegoActivo)
     {
