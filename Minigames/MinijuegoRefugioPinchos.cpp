@@ -2,14 +2,17 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/UtilidadesMinijuegos.h"
 #include "Systems/CalidadGrafica.h"
 #include "Systems/Input.h"
+#include "UI/EstiloUI.h"
 
 #include "rlgl.h"
 
 #include <cmath>
+#include <cstdio>
 
 // SombrasRetro.h estampa manchas de sombra en cada DrawCube/DrawSphere/
 // DrawCylinder. Este escenario es una cueva con iluminacion propia (antorchas,
@@ -3486,40 +3489,77 @@ static void DibujarResplandoresPinchos(const MinijuegoRefugioPinchos& m)
 // VISUAL: ESCENA 3D + HUD
 //==================================================
 
-static void DibujarTextoSombraPinchos(const char* texto, int x, int y, int tamano, Color color)
+// Alto (unidades de referencia 1280x720) de los avisos sobre el mundo:
+// debajo del tendedero del HUD (0..~135) y lejos del pie (> 660).
+static const float Y_ANUNCIO_PINCHOS = 150.0f;
+static const float Y_BARRA_AVISO_PINCHOS = 190.0f;
+static const float Y_FLECHA_ARRIBA_PINCHOS = 206.0f;
+static const float Y_FLECHA_ABAJO_PINCHOS = 650.0f;
+static const float Y_MUERTE_SUBITA_PINCHOS = 252.0f;
+
+
+// Flecha triangular que apunta hacia el lado indicado (de donde vienen los
+// taladros). Posiciones en pixeles, tamanos en unidades de referencia.
+static void DibujarFlechaLadoPinchos(DireccionPinchos d, Color color)
 {
-    DrawText(texto, x + 2, y + 2, tamano, Fade(BLACK, 0.75f));
-    DrawText(texto, x, y, tamano, color);
-}
+    const float ancho = (float)GetScreenWidth();
+    const float alto = (float)GetScreenHeight();
+    const float tam = Px(34.0f);
+    const float punta = tam * 1.3f;
+    const float borde = Px(18.0f);
+    const float cx = ancho * 0.5f;
+    const float cy = alto * 0.5f;
+    const float yArriba = RectRef(0.0f, Y_FLECHA_ARRIBA_PINCHOS, 0.0f, 0.0f).y;
+    const float yAbajo = RectRef(0.0f, Y_FLECHA_ABAJO_PINCHOS, 0.0f, 0.0f).y;
 
-
-static void DibujarTextoCentradoPinchos(const char* texto, int centroX, int y, int tamano, Color color)
-{
-    DibujarTextoSombraPinchos(texto, centroX - MeasureText(texto, tamano) / 2, y, tamano, color);
-}
-
-
-// Flecha triangular que apunta hacia el lado indicado (de donde vienen los taladros).
-static void DibujarFlechaLadoPinchos(DireccionPinchos d, int ancho, int alto, float e, Color color)
-{
-    float tam = 34.0f * e;
-    float cx = (float)ancho * 0.5f;
-    float cy = (float)alto * 0.5f;
+    Vector2 a{};
+    Vector2 b{};
+    Vector2 c{};
 
     switch (d)
     {
         case PINCHOS_DESDE_IZQUIERDA:
-            DrawTriangle({ 18.0f * e, cy - tam }, { 18.0f * e, cy + tam }, { 18.0f * e + tam * 1.3f, cy }, color);
+            a = { borde, cy - tam }; b = { borde, cy + tam }; c = { borde + punta, cy };
             break;
         case PINCHOS_DESDE_DERECHA:
-            DrawTriangle({ (float)ancho - 18.0f * e, cy - tam }, { (float)ancho - 18.0f * e - tam * 1.3f, cy }, { (float)ancho - 18.0f * e, cy + tam }, color);
+            a = { ancho - borde, cy - tam }; b = { ancho - borde - punta, cy }; c = { ancho - borde, cy + tam };
             break;
         case PINCHOS_DESDE_ARRIBA:
-            DrawTriangle({ cx - tam, 84.0f * e }, { cx + tam, 84.0f * e }, { cx, 84.0f * e + tam * 1.3f }, color);
+            a = { cx - tam, yArriba }; b = { cx, yArriba + punta }; c = { cx + tam, yArriba };
             break;
         case PINCHOS_DESDE_ABAJO:
-            DrawTriangle({ cx - tam, (float)alto - 18.0f * e }, { cx, (float)alto - 18.0f * e - tam * 1.3f }, { cx + tam, (float)alto - 18.0f * e }, color);
+            a = { cx - tam, yAbajo }; b = { cx + tam, yAbajo }; c = { cx, yAbajo - punta };
             break;
+    }
+
+    // Sombra dura y contorno de tinta, como el texto sobre el mundo. Se
+    // dibuja en ambos sentidos de giro para no depender del orden.
+    Vector2 s = { Px(3.0f), Px(3.0f) };
+    Color tinta = Fade(UI_TINTA, (float)color.a / 255.0f);
+    Color sombra = Fade(UI_TINTA, 0.55f * (float)color.a / 255.0f);
+    Vector2 as = { a.x + s.x, a.y + s.y };
+    Vector2 bs = { b.x + s.x, b.y + s.y };
+    Vector2 cs = { c.x + s.x, c.y + s.y };
+    DrawTriangle(as, bs, cs, sombra);
+    DrawTriangle(as, cs, bs, sombra);
+    DrawTriangle(a, b, c, color);
+    DrawTriangle(a, c, b, color);
+    DrawTriangleLines(a, b, c, tinta);
+}
+
+
+// Barra de la cuenta atras del aviso: cuanto falta para el primer disparo.
+static void DibujarBarraAvisoPinchos(float progreso, Color color)
+{
+    Rectangle riel = RectRef(640.0f - 150.0f, Y_BARRA_AVISO_PINCHOS, 300.0f, 10.0f);
+    Rectangle fondo = { riel.x - Px(2.0f), riel.y - Px(2.0f), riel.width + Px(4.0f), riel.height + Px(4.0f) };
+
+    DrawRectangleRounded({ fondo.x + Px(3.0f), fondo.y + Px(3.0f), fondo.width, fondo.height }, 0.6f, 6, Fade(UI_TINTA, 0.45f));
+    DrawRectangleRounded(fondo, 0.6f, 6, UI_TINTA);
+
+    if (progreso > 0.0f)
+    {
+        DrawRectangleRounded({ riel.x, riel.y, riel.width * progreso, riel.height }, 0.6f, 6, color);
     }
 }
 
@@ -3655,46 +3695,14 @@ void MinijuegoRefugioPinchos::Dibujar(
     EndMode3D();
 
     //----------------------------------------------
-    // HUD: solo lo necesario (tiempo, vivos, ataque actual)
+    // AVISOS SOBRE EL MUNDO (2D): debajo del tendedero y lejos del pie.
+    // Mientras el operador elige no se muestra nada que dependa de su
+    // eleccion: el lado solo aparece cuando el ataque ya empezo (aviso).
     //----------------------------------------------
-    const int ancho = GetScreenWidth();
-    const int alto = GetScreenHeight();
-    const float e = (float)alto / 720.0f;
+    const float centroX = (float)GetScreenWidth() * 0.5f;
+    const float yAnuncio = RectRef(0.0f, Y_ANUNCIO_PINCHOS, 0.0f, 0.0f).y;
 
-    DrawRectangleGradientV(0, 0, ancho, (int)(56 * e), Fade(BLACK, 0.62f), Fade(BLACK, 0.0f));
-
-    if (indiceSolo >= 0)
-    {
-        const char* rol = TextFormat(
-            "OPERADOR J%d%s",
-            participantes[indiceSolo].numeroJugador,
-            ControlaIAPinchos(participantes[indiceSolo]) ? " (BOT)" : ""
-        );
-        DibujarTextoSombraPinchos(rol, (int)(22 * e), (int)(12 * e), (int)(20 * e), colorOperador);
-    }
-
-    if (fase != FASE_PINCHOS_PREPARACION && fase != FASE_PINCHOS_TERMINADO)
-    {
-        const char* reloj = TextFormat("%.1f", tiempoRestante);
-        int tamanoReloj = (int)(36 * e);
-        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
-        DibujarTextoSombraPinchos(
-            reloj, ancho - MeasureText(reloj, tamanoReloj) - (int)(26 * e), (int)(48 * e), tamanoReloj,
-            tiempoRestante <= 5.0f ? Color{ 255, 90, 80, 255 } : GOLD
-        );
-
-        if (MuerteSubitaPinchos(*this))
-        {
-            const char* subita = "MUERTE SÚBITA";
-            int tamano = (int)(16 * e);
-            DibujarTextoSombraPinchos(
-                subita, ancho - MeasureText(subita, tamano) - (int)(26 * e), (int)(88 * e), tamano,
-                ParpadeoRojoPinchos(*this) ? Color{ 255, 90, 70, 255 } : Color{ 255, 170, 90, 255 }
-            );
-        }
-    }
-
-    // Nombre sobre cada jugador vivo.
+    // Rotulo sobre cada jugador vivo del equipo.
     for (int i = 0; i < MAX_PARTICIPANTES && i < cantidadMaxima; i++)
     {
         if (i == indiceSolo || !resultado.participantes[i].participo || estadosJugadores[i].eliminado) continue;
@@ -3702,91 +3710,162 @@ void MinijuegoRefugioPinchos::Dibujar(
         Vector2 pantalla = GetWorldToScreen(
             { jugadores[i].posicion.x, jugadores[i].posicion.y + 1.75f, jugadores[i].posicion.z }, camara
         );
-        const char* etiqueta = TextFormat("J%d", participantes[i].numeroJugador);
-        int tamano = (int)(18 * e);
-        DibujarTextoCentradoPinchos(etiqueta, (int)pantalla.x, (int)pantalla.y - tamano, tamano, participantes[i].color);
+
+        char rotulo[8];
+        std::snprintf(rotulo, sizeof(rotulo), "J%d", participantes[i].numeroJugador);
+
+        OpcionesEtiquetaUI opciones;
+        opciones.borde = participantes[i].color;
+        opciones.pico = true;
+        DibujarEtiquetaUI(rotulo, { pantalla.x, pantalla.y - Px(14.0f) }, -5.0f, opciones);
     }
 
-    // Estado del equipo (abajo a la izquierda).
-    {
-        int y = alto - (int)(32 * e) - MargenBarraRondaMinijuegos();
-        int x = (int)(22 * e);
-
-        for (int i = 0; i < MAX_PARTICIPANTES; i++)
-        {
-            if (i == indiceSolo || !resultado.participantes[i].participo) continue;
-
-            bool vivo = !estadosJugadores[i].eliminado;
-            DrawRectangle(x, y, (int)(22 * e), (int)(22 * e), vivo ? participantes[i].color : Fade(participantes[i].color, 0.25f));
-            DrawRectangleLines(x, y, (int)(22 * e), (int)(22 * e), BLACK);
-            DrawText(vivo ? "OK" : "X", x + (int)(30 * e), y + (int)(2 * e), (int)(18 * e), vivo ? RAYWHITE : Color{ 255, 110, 90, 255 });
-            x += (int)(82 * e);
-        }
-    }
-
-    // Ataque en curso: nombre del patron y, mientras avisa, la cuenta atras.
+    // Ataque en curso: patron y lado(s), la cuenta atras del aviso y las
+    // flechas de los lados activos (misma anticipacion que la franja roja).
     if (patronActivo && (fase == FASE_PINCHOS_AVISO || fase == FASE_PINCHOS_ATAQUE))
     {
         bool avisando = fase == FASE_PINCHOS_AVISO;
         bool parpadeo = ParpadeoRojoPinchos(*this);
         Color color = avisando && parpadeo ? Color{ 255, 90, 60, 255 } : Color{ 255, 190, 70, 255 };
 
-        const char* texto = TextoAtaquePinchos(*this);
-        int tamano = (int)(26 * e);
-        DibujarTextoCentradoPinchos(texto, ancho / 2, (int)(10 * e), tamano, color);
+        DibujarTextoMundoContornoUI(TextoAtaquePinchos(*this), centroX, yAnuncio, UI_TEXTO_GRANDE, color);
 
         if (avisando)
         {
             float primero = patron.salvas[0].disparo;
-            float progreso = LimitarPinchos(tiempoPatron / primero, 0.0f, 1.0f);
-            int anchoBarra = (int)(300 * e);
-            int xBarra = ancho / 2 - anchoBarra / 2;
-            int yBarra = (int)(44 * e);
-            DrawRectangle(xBarra, yBarra, anchoBarra, (int)(8 * e), Fade(BLACK, 0.6f));
-            DrawRectangle(xBarra, yBarra, (int)((float)anchoBarra * progreso), (int)(8 * e), color);
+            DibujarBarraAvisoPinchos(LimitarPinchos(tiempoPatron / primero, 0.0f, 1.0f), color);
         }
 
         for (int d = 0; d < 4; d++)
         {
             if (!LadoActivoPinchos(*this, (DireccionPinchos)d)) continue;
-            DibujarFlechaLadoPinchos((DireccionPinchos)d, ancho, alto, e, Fade(color, avisando ? (parpadeo ? 0.90f : 0.50f) : 0.90f));
+            DibujarFlechaLadoPinchos((DireccionPinchos)d, Fade(color, avisando ? (parpadeo ? 0.90f : 0.50f) : 0.90f));
         }
     }
     else if (fase == FASE_PINCHOS_ESPERANDO && indiceSolo >= 0 && !ControlaIAPinchos(participantes[indiceSolo]) && cooldownAtaque <= 0.0f)
     {
-        const char* linea = TextFormat("ELEGI EL LADO DEL ATAQUE  %.0f", std::ceil(ESPERA_AUTOMATICA_PINCHOS - tiempoEleccion));
-        DibujarTextoCentradoPinchos(linea, ancho / 2, (int)(12 * e), (int)(22 * e), RAYWHITE);
+        // Igual sea cual sea el lado que el operador vaya a elegir.
+        char linea[48];
+        std::snprintf(linea, sizeof(linea), "ELEGI EL LADO DEL ATAQUE  %.0f", std::ceil(ESPERA_AUTOMATICA_PINCHOS - tiempoEleccion));
+        DibujarTextoMundoContornoUI(linea, centroX, yAnuncio, UI_TEXTO_GRANDE, UI_TEXTO_MUNDO);
     }
 
-    // Instrucciones breves solo durante la cuenta atras.
-    if (fase == FASE_PINCHOS_PREPARACION)
+    // Anuncio breve al entrar en la muerte subita.
+    if (fase != FASE_PINCHOS_PREPARACION && fase != FASE_PINCHOS_TERMINADO)
     {
-        int numero = (int)std::ceil(tiempoPreparacion);
-        if (numero < 1) numero = 1;
-        const char* texto = TextFormat("%d", numero);
-        int tamano = (int)(100 * e);
-        DibujarTextoCentradoPinchos(texto, ancho / 2, (int)((float)alto * 0.38f), tamano, GOLD);
+        float desde = (DURACION_PARTIDA_PINCHOS - tiempoRestante) - MUERTE_SUBITA_DESDE_PINCHOS;
 
-        DibujarTextoCentradoPinchos("LA FRANJA ROJA ES MORTAL: ESCONDETE DETRÁS DE LAS ROCAS", ancho / 2, alto - (int)(40 * e) - MargenBarraRondaMinijuegos(), (int)(18 * e), RAYWHITE);
+        if (desde >= 0.0f && desde < 2.0f)
+        {
+            float alfa = desde < 0.2f ? desde / 0.2f : (desde > 1.6f ? (2.0f - desde) / 0.4f : 1.0f);
+            float y = RectRef(0.0f, Y_MUERTE_SUBITA_PINCHOS, 0.0f, 0.0f).y;
+            DibujarTextoMundoContornoUI("¡MUERTE SÚBITA!", centroX, y, UI_TEXTO_GRANDE, Color{ 255, 90, 70, 255 }, alfa);
+            DibujarTextoMundoContornoUI("ATAQUES CADA VEZ MÁS RÁPIDOS", centroX, y + Px(38.0f), UI_TEXTO, UI_TEXTO_MUNDO, alfa);
+        }
     }
 
-    if (fase == FASE_PINCHOS_TERMINADO && resultado.estado == RESULTADO_MINIJUEGO_FINALIZADO)
+    //----------------------------------------------
+    // HUD COMUN: el operador a la izquierda del reloj y los mineros a la
+    // derecha (equipos 0 y 1).
+    //----------------------------------------------
+    DatosHudMinijuego hud;
+    PrepararDatosHudMinijuego(
+        hud,
+        "REFUGIO TALADROS",
+        "1 VS 3: EL OPERADOR ELIGE EL LADO DE LOS TALADROS; LOS MINEROS SE ESCONDEN TRAS LAS ROCAS.",
+        resultado
+    );
+
+    hud.fase = fase == FASE_PINCHOS_PREPARACION
+        ? HUD_MINIJUEGO_CUENTA
+        : (fase == FASE_PINCHOS_TERMINADO ? HUD_MINIJUEGO_FIN : HUD_MINIJUEGO_JUGANDO);
+    hud.cuentaRestante = tiempoPreparacion;
+    hud.reloj = HUD_RELOJ_CUENTA_ATRAS;
+    hud.tiempoRestante = tiempoRestante > 0.0f ? tiempoRestante : 0.0f;
+    hud.tiempoTotal = DURACION_PARTIDA_PINCHOS;
+    hud.segundosAlerta = 5.0f;
+    hud.finPorTiempo = tiempoAgotado;
+
+    int mineros = 0;
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
-        bool ganaSolo = ContarRivalesVivosPinchos(*this) <= 0;
-        const char* titulo = ganaSolo ? "GANA EL OPERADOR" : "GANA EL EQUIPO";
-        const char* detalle = ganaSolo
-            ? "TODO EL EQUIPO QUEDÓ APLASTADO"
-            : TextFormat("SOBREVIVIERON %d DEL EQUIPO", ContarRivalesVivosPinchos(*this));
-
-        int anchoPanel = (int)(560 * e);
-        int altoPanel = (int)(130 * e);
-        int yPanel = alto - altoPanel - (int)(60 * e);
-        DrawRectangle(ancho / 2 - anchoPanel / 2, yPanel, anchoPanel, altoPanel, Fade(BLACK, 0.82f));
-        DrawRectangleLines(ancho / 2 - anchoPanel / 2, yPanel, anchoPanel, altoPanel, GOLD);
-        DibujarTextoCentradoPinchos(titulo, ancho / 2, yPanel + (int)(16 * e), (int)(36 * e), GOLD);
-        DibujarTextoCentradoPinchos(detalle, ancho / 2, yPanel + (int)(62 * e), (int)(20 * e), RAYWHITE);
-        DibujarTextoCentradoPinchos(TextoReinicioMinijuego(), ancho / 2, yPanel + altoPanel - (int)(34 * e), (int)(18 * e), LIGHTGRAY);
+        if (i != indiceSolo && resultado.participantes[i].participo) mineros++;
     }
+
+    int vivos = ContarRivalesVivosPinchos(*this);
+    int aplastados = mineros - vivos;
+    bool muerteSubita = MuerteSubitaPinchos(*this) && hud.fase == HUD_MINIJUEGO_JUGANDO;
+
+    // La nota vive hasta que DibujarHudMinijuego termina (no es TextFormat).
+    char nota[64] = "";
+    bool terminado = fase == FASE_PINCHOS_TERMINADO && resultado.estado == RESULTADO_MINIJUEGO_FINALIZADO;
+
+    if (terminado && indiceSolo >= 0)
+    {
+        bool ganaSolo = resultado.participantes[indiceSolo].posicionFinal == 1;
+        hud.tituloFinal = ganaSolo ? "¡GANA EL OPERADOR!" : "¡GANAN LOS MINEROS!";
+
+        if (ganaSolo)
+            std::snprintf(nota, sizeof(nota), "TODOS LOS MINEROS QUEDARON APLASTADOS");
+        else if (vivos == 1)
+            std::snprintf(nota, sizeof(nota), "SOBREVIVIÓ 1 MINERO HASTA EL FINAL");
+        else
+            std::snprintf(nota, sizeof(nota), "SOBREVIVIERON %d MINEROS HASTA EL FINAL", vivos);
+
+        hud.notaFinal = nota;
+    }
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        JugadorHudMinijuego& jugador = hud.jugadores[i];
+        if (!jugador.visible) continue;
+
+        const Participante& participante = participantes[i];
+
+        if (i == indiceSolo)
+        {
+            jugador.equipo = 0;
+            jugador.rol = "OPERADOR";
+            jugador.valorNumerico = aplastados;
+            std::snprintf(jugador.valor, sizeof(jugador.valor), "%d/%d", aplastados, mineros);
+            std::snprintf(
+                jugador.detalleFinal, sizeof(jugador.detalleFinal),
+                aplastados == 1 ? "%d APLASTADO" : "%d APLASTADOS", aplastados
+            );
+
+            if (muerteSubita)
+            {
+                std::snprintf(jugador.estado, sizeof(jugador.estado), "MUERTE SÚBITA");
+            }
+
+            if (!ControlaIAPinchos(participante))
+            {
+                std::snprintf(
+                    jugador.controles, sizeof(jugador.controles),
+                    "LADO DEL ATAQUE: %s\nSI DUDÁS, ELIGE LA MÁQUINA",
+                    TextoMoverHud(participante)
+                );
+            }
+            continue;
+        }
+
+        bool eliminado = estadosJugadores[i].eliminado;
+        jugador.equipo = 1;
+        jugador.rol = "MINERO";
+        jugador.eliminado = eliminado;
+        std::snprintf(jugador.detalleFinal, sizeof(jugador.detalleFinal), "%s", eliminado ? "APLASTADO" : "SOBREVIVIÓ");
+
+        if (!ControlaIAPinchos(participante))
+        {
+            std::snprintf(
+                jugador.controles, sizeof(jugador.controles),
+                "ESCONDETE TRAS LAS ROCAS\n%s",
+                TextoMoverHud(participante)
+            );
+        }
+    }
+
+    DibujarHudMinijuego(hud, participantes);
 }
 
 
