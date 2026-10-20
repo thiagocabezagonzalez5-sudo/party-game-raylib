@@ -32,6 +32,7 @@ struct EstadoJugadorMiradasCruzadas
     bool eligioDireccion = false;
     DireccionMiradaCruzada direccion = MIRADA_FRENTE;
     int posicionFinal = 0;
+    int rondaEliminacion = 0;   // solo informativo (tablon final)
 };
 
 

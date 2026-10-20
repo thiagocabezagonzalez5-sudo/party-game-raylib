@@ -1,12 +1,15 @@
 #include "Minigames/MinijuegoMiradasCruzadas.h"
 
 #include "Minigames/AudioMinijuegos.h"
+#include "Minigames/HudMinijuego.h"
 #include "raylib.h"
 #include "raymath.h"
 #include "rlgl.h"
 #include "Systems/Input.h"
+#include "UI/EstiloUI.h"
 
 #include <cmath>
+#include <cstdio>
 
 
 static const float DURACION_PREPARACION_MIRADAS = 2.5f;
@@ -21,9 +24,9 @@ static const char* NombreDireccionMirada(
 {
     switch (direccion)
     {
-        case MIRADA_FRENTE: return "FRENTE";
-        case MIRADA_IZQUIERDA: return "IZQUIERDA";
-        case MIRADA_DERECHA: return "DERECHA";
+        case MIRADA_FRENTE: return "AL FRENTE";
+        case MIRADA_IZQUIERDA: return "A LA IZQUIERDA";
+        case MIRADA_DERECHA: return "A LA DERECHA";
         case MIRADA_ARRIBA: return "ARRIBA";
         case MIRADA_ABAJO: return "ABAJO";
         case CANTIDAD_DIRECCIONES_MIRADA: break;
@@ -186,6 +189,7 @@ static void ResolverRondaMiradas(
         if (minijuego.jugadores[i].direccion == direccionSolo)
         {
             minijuego.jugadores[i].eliminado = true;
+            minijuego.jugadores[i].rondaEliminacion = minijuego.numeroRonda;
             eliminados++;
         }
     }
@@ -597,10 +601,6 @@ void MinijuegoMiradasCruzadas::Dibujar(
 {
     ClearBackground(Color{ 102, 154, 219, 255 });
 
-    int ancho = GetScreenWidth();
-    int alto = GetScreenHeight();
-
-
     if (indiceSolo < 0)
     {
         return;
@@ -624,7 +624,6 @@ void MinijuegoMiradasCruzadas::Dibujar(
 
     Camera3D camara = ObtenerCamaraMiradas();
     Vector2 etiquetas[MAX_PARTICIPANTES]{};
-    Vector2 marcasEliminado[MAX_PARTICIPANTES]{};
 
     BeginMode3D(camara);
 
@@ -692,33 +691,13 @@ void MinijuegoMiradasCruzadas::Dibujar(
         }
 
         etiquetas[i] = GetWorldToScreen({ base.x, 0.0f, base.z + 1.9f }, camara);
-        marcasEliminado[i] = GetWorldToScreen({ base.x, ALTURA_PEDESTAL_EQUIPO_MIRADAS + 3.0f, base.z }, camara);
         cursor++;
     }
 
     EndMode3D();
 
-    // Encabezado despues de la escena 3D: antes quedaba tapado por ella.
-    DrawRectangle(18, 14, 690, 98, Fade(BLACK, 0.72f));
-    DrawText("MIRADAS CRUZADAS - 1 VS 3", 24, 20, 30, RAYWHITE);
-    DrawText(
-        "El equipo debe mirar a un lugar distinto del jugador solitario.",
-        24,
-        58,
-        18,
-        RAYWHITE
-    );
-    DrawText(
-        "Direcciones: izquierda / derecha / arriba / abajo. Sin tocar nada = frente.",
-        24,
-        84,
-        17,
-        LIGHTGRAY
-    );
-
-    // Etiquetas de cada jugador.
-    cursor = 0;
-
+    // Rotulos de cada jugador sobre el mundo (solo el numero: el rol y si
+    // es bot ya estan en el tendedero).
     for (int i = 0; i < MAX_PARTICIPANTES; i++)
     {
         if (!resultado.participantes[i].participo)
@@ -726,99 +705,194 @@ void MinijuegoMiradasCruzadas::Dibujar(
             continue;
         }
 
-        const char* texto = i == indiceSolo
-            ? TextFormat("J%d SOLO%s", participantes[i].numeroJugador, participantes[i].esBot ? " BOT" : "")
-            : TextFormat("J%d%s", participantes[i].numeroJugador, participantes[i].esBot ? " BOT" : "");
-
-        DrawText(
-            texto,
-            (int)etiquetas[i].x - MeasureText(texto, 20) / 2,
-            (int)etiquetas[i].y,
-            20,
-            RAYWHITE
-        );
-
-        if (i != indiceSolo && jugadores[i].eliminado)
+        // Durante el revelado el anuncio ocupa el lugar del rotulo del solitario.
+        if (i == indiceSolo && fase == FASE_MIRADAS_RESOLUCION)
         {
-            DrawText(
-                "X",
-                (int)marcasEliminado[i].x - MeasureText("X", 34) / 2,
-                (int)marcasEliminado[i].y - 34,
-                34,
-                RED
+            continue;
+        }
+
+        OpcionesEtiquetaUI opciones;
+        opciones.borde = participantes[i].color;
+        opciones.pico = i == indiceSolo;
+        opciones.alfa = i != indiceSolo && jugadores[i].eliminado ? 0.6f : 1.0f;
+
+        char rotulo[8];
+        std::snprintf(rotulo, sizeof(rotulo), "J%d", participantes[i].numeroJugador);
+        DibujarEtiquetaUI(rotulo, etiquetas[i], 0.0f, opciones);
+    }
+
+    // Revelado: la direccion del solitario recien se nombra al resolver.
+    if (fase == FASE_MIRADAS_RESOLUCION)
+    {
+        int atrapados = 0;
+
+        for (int i = 0; i < MAX_PARTICIPANTES; i++)
+        {
+            if (
+                i != indiceSolo &&
+                jugadores[i].eliminado &&
+                jugadores[i].rondaEliminacion == numeroRonda
+            )
+            {
+                atrapados++;
+            }
+        }
+
+        float alfa = Clamp((DURACION_RESOLUCION_MIRADAS - tiempoFase) / 0.2f, 0.0f, 1.0f);
+        float cx = etiquetas[indiceSolo].x;
+        float y = etiquetas[indiceSolo].y;
+
+        char texto[48];
+        std::snprintf(
+            texto,
+            sizeof(texto),
+            "J%d MIRÓ %s",
+            participantes[indiceSolo].numeroJugador,
+            NombreDireccionMirada(jugadores[indiceSolo].direccion)
+        );
+        DibujarTextoMundoContornoUI(texto, cx, y - Px(40.0f), UI_TEXTO_GRANDE, UI_FOCO, alfa);
+
+        if (atrapados > 0)
+        {
+            std::snprintf(
+                texto,
+                sizeof(texto),
+                atrapados == 1 ? "¡ATRAPÓ A %d!" : "¡ATRAPÓ A %d JUGADORES!",
+                atrapados
+            );
+        }
+        else
+        {
+            std::snprintf(texto, sizeof(texto), "¡NADIE COINCIDIÓ!");
+        }
+
+        DibujarTextoMundoContornoUI(
+            texto,
+            cx,
+            y - Px(6.0f),
+            UI_TEXTO,
+            atrapados > 0 ? UI_PELIGRO : UI_POSITIVO,
+            alfa
+        );
+    }
+
+    // HUD comun (Minigames/HudMinijuego): solo lee el estado. La direccion
+    // elegida NUNCA aparece antes de resolver: solo un «LISTO» neutro.
+    DatosHudMinijuego hud;
+    PrepararDatosHudMinijuego(
+        hud,
+        "MIRADAS CRUZADAS",
+        "1 VS 3: EL EQUIPO MIRA A UN LADO DISTINTO DEL SOLITARIO. SI COINCIDEN, QUEDA FUERA.",
+        resultado
+    );
+
+    hud.fase = fase == FASE_MIRADAS_PREPARACION
+        ? HUD_MINIJUEGO_CUENTA
+        : (fase == FASE_MIRADAS_TERMINADO ? HUD_MINIJUEGO_FIN : HUD_MINIJUEGO_JUGANDO);
+    hud.cuentaRestante = tiempoPreparacion;
+
+    // Sin reloj de partida: el cartel central lleva la ronda y la barra
+    // muestra el tiempo que queda para elegir.
+    int rondaVisible = numeroRonda < 1 ? 1 : numeroRonda;
+    hud.reloj = HUD_RELOJ_MEDIDOR;
+    hud.etiquetaMedidor = fase == FASE_MIRADAS_ELECCION ? "RONDA - ELEGI" : "RONDA";
+    std::snprintf(hud.valorMedidor, sizeof(hud.valorMedidor), "%d/%d", rondaVisible, MAX_RONDAS_MIRADAS);
+    hud.progresoMedidor = fase == FASE_MIRADAS_ELECCION
+        ? tiempoFase / DURACION_ELECCION_MIRADAS
+        : (fase == FASE_MIRADAS_PREPARACION ? 1.0f : 0.0f);
+    hud.finPorTiempo = false;
+
+    int tamanoEquipo = 0;
+    int atrapadosTotal = 0;
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        if (i == indiceSolo || !resultado.participantes[i].participo)
+        {
+            continue;
+        }
+
+        tamanoEquipo++;
+
+        if (jugadores[i].eliminado)
+        {
+            atrapadosTotal++;
+        }
+    }
+
+    if (fase == FASE_MIRADAS_TERMINADO && resultado.estado == RESULTADO_MINIJUEGO_FINALIZADO)
+    {
+        hud.tituloFinal = resultado.participantes[indiceSolo].posicionFinal == 1
+            ? "¡GANA EL SOLITARIO!"
+            : "¡GANA EL EQUIPO!";
+        hud.notaFinal = "EL EQUIPO GANA SI ALGUIEN AGUANTA LAS 5 RONDAS.";
+    }
+
+    for (int i = 0; i < MAX_PARTICIPANTES; i++)
+    {
+        JugadorHudMinijuego& jugador = hud.jugadores[i];
+        if (!jugador.visible) continue;
+
+        const Participante& participante = participantes[i];
+        bool esSolo = i == indiceSolo;
+
+        jugador.equipo = esSolo ? 0 : 1;
+        jugador.rol = esSolo ? "SOLITARIO" : "EQUIPO";
+
+        if (esSolo)
+        {
+            jugador.valorNumerico = atrapadosTotal;
+            jugador.progreso = tamanoEquipo > 0 ? (float)atrapadosTotal / tamanoEquipo : 0.0f;
+            std::snprintf(jugador.valor, sizeof(jugador.valor), "%d/%d", atrapadosTotal, tamanoEquipo);
+            std::snprintf(
+                jugador.detalleFinal,
+                sizeof(jugador.detalleFinal),
+                atrapadosTotal == 1 ? "%d ATRAPADO" : "%d ATRAPADOS",
+                atrapadosTotal
+            );
+        }
+        else
+        {
+            jugador.eliminado = jugadores[i].eliminado;
+
+            if (jugadores[i].eliminado)
+            {
+                std::snprintf(
+                    jugador.detalleFinal,
+                    sizeof(jugador.detalleFinal),
+                    "CAYÓ EN RONDA %d",
+                    jugadores[i].rondaEliminacion
+                );
+            }
+            else
+            {
+                std::snprintf(jugador.detalleFinal, sizeof(jugador.detalleFinal), "A SALVO");
+            }
+        }
+
+        // Igual para cualquier direccion: solo confirma que eligio, como la
+        // luz del pedestal.
+        if (
+            fase == FASE_MIRADAS_ELECCION &&
+            jugadores[i].eligioDireccion &&
+            !jugador.eliminado
+        )
+        {
+            std::snprintf(jugador.estado, sizeof(jugador.estado), "LISTO");
+        }
+
+        if (!participante.esBot && participante.conectado)
+        {
+            std::snprintf(
+                jugador.controles,
+                sizeof(jugador.controles),
+                "MIRÁ: %s\nSIN TOCAR: AL FRENTE",
+                TextoMoverHud(participante)
             );
         }
     }
 
-    int baseTexto = alto - 118;
-
-    if (fase == FASE_MIRADAS_PREPARACION)
-    {
-        int numero = (int)std::ceil(tiempoPreparacion);
-        if (numero < 1) numero = 1;
-
-        const char* texto = TextFormat("%d", numero);
-        DrawText(
-            texto,
-            ancho / 2 - MeasureText(texto, 76) / 2,
-            baseTexto - 20,
-            76,
-            GOLD
-        );
-    }
-    else if (fase == FASE_MIRADAS_ELECCION)
-    {
-        // Arriba a la derecha (cielo libre): abajo pisaba la etiqueta de J3.
-        const char* ronda = TextFormat("RONDA %d / %d - ELEGI", numeroRonda, MAX_RONDAS_MIRADAS);
-        int xPanel = ancho - 384;
-
-        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
-        DrawRectangle(xPanel, 48, 366, 76, Fade(BLACK, 0.70f));
-        DrawText(ronda, xPanel + 183 - MeasureText(ronda, 28) / 2, 58, 28, GOLD);
-
-        DrawRectangle(xPanel + 13, 98, 340, 14, Fade(WHITE, 0.25f));
-
-        float porcentaje = tiempoFase / DURACION_ELECCION_MIRADAS;
-        if (porcentaje < 0.0f) porcentaje = 0.0f;
-
-        DrawRectangle(
-            xPanel + 13,
-            98,
-            (int)(340.0f * porcentaje),
-            14,
-            porcentaje < 0.25f ? RED : YELLOW
-        );
-    }
-    else if (fase == FASE_MIRADAS_RESOLUCION)
-    {
-        const char* texto =
-            TextFormat(
-                "SOLO MIRÓ: %s",
-                NombreDireccionMirada(jugadores[indiceSolo].direccion)
-            );
-
-        DrawText(texto, ancho / 2 - MeasureText(texto, 28) / 2, baseTexto, 28, GOLD);
-    }
-    else if (fase == FASE_MIRADAS_TERMINADO)
-    {
-        bool ganaSolo = ContarEquipoVivoMiradas(*this) <= 0;
-        const char* titulo = ganaSolo
-            ? "GANA EL JUGADOR SOLITARIO"
-            : "GANA EL EQUIPO";
-
-        // Debajo del contador de FPS de Juego (esquina superior derecha, y 20..40).
-        const int py = 48;
-        const int cx = ancho - 300;
-        DrawRectangle(cx - 280, py, 560, 110, Fade(BLACK, 0.88f));
-        DrawText(titulo, cx - MeasureText(titulo, 32) / 2, py + 16, 32, GOLD);
-        DrawText(
-            TextoReinicioMinijuego(),
-            cx - MeasureText(TextoReinicioMinijuego(), 19) / 2,
-            py + 62,
-            19,
-            RAYWHITE
-        );
-    }
+    DibujarHudMinijuego(hud, participantes);
 }
 
 
