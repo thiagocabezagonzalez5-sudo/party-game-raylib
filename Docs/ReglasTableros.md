@@ -23,7 +23,7 @@ Un tablero que no cumpla la regla **sigue jugándose**, pero registra un aviso e
 |---|---|---|---|---|---|---|---|
 | Isla Arboleda | 5 | 2 | 3 | 2 | 2 | 4 | Cumple |
 | Forja del Volcán | 3 | 1 | 2 | 2 | 2 | 6 | Cumple |
-| Mercado Flotante | 2 | 1 | 2 | 1 | 2 | 2 | Cumple |
+| Mercado Flotante | 3 | 2 | 2 | 2 | 2 | 7 | Cumple |
 | Torre del Reloj | 2 | 1 | 1 | 1 | 2 | 2 | Cumple |
 | Feria Nocturna | 2 | 1 | 1 | 1 | 1 | 2 | Cumple |
 
