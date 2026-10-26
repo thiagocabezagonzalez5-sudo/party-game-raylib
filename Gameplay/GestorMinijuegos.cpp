@@ -122,6 +122,7 @@ void GestorMinijuegos::ActivarMinijuego(
     minijuegoCanteraFuga.audio = contexto.audio;
     minijuegoColor.audio = contexto.audio;
     minijuegoTronco.audio = contexto.audio;
+    minijuego67.audio = contexto.audio;
 
     switch (minijuegoActivo)
     {
