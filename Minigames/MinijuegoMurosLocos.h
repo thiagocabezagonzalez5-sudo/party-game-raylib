@@ -3,6 +3,7 @@
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
+#include "Systems/Audio.h"
 
 
 enum FaseMurosLocos
@@ -25,6 +26,16 @@ struct EstadoJugadorMurosLocos
     float retrasoBot = 0.0f;
     float objetivoX = 0.0f;
     float objetivoZ = 0.0f;
+
+    // Solo visual / audio: flanco de suelo, destello del empujon y caida
+    // al foso de arena tras la eliminacion.
+    bool enSueloAnterior = true;
+    float destelloGolpe = 0.0f;
+    float tiempoCaida = -1.0f;      // < 0: no esta cayendo
+    Vector3 posicionCaida{};
+    Vector3 velocidadCaida{};
+    bool tocoArena = false;
+    float hundimiento = 0.0f;       // 0..1 se hunde en la arena del foso
 };
 
 
@@ -37,6 +48,35 @@ struct MuroLoco
     int cantidadHuecos = 1;
     float centrosHueco[2] = { 0.0f, 0.0f };
 };
+
+
+// Efectos de las ruinas (solo visuales).
+struct ParticulaMurosLocos
+{
+    bool activa = false;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+    float freno = 1.2f;
+    Color color{};
+};
+
+
+// «¡J2 AL FOSO!» sobre el borde por donde cayo.
+struct AvisoMurosLocos
+{
+    bool activo = false;
+    int jugador = 0;
+    Vector3 posicion{};
+    float vida = 0.0f;
+};
+
+
+static const int MAX_PARTICULAS_MUROS = 360;
+static const int MAX_AVISOS_MUROS = 4;
 
 
 struct MinijuegoMurosLocos
@@ -59,6 +99,23 @@ struct MinijuegoMurosLocos
     float tiempoEntreMuros = 0.0f;
 
     int numeroMuro = 0;
+
+    // Solo visual: reloj de animacion, efectos y anuncios. Nada de esto
+    // toca la logica ni consume el azar de la partida.
+    float tiempoAnimacion = 0.0f;
+    unsigned int semillaVisual = 2891336453u;
+    bool confetiLanzado = false;
+    int muroDerrumbado = 0;         // ultimo muro que ya cayo al foso
+    int muroAnunciado = 0;
+    float tiempoAnuncio = -1.0f;
+    int tipoAnuncio = 0;
+    bool dobleHuecoVisto = false;
+
+    ParticulaMurosLocos particulasEfecto[MAX_PARTICULAS_MUROS];
+    AvisoMurosLocos avisos[MAX_AVISOS_MUROS];
+
+    // Lo conecta GestorMinijuegos; puede ser nullptr.
+    AudioJuego* audio = nullptr;
 
     void Inicializar();
 
