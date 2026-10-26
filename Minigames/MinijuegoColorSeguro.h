@@ -3,9 +3,11 @@
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
+#include "Systems/Audio.h"
 
 
 const int CANTIDAD_PLATAFORMAS_COLOR = 7;
+const int MAX_PARTICULAS_COLOR_SEGURO = 220;
 
 
 enum FaseMinijuegoColor
@@ -20,6 +22,29 @@ enum EstadoPartidaColorSeguro
     COLOR_SEGURO_PREPARACION = 0,
     COLOR_SEGURO_JUGANDO,
     COLOR_SEGURO_TERMINADO
+};
+
+
+// Efectos propios del volcan (solo visuales, no afectan el juego).
+enum TipoParticulaColorSeguro
+{
+    PARTICULA_COLOR_GOTA = 0,     // gota de lava con gravedad
+    PARTICULA_COLOR_ROCA,         // escombro de basalto
+    PARTICULA_COLOR_BRASA,        // brasa que sube (aditiva)
+    PARTICULA_COLOR_HUMO          // bocanada translucida
+};
+
+
+struct ParticulaColorSeguro
+{
+    bool activa = false;
+    TipoParticulaColorSeguro tipo = PARTICULA_COLOR_GOTA;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    Color color{ 255, 255, 255, 255 };
 };
 
 
@@ -53,9 +78,6 @@ struct MinijuegoColorSeguro
     Vector3 posicionCamaraBase{};
     Vector3 objetivoCamaraBase{};
 
-    float tiempoTemblorCamara = 0.0f;
-    float intensidadTemblorCamara = 0.0f;
-
     EstadoPartidaColorSeguro estado =
         COLOR_SEGURO_PREPARACION;
 
@@ -72,6 +94,21 @@ struct MinijuegoColorSeguro
     float tiempoFase = 5.0f;
     float duracionElegirPlataforma = 5.0f;
     float duracionCaidaPlataformas = 2.0f;
+
+    // Audio comun (lo conecta GestorMinijuegos; puede ser nullptr).
+    AudioJuego* audio = nullptr;
+
+    // Estado visual: avanza en Actualizar y Dibujar solo lo lee.
+    float tiempoAnimacion = 0.0f;
+    float tiempoAnuncio = 0.0f;         // desde que la TV mostro el color
+    float acumuladorBrasas = 0.0f;
+    float acumuladorHumo = 0.0f;
+    unsigned int semillaEfectos = 12345u;
+    float salpicaduraPlataforma[CANTIDAD_PLATAFORMAS_COLOR]{};
+    float emergerPlataforma[CANTIDAD_PLATAFORMAS_COLOR]{};
+    float efectoEliminacion[MAX_PARTICIPANTES]{};
+    Vector3 posicionEliminacion[MAX_PARTICIPANTES]{};
+    ParticulaColorSeguro efectos[MAX_PARTICULAS_COLOR_SEGURO];
 
     void Inicializar();
 
