@@ -3,12 +3,44 @@
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
+#include "Systems/Audio.h"
 
 
 enum AccionTronco
 {
     ACCION_TRONCO_TIRAR = 0,
     ACCION_TRONCO_EMPUJAR
+};
+
+
+// Pool fijo de particulas (solo visual): aserrin, chispas, astillas,
+// confeti y ambiente (hojas y motas de aserrin al sol).
+static const int MAX_PARTICULAS_TRONCO = 220;
+
+
+enum TipoParticulaTronco
+{
+    PARTICULA_TRONCO_ASERRIN = 0,
+    PARTICULA_TRONCO_CHISPA,
+    PARTICULA_TRONCO_ASTILLA,
+    PARTICULA_TRONCO_CONFETI,
+    PARTICULA_TRONCO_HOJA,
+    PARTICULA_TRONCO_MOTA,
+    PARTICULA_TRONCO_POLVO
+};
+
+
+struct ParticulaTronco
+{
+    bool activa = false;
+    int tipo = PARTICULA_TRONCO_ASERRIN;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.05f;
+    float giro = 0.0f;
+    Color color{ 255, 255, 255, 255 };
 };
 
 
@@ -48,6 +80,14 @@ struct EstadoEquipoTronco
 
     bool golpeEnCurso = false;
     bool ultimoGolpeCorrecto = false;
+
+    // Solo visual: no intervienen en las reglas.
+    float sacudida = 0.0f;          // temblor de sierra y tronco tras un error
+    float destello = 0.0f;          // luz en el corte tras una pasada buena
+    float avisoError = 0.0f;        // cartel «¡DESCOORDINADOS!»
+    float avisoHito = 0.0f;         // cartel «¡25 %!», «¡50 %!»...
+    int hito = 0;
+    float caidaTronco = -1.0f;      // segundos desde que se partio (< 0: entero)
 };
 
 
@@ -91,6 +131,14 @@ struct MinijuegoTronco
 
     // Segundos restantes del aviso "SE RECONFIGURARON LOS EQUIPOS".
     float avisoReconfiguracion = 0.0f;
+
+    // Lo conecta GestorMinijuegos; puede ser nullptr (sin sonido).
+    AudioJuego* audio = nullptr;
+
+    ParticulaTronco particulas[MAX_PARTICULAS_TRONCO];
+    float tiempoAnimacion = 0.0f;
+    float tiempoFinalizado = 0.0f;
+    float acumuladorAmbiente = 0.0f;
 
     void Inicializar();
 
