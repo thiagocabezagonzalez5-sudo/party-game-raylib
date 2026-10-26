@@ -9,6 +9,8 @@
 inline constexpr int CANTIDAD_CONTENEDORES_CAJAS = 8;
 inline constexpr int RONDAS_CAJAS = 3;
 inline constexpr int MAX_ELECCIONES_CAJAS = 3;
+inline constexpr int MAX_PARTICULAS_CAJAS = 140;
+inline constexpr int SENUELOS_POR_JUGADOR_CAJAS = 2;
 
 
 enum FaseCajasPuerto
@@ -44,6 +46,36 @@ struct ContenedorCajasPuerto
     bool reforzado = false;
     bool elegido = false;
     bool revelado = false;
+
+    // Solo visual: reaccion al golpe de la carga.
+    float sacudida = 0.0f;          // 1 al impacto, se apaga sola
+    float aviso = 0.0f;             // cartel flotante (1 -> 0)
+    int tipoGolpe = 0;              // 0 vacio, 1 aplastado, 2 a salvo
+};
+
+
+// Particulas del puerto: astillas, polvo, chispas y salpicaduras.
+struct ParticulaCajasPuerto
+{
+    bool activa = false;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 9.0f;
+    Color color = WHITE;
+};
+
+
+// Marcas falsas en la niebla: solo existen cuando el gruero es humano y
+// hay un polizon humano que necesita ver su propia marca. Se mueven como
+// un jugador mas, asi la marca real no delata su contenedor.
+struct SenueloCajasPuerto
+{
+    Vector3 posicion{};
+    float objetivoX = 0.0f;
+    float espera = 0.0f;
 };
 
 
@@ -82,6 +114,15 @@ struct MinijuegoCajasPuerto
     float tiempoFase = 0.0f;
     float tiempoPreparacion = 0.0f;
     float tiempoAnimacion = 0.0f;
+
+    // Estado solo visual (Dibujar es const).
+    ParticulaCajasPuerto particulas[MAX_PARTICULAS_CAJAS];
+    SenueloCajasPuerto senuelos[MAX_PARTICIPANTES][SENUELOS_POR_JUGADOR_CAJAS];
+    float niebla = 0.0f;            // 0..1 cobertura del patio
+    float tiempoAnuncio = 0.0f;     // segundos desde el ultimo cambio de fase
+    float tiempoSalpicadura = 0.0f;
+    unsigned int semillaVisual = 1u;
+    FaseCajasPuerto faseAnterior = FASE_CAJAS_PREPARACION;
 
     void Inicializar();
 
