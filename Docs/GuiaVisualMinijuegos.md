@@ -119,7 +119,7 @@ Cada ficha conserva la **idea del lugar** actual y fija la dirección del redise
 | 7 | Barra Giratoria | Plataforma alta en el cielo | Templo celeste: plataforma de piedra tallada sobre un mar de nubes al amanecer, eje con engranajes de bronce, banderolas, islas flotantes con cascadas, aves | Rehecho |
 | 8 | Núcleos de Energía | Recolección de energía | Sala de energía | Rehecho |
 | 9 | Refugio Taladros | Cueva con taladros | Cueva (referencia) | Referencia |
-| 10 | Miradas Cruzadas | Escenario con arcoíris y cabezas gigantes | Teatro de títeres en una feria de campo: tablado de madera con telón, cabezas-títere gigantes, arcoíris pintado de utilería, guirnaldas, carpas y colinas | Pendiente |
+| 10 | Miradas Cruzadas | Escenario con arcoíris y cabezas gigantes | Teatro de títeres en una feria de campo: tablado de madera con telón, cabezas-títere gigantes, arcoíris pintado de utilería, guirnaldas, carpas y colinas | Rehecho |
 | 11 | Muros Locos | Ruinas del desierto, muros de adobe | Ruinas de adobe al mediodía: patio de baldosas gastadas, columnas rotas, arcos, vasijas, palmeras secas, dunas en dos planos, calima | Pendiente |
 | 12 | Tormenta Magnética | Núcleo que atrae y repele | Plataforma de pruebas en una tormenta eléctrica: bobinas Tesla, pararrayos, nubes bajas con relámpagos, chispas, lluvia | Pendiente |
 | 13 | Conteo Explosivo | Drones y conteo | Hangar | Rehecho |
