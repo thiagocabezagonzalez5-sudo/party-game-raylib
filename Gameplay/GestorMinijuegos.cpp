@@ -114,6 +114,7 @@ void GestorMinijuegos::ActivarMinijuego(
     minijuegoTuberiasDesierto.audio = contexto.audio;
     minijuegoTrepaMastil.audio = contexto.audio;
     minijuegoGuardianRuinas.audio = contexto.audio;
+    minijuegoBarraGiratoria.audio = contexto.audio;
     minijuegoCablesCruzados.audio = contexto.audio;
     minijuegoVagonetasDuelo.audio = contexto.audio;
     minijuegoGemasDeslizantes.audio = contexto.audio;

@@ -116,7 +116,7 @@ Cada ficha conserva la **idea del lugar** actual y fija la dirección del redise
 | 4 | Fábrica 67 | Fábrica con cintas | Nave industrial | Rehecho |
 | 5 | Isla Bajo Fuego | Isla bombardeada | Isla tropical con barco de cañones | Rehecho |
 | 6 | Capitán Manda | Barco y capitán | Barco en alta mar de día | Rehecho |
-| 7 | Barra Giratoria | Plataforma alta en el cielo | Templo celeste: plataforma de piedra tallada sobre un mar de nubes al amanecer, eje con engranajes de bronce, banderolas, islas flotantes con cascadas, aves | Pendiente |
+| 7 | Barra Giratoria | Plataforma alta en el cielo | Templo celeste: plataforma de piedra tallada sobre un mar de nubes al amanecer, eje con engranajes de bronce, banderolas, islas flotantes con cascadas, aves | Rehecho |
 | 8 | Núcleos de Energía | Recolección de energía | Sala de energía | Rehecho |
 | 9 | Refugio Taladros | Cueva con taladros | Cueva (referencia) | Referencia |
 | 10 | Miradas Cruzadas | Escenario con arcoíris y cabezas gigantes | Teatro de títeres en una feria de campo: tablado de madera con telón, cabezas-títere gigantes, arcoíris pintado de utilería, guirnaldas, carpas y colinas | Pendiente |

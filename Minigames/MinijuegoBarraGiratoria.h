@@ -3,6 +3,7 @@
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
+#include "Systems/Audio.h"
 
 
 enum FaseMinijuegoBarraGiratoria
@@ -30,7 +31,58 @@ struct EstadoJugadorBarraGiratoria
     float radioOrbitaBot = 0.0f;
     float errorSaltoBot = 0.0f;
     float enfriamientoSaltoBot = 0.0f;
+
+    // Solo visual / audio: flanco de suelo, destello del golpe y caida
+    // hacia el mar de nubes tras la eliminacion.
+    bool enSueloAnterior = true;
+    float destelloGolpe = 0.0f;
+    float tiempoCaida = -1.0f;      // < 0: no esta cayendo
+    Vector3 posicionCaida{};
+    Vector3 velocidadCaida{};
+    bool atravesoNubes = false;
 };
+
+
+// Efectos del templo celeste (solo visuales).
+struct ParticulaBarraGiratoria
+{
+    bool activa = false;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+    float freno = 1.2f;
+    Color color{};
+};
+
+
+// Onda plana que se expande (aterrizaje de la barra, nube atravesada).
+struct OndaBarraGiratoria
+{
+    bool activa = false;
+    Vector3 posicion{};
+    float radioMaximo = 1.0f;
+    float vida = 0.0f;
+    float vidaMaxima = 0.5f;
+    Color color{};
+};
+
+
+// «¡J2 AFUERA!» sobre el lugar por donde cayo.
+struct AvisoBarraGiratoria
+{
+    bool activo = false;
+    int jugador = 0;
+    Vector3 posicion{};
+    float vida = 0.0f;
+};
+
+
+static const int MAX_PARTICULAS_BARRA = 320;
+static const int MAX_ONDAS_BARRA = 12;
+static const int MAX_AVISOS_BARRA = 4;
 
 
 struct MinijuegoBarraGiratoria
@@ -60,6 +112,21 @@ struct MinijuegoBarraGiratoria
     float alturaSegundaBarra = 8.0f;
     float anguloSegundaBarra = 1.5707963f;
     float velocidadAngularSegunda = 1.35f;
+
+    // Solo visual: reloj de animacion, giro acumulado (sin envolver) de
+    // los engranajes y efectos. Nada de esto toca la logica.
+    float tiempoAnimacion = 0.0f;
+    float giroMecanismo = 0.0f;
+    float tiempoAterrizajeSegunda = -1.0f;
+    unsigned int semillaVisual = 2463534242u;
+    bool confetiLanzado = false;
+
+    ParticulaBarraGiratoria particulasEfecto[MAX_PARTICULAS_BARRA];
+    OndaBarraGiratoria ondas[MAX_ONDAS_BARRA];
+    AvisoBarraGiratoria avisos[MAX_AVISOS_BARRA];
+
+    // Lo conecta GestorMinijuegos; puede ser nullptr.
+    AudioJuego* audio = nullptr;
 
     void Inicializar();
 
