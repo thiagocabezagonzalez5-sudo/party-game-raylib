@@ -95,6 +95,7 @@ Elementos a reemplazar por GLB más adelante (la lógica no depende del visual):
 - **Tuberías Desierto:** pared de arenisca con acueductos y columnas, cisterna con palmeras, cántaros, compuertas, cactus, dunas.
 - **Trepa el Mástil:** barco, mástiles con cofa y bandera, velas, jarcias, cofres, barriles, gaviotas, cuervos, isla.
 - **Guardián de Ruinas:** portal con runas, columnas rotas con enredaderas, estatuas caídas, escalinata, orbes, escudo.
+- **Paso Silencioso:** gigante de piedra y su trono, logia del templo, brasero ceremonial, urna, estatua guardiana, gong.
 - **Tormenta Magnética:** bobinas Tesla, pararrayos de celosía, mástiles de focos, banco de condensadores, núcleo con jaula de aros y polos, dardo-pincho con aletas.
 
 ## Notas
