@@ -121,7 +121,7 @@ Cada ficha conserva la **idea del lugar** actual y fija la dirección del redise
 | 9 | Refugio Taladros | Cueva con taladros | Cueva (referencia) | Referencia |
 | 10 | Miradas Cruzadas | Escenario con arcoíris y cabezas gigantes | Teatro de títeres en una feria de campo: tablado de madera con telón, cabezas-títere gigantes, arcoíris pintado de utilería, guirnaldas, carpas y colinas | Rehecho |
 | 11 | Muros Locos | Ruinas del desierto, muros de adobe | Ruinas de adobe al mediodía: patio de baldosas gastadas, columnas rotas, arcos, vasijas, palmeras secas, dunas en dos planos, calima | Rehecho |
-| 12 | Tormenta Magnética | Núcleo que atrae y repele | Plataforma de pruebas en una tormenta eléctrica: bobinas Tesla, pararrayos, nubes bajas con relámpagos, chispas, lluvia | Pendiente |
+| 12 | Tormenta Magnética | Núcleo que atrae y repele | Plataforma de pruebas en una tormenta eléctrica de noche: cubierta de chapa de lágrimas con emisores de cobre y franja de peligro, torre sobre un mar de nubes, bobinas Tesla con arcos, pararrayos, mástiles de focos, torre de control, tendido de alta tensión, cordillera en dos planos, lluvia y relámpagos (uno cae sobre el núcleo en cada cambio de campo) | Rehecho |
 | 13 | Conteo Explosivo | Drones y conteo | Hangar | Rehecho |
 | 14 | Paso Silencioso | Centinela que duerme | Salón de un templo nocturno con un gigante de piedra dormido: pasillos de losas, columnas, braseros, tapices, luz de luna por los ventanales | Pendiente |
 | 15 | Circuito Voltaje | Circuito de carreras | Autódromo nocturno de autos eléctricos: asfalto con pianos, tribunas con público, torres de luz, boxes, semáforo y arco de meta | Pendiente |
