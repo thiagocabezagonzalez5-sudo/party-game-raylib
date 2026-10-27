@@ -100,6 +100,7 @@ Elementos a reemplazar por GLB más adelante (la lógica no depende del visual):
 - **Trazo Perfecto:** caballete de estudio con lienzo y bastidor, pincel, frascos y latas de pintura, paleta, busto de yeso, taburete, carrito de pintor, lámpara colgante esmaltada, maceta con planta, lienzos apilados.
 - **Circuito Voltaje:** auto eléctrico de carreras, pórtico de meta con semáforo, torre de luz, módulo de tribuna, box de equipo, cargador, pantalla gigante, auto de seguridad, carpa, molino de viento.
 - **Tanques Plasma:** tanque de plasma (casco, orugas, torreta y cañón con bobinas), racimo de cristal de cobertura, nave estrellada, cápsula de escape, baliza alienígena con anillos, contenedores, hongos-tallo luminosos, rocas flotantes, emisor de esquina.
+- **Interruptores:** consola de palancas con tableros de instrumentos, muro de monitores con medidor de sobrecarga, aislador colgante de barra colectora, turbogenerador, puente grúa, rack eléctrico, escritorio con monitor de tubo, silla de operador, bobina de cable, armario de cortes, baliza giratoria, torre de enfriamiento, torre de alta tensión.
 
 ## Notas
 
