@@ -99,6 +99,7 @@ Elementos a reemplazar por GLB más adelante (la lógica no depende del visual):
 - **Tormenta Magnética:** bobinas Tesla, pararrayos de celosía, mástiles de focos, banco de condensadores, núcleo con jaula de aros y polos, dardo-pincho con aletas.
 - **Trazo Perfecto:** caballete de estudio con lienzo y bastidor, pincel, frascos y latas de pintura, paleta, busto de yeso, taburete, carrito de pintor, lámpara colgante esmaltada, maceta con planta, lienzos apilados.
 - **Circuito Voltaje:** auto eléctrico de carreras, pórtico de meta con semáforo, torre de luz, módulo de tribuna, box de equipo, cargador, pantalla gigante, auto de seguridad, carpa, molino de viento.
+- **Tanques Plasma:** tanque de plasma (casco, orugas, torreta y cañón con bobinas), racimo de cristal de cobertura, nave estrellada, cápsula de escape, baliza alienígena con anillos, contenedores, hongos-tallo luminosos, rocas flotantes, emisor de esquina.
 
 ## Notas
 

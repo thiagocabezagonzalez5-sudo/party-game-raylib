@@ -8,6 +8,7 @@
 
 inline constexpr int MAX_PROYECTILES_TANQUES_PLASMA = 40;
 inline constexpr int MAX_EFECTOS_TANQUES_PLASMA = 16;
+inline constexpr int MAX_PARTICULAS_TANQUES_PLASMA = 240;
 
 
 enum FaseTanquesPlasma
@@ -36,6 +37,19 @@ struct EstadoTanquePlasma
     // Solo visual: orientacion suavizada del casco (radianes sobre XZ).
     float anguloCasco = 0.0f;
     float tiempoMuerto = 0.0f;
+
+    // Solo visual: orugas, culatazo, golpe recibido y lo ya mostrado.
+    Vector2 posicionVista{};
+    bool posicionIniciada = false;
+    float giroOrugas = 0.0f;
+    float marcha = 0.0f;            // 0 quieto .. 1 avanzando
+    float retroceso = 0.0f;         // culatazo del canon
+    float fogonazo = 0.0f;          // destello en la boca del canon
+    float sacudida = 0.0f;
+    float destelloGolpe = 0.0f;
+    float recargaVista = 0.0f;
+    int vidasVistas = 2;
+    bool eliminacionVista = false;
 };
 
 
@@ -60,6 +74,22 @@ struct EfectoImpactoTanque
 };
 
 
+// Chispas, polvo, humo y confeti del canon (solo visuales).
+struct ParticulaTanquesPlasma
+{
+    bool activa = false;
+    bool brillo = false;            // se dibuja en la pasada aditiva
+    bool humo = false;              // bocanada translucida que crece
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+};
+
+
 struct MinijuegoTanquesPlasma
 {
     ResultadoMinijuego resultado{};
@@ -73,6 +103,15 @@ struct MinijuegoTanquesPlasma
     float tiempoPreparacion = 0.0f;
     float tiempoCombate = 0.0f;
     float tiempoAnimacion = 0.0f;
+
+    // Solo visual: anuncios y particulas. Nada de esto toca la logica
+    // ni consume el GetRandomValue de los bots.
+    unsigned int semillaVisual = 2246822519u;
+    float tiempoAnuncio = -1.0f;
+    bool combateVisto = false;
+    bool finVisto = false;
+    float destelloCristal[3] = {};  // racimos de cobertura golpeados
+    ParticulaTanquesPlasma particulas[MAX_PARTICULAS_TANQUES_PLASMA];
 
     void Inicializar();
 
