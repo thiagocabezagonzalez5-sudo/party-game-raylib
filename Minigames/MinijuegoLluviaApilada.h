@@ -11,6 +11,8 @@ inline constexpr int MAX_PIEZAS_SUELTAS_LLUVIA = 24;
 inline constexpr int MAX_PILA_LLUVIA = 12;
 inline constexpr int MAX_OBSTACULOS_LLUVIA = 6;
 inline constexpr int MAX_BLOQUES_LLUVIA = 12;
+inline constexpr int MAX_PARTICULAS_VISUALES_LLUVIA = 200;
+inline constexpr int MAX_MARCAS_LLUVIA = 10;
 
 
 enum FaseLluviaApilada
@@ -90,6 +92,32 @@ struct EstadoJugadorLluvia
 };
 
 
+// Observatorio (solo visual): esquirlas, chispas, brasas y confeti.
+struct ParticulaVisualLluvia
+{
+    bool activa = false;
+    bool brillo = false;            // se dibuja en la pasada aditiva
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+    float giro = 0.0f;
+};
+
+
+// Quemadura que deja un meteoro en las losas: se enfria y se borra.
+struct MarcaImpactoLluvia
+{
+    float x = 0.0f;
+    float z = 0.0f;
+    float vida = 0.0f;
+    float giro = 0.0f;
+};
+
+
 struct MinijuegoLluviaApilada
 {
     ResultadoMinijuego resultado{};
@@ -113,6 +141,21 @@ struct MinijuegoLluviaApilada
     float tiempoAnimacion = 0.0f;
     float tiempoSiguientePieza = 0.0f;
     float tiempoJugado = 0.0f;
+
+    // Solo visual: nada de esto toca la logica ni consume el
+    // GetRandomValue de los bots.
+    unsigned int semillaVisual = 2654435761u;
+    bool caidaVista[MAX_PIEZAS_CAYENDO_LLUVIA];
+    int pilaVista[MAX_PARTICIPANTES];
+    int aseguradasVista[MAX_PARTICIPANTES];
+    float destelloBase[MAX_PARTICIPANTES];
+    int sumaBase[MAX_PARTICIPANTES];
+    float golpePila[MAX_PARTICIPANTES];
+    float esperaSonidoImpacto = 0.0f;
+    float tiempoFin = 0.0f;
+    bool finVisto = false;
+    ParticulaVisualLluvia particulasVisuales[MAX_PARTICULAS_VISUALES_LLUVIA];
+    MarcaImpactoLluvia marcas[MAX_MARCAS_LLUVIA];
 
     void Inicializar();
 
