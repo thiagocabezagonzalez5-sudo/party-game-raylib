@@ -97,6 +97,7 @@ Elementos a reemplazar por GLB más adelante (la lógica no depende del visual):
 - **Guardián de Ruinas:** portal con runas, columnas rotas con enredaderas, estatuas caídas, escalinata, orbes, escudo.
 - **Paso Silencioso:** gigante de piedra y su trono, logia del templo, brasero ceremonial, urna, estatua guardiana, gong.
 - **Tormenta Magnética:** bobinas Tesla, pararrayos de celosía, mástiles de focos, banco de condensadores, núcleo con jaula de aros y polos, dardo-pincho con aletas.
+- **Trazo Perfecto:** caballete de estudio con lienzo y bastidor, pincel, frascos y latas de pintura, paleta, busto de yeso, taburete, carrito de pintor, lámpara colgante esmaltada, maceta con planta, lienzos apilados.
 - **Circuito Voltaje:** auto eléctrico de carreras, pórtico de meta con semáforo, torre de luz, módulo de tribuna, box de equipo, cargador, pantalla gigante, auto de seguridad, carpa, molino de viento.
 
 ## Notas

@@ -42,7 +42,49 @@ struct EstadoJugadorTrazoPerfecto
     float retardoBot = 0.2f;
     Vector2 objetivoSeguido{};
     bool seguimientoIniciado = false;
+
+    // Solo visual: esquinas acertadas, salto del pintor, goteo del pincel.
+    int aciertos = 0;
+    int tipoTexto = 0;
+    float textoFlotante = 0.0f;
+    float destello = 0.0f;
+    float sacudida = 0.0f;
+    float salto = 0.0f;
+    float calidad = 0.0f;           // cercania a la estrella, suavizada
+    float fueraDeLinea = 0.0f;      // segundos lejos del trazo
+    float goteo = 0.0f;
 };
+
+
+// Efectos del atelier (solo visuales).
+struct ParticulaTrazoPerfecto
+{
+    bool activa = false;
+    bool brillo = false;            // se dibuja en la pasada aditiva
+    bool mancha = false;            // al tocar el piso deja una mancha
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+};
+
+
+// Mancha de pintura que cayo al piso durante la partida.
+struct ManchaTrazoPerfecto
+{
+    bool activa = false;
+    Vector3 posicion{};
+    float radio = 0.1f;
+    int forma = 0;
+    Color color{};
+};
+
+
+inline constexpr int MAX_PARTICULAS_TRAZO = 240;
+inline constexpr int MAX_MANCHAS_TRAZO = 72;
 
 
 struct MinijuegoTrazoPerfecto
@@ -58,6 +100,15 @@ struct MinijuegoTrazoPerfecto
     float tiempoTrazo = 0.0f;
     float tiempoAnimacion = 0.0f;
     float progresoObjetivo = 0.0f;
+
+    // Solo visual: nada de esto toca la logica ni consume el
+    // GetRandomValue de los bots.
+    unsigned int semillaVisual = 2654435761u;
+    float progresoVisto = 0.0f;     // esquinas ya evaluadas
+    bool finVisto = false;
+    int siguienteMancha = 0;
+    ParticulaTrazoPerfecto particulas[MAX_PARTICULAS_TRAZO];
+    ManchaTrazoPerfecto manchas[MAX_MANCHAS_TRAZO];
 
     void Inicializar();
 
