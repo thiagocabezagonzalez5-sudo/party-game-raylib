@@ -3,9 +3,12 @@
 #include "Core/Participante.h"
 #include "Core/ResultadoMinijuego.h"
 #include "Minigames/TiposMinijuegos.h"
+#include "Systems/Audio.h"
 
 
 inline constexpr int MAX_PLATAFORMAS_PASARELAS = 9;
+inline constexpr int MAX_PARTICULAS_PASARELAS = 260;
+inline constexpr int MAX_AVISOS_PASARELAS = 6;
 
 
 enum FasePasarelasVacio
@@ -40,6 +43,43 @@ struct EstadoPlataformaPasarelas
 };
 
 
+// Polvo de piedra, chispas de runa y confeti (solo visuales).
+struct ParticulaPasarelasVacio
+{
+    bool activa = false;
+    bool brillo = false;            // se dibuja en la pasada aditiva
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+};
+
+
+// Anuncio flotante sobre el mundo («¡J2 AL VACÍO!», «¡J1 LLEGÓ!»).
+struct AvisoPasarelasVacio
+{
+    bool activo = false;
+    bool meta = false;
+    int jugador = 0;
+    Vector3 posicion{};
+    float vida = 0.0f;
+};
+
+
+// Caida de un eliminado hacia la nebulosa (la logica ya lo solto).
+struct CaidaJugadorPasarelas
+{
+    bool activa = false;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float tiempo = 0.0f;
+    float angulo = 0.0f;
+};
+
+
 struct MinijuegoPasarelasVacio
 {
     ResultadoMinijuego resultado{};
@@ -55,6 +95,27 @@ struct MinijuegoPasarelasVacio
     float tiempoPreparacion = 0.0f;
     float tiempoRestante = 0.0f;
     float tiempoAnimacion = 0.0f;
+
+    AudioJuego* audio = nullptr;
+
+    // Solo visual: efectos, anuncios y memoria de eventos. Nada de esto
+    // toca la logica ni consume el GetRandomValue de los bots.
+    unsigned int semillaVisual = 2654435761u;
+    float tiempoAnuncio = -1.0f;
+    bool carreraVista = false;
+    bool finVisto = false;
+    bool activadaVista[MAX_PLATAFORMAS_PASARELAS] = {};
+    bool caidaVista[MAX_PLATAFORMAS_PASARELAS] = {};
+    bool grietaVista[MAX_PLATAFORMAS_PASARELAS] = {};
+    float tiempoDesplome[MAX_PLATAFORMAS_PASARELAS] = {};
+    float destelloPlataforma[MAX_PLATAFORMAS_PASARELAS] = {};
+    bool eliminadoVisto[MAX_PARTICIPANTES] = {};
+    bool metaVista[MAX_PARTICIPANTES] = {};
+    bool enSueloVisto[MAX_PARTICIPANTES] = {};
+    float destelloMeta[MAX_PARTICIPANTES] = {};
+    CaidaJugadorPasarelas caidas[MAX_PARTICIPANTES];
+    ParticulaPasarelasVacio particulasEfecto[MAX_PARTICULAS_PASARELAS];
+    AvisoPasarelasVacio avisos[MAX_AVISOS_PASARELAS];
 
     void Inicializar();
 

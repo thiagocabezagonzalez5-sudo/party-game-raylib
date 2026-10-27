@@ -96,6 +96,7 @@ void GestorMinijuegos::ActivarMinijuego(
     minijuegoBolasAzucar.audio = contexto.audio;
     minijuegoGruaChatarra.audio = contexto.audio;
     minijuegoTanquesPlasma.audio = contexto.audio;
+    minijuegoPasarelasVacio.audio = contexto.audio;
     minijuegoCircuitoVoltaje.audio = contexto.audio;
     minijuegoCargaInestable.audio = contexto.audio;
     minijuegoSecuenciaNeon.audio = contexto.audio;
