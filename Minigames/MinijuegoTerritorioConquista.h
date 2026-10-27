@@ -24,6 +24,7 @@ inline constexpr int MAX_BALDOSAS_TERRITORIO =
 inline constexpr int MAX_BLOQUES_TERRITORIO = 8;
 inline constexpr int MAX_PARTICULAS_TERRITORIO = MAX_PARTICULAS_TIERRA;
 inline constexpr int MAX_ONDAS_TERRITORIO = 8;
+inline constexpr int MAX_PARTICULAS_VISUALES_TERRITORIO = 220;
 
 
 enum FaseTerritorio
@@ -31,19 +32,6 @@ enum FaseTerritorio
     FASE_TERRITORIO_PREPARACION = 0,
     FASE_TERRITORIO_JUGANDO,
     FASE_TERRITORIO_TERMINADO
-};
-
-
-// Banco tematico de este minijuego. Solo cambia la presentacion y el obstaculo
-// central; las reglas son iguales en todos los temas.
-enum TemaTerritorio
-{
-    TEMA_TERRITORIO_VOLCAN = 0,
-    TEMA_TERRITORIO_CYBER,
-    TEMA_TERRITORIO_DULCE,
-    TEMA_TERRITORIO_JARDIN,
-    TEMA_TERRITORIO_TOXICO,
-    CANTIDAD_TEMAS_TERRITORIO
 };
 
 
@@ -90,6 +78,22 @@ struct OndaTerritorio
 };
 
 
+// Pasteleria (solo visual): chispitas, migas, azucar glas y confeti.
+struct ParticulaVisualTerritorio
+{
+    bool activa = false;
+    bool brillo = false;            // se dibuja en la pasada aditiva
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+    float giro = 0.0f;
+};
+
+
 struct MinijuegoTerritorioConquista
 {
     ResultadoMinijuego resultado{};
@@ -103,7 +107,6 @@ struct MinijuegoTerritorioConquista
 
     Camera3D camara{};
     FaseTerritorio fase = FASE_TERRITORIO_PREPARACION;
-    TemaTerritorio tema = TEMA_TERRITORIO_VOLCAN;
 
     int cantidadBloques = 0;
     int totalBaldosasJugables = 0;
@@ -116,6 +119,21 @@ struct MinijuegoTerritorioConquista
     float tiempoPreparacion = 0.0f;
     float tiempoRestante = 0.0f;
     float tiempoAnimacion = 0.0f;
+
+    // Solo visual: nada de esto toca la logica ni consume el
+    // GetRandomValue de los bots.
+    unsigned int semillaVisual = 2246822519u;
+    int duenoVisto[MAX_BALDOSAS_TERRITORIO];
+    bool ondaVista[MAX_ONDAS_TERRITORIO];
+    bool aturdidoVisto[MAX_PARTICIPANTES];
+    float saltoMarcador[MAX_PARTICIPANTES];
+    float esperaSonidoBaldosa = 0.0f;
+    EstadoSectorTerritorio sectorVisto = SECTOR_TERRITORIO_LIBRE;
+    int sectorAnunciado = -1;
+    float tiempoAnuncio = -1.0f;
+    float tiempoFin = 0.0f;
+    bool finVisto = false;
+    ParticulaVisualTerritorio particulasVisuales[MAX_PARTICULAS_VISUALES_TERRITORIO];
 
     void Inicializar();
 
