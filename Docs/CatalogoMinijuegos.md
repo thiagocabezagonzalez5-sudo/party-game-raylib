@@ -102,7 +102,9 @@ Elementos a reemplazar por GLB más adelante (la lógica no depende del visual):
 - **Tanques Plasma:** tanque de plasma (casco, orugas, torreta y cañón con bobinas), racimo de cristal de cobertura, nave estrellada, cápsula de escape, baliza alienígena con anillos, contenedores, hongos-tallo luminosos, rocas flotantes, emisor de esquina.
 - **Pasarelas del Vacío:** losa rúnica flotante (con variante partida), isla flotante (tres variantes), eslabón de cadena, monolito rúnico, anillo de piedras rúnicas, arco de meta rúnico, columna de ruina, arco de piedra, torre en ruinas, árbol astral, racimo de cristal, brasero rúnico, farol colgante.
 - **Territorio:** torta-arena con barritas de chocolate y moño, baldosa de glaseado con chispitas, torta central con merengues y macarons, colador de azúcar glas, torta de pisos, torre de macarons, cupcake, dona, batidora, bol, manga pastelera, horno de pared.
+- **Defensa Núcleo:** auto volador, letrero de neón de terraza, pantalla gigante del estadio, torre de iluminación, banco de suplentes con techo, equipo de aire acondicionado, estante de celdas de energía, cámara de transmisión en trípode, dron cámara.
 - **Interruptores:** consola de palancas con tableros de instrumentos, muro de monitores con medidor de sobrecarga, aislador colgante de barra colectora, turbogenerador, puente grúa, rack eléctrico, escritorio con monitor de tubo, silla de operador, bobina de cable, armario de cortes, baliza giratoria, torre de enfriamiento, torre de alta tensión.
+- **Lluvia Apilada:** cúpula del observatorio con ranura y telescopio, radiotelescopio, telescopio refractor en trípode, esfera armilar, globo celeste en pedestal, columna con remate de bronce, obelisco, consola de instrumentos con carta celeste, caja de instrumental, farola de hierro, mástil meteorológico, frasco de estrellas, fragmento de estrella, estrella dorada, meteoro.
 
 ## Notas
 

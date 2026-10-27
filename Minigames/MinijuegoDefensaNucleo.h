@@ -56,6 +56,25 @@ struct NucleoDefensaNucleo
 };
 
 
+// Chispas, confeti y destellos del estadio (solo visuales).
+struct ParticulaDefensaNucleo
+{
+    bool activa = false;
+    bool brillo = false;            // se dibuja en la pasada aditiva
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+};
+
+
+static const int MAX_PARTICULAS_DEFENSA_NUCLEO = 260;
+static const int LARGO_ESTELA_DEFENSA_NUCLEO = 12;
+
+
 struct MinijuegoDefensaNucleo
 {
     ResultadoMinijuego resultado{};
@@ -83,6 +102,33 @@ struct MinijuegoDefensaNucleo
     float tiempoOro = 0.0f;
     float tiempoPausaGol = 0.0f;
     float tiempoAnimacion = 0.0f;
+
+    // Solo visual: anuncios, festejos y particulas. Nada de esto toca la
+    // logica ni consume el GetRandomValue de los bots.
+    unsigned int semillaVisual = 2654435761u;
+    float tiempoAnuncio = -1.0f;        // «¡A JUGAR!» al primer saque
+    float tiempoAnuncioOro = -1.0f;     // «¡GOL DE ORO!»
+    float tiempoGolVisual = -1.0f;      // desde el ultimo gol
+    float festejo = 0.0f;               // euforia de la tribuna (0..1)
+    float destelloArco[2] = { 0.0f, 0.0f };   // 0 = arco izquierdo, 1 = derecho
+    float destelloObstaculo = 0.0f;
+    float destelloGolpe[MAX_PARTICIPANTES] = {};
+    float golpeVisto[MAX_PARTICIPANTES] = {};      // tiempoGolpeActivo previo
+    float contactoVisto[MAX_PARTICIPANTES] = {};   // cooldownContacto previo
+    float destelloSaque = 0.0f;
+    int golesVistos[2] = { 0, 0 };
+    int equipoGolVisual = -1;
+    bool juegoVisto = false;
+    bool oroVisto = false;
+    bool finVisto = false;
+    bool nucleoVisto = false;
+    float velocidadVistaX = 0.0f;
+    float velocidadVistaZ = 0.0f;
+    float cargaVista = 0.0f;
+    Vector3 estela[LARGO_ESTELA_DEFENSA_NUCLEO] = {};
+    int cantidadEstela = 0;
+    float relojEstela = 0.0f;
+    ParticulaDefensaNucleo particulas[MAX_PARTICULAS_DEFENSA_NUCLEO];
 
     void Inicializar();
 
