@@ -103,6 +103,7 @@ Toda escena se arma con cinco capas, de adelante hacia atrás. Una escena que no
 7. Jugabilidad intacta: mismas reglas, medidas y bots; los `Tests/Verificar*` del minijuego pasan.
 8. Capturas revisadas a 1280x720 (cuenta regresiva, juego en curso y tablón final) con 2 y 4 jugadores.
 9. Compila sin errores ni advertencias nuevas.
+10. Verificado con el flujo real del juego (ventana y `config.ini` reales, en calidad BAJA, MEDIA y ALTA): el bucle principal no limpia la pantalla, así que un fondo hecho con un degradado 2D no reemplaza a `ClearBackground` (desde ahora lo hace `ZonaPruebas::Dibujar`, pero el minijuego no debe depender de eso para verse bien en otros flujos).
 
 ## 9. Ficha de escenario por minijuego
 
