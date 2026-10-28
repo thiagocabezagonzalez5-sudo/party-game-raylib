@@ -139,7 +139,7 @@ Cada ficha conserva la **idea del lugar** actual y fija la dirección del redise
 | 27 | Último Asiento | Carrusel de feria | Feria de día: carrusel con caballitos y tazas, noria, puestos, guirnaldas de bombillas, globos | Rehecho |
 | 28 | Cajas del Puerto | Puerto y grúa | Muelle | Rehecho |
 | 29 | Laberinto Jade | Templo antiguo de jade | Cámara interior de un templo de jade: losas talladas, altar, columnas con relieves, antorchas, estatuas | Rehecho |
-| 30 | Veta de Cristal | Mina y geodas | Mina de cristales azules y violetas (sin lava, para separarla de Vagonetas): vigas, lámparas, rieles, geodas | Pendiente |
+| 30 | Veta de Cristal | Mina y geodas | Mina de cristales azules y violetas (sin lava, para separarla de Vagonetas): vigas, lámparas, rieles, geodas | Rehecho |
 | 31 | Cápsulas Barajadas | Laboratorio | Laboratorio | Rehecho |
 | 32 | Bateo Meteórico | Espacio y meteoritos | Plataforma en órbita: planeta anillado, cúpula con telescopio, lluvia de meteoritos, estrellas | Pendiente |
 | 33 | Racimo Tóxico | Árbol y cabañas en el pantano | Pantano de noche: árbol gigante con racimo, cabañas sobre pilotes, agua con nenúfares, luciérnagas, niebla verde | Pendiente |

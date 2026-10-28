@@ -76,6 +76,38 @@ struct GemaVeta
 };
 
 
+// Solo visual: esquirlas, chispas y confeti (no afectan la partida).
+inline constexpr int MAX_CHISPAS_VETA = 180;
+inline constexpr int MAX_AVISOS_VETA = 10;
+
+
+struct ChispaVeta
+{
+    bool activa = false;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 9.0f;
+    float giro = 0.0f;
+    bool brilla = false;            // halo aditivo en lugar de esquirla
+};
+
+
+// Rotulos que suben sobre el mundo: «+3», «¡TESORO!», «-2».
+struct AvisoVeta
+{
+    bool activo = false;
+    Vector3 posicion{};
+    float vida = 0.0f;
+    int tipo = 0;                   // 0 suma, 1 tesoro, 2 perdida
+    int valor = 0;
+    int equipo = -1;
+};
+
+
 struct MinijuegoVetaCristal
 {
     ResultadoMinijuego resultado{};
@@ -108,6 +140,22 @@ struct MinijuegoVetaCristal
     float tiempoRestante = 0.0f;
     float tiempoAnimacion = 0.0f;
 
+    // Estado solo visual. Lo actualiza Actualizar comparando la partida
+    // antes y despues de cada paso; el azar sale de semillaVisual.
+    ChispaVeta chispas[MAX_CHISPAS_VETA];
+    AvisoVeta avisos[MAX_AVISOS_VETA];
+    unsigned int semillaVisual = 1u;
+    float destelloGeoda[MAX_GEODAS_VETA] = {};
+    float grietaGeoda[MAX_GEODAS_VETA] = {};
+    float destelloJugador[MAX_PARTICIPANTES] = {};
+    float marcadorVisual[2] = { 0.0f, 0.0f };
+    float tiempoAnuncioInicio = -1.0f;
+    float tiempoFin = -1.0f;
+    bool vagonetaVisible = false;
+    float vagonetaVisualZ = 0.0f;
+    float vagonetaVisualDireccion = 1.0f;
+    float giroRuedas = 0.0f;
+
     void Inicializar();
 
     void Reiniciar(
@@ -117,6 +165,14 @@ struct MinijuegoVetaCristal
     );
 
     void Actualizar(
+        float deltaTime,
+        JugadorPrueba jugadores[],
+        int cantidadMaxima,
+        Participante participantes[]
+    );
+
+    // Reglas de la partida (Actualizar la envuelve con el estado visual).
+    void ActualizarPartida(
         float deltaTime,
         JugadorPrueba jugadores[],
         int cantidadMaxima,

@@ -228,6 +228,13 @@ int main()
         for (int i = 0; i < CANTIDAD_MODELOS_VETA_CRISTAL_3D; i++)
         {
             const auto& r = almacen.vetaCristal[i];
+            // El decorado de ambiente se dibuja con primitivas: sus GLB no
+            // se cargan. Solo se cargan las piezas jugables.
+            if (i < MODELO_VETA_VAGONETA)
+            {
+                Comprobar(!r.cargaIntentada && cargas[i] == 0, "No cargar los GLB de ambiente de la mina");
+                continue;
+            }
             Comprobar(r.cargado, RUTAS_MODELOS_VETA_CRISTAL_3D[i]);
             if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
             if (cantidad == 2) mallas[i] = r.modelo.meshes;
@@ -242,12 +249,13 @@ int main()
         Comprobar(m.cantidadJugadoresEquipo[0] == (cantidad >= 3 ? 2 : 1) &&
             m.cantidadJugadoresEquipo[1] == cantidad - m.cantidadJugadoresEquipo[0], "1v1 / 2v1 / 2v2");
         DibujarPrueba(zona, cantidad == 4 ? "build/veta-preparacion.png" : nullptr);
-        const int esperados[] = {1,1,34,1,6,6,1,0,8,2,0,0,0,0,12};
+        // El decorado de ambiente (suelo, paredes, vetas, portico, postes,
+        // lamparas y riel) se dibuja con primitivas propias de la escena: sus
+        // GLB ya no se instancian. Las piezas jugables siguen siendo GLB.
+        const int esperados[] = {0,0,0,0,0,0,0,0,8,2,0,0,0,0,12};
         for (int i = 0; i < CANTIDAD_MODELOS_VETA_CRISTAL_3D; i++)
             Comprobar(cantidades[i] == esperados[i], "Instancias iniciales sin primitivas duplicadas");
-        Comprobar(cubos == 0 && esferasEx == 0, "Omitir suelo, paredes, geodas y vetas primitivas cargadas");
-        Comprobar(Igual(dibujos[MODELO_VETA_SUELO][0].posicion,{0,0,0}) &&
-            Igual(dibujos[MODELO_VETA_PORTICO][0].posicion,{0,0,0}), "Origen comun de piezas modulares");
+        Comprobar(cubos == 0 && esferasEx == 0, "Omitir geodas primitivas con sus GLB cargados");
         for (int g = 0, pequena = 0, grande = 0, marca = 0; g < MAX_GEODAS_VETA; g++)
         {
             const auto& geoda = m.geodas[g];
@@ -260,9 +268,6 @@ int main()
                 "Color de marca segun tipo exclusivamente en COLOR_DINAMICO");
             marca += geoda.grande ? 2 : 1;
         }
-        for (int i = 26; i < 34; i++)
-            Comprobar(Cerca(dibujos[MODELO_VETA_MINERAL_PARED][i].angulo, i%2 ? -90.0f : 90.0f),
-                "Vetas laterales orientadas hacia la arena");
         Avanzar(zona,182);
         Comprobar(m.fase == FASE_VETA_JUGANDO, "Fin real de la cuenta regresiva");
         int lado = m.estadosJugadores[0].equipo;
@@ -313,7 +318,9 @@ int main()
             Cerca(dibujos[MODELO_VETA_GEODA_AGOTADA][1].escala.x,.9f/.65f), "Compartir agotada pequena/grande");
         Comprobar(Igual(dibujos[MODELO_VETA_VAGONETA][0].posicion,{0,0,2}) &&
             Cerca(dibujos[MODELO_VETA_VAGONETA][0].angulo,180), "Vagoneta sigue posicion y sentido");
-        Comprobar(cubos == 1 && esferasEx == 0, "Solo conservar cubo de aviso, halos y efectos");
+        // El aviso del carril ya no es un DrawCube: con todos los GLB, nada
+        // de geodas, gemas ni vagoneta cae a primitivas sueltas.
+        Comprobar(cubos == 0 && esferasEx == 0, "Piezas jugables sin primitivas con sus GLB cargados");
         for (int g = 0, violeta = 0; g < 4; g++)
         {
             int pieza = g == 0 ? MODELO_VETA_GEMA_AZUL : g == 1 ? MODELO_VETA_GEMA_DORADA : MODELO_VETA_GEMA_VIOLETA;
@@ -412,7 +419,8 @@ int main()
         teclaSimulada = KEY_NULL;
         Comprobar(m.tiempoPreparacion < 3, "R no reinicia la ronda oficial de tablero");
         for (int i = 0; i < CANTIDAD_MODELOS_VETA_CRISTAL_3D; i++)
-            Comprobar(mallas[i] == almacen.vetaCristal[i].modelo.meshes && cargas[i] == 1,
+            Comprobar(mallas[i] == almacen.vetaCristal[i].modelo.meshes &&
+                cargas[i] == (i < MODELO_VETA_VAGONETA ? 0 : 1),
                 "Reinicio, selector y tablero reutilizan el paquete");
         DibujarPrueba(zona);
     }
@@ -431,13 +439,18 @@ int main()
     int presentes[CANTIDAD_MODELOS_VETA_CRISTAL_3D];
     std::memcpy(presentes,cantidades,sizeof(presentes));
     int cubosBase=cubos, esferasBase=esferasEx, circulosBase=circulos, halosBase=esferas;
-    for (int ausente = 0; ausente < CANTIDAD_MODELOS_VETA_CRISTAL_3D; ausente++)
+    // Solo las piezas jugables (el tramo final del paquete) tienen GLB.
+    PaqueteModelosEscenarioRetro3D piezas = ObtenerPaqueteVetaCristalRetro3D();
+    piezas.recursos += MODELO_VETA_VAGONETA;
+    piezas.definiciones += MODELO_VETA_VAGONETA;
+    piezas.cantidad -= MODELO_VETA_VAGONETA;
+    for (int ausente = MODELO_VETA_VAGONETA; ausente < CANTIDAD_MODELOS_VETA_CRISTAL_3D; ausente++)
     {
         auto& r = almacen.vetaCristal[ausente];
         DescargarSlotModeloEscenarioRetro3D(r);
         rutaAusente = RUTAS_MODELOS_VETA_CRISTAL_3D[ausente];
         for (int repeticion = 0; repeticion < 3; repeticion++)
-            CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteVetaCristalRetro3D());
+            CargarPaqueteModelosEscenarioRetro3D(piezas);
         Comprobar(!r.cargado && r.cargaIntentada, "Fallo persistente sin reintentos por frame");
         DibujarPrueba(zona);
         for (int i = 0; i < CANTIDAD_MODELOS_VETA_CRISTAL_3D; i++)
@@ -446,10 +459,12 @@ int main()
             "La pieza fallida dibuja sus primitivas originales");
         rutaAusente = nullptr;
         r = {};
-        CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteVetaCristalRetro3D());
+        CargarPaqueteModelosEscenarioRetro3D(piezas);
         GuardarMateriales();
     }
-    Comprobar(avisosAusente == CANTIDAD_MODELOS_VETA_CRISTAL_3D, "Un solo diagnostico por recurso fallido");
+    for (int i = 0; i < MODELO_VETA_VAGONETA; i++)
+        Comprobar(!almacen.vetaCristal[i].cargaIntentada, "Los GLB de ambiente siguen sin cargarse");
+    Comprobar(avisosAusente == CANTIDAD_MODELOS_VETA_CRISTAL_3D - MODELO_VETA_VAGONETA, "Un solo diagnostico por recurso fallido");
     for (const auto& r : almacen.ultimoAsiento) Comprobar(!r.cargaIntentada, "No cargar Ultimo Asiento");
     for (const auto& r : almacen.cajasPuerto) Comprobar(!r.cargaIntentada, "No cargar Puerto");
     for (const auto& r : almacen.laberintoJade) Comprobar(!r.cargaIntentada, "No cargar Jade");
