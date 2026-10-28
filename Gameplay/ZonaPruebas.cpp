@@ -544,6 +544,11 @@ void ZonaPruebas::Actualizar(
 
 void ZonaPruebas::Dibujar() const
 {
+    // El bucle principal no limpia la pantalla: sin esto, un minijuego que
+    // pinta su fondo con un degradado 2D (sin ClearBackground) conserva la
+    // profundidad del frame anterior y su escena 3D desaparece.
+    ClearBackground(BLACK);
+
     PrepararTemaVisualZona(*this);
     EstablecerRondaOficialTableroMinijuegos(modoTablero);
     EstablecerBarraAyudaCatalogoMinijuegos(
