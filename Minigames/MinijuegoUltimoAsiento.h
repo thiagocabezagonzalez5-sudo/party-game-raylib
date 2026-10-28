@@ -23,6 +23,7 @@
 inline constexpr int MAX_TAZAS_ULTIMO_ASIENTO = MAX_PARTICIPANTES;
 inline constexpr int MAX_PARTICULAS_ULTIMO_ASIENTO = MAX_PARTICULAS_TIERRA;
 inline constexpr int MAX_BLOQUES_ULTIMO_ASIENTO = 2;
+inline constexpr int MAX_PARTICULAS_VISUALES_ASIENTO = 180;
 
 
 enum FaseUltimoAsiento
@@ -64,6 +65,22 @@ struct EstadoBotUltimoAsiento
 };
 
 
+// Feria (solo visual): confeti, humo y chispas de feedback.
+struct ParticulaVisualAsiento
+{
+    bool activa = false;
+    bool humo = false;              // bocanada gris (esfera que crece)
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+    float giro = 0.0f;
+};
+
+
 struct MinijuegoUltimoAsiento
 {
     ResultadoMinijuego resultado{};
@@ -95,6 +112,20 @@ struct MinijuegoUltimoAsiento
     float tiempoAnimacion = 0.0f;
     float anguloCarrusel = 0.0f;
     float velocidadCarrusel = 0.0f;
+
+    // Solo visual: nada de esto toca la logica ni consume el
+    // GetRandomValue de los bots.
+    unsigned int semillaVisual = 2654435761u;
+    SubfaseUltimoAsiento subfaseVista = SUBFASE_ULTIMO_ASIENTO_MUSICA;
+    int rondaVista = 0;
+    float tiempoEnSubfase = 0.0f;   // desde el ultimo cambio de subfase
+    int ocupanteVisto[MAX_TAZAS_ULTIMO_ASIENTO];
+    float rebote[MAX_TAZAS_ULTIMO_ASIENTO];
+    bool vivoVisto[MAX_PARTICIPANTES];
+    Vector3 posicionVista[MAX_PARTICIPANTES];
+    float tiempoFin = 0.0f;
+    bool finVisto = false;
+    ParticulaVisualAsiento particulasVisuales[MAX_PARTICULAS_VISUALES_ASIENTO];
 
     void Inicializar();
 
