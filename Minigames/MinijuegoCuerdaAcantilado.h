@@ -49,6 +49,26 @@ struct EstadoJugadorCuerdaAcantilado
 };
 
 
+static const int MAX_PARTICULAS_VISUALES_CUERDA = 260;
+
+
+// Acantilados (solo visual): espuma, polvo, chispas y confeti.
+struct ParticulaVisualCuerda
+{
+    bool activa = false;
+    bool brillo = false;            // se dibuja en la pasada aditiva
+    bool papel = false;             // confeti (cuadradito que gira)
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+    float giro = 0.0f;
+};
+
+
 struct MinijuegoCuerdaAcantilado
 {
     ResultadoMinijuego resultado{};
@@ -76,6 +96,20 @@ struct MinijuegoCuerdaAcantilado
     float tiempoJuego = 0.0f;
     float tiempoFin = 0.0f;
     float tiempoAnimacion = 0.0f;
+
+    // Solo visual: nada de esto toca la logica ni consume el
+    // GetRandomValue de los bots.
+    unsigned int semillaVisual = 2246822519u;
+    int aciertosVistos[MAX_PARTICIPANTES];
+    int fallosVistos[MAX_PARTICIPANTES];
+    float destelloTiron[MAX_PARTICIPANTES];
+    float anuncioRacha[MAX_PARTICIPANTES];
+    bool caidaVista[MAX_PARTICIPANTES];
+    bool chapuzonVisto[MAX_PARTICIPANTES];
+    float esperaOla = 0.0f;
+    float esperaConfeti = 0.0f;
+    bool finVisto = false;
+    ParticulaVisualCuerda particulasVisuales[MAX_PARTICULAS_VISUALES_CUERDA];
 
     void Inicializar();
 
