@@ -97,6 +97,45 @@ struct EstadoJugadorLaberinto
 };
 
 
+// ---- Solo visual (no interviene en la partida) ----
+
+inline constexpr int MAX_PARTICULAS_LABERINTO = 320;
+
+
+struct ParticulaLaberinto
+{
+    bool activa = false;
+    bool brillo = false;            // se dibuja con mezcla aditiva
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 0.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+    Color color{};
+};
+
+
+// Lo que el dibujo necesita recordar de cada jugador para detectar
+// eventos (checkpoint, caida, llegada, golpe) y animar su respuesta.
+struct VisualJugadorLaberinto
+{
+    int puntosControlPrevios = 0;
+    int caidasPrevias = 0;
+    bool llegoPrevio = false;
+    float velocidadXPrevia = 0.0f;
+    float velocidadZPrevia = 0.0f;
+
+    float destelloControl = 0.0f;
+    float destelloCaida = 0.0f;
+    float destelloMeta = 0.0f;
+    float destelloGolpe = 0.0f;
+
+    float tiempoTexto = 0.0f;       // texto flotante sobre la losa
+    int tipoTexto = 0;              // 1 control, 2 pozo
+};
+
+
 struct MinijuegoLaberintoInclinado
 {
     ResultadoMinijuego resultado{};
@@ -135,6 +174,17 @@ struct MinijuegoLaberintoInclinado
     float tiempoJuego = 0.0f;
     float tiempoAnimacion = 0.0f;
     float enfriamientoImpacto = 0.0f;
+
+    // Estado visual: particulas, destellos, anuncios. Azar propio.
+    ParticulaLaberinto particulas[MAX_PARTICULAS_LABERINTO];
+    VisualJugadorLaberinto visuales[MAX_PARTICIPANTES];
+    bool pulsoVisualPrevio[MAX_TRAMPAS_LABERINTO];
+    unsigned int semillaVisual = 0x2F6E2B1u;
+    float relojVisual = 0.0f;
+    float tiempoAnuncio = -1.0f;
+    int jugadorAnuncio = -1;
+    bool anuncioConPlazo = false;
+    bool confetiLanzado = false;
 
     void Inicializar();
 
