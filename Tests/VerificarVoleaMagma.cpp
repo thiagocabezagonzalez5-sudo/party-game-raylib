@@ -30,6 +30,18 @@ struct DibujoVolea
 };
 static DibujoVolea dibujos[N][64]{};
 static auto& Recursos() { return ObtenerModelosEscenariosRetro3D().voleaMagma; }
+// El estadio (lago, cancha, borde, volcanes, columnas, burbujas y ceniza) se
+// dibuja con primitivas: solo las piezas jugables conservan su GLB.
+static bool Jugable(int i)
+{
+    return i==MODELO_VOLEA_POSTE || i==MODELO_VOLEA_RED || i==MODELO_VOLEA_ROCA || i==MODELO_VOLEA_ROCA_CALIENTE ||
+        i==MODELO_VOLEA_CHARCO || i==MODELO_VOLEA_SOMBRA || i==MODELO_VOLEA_INDICADOR || i==MODELO_VOLEA_ESTELA;
+}
+static void CargarPieza(int i)
+{
+    PaqueteModelosEscenarioRetro3D paquete=ObtenerPaqueteVoleaMagmaRetro3D();
+    CargarPaqueteModelosEscenarioRetro3D({paquete.recursos+i,paquete.definiciones+i,1});
+}
 static void Comprobar(bool valor, const char* mensaje)
 {
     if (!valor) { if (errores < 20) std::fprintf(stderr,"FALLO: %s\n",mensaje); errores++; }
@@ -143,8 +155,6 @@ static void Avanzar(ZonaPruebas& zona,int frames)
 static void Pulsar(ZonaPruebas& zona,int k)
 { tecla=k; Avanzar(zona,1); tecla=KEY_NULL; }
 
-static float Hash(int n)
-{ float f=std::sin(n*12.9898f)*43758.5453f; return f-std::floor(f); }
 static Color ColorRocaPrueba(float temperatura,float t)
 {
     if (temperatura>=.85f)
@@ -155,42 +165,12 @@ static Color ColorRocaPrueba(float temperatura,float t)
 static void ComprobarEscena(ZonaPruebas& zona)
 {
     const auto& m=zona.gestorMinijuegos.minijuegoVoleaMagma; float t=m.tiempoAnimacion;
-    for (int i:{MODELO_VOLEA_LAGO,MODELO_VOLEA_CANCHA,MODELO_VOLEA_BORDE,MODELO_VOLEA_RED})
-        Comprobar(cantidades[i]==1 && Igual(dibujos[i][0].posicion,{0,0,0}) && Igual(dibujos[i][0].escala,{1,1,1}),"Escenario modular con origen comun, sin normalizar");
+    for (int i=0;i<N;i++) if (!Jugable(i)) Comprobar(cantidades[i]==0,"El decorado de ambiente no instancia GLB");
+    Comprobar(cantidades[MODELO_VOLEA_RED]==1 && Igual(dibujos[MODELO_VOLEA_RED][0].posicion,{0,0,0}) && Igual(dibujos[MODELO_VOLEA_RED][0].escala,{1,1,1}),"Red con origen comun, sin normalizar");
     Comprobar(cantidades[MODELO_VOLEA_POSTE]==2 && Igual(dibujos[MODELO_VOLEA_POSTE][0].posicion,{0,0,-5.4f}) &&
         Igual(dibujos[MODELO_VOLEA_POSTE][1].posicion,{0,0,5.4f}),"Postes en extremos originales de red X=0");
     Color cadena={255,(unsigned char)(110+60*(.5f+.5f*std::sin(t*4))),40,255};
     Comprobar(ColorIsEqual(dibujos[MODELO_VOLEA_RED][0].color,cadena),"Pulso de cadena conserva animacion");
-    for (int i:{MODELO_VOLEA_VOLCAN_MENOR,MODELO_VOLEA_VOLCAN_MAYOR})
-        Comprobar(cantidades[i]==1 && Igual(dibujos[i][0].posicion,i==MODELO_VOLEA_VOLCAN_MENOR ? Vector3{-28,-1.5f,-38} : Vector3{26,-1.5f,-44}),"Volcanes conservan ubicacion y escala documentada");
-    Comprobar(cantidades[MODELO_VOLEA_COLUMNA]==10 && cantidades[MODELO_VOLEA_COLUMNA_LLAMA]==4,"Mallas compartidas por catorce columnas");
-    for (int i=0;i<10;i++)
-    {
-        const auto& d=dibujos[MODELO_VOLEA_COLUMNA][i]; float h=2.5f+4.5f*Hash(i*3+7);
-        Comprobar(Igual(d.posicion,{-15.f+3.4f*i,-1.5f,-9.f-Hash(i+40)*2}) && Igual(d.escala,{1,h/4,1}),"Columna escala exclusivamente Y desde su pie");
-    }
-    for (int i=0;i<4;i++)
-    {
-        const auto& d=dibujos[MODELO_VOLEA_COLUMNA_LLAMA][i]; float h=2+2.5f*Hash(i+90);
-        Comprobar(Igual(d.posicion,{i%2 ? 12.2f : -12.2f,-1.5f,i<2 ? -3.5f : 3.5f}) && Igual(d.escala,{1,h/4,1}),"Columnas con llama conservan alturas y posiciones");
-    }
-    int burbujas=0;
-    for (int i=0;i<16;i++)
-    {
-        float x=-26+52*Hash(i*5+1),z=-26+36*Hash(i*5+2);
-        if (std::fabs(x)<11 && std::fabs(z)<7) continue;
-        float fase=std::sin(t*(.8f+Hash(i)*1.2f)+i*1.7f),s=(.5f+.15f*fase)/.48f;
-        const auto& d=dibujos[MODELO_VOLEA_BURBUJA][burbujas++];
-        Comprobar(Igual(d.posicion,{x,-1.45f+.18f*fase,z}) && Igual(d.escala,{s,s,s}),"Burbujas animadas fuera de cancha");
-        Comprobar(ColorIsEqual(d.color,{255,(unsigned char)(150+60*fase),40,255}),"Pulso solo en lava_clara de burbuja");
-    }
-    Comprobar(cantidades[MODELO_VOLEA_BURBUJA]==burbujas && cantidades[MODELO_VOLEA_CENIZA]==40,"Decoracion compartida sin cargas por instancia");
-    for (int i=0;i<40;i++)
-    {
-        float v=.5f+.7f*Hash(i*3+1),f=std::fmod(t*v*.35f+Hash(i*3+2),1.f);
-        const auto& d=dibujos[MODELO_VOLEA_CENIZA][i];
-        Comprobar(Igual(d.posicion,{-16+32*Hash(i*3+3)+1.5f*std::sin(t+i),14-15*f,-12+22*Hash(i*7+5)}) && d.color.a==200,"Ceniza conserva trayectoria y opacidad");
-    }
     bool caliente=m.pelota.temperatura>=.85f; int pieza=caliente ? MODELO_VOLEA_ROCA_CALIENTE : MODELO_VOLEA_ROCA;
     Comprobar(cantidades[pieza]==1 && cantidades[caliente ? MODELO_VOLEA_ROCA : MODELO_VOLEA_ROCA_CALIENTE]==0,"Variante de roca segun temperatura");
     Comprobar(Igual(dibujos[pieza][0].posicion,m.pelota.posicion) && Igual(dibujos[pieza][0].escala,{1,1,1}) &&
@@ -245,8 +225,10 @@ static void ComprobarEscena(ZonaPruebas& zona)
         float tamano=p.tamano*(.35f+.65f*vida);
         if (tamano>=.2f*EscalaUmbralSombraPropRetro()) sombrasParticulas+=2;
     }
-    Comprobar(cubos==2+particulas && esferas==12+(caliente ? 1 : 0)+golpes && cilindros==enSuelo && segmentos==0,
-        "Conservar marcas, humo, halo, punos, particulas y sombra cilindrica del jugador sin superponer geometria del escenario");
+    // Marcas, humo y halo de la roca ahora son geometria propia del estadio
+    // (rlgl), no cubos ni esferas sueltas.
+    Comprobar(cubos==particulas && esferas==golpes && cilindros==enSuelo && segmentos==0,
+        "Conservar punos, particulas y sombra cilindrica del jugador sin superponer geometria del escenario");
     int sombrasGolpe=.18f>=.1f*EscalaUmbralSombraPropRetro() ? golpes*LadosSombraPropRetro() : 0;
     Comprobar(triangulosSombra==8*zona.cantidadParticipantes+sombrasGolpe+sombrasParticulas,
         "Sombras de personajes y sus efectos intactas, sin manchas del escenario");
@@ -297,7 +279,9 @@ int main()
         zona.CambiarMinijuego(MINIJUEGO_VOLEA_MAGMA); auto& m=zona.gestorMinijuegos.minijuegoVoleaMagma;
         for (int i=0;i<N;i++)
         {
-            const auto& r=Recursos()[i]; Comprobar(r.cargado,RUTAS_MODELOS_VOLEA_MAGMA_3D[i]);
+            const auto& r=Recursos()[i];
+            if (!Jugable(i)) { Comprobar(!r.cargaIntentada && cargas[i]==0,"No cargar los GLB de ambiente"); continue; }
+            Comprobar(r.cargado,RUTAS_MODELOS_VOLEA_MAGMA_3D[i]);
             if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
             if (cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Carga unica, compartida por todas las instancias");
@@ -365,24 +349,28 @@ int main()
         zona.Inicializar(participantes,cantidad); zona.modoCatalogo=zona.modoTablero=true;
         zona.CambiarMinijuego(MINIJUEGO_VOLEA_MAGMA); Pulsar(zona,KEY_R); Pulsar(zona,KEY_ESCAPE);
         Comprobar(!zona.volverAlMenu && m.tiempoPreparacion<3,"Modo tablero bloquea reinicio y abandono");
-        for (int i=0;i<N;i++) Comprobar(cargas[i]==1 && Recursos()[i].modelo.meshes==mallas[i],"Reinicio y reentrada sin duplicar mallas");
+        for (int i=0;i<N;i++) Comprobar(cargas[i]==(Jugable(i) ? 1 : 0) && Recursos()[i].modelo.meshes==mallas[i],"Reinicio y reentrada sin duplicar mallas");
     }
     auto& m=zona.gestorMinijuegos.minijuegoVoleaMagma;
     m.pelota.estado=PELOTA_VOLEA_EN_JUEGO; m.pelota.posicion={-2,3,0}; m.pelota.velocidad={3,1,0};
     m.charcos[0]={true,3,1,3.5f}; m.tiempoAnimacion=1.2f;
+    int jugables=0;
     for (int ausente=0;ausente<N;ausente++)
     {
+        if (!Jugable(ausente)) continue;
+        jugables++;
         m.pelota.temperatura=ausente==MODELO_VOLEA_ROCA_CALIENTE ? .9f : .6f; Dibujar(zona); ComprobarEscena(zona);
         int presentes[N]; std::memcpy(presentes,cantidades,sizeof(presentes)); int base=cubos+esferas+cilindros+segmentos+circulos;
-        Comprobar(presentes[ausente]>0,"Los diecisiete GLB tienen uso en el juego");
+        Comprobar(presentes[ausente]>0,"Los GLB jugables tienen uso en el juego");
         DescargarSlotModeloEscenarioRetro3D(Recursos()[ausente]); rutaAusente=RUTAS_MODELOS_VOLEA_MAGMA_3D[ausente];
-        for (int k=0;k<3;k++) CargarPaqueteVoleaMagmaRetro3D();
+        for (int k=0;k<3;k++) CargarPieza(ausente);
         Dibujar(zona);
         for (int i=0;i<N;i++) Comprobar(cantidades[i]==(i==ausente ? 0 : presentes[i]),"Fallback individual no duplica otros modelos");
         Comprobar(cubos+esferas+cilindros+segmentos+circulos>base,"Fallback procedural visible para cada pieza");
-        rutaAusente=nullptr; Recursos()[ausente]={}; CargarPaqueteVoleaMagmaRetro3D(); GuardarMateriales();
+        rutaAusente=nullptr; Recursos()[ausente]={}; CargarPieza(ausente); GuardarMateriales();
     }
-    Comprobar(avisos==N,"Solo un diagnostico por recurso ausente");
+    for (int i=0;i<N;i++) if (!Jugable(i)) Comprobar(!Recursos()[i].cargaIntentada,"Los GLB de ambiente siguen sin cargarse");
+    Comprobar(avisos==jugables,"Solo un diagnostico por recurso ausente");
     const auto& almacen=ObtenerModelosEscenariosRetro3D();
     for (const auto& r:almacen.ultimoAsiento) Comprobar(!r.cargaIntentada,"No cargar Asiento");
     for (const auto& r:almacen.cajasPuerto) Comprobar(!r.cargaIntentada,"No cargar Puerto");
