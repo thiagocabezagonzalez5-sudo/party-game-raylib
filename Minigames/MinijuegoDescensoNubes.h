@@ -15,11 +15,17 @@
 // punto, dorados 3), evita nubes de tormenta (aturden y quitan 2 puntos) y
 // las rafagas de viento. La accion frena la caida durante 1 s (recarga 2 s).
 // Al aterrizar en la isla se suman 5 puntos si se cae en el circulo central.
+//
+// Escenario: cielo de tarde con islas flotantes de campo (molinos, granjas,
+// globos, aves y arcoiris) sobre un mar de nubes; la isla diana espera
+// abajo.
 //==================================================
 
 inline constexpr int MAX_ANILLOS_NUBES = 64;
 inline constexpr int MAX_TORMENTAS_NUBES = 16;
 inline constexpr int MAX_VIENTOS_NUBES = 6;
+inline constexpr int MAX_PARTICULAS_NUBES = 220;
+inline constexpr int MAX_AVISOS_NUBES = 16;
 
 
 enum FaseNubes
@@ -77,6 +83,34 @@ struct EstadoJugadorNubes
 };
 
 
+// Chispa, pluma, gota o confeti (solo visual).
+struct ParticulaNubes
+{
+    bool activa = false;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+    bool brilla = false;
+};
+
+
+// Rotulo que sube sobre el mundo: «+3», «¡CENTRO! +5».
+struct AvisoNubes
+{
+    bool activo = false;
+    Vector3 posicion{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    char texto[24] = "";
+    Color color{};
+    bool grande = false;
+};
+
+
 struct MinijuegoDescensoNubes
 {
     ResultadoMinijuego resultado{};
@@ -101,6 +135,16 @@ struct MinijuegoDescensoNubes
     float tiempoJuego = 0.0f;
     float tiempoAnimacion = 0.0f;
 
+    // Solo visual: se actualiza en Actualizar comparando el estado antes y
+    // despues de cada paso; el azar sale de semillaVisual.
+    ParticulaNubes particulas[MAX_PARTICULAS_NUBES];
+    AvisoNubes avisos[MAX_AVISOS_NUBES];
+    unsigned int semillaVisual = 1u;
+    float destelloJugador[MAX_PARTICIPANTES] = {};
+    float relampagoTormenta = 0.0f;     // destello de pantalla tras un rayo
+    float tiempoFin = -1.0f;
+    float tiempoConfeti = 0.0f;
+
     void Inicializar();
 
     void Reiniciar(
@@ -110,6 +154,14 @@ struct MinijuegoDescensoNubes
     );
 
     void Actualizar(
+        float deltaTime,
+        JugadorPrueba jugadores[],
+        int cantidadMaxima,
+        Participante participantes[]
+    );
+
+    // Reglas de la partida (Actualizar le suma los efectos visuales).
+    void ActualizarPartida(
         float deltaTime,
         JugadorPrueba jugadores[],
         int cantidadMaxima,

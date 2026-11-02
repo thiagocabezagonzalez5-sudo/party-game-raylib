@@ -43,6 +43,22 @@ static int Indice(const char* ruta)
     for (int i=0;i<N;i++) if (std::strcmp(ruta,RUTAS_MODELOS_DESCENSO_NUBES_3D[i])==0) return i;
     return -1;
 }
+// El decorado de ambiente (nubes, mar, isla, islas flotantes, globos,
+// molino, aves y arcoiris) se dibuja con primitivas: sus GLB no se cargan.
+static bool Jugable(int i)
+{
+    return i<=MODELO_NUBES_ESTRELLA || (i>=MODELO_NUBES_TORMENTA && i<=MODELO_NUBES_BANDA) || i==MODELO_NUBES_DIANA;
+}
+static void CargarJugables()
+{
+    PaqueteModelosEscenarioRetro3D paquete=ObtenerPaqueteDescensoNubesRetro3D();
+    for (int i=0;i<N;i++) if (Jugable(i))
+    {
+        PaqueteModelosEscenarioRetro3D pieza=paquete;
+        pieza.recursos+=i; pieza.definiciones+=i; pieza.cantidad=1;
+        CargarPaqueteModelosEscenarioRetro3D(pieza);
+    }
+}
 static void Registrar(int nivel, const char* formato, va_list args)
 {
     char texto[2048]; std::vsnprintf(texto,sizeof(texto),formato,args);
@@ -202,24 +218,11 @@ static void ComprobarEscena(ZonaPruebas& zona)
     }
     Comprobar(cantidades[MODELO_NUBES_PLANEADOR]==planeadores && cantidades[MODELO_NUBES_PLANEADOR_FRENADO]==frenados && cantidades[MODELO_NUBES_ESTRELLA]==estrellas,"Variantes y estrellas segun estado real");
     if (m.alturaCamara<=30)
-    {
-        for (int pieza:{MODELO_NUBES_MAR,MODELO_NUBES_ISLA,MODELO_NUBES_DIANA})
-            Comprobar(cantidades[pieza]==1 && Igual(dibujos[pieza][0].posicion,{0,0,0}),"Aterrizaje con origen compartido Y=0");
-    }
-    else for (int pieza:{MODELO_NUBES_MAR,MODELO_NUBES_ISLA,MODELO_NUBES_DIANA})
-        Comprobar(cantidades[pieza]==0,"Isla oculta segun alturaCamara");
-    for (int i=0;i<cantidades[MODELO_NUBES_ASPAS];i++)
-    {
-        const auto& d=dibujos[MODELO_NUBES_ASPAS][i];
-        Comprobar(Igual(d.eje,{0,0,1}) && Cerca(d.angulo,m.tiempoAnimacion*1.2f*RAD2DEG),"Giro procedural de aspas sobre su eje Z");
-        bool conectado=false;
-        for (int j=0;j<cantidades[MODELO_NUBES_MOLINO];j++)
-        {
-            const auto& torre=dibujos[MODELO_NUBES_MOLINO][j]; float s=torre.escala.x;
-            if (Igual(d.posicion,{torre.posicion.x,torre.posicion.y+4.15f*s,torre.posicion.z+.88f*s}) && Igual(d.escala,torre.escala)) conectado=true;
-        }
-        Comprobar(conectado,"Aspas conectadas a torre con offset escalado una vez");
-    }
+        Comprobar(cantidades[MODELO_NUBES_DIANA]==1 && Igual(dibujos[MODELO_NUBES_DIANA][0].posicion,{0,0,0}),"Diana con origen compartido Y=0");
+    else
+        Comprobar(cantidades[MODELO_NUBES_DIANA]==0,"Diana GLB oculta segun alturaCamara");
+    for (int i=0;i<N;i++) if (!Jugable(i))
+        Comprobar(cantidades[i]==0,"Sin GLB de ambiente en el dibujo");
     unsigned todos=(1u<<zona.cantidadParticipantes)-1; int blancos=0,dorados=0;
     for (int i=0;i<m.cantidadAnillos;i++)
     {
@@ -270,8 +273,6 @@ static void ComprobarEscena(ZonaPruebas& zona)
         }
     }
     Comprobar(cantidades[MODELO_NUBES_BANDA]==vientos*2 && cantidades[MODELO_NUBES_FLECHA]==flechas,"Instancias compartidas del viento");
-    bool arco=62>m.alturaCamara-20 && 62<m.alturaCamara+24;
-    Comprobar(cantidades[MODELO_NUBES_ARCOIRIS]==(arco ? 1 : 0),"Visibilidad original del arcoiris");
     Comprobar(cubos==0 && cilindros==0 && segmentos==0 && planos==0 && bandas==0 && esferasEx==0,"No superponer primitivas reemplazadas por GLB");
     Comprobar(triangulosSombra==8*zona.cantidadParticipantes,"Solo sombras de personajes, sin manchas del escenario");
 }
@@ -303,7 +304,13 @@ int main()
         auto& m=zona.gestorMinijuegos.minijuegoDescensoNubes;
         for (int i=0;i<N;i++)
         {
-            const auto& r=Recursos()[i]; Comprobar(r.cargado,RUTAS_MODELOS_DESCENSO_NUBES_3D[i]);
+            const auto& r=Recursos()[i];
+            if (!Jugable(i))
+            {
+                Comprobar(!r.cargaIntentada && cargas[i]==0,"No cargar los GLB de ambiente");
+                continue;
+            }
+            Comprobar(r.cargado,RUTAS_MODELOS_DESCENSO_NUBES_3D[i]);
             if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
             if (cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Carga unica compartida por jugadores y reinicios");
@@ -362,25 +369,27 @@ int main()
         zona.Inicializar(participantes,cantidad); zona.modoCatalogo=zona.modoTablero=true;
         zona.CambiarMinijuego(MINIJUEGO_DESCENSO_NUBES); Pulsar(zona,KEY_R); Pulsar(zona,KEY_ESCAPE);
         Comprobar(!zona.volverAlMenu && m.tiempoPreparacion<3,"Modo tablero conserva bloqueo de R y Escape");
-        for (int i=0;i<N;i++) Comprobar(cargas[i]==1 && Recursos()[i].modelo.meshes==mallas[i],"Reentrada sin nuevas cargas");
+        for (int i=0;i<N;i++) Comprobar(cargas[i]==(Jugable(i) ? 1 : 0) && Recursos()[i].modelo.meshes==mallas[i],"Reentrada sin nuevas cargas");
     }
-    Comprobar(avesAnimadas>0,"Aleteo procedural observado en dibujo real");
+    int jugables=0;
     for (int ausente=0;ausente<N;ausente++)
     {
+        if (!Jugable(ausente)) continue;
+        jugables++;
         // Dos alturas cubren fondo alto y aterrizaje; el frenado elige su variante.
-        float h=(ausente==MODELO_NUBES_MAR || ausente==MODELO_NUBES_ISLA || ausente==MODELO_NUBES_DIANA) ? 20.f : 62.f;
+        float h=ausente==MODELO_NUBES_DIANA ? 20.f : 62.f;
         EscenaControlada(zona,h,ausente==MODELO_NUBES_PLANEADOR_FRENADO); Dibujar(zona);
         int presentes[N]; std::memcpy(presentes,cantidades,sizeof(presentes)); int base=Primitivas();
         Comprobar(presentes[ausente]>0,"Cada GLB tiene un uso visible integrado");
-        if (ausente==MODELO_NUBES_AVE) DescargarAlasDescensoNubesRetro3D();
         DescargarSlotModeloEscenarioRetro3D(Recursos()[ausente]); rutaAusente=RUTAS_MODELOS_DESCENSO_NUBES_3D[ausente];
-        for (int k=0;k<3;k++) CargarPaqueteDescensoNubesRetro3D();
+        for (int k=0;k<3;k++) CargarJugables();
         Dibujar(zona);
         for (int i=0;i<N;i++) Comprobar(cantidades[i]==(i==ausente ? 0 : presentes[i]),"Fallback por pieza conserva las demas");
         Comprobar(Primitivas()>base,"Fallback primitivo visible");
-        rutaAusente=nullptr; Recursos()[ausente]={}; CargarPaqueteDescensoNubesRetro3D(); GuardarMateriales();
+        rutaAusente=nullptr; Recursos()[ausente]={}; CargarJugables(); GuardarMateriales();
     }
-    Comprobar(avisos==N,"Un unico diagnostico por GLB ausente");
+    for (int i=0;i<N;i++) if (!Jugable(i)) Comprobar(!Recursos()[i].cargaIntentada,"Los GLB de ambiente siguen sin cargarse");
+    Comprobar(avisos==jugables,"Un unico diagnostico por GLB ausente");
     const auto& almacen=ObtenerModelosEscenariosRetro3D();
     for (const auto& r:almacen.ultimoAsiento) Comprobar(!r.cargaIntentada,"No cargar Asiento");
     for (const auto& r:almacen.cajasPuerto) Comprobar(!r.cargaIntentada,"No cargar Puerto");

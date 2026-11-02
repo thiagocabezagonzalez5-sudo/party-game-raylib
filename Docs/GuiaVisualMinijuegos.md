@@ -145,7 +145,7 @@ Cada ficha conserva la **idea del lugar** actual y fija la dirección del redise
 | 32 | Bateo Meteórico | Espacio y meteoritos | Plataforma en órbita: planeta anillado, cúpula con telescopio, lluvia de meteoritos, estrellas | Rehecho |
 | 33 | Racimo Tóxico | Árbol y cabañas en el pantano | Pantano de noche: árbol gigante con racimo, cabañas sobre pilotes, agua con nenúfares, luciérnagas, niebla verde | Rehecho |
 | 34 | Tesorero Cercado | Patio de castillo con rejas | Patio de castillo medieval: murallas con almenas, torres, estandartes, antorchas, foso, carros y barriles | Rehecho |
-| 35 | Descenso en Nubes | Cielo con nubes | Cielo de tarde con islas flotantes: nubes en capas, globos, molinos, aves, arcoíris, isla diana | Pendiente |
+| 35 | Descenso en Nubes | Cielo con nubes | Cielo de tarde con islas flotantes: nubes en capas, globos, molinos, aves, arcoíris, isla diana | Rehecho |
 | 36 | Volea de Magma | Cancha volcánica | Cancha de obsidiana junto a un lago de lava: volcanes, columnas de basalto, red de cadenas, brasas | Pendiente |
 | 37 | Parejas Glaciares | Glaciar | Glaciar con aurora: témpanos, icebergs, pingüinos, cueva de hielo, nieve que cae | Pendiente |
 | 38 | Esferas del Cañón | Cañón del desierto | Cañón de roca roja: paredes estratificadas, arco natural, cactus, puentes rotos, mesetas lejanas | Pendiente |
