@@ -15,6 +15,8 @@
 inline constexpr int MAX_BLOQUES_TESORERO = 8;
 inline constexpr int MAX_REJAS_TESORERO = 4;
 inline constexpr int MAX_MONEDAS_TESORERO = 48;
+inline constexpr int MAX_CHISPAS_TESORERO = 160;
+inline constexpr int MAX_AVISOS_TESORERO = 10;
 
 
 enum FaseTesoreroAcorralado
@@ -84,6 +86,41 @@ struct MonedaTesorero
 };
 
 
+// Solo visual: brillos, monedas que saltan, polvo y confeti.
+enum TipoChispaTesorero
+{
+    CHISPA_TESORERO_BRILLO = 0,
+    CHISPA_TESORERO_MONEDA,
+    CHISPA_TESORERO_POLVO,
+    CHISPA_TESORERO_CONFETI
+};
+
+
+struct ChispaTesorero
+{
+    bool activa = false;
+    int tipo = CHISPA_TESORERO_BRILLO;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float giro = 0.0f;
+    Color color{};
+};
+
+
+// «+1» / «-5» que flota sobre quien junta o pierde monedas.
+struct AvisoTesorero
+{
+    bool activo = false;
+    Vector3 posicion{};
+    float vida = 0.0f;
+    int jugador = -1;
+    int cantidad = 0;
+};
+
+
 struct MinijuegoTesoreroAcorralado
 {
     ResultadoMinijuego resultado{};
@@ -110,6 +147,17 @@ struct MinijuegoTesoreroAcorralado
     float tiempoAnimacion = 0.0f;
     float cooldownSonidoMoneda = 0.0f;
 
+    // Efectos visuales: no intervienen en las reglas y usan su propia
+    // semilla (nunca GetRandomValue).
+    ChispaTesorero chispas[MAX_CHISPAS_TESORERO];
+    AvisoTesorero avisos[MAX_AVISOS_TESORERO];
+    unsigned int semillaVisual = 1u;
+    float destelloTesorero = 0.0f;
+    int tipoAnuncio = 0;
+    float tiempoAnuncio = -1.0f;
+    float tiempoFinal = 0.0f;
+    bool avisoOroDado = false;
+
     void Inicializar();
 
     void Reiniciar(
@@ -133,4 +181,13 @@ struct MinijuegoTesoreroAcorralado
     ) const;
 
     const ResultadoMinijuego& ObtenerResultado() const;
+
+private:
+    // Reglas de un paso; Actualizar la envuelve con los efectos visuales.
+    void ActualizarLogica(
+        float deltaTime,
+        JugadorPrueba jugadores[],
+        int cantidadMaxima,
+        Participante participantes[]
+    );
 };

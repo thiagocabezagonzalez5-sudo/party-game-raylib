@@ -12,6 +12,9 @@
 #include <initializer_list>
 
 static constexpr int N = CANTIDAD_MODELOS_TESORERO_CERCADO_3D;
+// El escenario se construye con primitivas: del paquete solo se cargan y
+// dibujan las piezas jugables (marco y hoja de reja, aviso y moneda).
+static constexpr int P0 = MODELO_TESORERO_MARCO_REJA;
 static int errores = 0, tecla = KEY_NULL, avisos = 0;
 static int cargas[N]{}, descargas[N]{}, cantidades[N]{};
 static int cubos = 0, esferas = 0, cilindros = 0, segmentos = 0, circulos = 0;
@@ -111,6 +114,12 @@ extern "C" void __wrap_DrawPlane(Vector3 p,Vector2 s,Color c)
 extern "C" void __real_DrawSphereWires(Vector3,float,int,int,Color);
 extern "C" void __wrap_DrawSphereWires(Vector3 p,float r,int anillos,int cortes,Color c)
 { indicadores++; __real_DrawSphereWires(p,r,anillos,cortes,c); }
+static void CargarPiezasJugables()
+{
+    PaqueteModelosEscenarioRetro3D paquete=ObtenerPaqueteTesoreroCercadoRetro3D();
+    paquete.recursos+=P0; paquete.definiciones+=P0; paquete.cantidad-=P0;
+    CargarPaqueteModelosEscenarioRetro3D(paquete);
+}
 static void GuardarMateriales()
 {
     for (int i=0;i<N;i++) for (int j=0;j<Recursos()[i].modelo.materialCount && j<16;j++)
@@ -145,8 +154,8 @@ static void Pulsar(ZonaPruebas& zona,int k)
 
 static void ComprobarEscena(const MinijuegoTesoreroAcorralado& m)
 {
-    const int fijos[]={1,1,1,2,1,2,2,1,1,18,10,30,4,16};
-    for (int i=0;i<14;i++) Comprobar(cantidades[i]==fijos[i],"Piezas completas o vistas compartidas sin duplicados");
+    for (int i=0;i<P0;i++) Comprobar(cantidades[i]==0,"Sin GLB del decorado reemplazado");
+    Comprobar(cantidades[MODELO_TESORERO_MARCO_REJA]==4 && cantidades[MODELO_TESORERO_REJA]==16,"Piezas completas o vistas compartidas sin duplicados");
     int avisosReja=0;
     for (int k=0;k<4;k++)
     {
@@ -172,24 +181,6 @@ static void ComprobarEscena(const MinijuegoTesoreroAcorralado& m)
         avisosReja++;
     }
     Comprobar(cantidades[MODELO_TESORERO_AVISO]==avisosReja*3,"Avisos solo durante estado AVISO");
-    int rojo=0,dorado=0;
-    for (int k=0;k<5;k++)
-    {
-        int pieza=k%2 ? MODELO_TESORERO_ESTANDARTE_DORADO : MODELO_TESORERO_ESTANDARTE_ROJO;
-        int& instancia=k%2 ? dorado : rojo;
-        for (int j=0;j<Recursos()[pieza].modelo.meshCount;j++)
-        {
-            bool movil=j>=3 || (k%2 && j==1);
-            float x=-7.2f+k*3.6f+(movil ? std::sin(m.tiempoAnimacion*2+k)*.12f : 0);
-            Comprobar(Igual(dibujos[pieza][instancia++].posicion,{x,2.8f,-7.2f}),"Vaiven de tela con asta y travesano fijos");
-        }
-    }
-    for (int k=0;k<6;k++) for (int j=0;j<5;j++)
-    {
-        float escala=j>=3 ? (.17f+.04f*std::sin(m.tiempoAnimacion*12+k*2))/.17f : 1;
-        const auto& d=dibujos[MODELO_TESORERO_ANTORCHA][k*5+j];
-        Comprobar(Igual(d.escala,{escala,escala,escala}) && Igual(d.posicion,{k%2 ? 8.8f : -8.8f,1.84f*(1-escala),-4.5f+(k/2)*4.5f}),"Soporte fijo y llama pulsa alrededor de su centro local");
-    }
     int visibles=0;
     for (const auto& moneda:m.monedas)
     {
@@ -238,7 +229,8 @@ int main()
         }
         zona.CambiarMinijuego(MINIJUEGO_TESORERO_ACORRALADO);
         auto& m=zona.gestorMinijuegos.minijuegoTesoreroAcorralado;
-        for (int i=0;i<N;i++)
+        for (int i=0;i<P0;i++) Comprobar(!Recursos()[i].cargaIntentada && cargas[i]==0,"No cargar GLB del decorado reemplazado");
+        for (int i=P0;i<N;i++)
         {
             auto& r=Recursos()[i]; Comprobar(r.cargado,RUTAS_MODELOS_TESORERO_CERCADO_3D[i]);
             if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
@@ -248,7 +240,6 @@ int main()
         }
         GuardarMateriales(); Dibujar(zona,cantidad==4 ? "build/tesorero-preparacion.png" : nullptr);
         ComprobarEscena(m);
-        Comprobar(esferas==8 && cilindros==cantidad && segmentos==0 && triangulosSombra==8*cantidad,"Halos y bolsa conservados sin sombras falsas del escenario");
         Avanzar(zona,182); Comprobar(m.fase==FASE_TESORERO_JUGANDO,"Preparacion y comienzo reales");
         AlejarJugadores(zona,cantidad);
         m.rejas[0].estado=REJA_TESORERO_ABIERTA; m.rejas[0].tiempoEstado=.001f;
@@ -307,7 +298,7 @@ int main()
         zona.Inicializar(participantes,cantidad); zona.modoCatalogo=zona.modoTablero=true;
         zona.CambiarMinijuego(MINIJUEGO_TESORERO_ACORRALADO); Pulsar(zona,KEY_R); Pulsar(zona,KEY_ESCAPE);
         Comprobar(!zona.volverAlMenu && m.tiempoPreparacion<3,"Ronda de tablero conserva reglas de salida y reinicio");
-        for (int i=0;i<N;i++) Comprobar(cargas[i]==1 && mallas[i]==Recursos()[i].modelo.meshes,"Reinicio y reentrada sin duplicar cargas");
+        for (int i=P0;i<N;i++) Comprobar(cargas[i]==1 && mallas[i]==Recursos()[i].modelo.meshes,"Reinicio y reentrada sin duplicar cargas");
     }
     auto& m=zona.gestorMinijuegos.minijuegoTesoreroAcorralado;
     m.rejas[0].estado=REJA_TESORERO_AVISO; m.tiempoAnimacion=.1f;
@@ -315,16 +306,17 @@ int main()
     Dibujar(zona); ComprobarEscena(m);
     int presentes[N]; std::memcpy(presentes,cantidades,sizeof(presentes));
     int baseCubos=cubos,baseEsferas=esferas,baseCilindros=cilindros,baseSegmentos=segmentos;
-    for (int ausente=0;ausente<N;ausente++)
+    for (int ausente=P0;ausente<N;ausente++)
     {
         DescargarSlotModeloEscenarioRetro3D(Recursos()[ausente]); rutaAusente=RUTAS_MODELOS_TESORERO_CERCADO_3D[ausente];
-        for (int k=0;k<3;k++) CargarPaqueteTesoreroCercadoRetro3D();
+        for (int k=0;k<3;k++) CargarPiezasJugables();
         Dibujar(zona);
         for (int i=0;i<N;i++) Comprobar(cantidades[i]==(i==ausente ? 0 : presentes[i]),"Fallback por pieza sin duplicar otras");
         Comprobar(cubos>baseCubos || esferas>baseEsferas || cilindros>baseCilindros || segmentos>baseSegmentos,"Primitivas de respaldo visibles");
-        rutaAusente=nullptr; Recursos()[ausente]={}; CargarPaqueteTesoreroCercadoRetro3D(); GuardarMateriales();
+        rutaAusente=nullptr; Recursos()[ausente]={}; CargarPiezasJugables(); GuardarMateriales();
     }
-    Comprobar(avisos==N,"Un diagnostico por modelo ausente");
+    for (int i=0;i<P0;i++) Comprobar(!Recursos()[i].cargaIntentada,"El decorado reemplazado nunca se carga");
+    Comprobar(avisos==N-P0,"Un diagnostico por modelo ausente");
     const auto& almacen=ObtenerModelosEscenariosRetro3D();
     for (const auto& r:almacen.ultimoAsiento) Comprobar(!r.cargaIntentada,"No cargar Asiento");
     for (const auto& r:almacen.cajasPuerto) Comprobar(!r.cargaIntentada,"No cargar Puerto");
