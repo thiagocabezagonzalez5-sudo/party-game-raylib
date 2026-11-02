@@ -162,16 +162,6 @@ static void ComprobarCarriles(const MinijuegoBateoMeteorico& m,int cantidad)
         float pulso=.5f+.5f*std::sin(m.tiempoAnimacion*8);
         Comprobar(Igual(aro.posicion,{x,1.4f,-.7f}) && Cerca(aro.escala.x,(.55f+.06f*pulso)/.55f) && Cerca(aro.escala.z,1),"Aro centrado y pulso en su plano");
     }
-    Comprobar(Igual(dibujos[MODELO_BATEO_OBSERVATORIO][0].posicion,{-36,0,-64}) &&
-        Igual(dibujos[MODELO_BATEO_TELESCOPIO][0].posicion,{-36,0,-64}),"Cupula y telescopio comparten origen");
-    for (int k=0;k<5;k++) for (int j=0;j<4;j++)
-    {
-        const auto& d=dibujos[MODELO_BATEO_FAROL][k*4+j];
-        float p=.5f+.5f*std::sin(m.tiempoAnimacion*3+(k-2));
-        float s=j==2 ? 1+p/6 : 1;
-        Comprobar(Igual(d.posicion,{-15+k*6.0f,j==2 ? 1.97f*(1-s) : 0,3.2f}) && Cerca(d.escala.y,s),"Faroles fijos y bombillas con pivote propio");
-        Comprobar(ColorIsEqual(d.color,{255,230,(unsigned char)(150+60*p),255}),"Parpadeo solo en BOMBILLAS");
-    }
 }
 int main()
 {
@@ -196,7 +186,15 @@ int main()
         auto& m=zona.gestorMinijuegos.minijuegoBateoMeteorico;
         for (int i=0;i<N;i++)
         {
-            auto& r=Recursos()[i]; Comprobar(r.cargado,RUTAS_MODELOS_BATEO_METEORICO_3D[i]);
+            auto& r=Recursos()[i];
+            // El decorado de ambiente (cumbre, cupulas, telescopio, planeta y
+            // faroles) se dibuja con primitivas: sus GLB no se cargan.
+            if (i<MODELO_BATEO_CARRIL)
+            {
+                Comprobar(!r.cargaIntentada && cargas[i]==0,"No cargar los GLB de ambiente");
+                continue;
+            }
+            Comprobar(r.cargado,RUTAS_MODELOS_BATEO_METEORICO_3D[i]);
             if (!r.cargado) { zona.Descargar(); CloseWindow(); return 2; }
             if (cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Instancias y rondas comparten recursos");
@@ -206,12 +204,13 @@ int main()
         // La ruta compartida del personaje ya dibuja sus propias sombras.
         // Se conserva esa base para medir solamente las del escenario.
         int triangulosJugadores=triangulosSombra;
-        const int esperados[]={1,1,1,1,1,20,cantidad,cantidad,cantidad,cantidad,0,0,0,cantidad,cantidad};
+        // El decorado de ambiente ya no instancia GLB; las piezas jugables si.
+        const int esperados[]={0,0,0,0,0,0,cantidad,cantidad,cantidad,cantidad,0,0,0,cantidad,cantidad};
         for (int i=0;i<N;i++) Comprobar(cantidades[i]==esperados[i],"Piezas iniciales sin duplicados");
-        if (cubos!=90 || esferas!=26 || cilindros!=cantidad || segmentos!=0)
+        if (cubos!=0 || esferas!=0 || cilindros!=cantidad || segmentos!=0)
             std::fprintf(stderr,"Primitivas iniciales: cubos=%d esferas=%d cilindros=%d segmentos=%d\n",cubos,esferas,cilindros,segmentos);
-        Comprobar(cubos==90 && esferas==26 && cilindros==cantidad && segmentos==0,
-            "Solo estrellas, luna y sombras originales de jugadores permanecen como primitivas");
+        Comprobar(cubos==0 && esferas==0 && cilindros==cantidad && segmentos==0,
+            "Solo las sombras originales de jugadores permanecen como primitivas sueltas");
         ComprobarCarriles(m,cantidad);
         for (int i=0;i<cantidad;i++)
         {
@@ -289,7 +288,7 @@ int main()
         zona.Inicializar(participantes,cantidad); zona.modoCatalogo=zona.modoTablero=true;
         zona.CambiarMinijuego(MINIJUEGO_BATEO_METEORICO); Pulsar(zona,KEY_R);
         Comprobar(m.tiempoPreparacion<3,"Ronda de tablero no reinicia con R");
-        for (int i=0;i<N;i++) Comprobar(cargas[i]==1 && mallas[i]==Recursos()[i].modelo.meshes,"Reentrada, reinicio y tablero sin duplicar cargas");
+        for (int i=0;i<N;i++) Comprobar(cargas[i]==(i<MODELO_BATEO_CARRIL ? 0 : 1) && mallas[i]==Recursos()[i].modelo.meshes,"Reentrada, reinicio y tablero sin duplicar cargas");
     }
     // Una pieza ausente a la vez; el disco y las otras piezas quedan intactos.
     auto& m=zona.gestorMinijuegos.minijuegoBateoMeteorico;
@@ -297,18 +296,22 @@ int main()
     for (int i=0;i<4;i++) { auto& e=m.estadosJugadores[i]; e.estado=LANZAMIENTO_EN_VUELO; e.tipoActual=(TipoMeteoritoBateo)(i%3); e.reloj=.4f; }
     Dibujar(zona); int presentes[N]; std::memcpy(presentes,cantidades,sizeof(presentes));
     int baseCubos=cubos,baseEsferas=esferas,baseCilindros=cilindros,baseSegmentos=segmentos,baseCirculos=circulos;
-    for (int ausente=0;ausente<N;ausente++)
+    // Solo las piezas jugables (el tramo final del paquete) tienen GLB.
+    PaqueteModelosEscenarioRetro3D piezas=ObtenerPaqueteBateoMeteoricoRetro3D();
+    piezas.recursos+=MODELO_BATEO_CARRIL; piezas.definiciones+=MODELO_BATEO_CARRIL; piezas.cantidad-=MODELO_BATEO_CARRIL;
+    for (int ausente=MODELO_BATEO_CARRIL;ausente<N;ausente++)
     {
         DescargarSlotModeloEscenarioRetro3D(Recursos()[ausente]); rutaAusente=RUTAS_MODELOS_BATEO_METEORICO_3D[ausente];
-        for (int j=0;j<3;j++) CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteBateoMeteoricoRetro3D());
+        for (int j=0;j<3;j++) CargarPaqueteModelosEscenarioRetro3D(piezas);
         Dibujar(zona);
         for (int i=0;i<N;i++) Comprobar(cantidades[i]==(i==ausente ? 0 : presentes[i]),"Fallback independiente por pieza");
         Comprobar(cubos>baseCubos || esferas>baseEsferas || cilindros>baseCilindros || segmentos>baseSegmentos || circulos>baseCirculos,"Primitivas sustituyen GLB fallido");
         Comprobar(Recursos()[ausente].cargaIntentada && !Recursos()[ausente].cargado,"Fallo cacheado sin reintento por frame");
         rutaAusente=nullptr; Recursos()[ausente]={};
-        CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteBateoMeteoricoRetro3D()); GuardarMateriales();
+        CargarPaqueteModelosEscenarioRetro3D(piezas); GuardarMateriales();
     }
-    Comprobar(avisos==N,"Un diagnostico por archivo ausente");
+    for (int i=0;i<MODELO_BATEO_CARRIL;i++) Comprobar(!Recursos()[i].cargaIntentada,"Los GLB de ambiente siguen sin cargarse");
+    Comprobar(avisos==N-MODELO_BATEO_CARRIL,"Un diagnostico por archivo ausente");
     const auto& almacen=ObtenerModelosEscenariosRetro3D();
     for (const auto& r:almacen.ultimoAsiento) Comprobar(!r.cargaIntentada,"No cargar Asiento");
     for (const auto& r:almacen.cajasPuerto) Comprobar(!r.cargaIntentada,"No cargar Puerto");

@@ -10,7 +10,8 @@
 // BATEO METEORICO
 //==================================================
 //
-// Todos contra todos (2-4) en una cumbre con observatorio de noche. Cada
+// Todos contra todos (2-4) en una plataforma en orbita junto a un planeta
+// anillado. Cada
 // jugador tiene su carril frente a un canon que le lanza 5 meteoritos con
 // velocidad y efecto variables. Pulsar la accion balancea el bate: cuanto
 // mas cerca del punto dulce, mas lejos vuela el meteorito y mejor anillo
@@ -19,6 +20,8 @@
 //==================================================
 
 inline constexpr int LANZAMIENTOS_BATEO = 5;
+inline constexpr int MAX_CHISPAS_BATEO = 220;
+inline constexpr int MAX_AVISOS_BATEO = 16;
 
 
 enum FaseBateoMeteorico
@@ -119,6 +122,35 @@ struct EstadoJugadorBateo
 };
 
 
+// Chispa, esquirla, humo o confeti (solo visual).
+struct ChispaBateo
+{
+    bool activa = false;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+    float giro = 0.0f;
+    bool brilla = false;
+};
+
+
+// Rotulo que sube sobre el mundo: «+60», «¡PERFECTO!».
+struct AvisoBateo
+{
+    bool activo = false;
+    Vector3 posicion{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    char texto[24] = "";
+    Color color{};
+    bool grande = false;
+};
+
+
 struct MinijuegoBateoMeteorico
 {
     ResultadoMinijuego resultado{};
@@ -139,6 +171,16 @@ struct MinijuegoBateoMeteorico
     float tiempoEtapa = 0.0f;
     float tiempoAnimacion = 0.0f;
 
+    // Solo visual: se actualiza en Actualizar comparando el estado antes y
+    // despues de cada paso; el azar sale de semillaVisual.
+    ChispaBateo chispas[MAX_CHISPAS_BATEO];
+    AvisoBateo avisos[MAX_AVISOS_BATEO];
+    unsigned int semillaVisual = 1u;
+    float tiempoVisual = 0.0f;
+    float tiempoAnuncioInicio = -1.0f;
+    float tiempoFin = -1.0f;
+    float destelloJugador[MAX_PARTICIPANTES] = {};
+
     void Inicializar();
 
     void Reiniciar(
@@ -148,6 +190,14 @@ struct MinijuegoBateoMeteorico
     );
 
     void Actualizar(
+        float deltaTime,
+        JugadorPrueba jugadores[],
+        int cantidadMaxima,
+        Participante participantes[]
+    );
+
+    // Reglas de la partida (Actualizar le suma los efectos visuales).
+    void ActualizarPartida(
         float deltaTime,
         JugadorPrueba jugadores[],
         int cantidadMaxima,
