@@ -110,6 +110,15 @@ extern "C" void __wrap_DrawPlane(Vector3 p,Vector2 s,Color c)
 extern "C" void __real_DrawSphereWires(Vector3,float,int,int,Color);
 extern "C" void __wrap_DrawSphereWires(Vector3 p,float r,int anillos,int cortes,Color c)
 { indicadores++; __real_DrawSphereWires(p,r,anillos,cortes,c); }
+// El decorado del pantano se dibuja con primitivas propias de la escena:
+// solo las piezas jugables (frutos, balsa y aro del turno) cargan su GLB.
+static bool Jugable(int i)
+{ return (i>=MODELO_RACIMO_FRUTO_NORMAL && i<=MODELO_RACIMO_BALSA) || i==MODELO_RACIMO_ARO; }
+static PaqueteModelosEscenarioRetro3D PaquetePieza(int i)
+{
+    PaqueteModelosEscenarioRetro3D p=ObtenerPaqueteRacimoToxicoRetro3D();
+    p.recursos+=i; p.definiciones+=i; p.cantidad=1; return p;
+}
 static void GuardarMateriales()
 {
     for (int i=0;i<N;i++) for (int j=0;j<Recursos()[i].modelo.materialCount && j<16;j++)
@@ -197,14 +206,6 @@ static void ComprobarBalsas(const MinijuegoRacimoToxico& m,int cantidad)
         Comprobar(Igual(d.posicion,{m.posicionBalsaX[m.turno],.02f,3.5f}) &&
             ColorIsEqual(d.color,Fade(WHITE,.5f+.3f*std::sin(m.tiempoAnimacion*6))),"Aro del jugador actual con pulso en BOMBILLAS");
     }
-    for (int i=0;i<16;i++)
-    {
-        float t=m.tiempoAnimacion;
-        Vector3 p={-12.0f+(i*37%24)+std::sin(t*.7f+i)*.8f,
-            .9f+(i*7%40)/5.f+std::sin(t*1.1f+i*2)*.4f,-7.0f+(i*13%12)};
-        Comprobar(Igual(dibujos[MODELO_RACIMO_LUCIERNAGA][i].posicion,p) &&
-            ColorIsEqual(dibujos[MODELO_RACIMO_LUCIERNAGA][i].color,Fade(WHITE,.4f+.6f*(.5f+.5f*std::sin(t*2.5f+i*1.7f)))),"Luciernagas conservan vuelo y brillo por instancia");
-    }
 }
 static void EsperarTurno(ZonaPruebas& zona)
 {
@@ -244,7 +245,13 @@ int main()
         auto& m=zona.gestorMinijuegos.minijuegoRacimoToxico;
         for (int i=0;i<N;i++)
         {
-            auto& r=Recursos()[i]; Comprobar(r.cargado,RUTAS_MODELOS_RACIMO_TOXICO_3D[i]);
+            auto& r=Recursos()[i];
+            if (!Jugable(i))
+            {
+                Comprobar(!r.cargaIntentada && cargas[i]==0,"No cargar los GLB de ambiente del pantano");
+                continue;
+            }
+            Comprobar(r.cargado,RUTAS_MODELOS_RACIMO_TOXICO_3D[i]);
             if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
             if (cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Instancias comparten recursos");
@@ -254,25 +261,18 @@ int main()
         }
         GuardarMateriales(); TiposDeterministas(m);
         Dibujar(zona,cantidad==4 ? "build/racimo-preparacion.png" : nullptr);
-        const int esperados[]={1,1,1,18,3,1,cantidad,3,2,7,16,4,4,0};
+        // Agua, arboles, cabanas, troncos, luciernagas, nenufares y rocas se
+        // dibujan con primitivas propias de la escena: sus GLB ya no se
+        // instancian. Las piezas jugables siguen siendo GLB.
+        const int esperados[]={0,0,0,18,3,1,cantidad,0,0,0,0,0,0,0};
         for (int i=0;i<N;i++) Comprobar(cantidades[i]==esperados[i],"Todos los modelos sin primitivas duplicadas");
         // Racimo mantiene enSuelo=false: la sombra existente viene del
         // wrapper del modelo de jugador, ocho triangulos y ningun cilindro.
-        Comprobar(cubos==2 && planos==0 && esferas==20 && segmentos==6 && cilindros==0 && triangulosSombra==8*cantidad,
-            "Conservar niebla, halos, lianas animadas y sombras de jugadores");
+        // Con sus GLB cargados, frutos, balsas y aro no caen a primitivas.
+        Comprobar(cubos==0 && planos==0 && esferas==0 && cilindros==0 && triangulosSombra==8*cantidad,
+            "Piezas jugables sin primitivas de respaldo y sombras de jugadores");
         int sombrasJugadores=triangulosSombra;
         ComprobarFrutos(m); ComprobarBalsas(m,cantidad);
-        const Vector3 inicios[]={{-9,.1f,0},{6.5f,.1f,-2},{2,.1f,-5}};
-        const Vector3 finales[]={{-6,.1f,-1},{10,.1f,-1},{5,.1f,-6}};
-        for (int i=0;i<3;i++)
-        {
-            const auto& d=dibujos[MODELO_RACIMO_TRONCO][i];
-            Vector3 extremo=Vector3Add(d.posicion,Vector3Transform({0,0,d.escala.z},MatrixRotate(d.eje,d.angulo*DEG2RAD)));
-            Comprobar(Igual(d.posicion,inicios[i]) && Igual(extremo,finales[i]) && Cerca(d.escala.x,1) && Cerca(d.escala.y,1),"Tronco conserva extremos, pivote +Z y escala solo longitudinal");
-        }
-        Comprobar(Igual(dibujos[MODELO_RACIMO_ARBOL_PODRIDO][0].posicion,{-4.8f,0,-1}) &&
-            Igual(dibujos[MODELO_RACIMO_CABANA][0].posicion,{-10.5f,0,-8}) &&
-            Igual(dibujos[MODELO_RACIMO_CABANA][1].posicion,{9.5f,0,-9}),"Posiciones del pantano original");
         Avanzar(zona,182); Comprobar(m.fase==FASE_RACIMO_TURNO,"Preparacion real completa");
         Tomar(zona,0,0,2);
         Comprobar(m.estadosJugadores[0].frutasSeguras==2 && m.ultimoEvento==EVENTO_RACIMO_SEGURO && m.vuelos[0].activo && m.vuelos[1].activo,"Dos frutos seguros crean dos vuelos");
@@ -315,24 +315,29 @@ int main()
         zona.Inicializar(participantes,cantidad); zona.modoCatalogo=zona.modoTablero=true;
         zona.CambiarMinijuego(MINIJUEGO_RACIMO_TOXICO); Pulsar(zona,KEY_R); Pulsar(zona,KEY_ESCAPE);
         Comprobar(m.tiempoPreparacion<3 && !zona.volverAlMenu,"R y Escape no interrumpen ronda de tablero");
-        for (int i=0;i<N;i++) Comprobar(cargas[i]==1 && mallas[i]==Recursos()[i].modelo.meshes,"Reinicio, reposicion y reentrada sin duplicar recursos");
+        for (int i=0;i<N;i++) Comprobar(cargas[i]==(Jugable(i) ? 1 : 0) && mallas[i]==Recursos()[i].modelo.meshes,"Reinicio, reposicion y reentrada sin duplicar recursos");
     }
     auto& m=zona.gestorMinijuegos.minijuegoRacimoToxico;
     m.fase=FASE_RACIMO_TURNO; m.turno=0; m.frente=0; TiposDeterministas(m);
     Dibujar(zona); int presentes[N]; std::memcpy(presentes,cantidades,sizeof(presentes));
     int baseCubos=cubos,baseEsferas=esferas,baseCilindros=cilindros,baseSegmentos=segmentos,basePlanos=planos;
+    // Solo las piezas jugables tienen GLB: el fallback se prueba en ellas.
+    int jugables=0;
     for (int ausente=0;ausente<N;ausente++)
     {
+        if (!Jugable(ausente)) continue;
+        jugables++;
         DescargarSlotModeloEscenarioRetro3D(Recursos()[ausente]); rutaAusente=RUTAS_MODELOS_RACIMO_TOXICO_3D[ausente];
-        for (int j=0;j<3;j++) CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteRacimoToxicoRetro3D());
+        for (int j=0;j<3;j++) CargarPaqueteModelosEscenarioRetro3D(PaquetePieza(ausente));
         Dibujar(zona);
         for (int i=0;i<N;i++) Comprobar(cantidades[i]==(i==ausente ? 0 : presentes[i]),"Fallback independiente por pieza");
         Comprobar(cubos>baseCubos || esferas>baseEsferas || cilindros>baseCilindros || segmentos>baseSegmentos || planos>basePlanos,"Primitivas reemplazan la pieza fallida");
         Comprobar(Recursos()[ausente].cargaIntentada && !Recursos()[ausente].cargado,"Fallo recordado sin cargas por frame");
         rutaAusente=nullptr; Recursos()[ausente]={};
-        CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteRacimoToxicoRetro3D()); GuardarMateriales();
+        CargarPaqueteModelosEscenarioRetro3D(PaquetePieza(ausente)); GuardarMateriales();
     }
-    Comprobar(avisos==N,"Un diagnostico por recurso ausente");
+    for (int i=0;i<N;i++) if (!Jugable(i)) Comprobar(!Recursos()[i].cargaIntentada,"Los GLB de ambiente siguen sin cargarse");
+    Comprobar(avisos==jugables,"Un diagnostico por recurso ausente");
     const auto& almacen=ObtenerModelosEscenariosRetro3D();
     for (const auto& r:almacen.ultimoAsiento) Comprobar(!r.cargaIntentada,"No cargar Asiento");
     for (const auto& r:almacen.cajasPuerto) Comprobar(!r.cargaIntentada,"No cargar Puerto");

@@ -143,7 +143,7 @@ Cada ficha conserva la **idea del lugar** actual y fija la dirección del redise
 | 30 | Veta de Cristal | Mina y geodas | Mina de cristales azules y violetas (sin lava, para separarla de Vagonetas): vigas, lámparas, rieles, geodas | Rehecho |
 | 31 | Cápsulas Barajadas | Laboratorio | Laboratorio | Rehecho |
 | 32 | Bateo Meteórico | Espacio y meteoritos | Plataforma en órbita: planeta anillado, cúpula con telescopio, lluvia de meteoritos, estrellas | Rehecho |
-| 33 | Racimo Tóxico | Árbol y cabañas en el pantano | Pantano de noche: árbol gigante con racimo, cabañas sobre pilotes, agua con nenúfares, luciérnagas, niebla verde | Pendiente |
+| 33 | Racimo Tóxico | Árbol y cabañas en el pantano | Pantano de noche: árbol gigante con racimo, cabañas sobre pilotes, agua con nenúfares, luciérnagas, niebla verde | Rehecho |
 | 34 | Tesorero Cercado | Patio de castillo con rejas | Patio de castillo medieval: murallas con almenas, torres, estandartes, antorchas, foso, carros y barriles | Pendiente |
 | 35 | Descenso en Nubes | Cielo con nubes | Cielo de tarde con islas flotantes: nubes en capas, globos, molinos, aves, arcoíris, isla diana | Pendiente |
 | 36 | Volea de Magma | Cancha volcánica | Cancha de obsidiana junto a un lago de lava: volcanes, columnas de basalto, red de cadenas, brasas | Pendiente |

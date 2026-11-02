@@ -9,6 +9,7 @@
 inline constexpr int TOTAL_FRUTAS_RACIMO = 22;
 inline constexpr int VIDAS_RACIMO = 2;
 inline constexpr int MAX_VUELOS_RACIMO = 2;
+inline constexpr int MAX_PARTICULAS_RACIMO = 160;
 
 
 enum FaseRacimoToxico
@@ -58,6 +59,32 @@ struct VueloFrutaRacimo
 };
 
 
+// Particulas de efecto (solo visual): chispas, humo toxico, gotas,
+// confeti y hojas del rebrote.
+enum TipoParticulaRacimo
+{
+    PARTICULA_RACIMO_CHISPA = 0,
+    PARTICULA_RACIMO_HUMO,
+    PARTICULA_RACIMO_GOTA,
+    PARTICULA_RACIMO_CONFETI,
+    PARTICULA_RACIMO_HOJA
+};
+
+
+struct ParticulaRacimo
+{
+    bool activa = false;
+    int tipo = PARTICULA_RACIMO_CHISPA;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float giro = 0.0f;
+    Color color{};
+};
+
+
 struct MinijuegoRacimoToxico
 {
     ResultadoMinijuego resultado{};
@@ -86,6 +113,16 @@ struct MinijuegoRacimoToxico
     float tiempoPreparacion = 0.0f;
     float tiempoAnimacion = 0.0f;
     float tiempoBot = 0.0f;
+
+    // Estado solo visual: lo escribe Actualizar despues de la logica
+    // comparando el antes y el despues; el azar sale de semillaVisual.
+    ParticulaRacimo particulas[MAX_PARTICULAS_RACIMO];
+    unsigned int semillaVisual = 1u;
+    float destelloJugador[MAX_PARTICIPANTES] = {};
+    float caidaJugador[MAX_PARTICIPANTES] = {};
+    int tomaVisual = 0;
+    float tiempoRebroteVisual = -1.0f;
+    float tiempoFinVisual = 0.0f;
 
     void Inicializar();
 
