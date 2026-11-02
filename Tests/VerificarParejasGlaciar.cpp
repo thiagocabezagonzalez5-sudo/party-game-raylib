@@ -113,6 +113,16 @@ extern "C" void __wrap_DrawPlane(Vector3 p,Vector2 s,Color c)
 extern "C" void __real_DrawSphereWires(Vector3,float,int,int,Color);
 extern "C" void __wrap_DrawSphereWires(Vector3 p,float r,int anillos,int cortes,Color c)
 { indicadores++; __real_DrawSphereWires(p,r,anillos,cortes,c); }
+// El glaciar se dibuja con primitivas propias de la escena: solo las
+// piezas jugables (bloques, cursor, simbolos, tempanos y fragmentos)
+// cargan su GLB.
+static bool Jugable(int i)
+{ return (i>=MODELO_GLACIAR_BLOQUE_OCULTO && i<=MODELO_GLACIAR_TEMPANO) || i==MODELO_GLACIAR_FRAGMENTO; }
+static PaqueteModelosEscenarioRetro3D PaquetePieza(int i)
+{
+    PaqueteModelosEscenarioRetro3D p=ObtenerPaqueteParejasGlaciarRetro3D();
+    p.recursos+=i; p.definiciones+=i; p.cantidad=1; return p;
+}
 static void GuardarMateriales()
 {
     for (int i=0;i<N;i++) for (int j=0;j<Recursos()[i].modelo.materialCount && j<16;j++)
@@ -168,21 +178,14 @@ static void PrepararTableroVisual(ZonaPruebas& zona)
 static void ComprobarModelos(ZonaPruebas& zona)
 {
     const auto& m=zona.gestorMinijuegos.minijuegoParejasGlaciar;
-    for (int i:{MODELO_GLACIAR_MAR,MODELO_GLACIAR_LAGO,MODELO_GLACIAR_TABLERO})
-        Comprobar(cantidades[i]==1 && Igual(dibujos[i][0].posicion,{0,0,0}) && Igual(dibujos[i][0].escala,{1,1,1}),
-            "Piezas modulares conservan origen y unidades");
+    // Mar, lago, tablero, icebergs, montanas, cueva, fauna y aurora se
+    // dibujan con primitivas propias de la escena: sus GLB ya no se
+    // instancian. Las piezas jugables siguen siendo GLB.
+    for (int i=0;i<N;i++) if (!Jugable(i)) Comprobar(cantidades[i]==0,"GLB de ambiente sin instancias");
     Comprobar(cantidades[MODELO_GLACIAR_TEMPANO]==zona.cantidadParticipantes,"Un modelo compartido para los tempanos");
     for (int i=0;i<zona.cantidadParticipantes;i++)
         Comprobar(Igual(dibujos[MODELO_GLACIAR_TEMPANO][i].posicion,{m.posicionTempanoX[i],0,m.posicionTempanoZ[i]}),
             "Tempano sigue las posiciones reales por participante");
-    Comprobar(cantidades[MODELO_GLACIAR_PINGUINO]==3 && cantidades[MODELO_GLACIAR_FOCA]==1 &&
-        cantidades[MODELO_GLACIAR_ICEBERG]==3 && cantidades[MODELO_GLACIAR_MONTANA]==6,"Fauna y paisaje sin duplicar cargas");
-    for (int i=0;i<6;i++)
-    {
-        const auto& d=dibujos[MODELO_GLACIAR_MONTANA][i]; float h=9+(i*7)%5;
-        Comprobar(Cerca(d.posicion.y-.5f*d.escala.y,-.5f) && Cerca(11*d.escala.y,h),
-            "Montanas conservan pie y altura procedural");
-    }
     int n=0;
     for (int i=MODELO_GLACIAR_SIMBOLO_0;i<=MODELO_GLACIAR_SIMBOLO_7;i++) n+=cantidades[i];
     int visibles=0;
@@ -217,7 +220,13 @@ int main()
         zona.CambiarMinijuego(MINIJUEGO_PAREJAS_GLACIAR); auto& m=zona.gestorMinijuegos.minijuegoParejasGlaciar;
         for (int i=0;i<N;i++)
         {
-            const auto& r=Recursos()[i]; Comprobar(r.cargado,RUTAS_MODELOS_PAREJAS_GLACIAR_3D[i]);
+            const auto& r=Recursos()[i];
+            if (!Jugable(i))
+            {
+                Comprobar(!r.cargaIntentada && cargas[i]==0,"No cargar los GLB de ambiente del glaciar");
+                continue;
+            }
+            Comprobar(r.cargado,RUTAS_MODELOS_PAREJAS_GLACIAR_3D[i]);
             if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
             if (cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Carga unica entre rondas y participantes");
@@ -278,9 +287,11 @@ int main()
         zona.Inicializar(participantes,cantidad); zona.modoCatalogo=zona.modoTablero=true;
         zona.CambiarMinijuego(MINIJUEGO_PAREJAS_GLACIAR); Pulsar(zona,KEY_R); Pulsar(zona,KEY_ESCAPE);
         Comprobar(!zona.volverAlMenu && m.tiempoPreparacion<3,"Tablero bloquea reinicio y abandono");
-        for (int i=0;i<N;i++) Comprobar(cargas[i]==1 && Recursos()[i].modelo.meshes==mallas[i],"Reinicio y reentrada conservan recursos");
+        for (int i=0;i<N;i++) Comprobar(cargas[i]==(Jugable(i) ? 1 : 0) && Recursos()[i].modelo.meshes==mallas[i],"Reinicio y reentrada conservan recursos");
         PrepararTableroVisual(zona); Dibujar(zona,cantidad==4 ? "build/glaciar-simbolos.png" : nullptr); ComprobarModelos(zona);
-        Comprobar(cubos==0 && esferas==1 && segmentos==0 && planos==0,"Solo halo procedural: ninguna primitiva reemplazada superpuesta");
+        // Con sus GLB cargados, ninguna pieza jugable cae a primitivas de
+        // raylib (los halos y el decorado se arman con rlgl).
+        Comprobar(cubos==0 && esferas==0 && cilindros==0 && segmentos==0 && planos==0,"Piezas jugables sin primitivas de respaldo superpuestas");
         Comprobar(triangulosSombra==8*cantidad,"Sin sombras humanas para GLB ni sombras en suelo incorrecto");
         for(int s=0;s<8;s++)
         {
@@ -291,21 +302,27 @@ int main()
     }
     // Simular archivos ausentes sin modificar ni mover los recursos reales.
     PrepararTableroVisual(zona);
+    // Solo las piezas jugables tienen GLB: el fallback se prueba en ellas.
+    int jugables=0;
     for (int ausente=0;ausente<N;ausente++)
     {
+        if (!Jugable(ausente)) continue;
+        jugables++;
         Dibujar(zona); int presentes[N]; std::memcpy(presentes,cantidades,sizeof(presentes));
         int base=cubos+esferas+cilindros+segmentos+planos;
-        Comprobar(presentes[ausente]>0,"Los veinticuatro modelos tienen uso");
+        Comprobar(presentes[ausente]>0,"Las piezas jugables tienen uso");
         DescargarSlotModeloEscenarioRetro3D(Recursos()[ausente]); rutaAusente=RUTAS_MODELOS_PAREJAS_GLACIAR_3D[ausente];
-        for(int k=0;k<3;k++) CargarPaqueteParejasGlaciarRetro3D();
+        for(int k=0;k<3;k++) CargarPaqueteModelosEscenarioRetro3D(PaquetePieza(ausente));
         Dibujar(zona);
         for (int i=0;i<N;i++) Comprobar(cantidades[i]==(i==ausente ? 0 : presentes[i]),"Fallback por pieza conserva los otros GLB");
         // El cursor usa wires; no pertenece a los contadores de primitivas solidas.
         if(ausente!=MODELO_GLACIAR_CURSOR)
             Comprobar(cubos+esferas+cilindros+segmentos+planos>base,"Fallback visible por pieza");
-        rutaAusente=nullptr; Recursos()[ausente]={}; CargarPaqueteParejasGlaciarRetro3D(); GuardarMateriales();
+        Comprobar(Recursos()[ausente].cargaIntentada && !Recursos()[ausente].cargado,"Fallo recordado sin cargas por frame");
+        rutaAusente=nullptr; Recursos()[ausente]={}; CargarPaqueteModelosEscenarioRetro3D(PaquetePieza(ausente)); GuardarMateriales();
     }
-    Comprobar(avisos==N,"Diagnostico de carga una sola vez por recurso");
+    for (int i=0;i<N;i++) if (!Jugable(i)) Comprobar(!Recursos()[i].cargaIntentada,"Los GLB de ambiente siguen sin cargarse");
+    Comprobar(avisos==jugables,"Diagnostico de carga una sola vez por recurso");
     const auto& almacen=ObtenerModelosEscenariosRetro3D();
     for (const auto& r:almacen.voleaMagma) Comprobar(!r.cargaIntentada,"No cargar Volea");
     for (const auto& r:almacen.ultimoAsiento) Comprobar(!r.cargaIntentada,"No cargar Asiento");
