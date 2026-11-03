@@ -78,6 +78,9 @@ struct RodilloNeon
     bool comodin = false;
 
     float tiempoEnRodillo = 0.0f;  // IA: tiempo esperando a ser el rodillo actual
+
+    // Solo visual: segundos desde que se detuvo (destello, comodin).
+    float tiempoParada = 0.0f;
 };
 
 
@@ -131,6 +134,11 @@ struct MinijuegoRodillosNeon
     float tiempoEtapa = 0.0f;
     float tiempoAnimacion = 0.0f;
     float enfriamientoTick = 0.0f;
+
+    // Solo visual: reloj que sigue corriendo con el tablon final (luces,
+    // confeti). No interviene en ninguna regla.
+    float tiempoVisual = 0.0f;
+    float tiempoFin = 0.0f;
 
     void Inicializar();
 

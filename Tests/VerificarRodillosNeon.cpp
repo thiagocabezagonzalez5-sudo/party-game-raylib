@@ -153,14 +153,8 @@ static void Dibujar(ZonaPruebas& zona,const char* captura=nullptr)
         }
     }
     for(int tipo=0;tipo<5;tipo++) Comprobar(dibujos[MODELO_RODILLOS_TRIANGULO+tipo]==simbolos[tipo],"No dibujar simbolos de la cara posterior");
-    for(int k=0;k<3;k++) if(Recursos()[MODELO_RODILLOS_HOLOGRAMA_CUBO+k].cargado)
-    {
-        const auto& d=instancias[MODELO_RODILLOS_HOLOGRAMA_CUBO+k][0];
-        Vector3 y=Vector3Subtract(Vector3Transform({0,1,0},d.matriz),d.p);
-        float giro=(tiempo*40+k*60)*DEG2RAD;
-        Comprobar(Cerca(d.p.x,-12+12*k) && Cerca(d.p.y,9.5f+.5f*std::sin(tiempo*1.5f+k)) && Cerca(d.p.z,-6),"Flotacion y posicion original de hologramas");
-        Comprobar(Cerca(y.x,std::sin(20*DEG2RAD)*std::sin(giro)) && Cerca(y.y,std::cos(20*DEG2RAD)) && Cerca(y.z,std::sin(20*DEG2RAD)*std::cos(giro)),"Holograma hereda giro e inclinacion exactamente una vez");
-    }
+    // La sala arcade (suelo, pared, LEDs, hologramas, letreros y gabinete) ya
+    // no usa GLB: se construye con primitivas propias horneadas en mallas.
     Comprobar(std::memcmp(estado,&m,sizeof(m))==0,"El dibujo conserva estado, camara y reglas");
     Comprobar(std::memcmp(jugadores,zona.jugadores,sizeof(jugadores))==0,"El dibujo conserva jugadores y hitboxes");
     for(int i=0;i<N;i++) if(Recursos()[i].cargado) for(int j=0;j<Recursos()[i].modelo.materialCount;j++)
@@ -191,14 +185,18 @@ int main()
     {
         for(int i=0;i<4;i++) { p[i].activo=i<cantidad; p[i].conectado=true; p[i].esBot=i>0; p[i].numeroJugador=i+1; p[i].control=CONTROL_TECLADO_WASD; }
         zona.cantidadParticipantes=cantidad; zona.CambiarMinijuego(MINIJUEGO_RODILLOS_NEON);
-        for(int i=0;i<N;i++) Comprobar(Recursos()[i].cargado && cargas[i]==1,"21 cargas compartidas entre participantes y reinicios");
+        for(int i=0;i<N;i++)
+        {
+            bool jugable=i>=MODELO_RODILLOS_MARCO && i<=MODELO_RODILLOS_LINEA;
+            Comprobar(jugable?(Recursos()[i].cargado && cargas[i]==1):(!Recursos()[i].cargado && cargas[i]==0),"Solo piezas jugables, una carga compartida entre participantes y reinicios");
+        }
         GuardarMateriales();
         char nombre[128]; std::snprintf(nombre,sizeof(nombre),"build/rodillos-preparacion-%d.png",cantidad); Dibujar(zona,nombre);
-        Comprobar(dibujos[MODELO_RODILLOS_GABINETE]==cantidad && dibujos[MODELO_RODILLOS_TAMBOR]==3*cantidad && dibujos[MODELO_RODILLOS_LED_CIAN]==5 && dibujos[MODELO_RODILLOS_LED_ROSA]==4,"Cantidad de instancias compartidas");
+        Comprobar(dibujos[MODELO_RODILLOS_MARCO]==cantidad && dibujos[MODELO_RODILLOS_BOTON]==cantidad && dibujos[MODELO_RODILLOS_TAMBOR]==3*cantidad && dibujos[MODELO_RODILLOS_LINEA]==cantidad,"Cantidad de instancias compartidas");
         for(int i=0;i<cantidad;i++)
         {
             float x=(i-(cantidad-1)*.5f)*5.8f;
-            Comprobar(Cerca(instancias[MODELO_RODILLOS_GABINETE][i].p.x,x),"Origen de maquina sin traslacion doble");
+            Comprobar(Cerca(instancias[MODELO_RODILLOS_MARCO][i].p.x,x),"Origen de maquina sin traslacion doble");
             for(int r=0;r<3;r++)
             {
                 auto& d=instancias[MODELO_RODILLOS_TAMBOR][i*3+r];
@@ -245,7 +243,7 @@ int main()
         Dibujar(zona,caso==4?"build/rodillos-comodines.png":nullptr);
     }
     // Fallo de cada archivo sin mover assets: un diagnostico y fallback local.
-    for(int pieza=0;pieza<N;pieza++)
+    for(int pieza=MODELO_RODILLOS_MARCO;pieza<=MODELO_RODILLOS_LINEA;pieza++)
     {
         for(auto& e:m.estadosJugadores) for(auto& rod:e.rodillos) for(int& s:rod.tira) s=(pieza>=MODELO_RODILLOS_TRIANGULO && pieza<=MODELO_RODILLOS_ESTRELLA)?pieza-MODELO_RODILLOS_TRIANGULO:0;
         Dibujar(zona); int base=primitivos, previo[N]; std::memcpy(previo,dibujos,sizeof(previo));
@@ -253,11 +251,12 @@ int main()
         ausente=RUTAS_MODELOS_RODILLOS_NEON_3D[pieza]; int avisoAntes=avisos;
         CargarPaqueteRodillosNeonRetro3D(); CargarPaqueteRodillosNeonRetro3D(); CargarPaqueteRodillosNeonRetro3D();
         Comprobar(avisos==avisoAntes+1,"Diagnostico una sola vez por pieza ausente");
+        GuardarMateriales(); // el paquete completo trae piezas de sala que la partida no carga
         Dibujar(zona); Comprobar(dibujos[pieza]==0 && primitivos>base,"Fallback visible por pieza sin GLB duplicado");
         for(int i=0;i<N;i++) if(i!=pieza) Comprobar(dibujos[i]==previo[i],"Fallo no oculta otras piezas");
         ausente=nullptr; DescargarAnimacionesRodillosNeonRetro3D(); Recursos()[pieza]={}; CargarPaqueteRodillosNeonRetro3D(); GuardarMateriales();
     }
-    for(int i=0;i<N;i++) Comprobar(usos[i]>0,"Todos los modelos se dibujan en el juego integrado");
+    for(int i=MODELO_RODILLOS_MARCO;i<=MODELO_RODILLOS_LINEA;i++) Comprobar(usos[i]>0,"Todas las piezas jugables se dibujan en el juego integrado");
     zona.Descargar(); zona.Descargar();
     for(int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && Recursos()[i].modelo.meshes==nullptr,"Descarga simetrica antes de CloseWindow");
     for(auto& a:ObtenerModelosEscenariosRetro3D().animacionesRodillos) Comprobar(!a.vertices && !a.colores[0] && !a.colores[1],"Copias CPU liberadas");
