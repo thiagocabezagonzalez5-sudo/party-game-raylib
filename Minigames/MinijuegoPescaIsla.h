@@ -111,6 +111,44 @@ struct EstadoJugadorPesca
 };
 
 
+// Particulas de efecto (solo visual): gotas, ondas en el agua, chispas de
+// captura, barro de las botas y confeti final.
+inline constexpr int MAX_PARTICULAS_PESCA = 240;
+
+enum TipoParticulaPesca
+{
+    PARTICULA_PESCA_GOTA = 0,
+    PARTICULA_PESCA_ONDA,
+    PARTICULA_PESCA_CHISPA,
+    PARTICULA_PESCA_BARRO,
+    PARTICULA_PESCA_CONFETI
+};
+
+
+struct ParticulaPesca
+{
+    bool activa = false;
+    int tipo = PARTICULA_PESCA_GOTA;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float giro = 0.0f;
+    Color color{};
+};
+
+
+// Avisos breves sobre el corcho (solo visual).
+enum AvisoPesca
+{
+    AVISO_PESCA_NINGUNO = 0,
+    AVISO_PESCA_BOTA,
+    AVISO_PESCA_CORTE,
+    AVISO_PESCA_ESCAPO
+};
+
+
 struct MinijuegoPescaIsla
 {
     ResultadoMinijuego resultado{};
@@ -129,6 +167,22 @@ struct MinijuegoPescaIsla
     float tiempoRestante = 0.0f;
     float tiempoAnimacion = 0.0f;
 
+    // Estado solo visual: lo escribe Actualizar despues de la logica
+    // comparando el antes y el despues; el azar sale de semillaVisual.
+    ParticulaPesca particulas[MAX_PARTICULAS_PESCA];
+    unsigned int semillaVisual = 1u;
+    float vueloTiempo[MAX_PARTICIPANTES] = {};      // <0: sin pez en el aire
+    int vueloTipo[MAX_PARTICIPANTES] = {};
+    Vector3 vueloDesde[MAX_PARTICIPANTES] = {};
+    int avisoTipo[MAX_PARTICIPANTES] = {};
+    float avisoTiempo[MAX_PARTICIPANTES] = {};
+    Vector3 avisoPosicion[MAX_PARTICIPANTES] = {};
+    float destelloJugador[MAX_PARTICIPANTES] = {};
+    float chapoteo[MAX_PARTICIPANTES] = {};
+    float anuncioDorado = 99.0f;
+    int jugadorDorado = -1;
+    float tiempoFinVisual = 0.0f;
+
     void Inicializar();
 
     void Reiniciar(
@@ -144,6 +198,14 @@ struct MinijuegoPescaIsla
         Participante participantes[]
     );
 
+    // Reglas de la partida (Actualizar las llama y despues anima).
+    void ActualizarPartida(
+        float deltaTime,
+        JugadorPrueba jugadores[],
+        int cantidadMaxima,
+        Participante participantes[]
+    );
+
     void Dibujar(
         const JugadorPrueba jugadores[],
         int cantidadMaxima,
@@ -153,3 +215,9 @@ struct MinijuegoPescaIsla
 
     const ResultadoMinijuego& ObtenerResultado() const;
 };
+
+
+// Carga una sola vez los GLB de las piezas jugables (cana, corcho, peces,
+// bota y mira) y prepara la animacion de las colas. La laguna, la isla y
+// el resto del paisaje se construyen con primitivas: sus GLB no se cargan.
+void CargarPiezasJugablesPescaIsla();

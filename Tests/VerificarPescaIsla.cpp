@@ -1,6 +1,7 @@
 // Prueba de integracion: ZonaPruebas real, contexto OpenGL y entradas simuladas.
 // Los wrappers observan el dibujo sin reemplazar el renderizador por un visor.
 #include "Gameplay/ZonaPruebas.h"
+#include "Minigames/MinijuegoPescaIsla.h"
 #include "Minigames/ModelosEscenariosRetro3D.h"
 #include "Minigames/ModeloJugadorCompartido.h"
 #include "Minigames/SombrasRetro.h"
@@ -115,6 +116,11 @@ extern "C" void __wrap_DrawPlane(Vector3 p,Vector2 s,Color c)
 extern "C" void __real_DrawSphereWires(Vector3,float,int,int,Color);
 extern "C" void __wrap_DrawSphereWires(Vector3 p,float r,int anillos,int cortes,Color c)
 { indicadores++; __real_DrawSphereWires(p,r,anillos,cortes,c); }
+// La laguna, la isla y el paisaje se dibujan con primitivas propias de la
+// escena: solo las piezas jugables (cana, corcho, peces, bota y mira)
+// cargan su GLB.
+static bool Jugable(int i)
+{ return i==MODELO_PESCA_CANA || i==MODELO_PESCA_CORCHO || (i>=MODELO_PESCA_PEQUENO && i<=MODELO_PESCA_CURSOR); }
 static void GuardarMateriales()
 {
     for (int i=0;i<N;i++) for (int j=0;j<Recursos()[i].modelo.materialCount && j<16;j++)
@@ -201,13 +207,10 @@ static Vector3 Punta(int i)
 static void ComprobarModelos(ZonaPruebas& zona)
 {
     const auto& m=zona.gestorMinijuegos.minijuegoPescaIsla;
-    for(int i:{MODELO_PESCA_OCEANO,MODELO_PESCA_ISLA,MODELO_PESCA_AGUA})
-        Comprobar(cantidades[i]==1 && Igual(dibujos[i][0].posicion,{0,0,0}) && Igual(dibujos[i][0].escala,{1,1,1}),"Isla y agua conservan pivote global y unidades");
-    Comprobar(cantidades[MODELO_PESCA_MUELLE]==4 && cantidades[MODELO_PESCA_PALMERA]==8 && cantidades[MODELO_PESCA_GAVIOTA]==4 &&
-        cantidades[MODELO_PESCA_CORAL_1]==8 && cantidades[MODELO_PESCA_CORAL_2]==8,"Mallas compartidas entre todas las instancias");
-    const float giros[]={0,180,-90,90};
-    for(int i=0;i<4;i++) Comprobar(Igual(dibujos[MODELO_PESCA_MUELLE][i].posicion,Muelle(i)) &&
-        Cerca(dibujos[MODELO_PESCA_MUELLE][i].angulo,giros[i]),"Cuatro muelles mantienen posicion y orientacion");
+    // Oceano, isla, agua, muelles, palmeras, barca, gaviotas, volcan, humo
+    // y corales se dibujan con primitivas propias de la escena: sus GLB ya
+    // no se instancian. Las piezas jugables siguen siendo GLB.
+    for(int i=0;i<N;i++) if(!Jugable(i)) Comprobar(cantidades[i]==0,"GLB de ambiente sin instancias");
     for(int i=0;i<zona.cantidadParticipantes;i++)
     {
         const auto& d=dibujos[MODELO_PESCA_CANA][i];
@@ -294,7 +297,13 @@ int main()
         zona.CambiarMinijuego(MINIJUEGO_PESCA_ISLA); auto& m=zona.gestorMinijuegos.minijuegoPescaIsla;
         for(int i=0;i<N;i++)
         {
-            const auto& r=Recursos()[i]; Comprobar(r.cargado,RUTAS_MODELOS_PESCA_ISLENA_3D[i]);
+            const auto& r=Recursos()[i];
+            if(!Jugable(i))
+            {
+                Comprobar(!r.cargaIntentada && cargas[i]==0,"No cargar los GLB de ambiente de Pesca");
+                continue;
+            }
+            Comprobar(r.cargado,RUTAS_MODELOS_PESCA_ISLENA_3D[i]);
             if(!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
             if(cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Carga unica entre rondas y participantes");
@@ -351,24 +360,30 @@ int main()
         zona.Inicializar(participantes,cantidad); zona.modoCatalogo=zona.modoTablero=true;
         zona.CambiarMinijuego(MINIJUEGO_PESCA_ISLA); Pulsar(zona,KEY_R); Pulsar(zona,KEY_ESCAPE);
         Comprobar(!zona.volverAlMenu && m.tiempoPreparacion<3,"Tablero conserva bloqueo de reinicio y abandono");
-        for(int i=0;i<N;i++) Comprobar(cargas[i]==1 && Recursos()[i].modelo.meshes==mallas[i],"Reinicio, selector y tablero conservan cache");
+        for(int i=0;i<N;i++) Comprobar(cargas[i]==(Jugable(i) ? 1 : 0) && Recursos()[i].modelo.meshes==mallas[i],"Reinicio, selector y tablero conservan cache");
     }
     auto& m=zona.gestorMinijuegos.minijuegoPescaIsla; m.tiempoAnimacion=1.234f;
     m.estados[1].estado=PESCA_ESPERANDO; m.estados[1].anzueloX=0; m.estados[1].anzueloZ=-4;
+    // Solo las piezas jugables tienen GLB: el fallback se prueba en ellas.
+    int jugables=0;
     for(int ausente=0;ausente<N;ausente++)
     {
+        if(!Jugable(ausente)) continue;
+        jugables++;
         Dibujar(zona); int presentes[N]; std::memcpy(presentes,cantidades,sizeof(presentes));
         int base=cubos+esferas+cilindros+segmentos+circulos+planos+lineas;
-        Comprobar(presentes[ausente]>0,"Los dieciocho GLB tienen uso");
+        Comprobar(presentes[ausente]>0,"Las piezas jugables tienen uso");
         DescargarAnimacionesPescaIslenaRetro3D(); DescargarSlotModeloEscenarioRetro3D(Recursos()[ausente]);
         rutaAusente=RUTAS_MODELOS_PESCA_ISLENA_3D[ausente];
-        for(int k=0;k<3;k++) CargarPaquetePescaIslenaRetro3D();
+        for(int k=0;k<3;k++) CargarPiezasJugablesPescaIsla();
         Dibujar(zona); ComprobarReposo();
         for(int i=0;i<N;i++) Comprobar(cantidades[i]==(i==ausente ? 0 : presentes[i]),"Fallback conserva las otras piezas GLB");
         Comprobar(cubos+esferas+cilindros+segmentos+circulos+planos+lineas>base,"Solo la pieza ausente vuelve a primitivas");
-        rutaAusente=nullptr; Recursos()[ausente]={}; CargarPaquetePescaIslenaRetro3D(); GuardarMateriales();
+        Comprobar(Recursos()[ausente].cargaIntentada && !Recursos()[ausente].cargado,"Fallo recordado sin cargas por frame");
+        rutaAusente=nullptr; Recursos()[ausente]={}; CargarPiezasJugablesPescaIsla(); GuardarMateriales();
     }
-    Comprobar(avisos==N,"Un solo diagnostico por recurso ausente");
+    for(int i=0;i<N;i++) if(!Jugable(i)) Comprobar(!Recursos()[i].cargaIntentada,"Los GLB de ambiente siguen sin cargarse");
+    Comprobar(avisos==jugables,"Un solo diagnostico por recurso ausente");
     const auto& almacen=ObtenerModelosEscenariosRetro3D();
     for(const auto& r:almacen.esferasCanon) Comprobar(!r.cargaIntentada,"No cargar Esferas");
     for(const auto& r:almacen.parejasGlaciar) Comprobar(!r.cargaIntentada,"No cargar Glaciar");
