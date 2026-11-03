@@ -165,41 +165,31 @@ static void Colocar(ZonaPruebas& zona,int i,float s,float lateral)
     e.x=p.x; e.z=p.z; e.s=e.progresoMaximo=s; e.lateral=lateral;
     zona.jugadores[i].posicion={p.x,p.y+2.7f,p.z};
 }
+// El canon (pista, paredes, puentes, rampa, porticos, arco y mesas) se
+// dibuja con primitivas; del paquete solo se usan las piezas jugables.
+static bool Jugable(int i)
+{
+    return i==MODELO_ESFERAS_CACTUS || i==MODELO_ESFERAS_ROCA ||
+        i==MODELO_ESFERAS_ESFERA || i==MODELO_ESFERAS_ARO;
+}
+static const int JUGABLES[]={MODELO_ESFERAS_CACTUS,MODELO_ESFERAS_ROCA,MODELO_ESFERAS_ESFERA,MODELO_ESFERAS_ARO};
+static PaqueteModelosEscenarioRetro3D UnaPieza(int i)
+{
+    PaqueteModelosEscenarioRetro3D p=ObtenerPaqueteEsferasCanonRetro3D();
+    return {p.recursos+i,p.definiciones+i,1};
+}
 static void ComprobarModelos(ZonaPruebas& zona)
 {
     const auto& m=zona.gestorMinijuegos.minijuegoEsferasCanon;
-    for (int i=0;i<N;i++) Comprobar(cantidades[i]>0,"Todos los 26 GLB tienen uso");
-    for (int i=0;i<=MODELO_ESFERAS_ARCO_NATURAL;i++)
-        Comprobar(cantidades[i]==1 && Igual(dibujos[i][0].posicion,{0,0,0}) &&
-            Igual(dibujos[i][0].escala,{1,1,1}) && Cerca(dibujos[i][0].angulo,0),
-            "Tramos, paredes, puentes, rampa y arco globales sin transformar dos veces");
-    Comprobar(cantidades[MODELO_ESFERAS_SUELO]==1 && Igual(dibujos[MODELO_ESFERAS_SUELO][0].posicion,{0,0,0}),"Suelo conserva origen global");
-    Comprobar(cantidades[MODELO_ESFERAS_MESA]==10 && cantidades[MODELO_ESFERAS_CACTUS]==28 && cantidades[MODELO_ESFERAS_ROCA]==10,
+    for (int i=0;i<N;i++) Comprobar(Jugable(i) ? cantidades[i]>0 : cantidades[i]==0,"Solo las piezas jugables usan GLB");
+    Comprobar(cantidades[MODELO_ESFERAS_CACTUS]==10 && cantidades[MODELO_ESFERAS_ROCA]==10,
         "Instancias comparten modelos y conservan las cantidades reales");
     for(int i=0;i<10;i++)
     {
-        const auto& d=dibujos[MODELO_ESFERAS_MESA][i];
-        Comprobar(Cerca(d.posicion.y,-.12f*(-d.posicion.z)-2) && d.escala.y>=.8f && d.escala.y<=1.6f,
-            "Mesas conservan base y altura procedural");
         const auto& o=m.obstaculos[i]; const auto& r=dibujos[MODELO_ESFERAS_ROCA][i];
         Comprobar(Igual(r.posicion,{o.x,-.12f*o.s,o.z}) && Cerca(r.escala.x,o.radio/.9f),"Rocas siguen los obstaculos logicos sin cambiar hitboxes");
-    }
-    Comprobar(cantidades[MODELO_ESFERAS_CHECKPOINT]==6,"Dos banderas por checkpoint");
-    for(int i=0;i<6;i++)
-    {
-        Vector3 t; int lado=i%2==0 ? -1 : 1;
-        Vector3 p=Punto(m,28+30*(i/2),lado*3.9f,&t);
-        const auto& d=dibujos[MODELO_ESFERAS_CHECKPOINT][i];
-        Comprobar(Igual(p,d.posicion),"Banderas mantienen S y lateral actuales");
-        Vector3 x=Vector3Transform({1,0,0},MatrixRotateY(d.angulo*DEG2RAD));
-        Comprobar(Igual(x,{-t.z*(-lado),0,t.x*(-lado)}),"Yaw de raylib coloca banderas hacia el interior");
-    }
-    for (int id:{MODELO_ESFERAS_SALIDA,MODELO_ESFERAS_META})
-    {
-        Vector3 t; Vector3 p=Punto(m,id==MODELO_ESFERAS_SALIDA ? .8f : 120,0,&t);
-        const auto& d=dibujos[id][0];
-        Vector3 x=Vector3Transform({1,0,0},MatrixRotateY(d.angulo*DEG2RAD));
-        Comprobar(Igual(p,d.posicion) && Igual(x,{-t.z,0,t.x}),"Arcos al pie y perpendiculares a la pista");
+        const auto& oc=m.obstaculos[10+i]; const auto& c=dibujos[MODELO_ESFERAS_CACTUS][i];
+        Comprobar(oc.cactus && Igual(c.posicion,{oc.x,-.12f*oc.s,oc.z}) && Igual(c.escala,{1,1,1}),"Cactus siguen los obstaculos logicos sin cambiar hitboxes");
     }
     int visible=0;
     for(int i=0;i<zona.cantidadParticipantes;i++)
@@ -241,7 +231,9 @@ int main()
         zona.CambiarMinijuego(MINIJUEGO_ESFERAS_CANON); auto& m=zona.gestorMinijuegos.minijuegoEsferasCanon;
         for(int i=0;i<N;i++)
         {
-            const auto& r=Recursos()[i]; Comprobar(r.cargado,RUTAS_MODELOS_ESFERAS_CANON_3D[i]);
+            const auto& r=Recursos()[i];
+            if(!Jugable(i)) { Comprobar(!r.cargaIntentada && cargas[i]==0,"No cargar el decorado GLB reemplazado"); continue; }
+            Comprobar(r.cargado,RUTAS_MODELOS_ESFERAS_CANON_3D[i]);
             if(!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
             if(cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Carga unica entre rondas y participantes");
@@ -309,23 +301,23 @@ int main()
         zona.Inicializar(participantes,cantidad); zona.modoCatalogo=zona.modoTablero=true;
         zona.CambiarMinijuego(MINIJUEGO_ESFERAS_CANON); Pulsar(zona,KEY_R); Pulsar(zona,KEY_ESCAPE);
         Comprobar(!zona.volverAlMenu && m.tiempoPreparacion<3,"Tablero bloquea reinicio y abandono");
-        for(int i=0;i<N;i++) Comprobar(cargas[i]==1 && Recursos()[i].modelo.meshes==mallas[i],"Reinicio, selector y tablero conservan cache");
+        for(int i=0;i<N;i++) Comprobar(Jugable(i) ? cargas[i]==1 && Recursos()[i].modelo.meshes==mallas[i] : cargas[i]==0,"Reinicio, selector y tablero conservan cache");
     }
     // Archivo ausente por pieza, sin mover ni editar ningun GLB.
     Pulsar(zona,KEY_NULL); Dibujar(zona); ComprobarModelos(zona);
-    for(int ausente=0;ausente<N;ausente++)
+    for(int ausente:JUGABLES)
     {
         Dibujar(zona); int presentes[N]; std::memcpy(presentes,cantidades,sizeof(presentes));
         int base=cubos+esferas+cilindros+segmentos+circulos+triangulosSombra;
         Comprobar(presentes[ausente]>0,"Modelo con uso antes de probar fallback");
         DescargarSlotModeloEscenarioRetro3D(Recursos()[ausente]); rutaAusente=RUTAS_MODELOS_ESFERAS_CANON_3D[ausente];
-        for(int k=0;k<3;k++) CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteEsferasCanonRetro3D());
+        for(int k=0;k<3;k++) CargarPaqueteModelosEscenarioRetro3D(UnaPieza(ausente));
         Dibujar(zona);
         for(int i=0;i<N;i++) Comprobar(cantidades[i]==(i==ausente ? 0 : presentes[i]),"Fallback conserva las otras piezas GLB");
         Comprobar(cubos+esferas+cilindros+segmentos+circulos+triangulosSombra>base,"Primitivas aparecen solo para la pieza fallida");
-        rutaAusente=nullptr; Recursos()[ausente]={}; CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteEsferasCanonRetro3D()); GuardarMateriales();
+        rutaAusente=nullptr; Recursos()[ausente]={}; CargarPaqueteModelosEscenarioRetro3D(UnaPieza(ausente)); GuardarMateriales();
     }
-    Comprobar(avisos==N,"Un solo diagnostico por recurso ausente");
+    Comprobar(avisos==(int)(sizeof(JUGABLES)/sizeof(JUGABLES[0])),"Un solo diagnostico por recurso ausente");
     const auto& almacen=ObtenerModelosEscenariosRetro3D();
     for(const auto& r:almacen.parejasGlaciar) Comprobar(!r.cargaIntentada,"No cargar Glaciar");
     for(const auto& r:almacen.voleaMagma) Comprobar(!r.cargaIntentada,"No cargar Volea");

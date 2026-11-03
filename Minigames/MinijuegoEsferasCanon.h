@@ -14,6 +14,44 @@
 
 inline constexpr int PUNTOS_PISTA_ESFERAS = 53;
 inline constexpr int MAX_OBSTACULOS_ESFERAS = 24;
+inline constexpr int MAX_PARTICULAS_ESFERAS = 220;
+
+
+// Particula puramente visual (polvo, esquirlas, confeti). No afecta reglas.
+struct ParticulaEsferas
+{
+    bool activa = false;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    Color color{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float gravedad = 0.0f;
+    bool brilla = false;
+    bool polvo = false;
+};
+
+
+// Estado visual por jugador: lo que se vio el cuadro anterior para
+// detectar eventos (choque, caida, salto, control, meta) sin tocar reglas.
+struct VisualJugadorEsferas
+{
+    bool enAire = false;
+    bool cayendo = false;
+    bool terminado = false;
+    int checkpoints = 0;
+    float velocidadX = 0.0f;
+    float velocidadZ = 0.0f;
+    float recarga = 0.0f;
+
+    float destello = 0.0f;
+    float avisoControl = 0.0f;
+    float avisoAtajo = 0.0f;
+    float avisoCaida = 0.0f;
+    float avisoChoque = 0.0f;
+    float polvoArena = 0.0f;
+};
 
 
 enum FaseEsferasCanon
@@ -108,6 +146,16 @@ struct MinijuegoEsferasCanon
     float tiempoAnimacion = 0.0f;
     float cooldownSonidoChoque = 0.0f;
 
+    // Solo visual: particulas, avisos y anuncios (semilla propia).
+    ParticulaEsferas particulas[MAX_PARTICULAS_ESFERAS];
+    VisualJugadorEsferas visualJugadores[MAX_PARTICIPANTES];
+    unsigned int semillaVisual = 0x5EEDu;
+    float tiempoVisual = 0.0f;
+    float anuncioInicio = -1.0f;
+    float anuncioMeta = -1.0f;
+    int jugadorMeta = -1;
+    bool confetiFinal = false;
+
     void Inicializar();
 
     void Reiniciar(
@@ -117,6 +165,15 @@ struct MinijuegoEsferasCanon
     );
 
     void Actualizar(
+        float deltaTime,
+        JugadorPrueba jugadores[],
+        int cantidadMaxima,
+        Participante participantes[]
+    );
+
+    // Reglas de la carrera (sin cambios); Actualizar la envuelve y despues
+    // actualiza solo lo visual.
+    void ActualizarReglas(
         float deltaTime,
         JugadorPrueba jugadores[],
         int cantidadMaxima,
