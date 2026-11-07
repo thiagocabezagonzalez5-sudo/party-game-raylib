@@ -193,11 +193,13 @@ int main()
     {
         for (int i=0;i<4;i++) { p[i].activo=i<cantidad; p[i].conectado=true; p[i].esBot=false; p[i].numeroJugador=i+1; p[i].color=colores[i]; p[i].control=i==0 ? CONTROL_TECLADO_WASD : CONTROL_TECLADO_FLECHAS; }
         zona.cantidadParticipantes=cantidad; zona.CambiarMinijuego(MINIJUEGO_GRUA_CHATARRA);
-        for (int i=0;i<N;i++) Comprobar(Recursos()[i].cargado && cargas[i]==1,"22 modelos cargados una vez entre instancias y reinicios");
+        // El desguace se hornea con primitivas propias: del paquete solo se
+        // cargan las piezas jugables (tolva, garra, marca y chatarra).
+        for (int i=0;i<N;i++) Comprobar(i>=MODELO_GRUA_TOLVA ? (Recursos()[i].cargado && cargas[i]==1) : (!Recursos()[i].cargado && cargas[i]==0),"Piezas jugables cargadas una vez entre instancias y reinicios; decorado sin GLB");
         GuardarRecursos();
         char ruta[100]; std::snprintf(ruta,sizeof(ruta),"build/grua-preparacion-%d.png",cantidad); Dibujar(zona,ruta);
-        Comprobar(cubos==0 && cantidades[MODELO_GRUA_SUELO]==3 && cantidades[MODELO_GRUA_ESCOMBROS]==46,"Sin primitivas duplicadas ni escombros superpuestos");
-        Comprobar(cantidades[MODELO_GRUA_CINTA]==2 && cantidades[MODELO_GRUA_PILA]==9 && cantidades[MODELO_GRUA_FOCO]==4 && cantidades[MODELO_GRUA_PINZA]==cantidad*4,"Mallas compartidas entre instancias");
+        Comprobar(cubos==0,"Sin primitivas duplicadas");
+        Comprobar(cantidades[MODELO_GRUA_PINZA]==cantidad*4,"Mallas compartidas entre instancias");
         Avanzar(zona,181); Comprobar(m.fase==FASE_GRUA_JUGANDO,"Cuenta regresiva inicia ronda");
         float x=m.estadosJugadores[0].x; tecla=KEY_D; Avanzar(zona,20); tecla=KEY_NULL;
         Comprobar(m.estadosJugadores[0].x>x && m.estadosJugadores[0].velocidadX<=6,"Movimiento e inercia con controles reales");
@@ -252,17 +254,17 @@ int main()
     }
     for (auto& participante:p) participante.esBot=false;
     Preparar(zona);
-    for (int pieza=0;pieza<N;pieza++)
+    for (int pieza=MODELO_GRUA_TOLVA;pieza<N;pieza++)
     {
         Dibujar(zona); int base=primitivas, previo[N]; std::memcpy(previo,cantidades,sizeof(previo));
         DescargarSlotModeloEscenarioRetro3D(Recursos()[pieza]); ausente=RUTAS_MODELOS_GRUA_CHATARRA_3D[pieza]; int avisosAntes=avisos;
-        CargarPaqueteGruaChatarraRetro3D(); CargarPaqueteGruaChatarraRetro3D(); CargarPaqueteGruaChatarraRetro3D();
+        CargarPiezasJugablesGruaChatarra(); CargarPiezasJugablesGruaChatarra(); CargarPiezasJugablesGruaChatarra();
         Comprobar(avisos==avisosAntes+1,"Un diagnostico por archivo ausente, sin repetir por frame");
         Dibujar(zona); Comprobar(cantidades[pieza]==0 && primitivas>base,"Fallback por pieza, sin GLB simultaneo");
         for (int i=0;i<N;i++) if (i!=pieza) Comprobar(cantidades[i]==previo[i],"Un fallo conserva las otras piezas");
-        ausente=nullptr; Recursos()[pieza]={}; CargarPaqueteGruaChatarraRetro3D(); GuardarRecursos();
+        ausente=nullptr; Recursos()[pieza]={}; CargarPiezasJugablesGruaChatarra(); GuardarRecursos();
     }
-    for (int i=0;i<N;i++) Comprobar(usos[i]>0,"Los 22 modelos se usan en el juego real");
+    for (int i=MODELO_GRUA_TOLVA;i<N;i++) Comprobar(usos[i]>0,"Las piezas jugables se usan en el juego real");
     zona.Descargar(); zona.Descargar();
     for (int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de CloseWindow");
     Comprobar(!ObtenerModelosEscenariosRetro3D().franjasCintaGrua,"Reposo CPU de la cinta liberado");

@@ -12,6 +12,7 @@
 
 
 inline constexpr int MAX_OBJETOS_GRUA = 30;
+inline constexpr int MAX_PARTICULAS_GRUA = 220;
 
 
 enum FaseGruaChatarra
@@ -92,6 +93,20 @@ struct EstadoJugadorGrua
 };
 
 
+// Particula puramente visual (polvo, chispas, piezas, confeti).
+struct ParticulaGrua
+{
+    bool activa = false;
+    int tipo = 0;
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    Color color = WHITE;
+};
+
+
 struct MinijuegoGruaChatarra
 {
     ResultadoMinijuego resultado{};
@@ -99,6 +114,15 @@ struct MinijuegoGruaChatarra
 
     EstadoJugadorGrua estadosJugadores[MAX_PARTICIPANTES];
     ObjetoGrua objetos[MAX_OBJETOS_GRUA];
+
+    // Estado visual: lo escribe solo Actualizar a partir de los cambios de
+    // la logica y usa su propia semilla (nunca GetRandomValue).
+    ParticulaGrua particulas[MAX_PARTICULAS_GRUA];
+    unsigned int semillaVisual = 0;
+    float destelloTolva[MAX_PARTICIPANTES] = {};
+    float sacudidaGarra[MAX_PARTICIPANTES] = {};
+    float tiempoChispasSoldadura = 0.0f;
+    float tiempoFinVisual = -1.0f;
 
     Camera3D camara{};
     FaseGruaChatarra fase = FASE_GRUA_PREPARACION;
@@ -126,6 +150,14 @@ struct MinijuegoGruaChatarra
         Participante participantes[]
     );
 
+    // Reglas de la partida (Actualizar la llama y despues anima lo visual).
+    void ActualizarLogica(
+        float deltaTime,
+        JugadorPrueba jugadores[],
+        int cantidadMaxima,
+        Participante participantes[]
+    );
+
     void Dibujar(
         const JugadorPrueba jugadores[],
         int cantidadMaxima,
@@ -135,3 +167,9 @@ struct MinijuegoGruaChatarra
 
     const ResultadoMinijuego& ObtenerResultado() const;
 };
+
+
+// Carga del paquete GLB solo las piezas que muestran el estado del juego
+// (tolva, iman, pinzas, carro, marca y las cinco piezas de chatarra). El
+// desguace se construye con primitivas propias horneadas en mallas.
+void CargarPiezasJugablesGruaChatarra();
