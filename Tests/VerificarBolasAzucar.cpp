@@ -159,13 +159,13 @@ int main()
     {
         for(int i=0;i<4;i++) { p[i].activo=i<cantidad; p[i].conectado=true; p[i].esBot=false; p[i].numeroJugador=i+1; p[i].color=colores[i]; p[i].control=i==0?CONTROL_TECLADO_WASD:CONTROL_TECLADO_FLECHAS; }
         zona.cantidadParticipantes=cantidad; zona.CambiarMinijuego(MINIJUEGO_BOLAS_AZUCAR);
-        for(int i=0;i<N;i++) Comprobar(Recursos()[i].cargado && cargas[i]==1,"20 modelos cargados una vez entre reinicios y participantes");
+        // El escenario (suelo, azucar, chocolate, muros, gominolas, piruletas,
+        // columnas y montanas) ya no usa GLB: se construye con primitivas
+        // propias horneadas en mallas. Del paquete solo se carga la bola.
+        for(int i=0;i<N;i++) Comprobar(i==MODELO_AZUCAR_BOLA?(Recursos()[i].cargado && cargas[i]==1):(!Recursos()[i].cargado && cargas[i]==0),"Solo la bola jugable, una carga entre reinicios y participantes");
         GuardarRecursos();
         char ruta[100]; std::snprintf(ruta,sizeof(ruta),"build/azucar-preparacion-%d.png",cantidad); Dibujar(zona,ruta);
-        Comprobar(cubos==0 && esferas==0 && planos==0 && cantidades[MODELO_AZUCAR_SUELO]==3,"Sin primitivas duplicadas; suelo usa vistas compartidas");
-        Comprobar(cantidades[MODELO_AZUCAR_MURO]==4 && cantidades[MODELO_AZUCAR_AZUCAR_LATERAL]==2 && cantidades[MODELO_AZUCAR_AZUCAR_EXTREMO]==2 && cantidades[MODELO_AZUCAR_CHOCOLATE_PEQUENO]==2,"Instancias compartidas de muros y zonas");
-        const Vector3 muros[]={{-9.2f,0,0},{9.2f,0,0},{0,0,-9.2f},{0,0,9.2f}};
-        for(int i=0;i<4;i++) Comprobar(Igual(dibujos[MODELO_AZUCAR_MURO][i].posicion,muros[i]) && Cerca(dibujos[MODELO_AZUCAR_MURO][i].angulo,i<2?90:0),"Pivotes y orientacion de muros sin cambiar colisiones");
+        Comprobar(cubos==0 && esferas==0 && planos==0,"Sin primitivas sueltas de raylib en el escenario");
         Avanzar(zona,181); Comprobar(m.fase==FASE_BOLAS_JUGANDO,"Cuenta regresiva inicia la partida");
         tecla=KEY_E; Avanzar(zona,1); tecla=KEY_NULL;
         Comprobar(m.estadosJugadores[0].creando>0 && !m.bolas[0].activa,"Crear requiere medio segundo");
@@ -220,17 +220,18 @@ int main()
         Comprobar(m.fase==FASE_BOLAS_TERMINADO,"IA completa partida sin bloquearse");
     }
     Preparar(zona); m.bolas[0]={true,BOLA_AZUCAR_REPOSO,0,4,0,0,.8f,.7f,1};
-    for(int pieza=0;pieza<N;pieza++)
+    for(int pieza=MODELO_AZUCAR_BOLA;pieza<=MODELO_AZUCAR_BOLA;pieza++)
     {
         Dibujar(zona); int base=cubos+esferas+cilindros+planos+aros, previo[N]; std::memcpy(previo,cantidades,sizeof(previo));
         DescargarSlotModeloEscenarioRetro3D(Recursos()[pieza]); ausente=RUTAS_MODELOS_BOLAS_AZUCAR_3D[pieza]; int avisosAntes=avisos;
         CargarPaqueteBolasAzucarRetro3D(); CargarPaqueteBolasAzucarRetro3D(); CargarPaqueteBolasAzucarRetro3D();
         Comprobar(avisos==avisosAntes+1,"Un diagnostico por archivo ausente");
+        GuardarRecursos(); // el paquete completo trae piezas de escenario que la partida no carga
         Dibujar(zona); Comprobar(cantidades[pieza]==0 && cubos+esferas+cilindros+planos+aros>base,"Fallback local por pieza sin GLB simultaneo");
         for(int i=0;i<N;i++) if(i!=pieza) Comprobar(cantidades[i]==previo[i],"Fallo no oculta otras piezas");
         ausente=nullptr; Recursos()[pieza]={}; CargarPaqueteBolasAzucarRetro3D(); GuardarRecursos();
     }
-    for(int i=0;i<N;i++) Comprobar(usos[i]>0,"Los 20 modelos se usan en el juego integrado");
+    Comprobar(usos[MODELO_AZUCAR_BOLA]>0,"La bola jugable se usa en el juego integrado");
     zona.Descargar(); zona.Descargar();
     for(int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de CloseWindow");
     DescargarModeloJugadorCompartido(); CloseWindow();

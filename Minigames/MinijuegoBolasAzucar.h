@@ -86,6 +86,15 @@ struct MinijuegoBolasAzucar
     float tiempoPreparacion = 0.0f;
     float tiempoAnimacion = 0.0f;
 
+    // Solo visual: no intervienen en ninguna regla. Segundos desde el
+    // ultimo golpe y desde la eliminacion de cada jugador (y donde estaba),
+    // y desde el final de la partida (confeti).
+    float golpeVisual[MAX_PARTICIPANTES]{};
+    float salidaVisual[MAX_PARTICIPANTES]{};
+    float salidaX[MAX_PARTICIPANTES]{};
+    float salidaZ[MAX_PARTICIPANTES]{};
+    float tiempoFin = 0.0f;
+
     void Inicializar();
 
     void Reiniciar(
