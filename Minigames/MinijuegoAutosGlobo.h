@@ -71,6 +71,39 @@ struct EstadoBotAutosGlobo
 };
 
 
+// Estado SOLO visual (destellos, caidas, confeti). Lo escribe Actualizar
+// comparando con el frame anterior; la logica nunca lo lee.
+struct VisualAutosGlobo
+{
+    int globosPrevios[MAX_PARTICIPANTES]{};
+    bool vivoPrevio[MAX_PARTICIPANTES]{};
+    float turboPrevio[MAX_PARTICIPANTES]{};
+
+    float reventon[MAX_PARTICIPANTES]{};      // 1 -> 0: globo que acaba de reventar
+    float reventonX[MAX_PARTICIPANTES]{};
+    float reventonY[MAX_PARTICIPANTES]{};
+    float reventonZ[MAX_PARTICIPANTES]{};
+    float recarga[MAX_PARTICIPANTES]{};       // 1 -> 0: globo recuperado
+    float turboDestello[MAX_PARTICIPANTES]{}; // 1 -> 0: arranque del turbo
+
+    float caida[MAX_PARTICIPANTES]{};         // segundos desde la eliminacion (< 0: no)
+    float caidaX[MAX_PARTICIPANTES]{};
+    float caidaZ[MAX_PARTICIPANTES]{};
+    float caidaDirX[MAX_PARTICIPANTES]{};
+    float caidaDirZ[MAX_PARTICIPANTES]{};
+    float caidaAngulo[MAX_PARTICIPANTES]{};
+
+    bool placaPrevia[MAX_PLACAS_AUTOS_GLOBO]{};
+    bool avisoPrevio[MAX_PLACAS_AUTOS_GLOBO]{};
+    float placaEdad[MAX_PLACAS_AUTOS_GLOBO]{}; // segundos desde que aparecio o se encendio
+    float placaToma[MAX_PLACAS_AUTOS_GLOBO]{}; // 1 -> 0: alguien la tomo
+    float placaTomaX[MAX_PLACAS_AUTOS_GLOBO]{};
+    float placaTomaZ[MAX_PLACAS_AUTOS_GLOBO]{};
+
+    float tiempoFin = -1.0f;                  // segundos desde el final
+};
+
+
 struct MinijuegoAutosGlobo
 {
     ResultadoMinijuego resultado{};
@@ -92,6 +125,8 @@ struct MinijuegoAutosGlobo
     // Ultimo aviso de eliminacion para mostrar en pantalla.
     char textoEvento[48]{};
     float tiempoEvento = 0.0f;
+
+    VisualAutosGlobo visual{};
 
     void Inicializar();
 
