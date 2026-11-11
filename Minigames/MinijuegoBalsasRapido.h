@@ -99,6 +99,41 @@ struct BalsaRio
 };
 
 
+// Solo visual: avisos y efectos de cada balsa (no afecta la logica).
+struct VisualBalsaRio
+{
+    float destello = 0.0f;         // 1 al sincronizar o tomar banana
+    float avisoSync = 0.0f;        // texto «¡SINCRO!» sobre la balsa
+    float avisoBanana = 0.0f;      // texto «¡TURBO!»
+    float avisoChoque = 0.0f;      // texto «¡CHOQUE!»
+    float sacudida = 0.0f;         // cabeceo corto tras un choque
+    float estela = 0.0f;           // intensidad suavizada de la estela
+    float anuncioRuta = 0.0f;      // «¡CASCADA!» / «¡REMANSO!» al entrar
+    int ruta = -1;                 // -1 sin elegir, 0 cascada, 1 remanso
+    float anuncioMeta = 0.0f;
+    float tiempoSyncAnterior = 0.0f;
+    float tiempoImpactoAnterior = 0.0f;
+    int bananasAnterior = 0;
+    bool terminadaAnterior = false;
+};
+
+
+inline constexpr int MAX_PARTICULAS_VISUAL_BALSAS = 220;
+
+struct ParticulaVisualBalsas
+{
+    bool activa = false;
+    int tipo = 0;                  // 0 espuma, 1 confeti, 2 hoja, 3 chispa
+    Vector3 posicion{};
+    Vector3 velocidad{};
+    float vida = 0.0f;
+    float vidaMaxima = 1.0f;
+    float tamano = 0.1f;
+    float giro = 0.0f;
+    Color color{ 255, 255, 255, 255 };
+};
+
+
 struct MinijuegoBalsasRapido
 {
     ResultadoMinijuego resultado{};
@@ -127,6 +162,16 @@ struct MinijuegoBalsasRapido
     float tiempoRestante = 0.0f;
     float tiempoAnimacion = 0.0f;
 
+    // Solo visual (azar con semilla propia; nunca GetRandomValue).
+    VisualBalsaRio visualBalsas[2];
+    ParticulaVisualBalsas particulasVisual[MAX_PARTICULAS_VISUAL_BALSAS];
+    unsigned int semillaVisual = 1u;
+    float tiempoVisual = 0.0f;
+    float anuncioBifurcacion = -1.0f;   // >= 0: segundos desde el aviso
+    bool bifurcacionAnunciada = false;
+    float tiempoConfeti = 0.0f;
+    float acumuladorAmbiente = 0.0f;
+
     void Inicializar();
 
     void Reiniciar(
@@ -150,4 +195,12 @@ struct MinijuegoBalsasRapido
     ) const;
 
     const ResultadoMinijuego& ObtenerResultado() const;
+
+    // Reglas sin cambios; Actualizar la llama y despues anima lo visual.
+    void ActualizarLogica(
+        float deltaTime,
+        JugadorPrueba jugadores[],
+        int cantidadMaxima,
+        Participante participantes[]
+    );
 };
