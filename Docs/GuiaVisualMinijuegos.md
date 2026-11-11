@@ -153,7 +153,7 @@ Cada ficha conserva la **idea del lugar** actual y fija la dirección del redise
 | 40 | Rodillos Neón | Máquinas tragamonedas neón | Sala arcade retro: máquinas con marquesinas, alfombra estampada, letreros neón, columnas de LEDs | Rehecho |
 | 41 | Bolas de Azúcar | Mundo de dulces | Montaña de dulces nevada de azúcar glas: suelo de galleta, piruletas, columnas de caramelo, ríos de chocolate | Rehecho |
 | 42 | Grúa de Chatarra | Depósito de chatarra | Desguace al atardecer: pilas de autos aplastados, prensa, cintas, focos, grúas de fondo | Rehecho |
-| 43 | Pisotón de Plagas | Jardín gigante | Jardín visto desde el tamaño de un bicho: pasto gigante, flores, setas, regadera, cerca de madera | Pendiente |
+| 43 | Pisotón de Plagas | Jardín gigante | Jardín visto desde el tamaño de un bicho: pasto gigante, flores, setas, regadera, cerca de madera | Rehecho |
 | 44 | Balsas del Rápido | Río de selva | Río selvático: paredes de selva, lianas, ruinas, cascadas, loros, niebla de agua | Pendiente |
 | 45 | Autos de Globo | Ciudad futurista | Plaza flotante entre rascacielos de día: jardines verticales, autopistas aéreas, hologramas, drones | Pendiente |
 | 46 | Sendero Invisible | Cementerio | Cementerio de noche: losas agrietadas, lápidas, mausoleos, verja, faroles de llama verde, luna llena, niebla | Pendiente |

@@ -107,6 +107,40 @@ struct PopupPisoton
 };
 
 
+// Solo visual: lo escribe Actualizar comparando el estado antes y despues
+// de la logica (nunca toca reglas ni consume GetRandomValue).
+inline constexpr int MAX_MANCHAS_PISOTON = 16;
+inline constexpr int MAX_ONDAS_PISOTON = 10;
+
+struct ManchaPisoton
+{
+    float x = 0.0f;
+    float z = 0.0f;
+    float vida = 0.0f;                // 0 = libre; se desvanece al bajar
+    float giro = 0.0f;
+    int tipo = 0;                     // TipoPlagaPisoton
+};
+
+struct OndaPisoton
+{
+    float x = 0.0f;
+    float z = 0.0f;
+    float vida = 0.0f;
+    int jugador = -1;                 // color del anillo (-1 = picadura)
+    bool picadura = false;
+};
+
+struct VisualPisoton
+{
+    ManchaPisoton manchas[MAX_MANCHAS_PISOTON];
+    OndaPisoton ondas[MAX_ONDAS_PISOTON];
+    int siguienteMancha = 0;
+    int siguienteOnda = 0;
+    float picado[MAX_PARTICIPANTES]{};// destello rojo al perder puntos
+    float tiempoFin = -1.0f;
+};
+
+
 struct EstadoBotPisoton
 {
     int objetivo = -1;
@@ -160,6 +194,8 @@ struct MinijuegoPisotonPlagas
     float florAbierta = 0.0f;
     int florGanador = -1;
 
+    VisualPisoton visual{};
+
     void Inicializar();
 
     void Reiniciar(
@@ -184,3 +220,9 @@ struct MinijuegoPisotonPlagas
 
     const ResultadoMinijuego& ObtenerResultado() const;
 };
+
+
+// Carga solo las piezas GLB que muestran el estado del juego (flor,
+// madrigueras, avisos, plagas y avispas). El jardin se construye con
+// primitivas propias horneadas en mallas.
+void CargarPiezasJugablesPisotonPlagas();

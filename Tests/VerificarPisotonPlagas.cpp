@@ -17,6 +17,10 @@ static unsigned long long firmas[N]{};
 struct InstanciaPisoton { Vector3 posicion{}, escala{}; float angulo = 0; Color color{}; int malla = -1; };
 static InstanciaPisoton dibujos[N][128]{};
 static auto& Recursos() { return ObtenerModelosEscenariosRetro3D().pisotonPlagas; }
+// El jardin se hornea con primitivas propias: del paquete solo se cargan las
+// piezas jugables (brote, flor y su aro; madriguera, aviso, plagas y avispas).
+static bool Jugable(int i)
+{ return (i>=MODELO_PISOTON_BROTE && i<=MODELO_PISOTON_ARO_FLOR) || (i>=MODELO_PISOTON_MADRIGUERA && i<=MODELO_PISOTON_ALA); }
 static void Comprobar(bool ok, const char* texto)
 { if (!ok) { if (errores < 40) std::fprintf(stderr,"FALLO: %s\n",texto); errores++; } }
 static bool Cerca(float a, float b) { return std::fabs(a-b) < .002f; }
@@ -196,11 +200,10 @@ int main()
     {
         for (int i=0;i<4;i++) { p[i].activo=i<cantidad; p[i].conectado=true; p[i].esBot=false; p[i].numeroJugador=i+1; p[i].color=Color{(unsigned char)(80+i*40),120,220,255}; p[i].control=i==0 ? CONTROL_TECLADO_WASD : CONTROL_TECLADO_FLECHAS; }
         zona.cantidadParticipantes=cantidad; zona.CambiarMinijuego(MINIJUEGO_PISOTON_PLAGAS);
-        for (int i=0;i<N;i++) Comprobar(Recursos()[i].cargado && cargas[i]==1,"22 modelos cargados una sola vez entre rondas y participantes");
+        for (int i=0;i<N;i++) Comprobar(Jugable(i) ? (Recursos()[i].cargado && cargas[i]==1) : (!Recursos()[i].cargado && cargas[i]==0),"Piezas jugables cargadas una sola vez entre rondas y participantes; decorado sin GLB");
         GuardarRecursos();
         char ruta[100]; std::snprintf(ruta,sizeof(ruta),"build/pisoton-preparacion-%d.png",cantidad); Dibujar(zona,ruta);
-        Comprobar(cantidades[MODELO_PISOTON_SUELO]==1 && cantidades[MODELO_PISOTON_BRIZNA]==34 && cantidades[MODELO_PISOTON_ROCIO]==10,"Suelo y decoraciones compartidos sin primitivas superpuestas");
-        Comprobar(cantidades[MODELO_PISOTON_CERCA_LATERAL]==2 && cantidades[MODELO_PISOTON_MADRIGUERA]==6,"Piezas conservan cantidades originales");
+        Comprobar(cantidades[MODELO_PISOTON_MADRIGUERA]==6,"Piezas conservan cantidades originales");
         Avanzar(zona,181); Comprobar(m.fase==FASE_PISOTON_JUGANDO,"Cuenta regresiva inicia la partida");
         float x=zona.jugadores[0].posicion.x; tecla=KEY_D; Avanzar(zona,15); tecla=KEY_NULL;
         Comprobar(zona.jugadores[0].posicion.x>x,"Movimiento conserva controles reales");
@@ -244,20 +247,20 @@ int main()
         int total=0; for (int puntos:m.puntos) total+=puntos; Comprobar(total>0,"Bots consiguen puntos con mecanicas reales");
     }
     for (auto& participante:p) participante.esBot=false;
-    for (int pieza=0;pieza<N;pieza++)
+    for (int pieza=0;pieza<N;pieza++) if (Jugable(pieza))
     {
         EscenaCompleta(zona,pieza==MODELO_PISOTON_BROTE); Dibujar(zona);
         int base=primitivas, previo[N]; std::memcpy(previo,cantidades,sizeof(previo));
         Comprobar(previo[pieza]>0,"Cada GLB reemplaza un elemento visible del minijuego");
         DescargarSlotModeloEscenarioRetro3D(Recursos()[pieza]); ausente=RUTAS_MODELOS_PISOTON_PLAGAS_3D[pieza]; int avisosAntes=avisos;
-        CargarPaquetePisotonPlagasRetro3D(); CargarPaquetePisotonPlagasRetro3D(); CargarPaquetePisotonPlagasRetro3D();
+        CargarPiezasJugablesPisotonPlagas(); CargarPiezasJugablesPisotonPlagas(); CargarPiezasJugablesPisotonPlagas();
         Comprobar(avisos==avisosAntes+1,"Un diagnostico por archivo ausente");
         Dibujar(zona); Comprobar(cantidades[pieza]==0 && primitivas>base,"Fallback por pieza sin GLB superpuesto");
         for (int i=0;i<N;i++) if (i!=pieza) Comprobar(cantidades[i]==previo[i],"Fallo local conserva las otras piezas");
         Dibujar(zona); Comprobar(avisos==avisosAntes+1,"Sin repeticion del diagnostico por frame");
-        ausente=nullptr; Recursos()[pieza]={}; CargarPaquetePisotonPlagasRetro3D(); GuardarRecursos();
+        ausente=nullptr; Recursos()[pieza]={}; CargarPiezasJugablesPisotonPlagas(); GuardarRecursos();
     }
-    for (int i=0;i<N;i++) Comprobar(usos[i]>0,"Los 22 modelos se usan en el minijuego real");
+    for (int i=0;i<N;i++) if (Jugable(i)) Comprobar(usos[i]>0,"Las piezas jugables se usan en el minijuego real");
     zona.Descargar(); zona.Descargar();
     for (int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de CloseWindow");
     for (const auto& reposo:ObtenerModelosEscenariosRetro3D().animacionesPisoton)
