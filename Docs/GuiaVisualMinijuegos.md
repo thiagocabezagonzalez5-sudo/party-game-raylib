@@ -58,7 +58,7 @@ Toda escena se arma con cinco capas, de adelante hacia atrás. Una escena que no
 
 ## 5. Personajes y feedback
 
-- Personajes con el **modelo compartido** (`DibujarJugadorModeloCompartido` o `DibujarModeloJugadorEnPosicion`) y su sombra (`SombrasRetro.h`). Si el minijuego usa vehículos u objetos propios (tanques, autos, planeadores, balsas), el jugador va visible encima o al costado.
+- Personajes con el **modelo compartido** (`DibujarJugadorModeloCompartido` o `DibujarModeloJugadorEnPosicion`) y su sombra (`SombrasRetro.h`). Si el minijuego usa vehículos u objetos propios (tanques, autos, planeadores, balsas), el jugador va visible encima o al costado. El modelo toma el color del jugador (cuerpo claro teñido por `TinteModeloJugador`): no hace falta pintarlo aparte.
 - Cada jugador lleva un **cartelito «J1..J4»** sobre la cabeza con `DibujarEtiquetaUI` (`borde` = color del jugador, `pico = true`) y, cuando ayuda a leer la escena, un **anillo de su color** en el suelo.
 - **Feedback de cada acción importante:**
   - acierto / punto: destello, pequeño salto de escala, partículas del color del jugador y `ReproducirSonidoMinijuego(audio, SONIDO_ACIERTO)`;
@@ -74,6 +74,7 @@ Toda escena se arma con cinco capas, de adelante hacia atrás. Una escena que no
 - Qué va en cada lugar:
   - **Título y objetivo** → `titulo` y `objetivo` (una línea en el cartel de presentación).
   - **Tiempo** → `HUD_RELOJ_CUENTA_ATRAS`; si no hay tiempo, `HUD_RELOJ_MEDIDOR` (ronda, muro, turno, pila…).
+  - **Espera previa que el jugador tiene que mirar** (memorizar, observar) → seguir en `HUD_MINIJUEGO_CUENTA` con `ocultarNumeroCuenta = true`: el reloj no corre y el «¡YA!» llega al pasar a jugar, sin el número grande tapando la escena (Sendero Invisible). Nunca recortar el HUD con `BeginScissorMode`.
   - **Puntaje o estado por jugador** → `jugadores[i].valor` / `valorNumerico` / `progreso` / `estado` / `eliminado` / `rol` / `equipo`.
   - **Controles** → `jugadores[i].controles`, solo humanos, máximo dos líneas cortas (usar `TextoMoverHud`, `TextoBotonGolpeHud`, `ObtenerTextoBotonPrincipal`).
   - **Anuncios grandes** («¡RONDA 2!», «¡IZQUIERDA!», «¡PUNTO EQUIPO 1!») → `DibujarTextoMundoContornoUI`, centrados, en el tercio superior o sobre el objeto que lo provoca, breves y animados.
@@ -88,7 +89,8 @@ Toda escena se arma con cinco capas, de adelante hacia atrás. Una escena que no
   - `decoracion == CALIDAD_BAJA`: solo arena, bordes y cielo/fondo simple;
   - `CALIDAD_MEDIA`: props a la mitad (paso 2 en bucles de utilería, horizonte simplificado);
   - `efectos == CALIDAD_BAJA`: sin luces aditivas ni agua animada; `sombras` controla `SombrasRetro`.
-- Escenarios grandes y estáticos: preferir pocos cubos grandes con buen sombreado a miles de cubos chicos; agrupar con `rlBegin(RL_TRIANGLES)` por material (como `CuboCables`) o hornear una malla una sola vez si el escenario supera unos miles de piezas.
+- Escenarios grandes y estáticos: preferir pocos cubos grandes con buen sombreado a miles de cubos chicos; agrupar con `rlBegin(RL_TRIANGLES)` por material (como `CuboCables`) u **hornear** lo estático en mallas con `Minigames/HorneadoMallas.h` (grabador de vértices, liberación segura, material y shader), como Esferas del Cañón o Pesca Isleña.
+- Todo minijuego que hornee mallas o cargue shaders tiene `Descargar()` en su struct y se agrega a `GestorMinijuegos::DescargarMinijuego` / `Descargar`: así se libera al salir del minijuego y al cerrar el juego.
 - **Pantalla dividida** con `BeginScissorMode` + `rlViewport` + proyección propia (Vagonetas, Fábrica 67). Sin `RenderTexture`.
 - Sin texturas externas nuevas: todo se construye con primitivas. Las piezas que algún día serán modelos GLB se marcan con un comentario `// MODELO FUTURO: ...`.
 
