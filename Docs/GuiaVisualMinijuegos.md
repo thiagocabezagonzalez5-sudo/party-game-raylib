@@ -160,7 +160,7 @@ Cada ficha conserva la **idea del lugar** actual y fija la dirección del redise
 | 47 | Banquete Turbo | Comedor espacial | Comedor orbital: ventanal a la Tierra, mesas magnéticas, tubos de comida, robot camarero, luces de servicio | Rehecho |
 | 48 | Tuberías Desierto | Oasis y tuberías | Oasis al atardecer: acueducto de arenisca, cisterna con palmeras, cántaros, dunas | Rehecho |
 | 49 | Trepá el Mástil | Barco y mástiles | Barco amarrado en una caleta al atardecer (distinto de Capitán Manda): fuerte en la costa, velas recogidas, jarcias, cofres, gaviotas | Rehecho |
-| 50 | Guardián de Ruinas | Ruinas con portal | Ruinas exteriores tomadas por la selva: portal rúnico, columnas rotas con enredaderas, estatuas caídas, rayos de sol entre árboles | Pendiente |
+| 50 | Guardián de Ruinas | Ruinas con portal | Ruinas exteriores tomadas por la selva: portal rúnico, columnas rotas con enredaderas, estatuas caídas, rayos de sol entre árboles | Rehecho |
 | 51–53 | Duelos | — | Referencia | Referencia |
 
 Al terminar un minijuego se cambia su estado a **Rehecho** en esta tabla.
