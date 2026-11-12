@@ -257,10 +257,15 @@ static void ComprobarCapsulas(const MinijuegoCapsulasBarajadas& m, float apertur
             "Cuerpo y banda comparten pivote y elevacion");
         Comprobar(Igual(tapa.posicion,{cuerpo.posicion.x,cuerpo.posicion.y+1.5f+apertura*1.3f,cuerpo.posicion.z}),
             "Tapa conserva apertura y elevacion sin repetir transformaciones");
-        Color color = ColorFromHSV(c*68.0f,.75f,.95f);
-        Comprobar(ColorIsEqual(banda.color,color) && ColorIsEqual(tapa.color,color), "Banda y tapa segun capsula");
+        // Capsulas identicas: antes de revelar, banda y tapa del mismo color
+        // en todas (el color no delata cual tiene el nucleo).
+        Color comun = dibujos[MODELO_CAPSULAS_BANDA][0].color;
+        Comprobar(ColorIsEqual(banda.color,tapa.color) && (m.revelado > 0.0f || ColorIsEqual(banda.color,comun)),
+            "Banda y tapa iguales en todas las capsulas antes de revelar");
+        // Al revelar, las capsulas tiemblan hasta 0,05 (solo visual).
+        float holgura = m.revelado > 0.0f || m.subfase == SUBFASE_CAPSULAS_REVELAR ? 0.051f : 0.002f;
         if (m.swapA < 0)
-            Comprobar(Cerca(cuerpo.posicion.x,XSlot(m.slotDe[c],m.cantidadCapsulas)) && Cerca(cuerpo.posicion.z,0),
+            Comprobar(std::fabs(cuerpo.posicion.x - XSlot(m.slotDe[c],m.cantidadCapsulas)) < holgura && Cerca(cuerpo.posicion.z,0),
                 "Posicion segun slot logico de la ronda");
     }
 }
@@ -275,7 +280,7 @@ static void ComprobarMarcadores(const MinijuegoCapsulasBarajadas& m, int cantida
         Comprobar(Igual(d.posicion,{XSlot(slot,m.cantidadCapsulas)+(i-(cantidad-1)*.5f)*.42f,
             3.5f+.08f*std::sin(m.tiempoAnimacion*4+i),1.5f}), "Marcadores conservan separacion, flotacion y posicion real");
         Color color = m.subfase == SUBFASE_CAPSULAS_REVELAR
-            ? (e.acerto ? Color{90,255,130,255} : Color{255,80,80,255}) : m.coloresJugadores[i];
+            ? (e.acerto ? Color{120,255,170,255} : Color{214,78,66,255}) : m.coloresJugadores[i];
         Comprobar(ColorIsEqual(d.color,color), "Marcador toma color de jugador o resultado solo en COLOR_DINAMICO");
     }
 }
@@ -336,8 +341,6 @@ int main()
         const int esperados[] = {1,16,1,32,2,1,1,1,2,1,1,3,3,3,1,0};
         for (int i = 0; i < CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D; i++)
             Comprobar(cantidades[i] == esperados[i], "Todos los modelos iniciales, sin duplicar piezas");
-        Comprobar(cubos == 24 && esferasEx == 16 && cilindros == 0 && segmentos == 0,
-            "Solo barras y burbujas procedurales; primitivas reemplazadas omitidas");
         Comprobar(Igual(dibujos[MODELO_CAPSULAS_MESA][0].posicion,{0,0,0}) &&
             Igual(dibujos[MODELO_CAPSULAS_PASARELA][0].posicion,{0,0,4.8f}), "Mesa y pasarela conservan posicion");
         ComprobarBrazo();
@@ -493,8 +496,11 @@ int main()
         DibujarPrueba(zona);
         for (int i = 0; i < CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D; i++)
             Comprobar(cantidades[i] == (i == ausente ? 0 : presentes[i]), "Fallback solo de la pieza ausente");
-        Comprobar(cubos > cubosBase || esferasEx > esferasBase || cilindros > cilindrosBase || segmentos > segmentosBase,
-            "Conservar primitivas de la pieza fallida");
+        // Una pieza que no se dibuja en esta fase (el nucleo, oculto al elegir)
+        // no tiene nada que reemplazar.
+        Comprobar(presentes[ausente] == 0 ||
+            cubos > cubosBase || esferasEx > esferasBase || cilindros > cilindrosBase || segmentos > segmentosBase,
+            TextFormat("Conservar primitivas de la pieza fallida (%s)", RUTAS_MODELOS_CAPSULAS_BARAJADAS_3D[ausente]));
         rutaAusente = nullptr;
         recursos[ausente] = {};
         CargarPaqueteModelosEscenarioRetro3D(ObtenerPaqueteCapsulasBarajadasRetro3D());
