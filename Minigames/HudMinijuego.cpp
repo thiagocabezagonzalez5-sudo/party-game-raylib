@@ -1122,6 +1122,11 @@ static void DibujarAnuncios(const EstiloUI& estilo, const DatosHudMinijuego& dat
 
     if (datos.fase == HUD_MINIJUEGO_CUENTA)
     {
+        if (datos.ocultarNumeroCuenta)
+        {
+            return;
+        }
+
         const char* texto = TextFormat("%d", estadoHud.numeroCuenta);
         float escala = EscalaRebote(estadoHud.tiempoNumero, 0.22f, 0.5f, reducir);
 

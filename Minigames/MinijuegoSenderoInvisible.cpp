@@ -3008,6 +3008,8 @@ static void PrepararHudS(
         ? HUD_MINIJUEGO_CUENTA
         : (m.fase == FASE_SENDERO_TERMINADO ? HUD_MINIJUEGO_FIN : HUD_MINIJUEGO_JUGANDO);
     hud.cuentaRestante = m.fase == FASE_SENDERO_PREPARACION ? m.tiempoPreparacion : 0.001f;
+    // Memorizando: sin el numero grande del centro, que tapaba el recorrido.
+    hud.ocultarNumeroCuenta = m.fase == FASE_SENDERO_MEMORIZAR;
     hud.reloj = HUD_RELOJ_CUENTA_ATRAS;
     hud.tiempoRestante = m.tiempoRestante;
     hud.tiempoTotal = DURACION_CARRERA_SENDERO;
@@ -3779,18 +3781,7 @@ void MinijuegoSenderoInvisible::Dibujar(
     DatosHudMinijuego hud;
     PrepararHudS(*this, jugadores, participantes, limite, hud);
 
-    // Durante la memorizacion el HUD sigue en «cuenta» (sin reloj ni
-    // «¡YA!»); se recorta su numero central para no tapar el recorrido.
-    if (fase == FASE_SENDERO_MEMORIZAR)
-    {
-        BeginScissorMode(0, 0, GetScreenWidth(), (int)((float)GetScreenHeight() * 0.36f));
-        DibujarHudMinijuego(hud, participantes);
-        EndScissorMode();
-    }
-    else
-    {
-        DibujarHudMinijuego(hud, participantes);
-    }
+    DibujarHudMinijuego(hud, participantes);
 }
 
 

@@ -78,6 +78,11 @@ struct DatosHudMinijuego
     FaseHudMinijuego fase = HUD_MINIJUEGO_CUENTA;
     float cuentaRestante = 0.0f;    // segundos de preparacion que faltan
 
+    // Espera sin numero: sigue en HUD_MINIJUEGO_CUENTA (reloj quieto, el
+    // «¡YA!» llega al pasar a JUGANDO) pero sin el numero grande del
+    // centro, para fases previas que el jugador tiene que mirar.
+    bool ocultarNumeroCuenta = false;
+
     RelojHudMinijuego reloj = HUD_RELOJ_CUENTA_ATRAS;
     float tiempoRestante = 0.0f;
     float tiempoTotal = 1.0f;
