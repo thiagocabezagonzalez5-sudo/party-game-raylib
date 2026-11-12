@@ -3,6 +3,7 @@
 #include "Minigames/TransformacionModeloJugador.h"
 
 #include "raymath.h"
+#include "rlgl.h"
 
 #include <cmath>
 #include <cstring>
@@ -81,6 +82,20 @@ void InicializarModeloJugadorCompartido()
     PrepararTransformacionModeloJugador(
         recurso.modelo
     );
+
+    // El cuerpo no tiene textura: su color base (naranja) multiplicaba el
+    // tinte del jugador y los cuatro quedaban marrones. Con una base clara el
+    // tinte da el color del jugador; las partes con textura no cambian.
+    for (int i = 0; i < recurso.modelo.materialCount; i++)
+    {
+        MaterialMap& albedo =
+            recurso.modelo.materials[i].maps[MATERIAL_MAP_ALBEDO];
+
+        if (albedo.texture.id == rlGetTextureIdDefault())
+        {
+            albedo.color = Color{ 240, 234, 226, 255 };
+        }
+    }
 
     recurso.animaciones =
         LoadModelAnimations(
@@ -333,7 +348,9 @@ static Color TinteModeloJugador(
     Color color
 )
 {
-    const float mezcla = 0.60f;
+    // Algo de blanco para que el color del jugador no sature sobre el
+    // cuerpo claro (ver CargarModeloJugadorCompartido).
+    const float mezcla = 0.30f;
 
     return Color
     {
