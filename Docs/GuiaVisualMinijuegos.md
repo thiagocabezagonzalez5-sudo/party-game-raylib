@@ -157,7 +157,7 @@ Cada ficha conserva la **idea del lugar** actual y fija la dirección del redise
 | 44 | Balsas del Rápido | Río de selva | Río selvático: paredes de selva, lianas, ruinas, cascadas, loros, niebla de agua | Rehecho |
 | 45 | Autos de Globo | Ciudad futurista | Plaza flotante entre rascacielos de día: jardines verticales, autopistas aéreas, hologramas, drones | Rehecho |
 | 46 | Sendero Invisible | Cementerio | Cementerio de noche: losas agrietadas, lápidas, mausoleos, verja, faroles de llama verde, luna llena, niebla | Rehecho |
-| 47 | Banquete Turbo | Comedor espacial | Comedor orbital: ventanal a la Tierra, mesas magnéticas, tubos de comida, robot camarero, luces de servicio | Pendiente |
+| 47 | Banquete Turbo | Comedor espacial | Comedor orbital: ventanal a la Tierra, mesas magnéticas, tubos de comida, robot camarero, luces de servicio | Rehecho |
 | 48 | Tuberías Desierto | Oasis y tuberías | Oasis al atardecer: acueducto de arenisca, cisterna con palmeras, cántaros, dunas | Pendiente |
 | 49 | Trepá el Mástil | Barco y mástiles | Barco amarrado en una caleta al atardecer (distinto de Capitán Manda): fuerte en la costa, velas recogidas, jarcias, cofres, gaviotas | Pendiente |
 | 50 | Guardián de Ruinas | Ruinas con portal | Ruinas exteriores tomadas por la selva: portal rúnico, columnas rotas con enredaderas, estatuas caídas, rayos de sol entre árboles | Pendiente |
