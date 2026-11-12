@@ -15,7 +15,7 @@ Lo que todo minijuego (actual y futuro) debe cumplir para verse al nivel de los 
 | Etiquetas, textos con contorno, velo, banderines | `UI/EstiloUI.h`, `Docs/ui_style.md` | Estilo «Carteles de playa» |
 | HUD común «El tendedero» | `Minigames/HudMinijuego.h` | Interfaz obligatoria |
 
-Escenarios ya rehechos con esta guía (sirven de ejemplo): Color Seguro, Pelotas, Tronco 2V2, Fábrica 67, Isla Bajo Fuego, Capitán Manda, Núcleos de Energía, Conteo Explosivo, Carga Inestable, Secuencia Neón, Cantera en Fuga, Cajas del Puerto, Cápsulas Barajadas.
+Estado: los 50 minijuegos del tablero tienen escenario e interfaz según esta guía (la sección 9 marca cada uno como «Rehecho»; Refugio Taladros es la referencia). Buenos ejemplos para copiar: Barra Giratoria y Capitán Manda (exteriores con cielo y agua), Laberinto Jade y Banquete Turbo (interiores), Esferas del Cañón y Pesca Isleña (escenario horneado en mallas para sostener 60 FPS), Rodillos Neón y Grúa de Chatarra (piezas GLB jugables con decorado propio y su test).
 
 ---
 

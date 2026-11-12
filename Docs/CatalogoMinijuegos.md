@@ -110,3 +110,4 @@ Elementos a reemplazar por GLB más adelante (la lógica no depende del visual):
 
 - Tronco 2V2 y Fábrica 67 son 2 vs 2 estrictos: el tablero solo los sortea con 2 o 4 jugadores.
 - Minijuegos antiguos convertidos de 2D a 3D en esta campaña: Miradas Cruzadas, Circuito Voltaje, Trazo Perfecto, Carga Inestable, Secuencia Neón, Interruptores, Tanques Plasma.
+- Campaña visual (noviembre de 2026): los 50 minijuegos del tablero rehechos según `Docs/GuiaVisualMinijuegos.md`, todos con el HUD común y 60 FPS a 1920x1080 en calidad ALTA. Los escenarios usan primitivas propias (muchos horneados en mallas); de los paquetes GLB solo quedan en uso las piezas jugables, y los tests de cada minijuego verifican lógica y piezas jugables, no el decorado.
