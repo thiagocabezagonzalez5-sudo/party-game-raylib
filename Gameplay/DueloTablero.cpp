@@ -376,10 +376,20 @@ void ResolverDueloTablero(
                 duelo.pagado = 1;
             }
 
-            std::snprintf(
-                texto, sizeof(texto), "¡J%d GANA EL DUELO Y SE LLEVA 1 TROFEO DE J%d!",
-                duelo.ganador + 1, duelo.perdedor + 1
-            );
+            if (duelo.pagado == 1)
+            {
+                std::snprintf(
+                    texto, sizeof(texto), "¡J%d GANA EL DUELO Y SE LLEVA 1 TROFEO DE J%d!",
+                    duelo.ganador + 1, duelo.perdedor + 1
+                );
+            }
+            else
+            {
+                std::snprintf(
+                    texto, sizeof(texto), "¡J%d GANA EL DUELO, PERO J%d YA NO TIENE TROFEOS!",
+                    duelo.ganador + 1, duelo.perdedor + 1
+                );
+            }
         }
         else
         {
