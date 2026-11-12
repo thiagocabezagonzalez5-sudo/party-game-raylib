@@ -520,6 +520,38 @@ static void CalcularObjetivoBot(
         objetivo += b.ruta == 1 ? DESVIO_CASCADA : DESVIO_REMANSO;
     }
 
+    // Ya al costado de la isla divisora: quedarse de su lado y esquivar las
+    // rocas del canal. Si la isla siguiera contando como amenaza, el bot se
+    // pegaba a su borde y quedaba trabado entre ella y la primera roca.
+    bool alCostadoDeIsla[MAX_OBSTACULOS_BALSAS]{};
+
+    for (int k = 0; k < m.cantidadObstaculos; k++)
+    {
+        const ObstaculoBalsas& o = m.obstaculos[k];
+
+        if (o.tipo != OBSTACULO_BALSAS_DIVISOR || b.p < o.p - o.b - 8.0f || b.p > o.p + o.b)
+        {
+            continue;
+        }
+
+        float ox = b.centroCarril + o.desvio;
+        float borde = o.a + RADIO_BALSA + 0.35f;
+
+        if (b.p < o.p - o.b)
+        {
+            // Llegando a la punta: comprometerse con el lado de la ruta, asi
+            // esquivar un remolino no lo deja del otro lado (y pegado a la isla).
+            if (b.ruta == 1) maximo = std::fmin(maximo, ox - borde);
+            else minimo = std::fmax(minimo, ox + borde);
+            continue;
+        }
+
+        if (b.x < ox) maximo = std::fmin(maximo, ox - borde);
+        else minimo = std::fmax(minimo, ox + borde);
+
+        alCostadoDeIsla[k] = true;
+    }
+
     int amenaza = -1;
     float menorDistancia = 999.0f;
 
@@ -527,7 +559,7 @@ static void CalcularObjetivoBot(
     {
         const ObstaculoBalsas& o = m.obstaculos[k];
 
-        if (o.tipo == OBSTACULO_BALSAS_BANANA)
+        if (o.tipo == OBSTACULO_BALSAS_BANANA || alCostadoDeIsla[k])
         {
             continue;
         }
@@ -565,7 +597,13 @@ static void CalcularObjetivoBot(
         float margen = mitad + RADIO_BALSA + 0.35f;
         float dx = (b.centroCarril + o.desvio) - b.x;
 
-        if (std::fabs(dx) < margen && adelante < menorDistancia)
+        // Tambien amenaza si tapa el carril al que va la balsa: al entrar en
+        // la bifurcacion el objetivo salta de lado y, sin esto, el bot giraba
+        // contra un tronco que estaba esquivando y quedaba trabado.
+        float dxObjetivo = (b.centroCarril + o.desvio) - objetivo;
+        bool tapaObjetivo = adelante < 6.0f && std::fabs(dxObjetivo) < margen;
+
+        if ((std::fabs(dx) < margen || tapaObjetivo) && adelante < menorDistancia)
         {
             menorDistancia = adelante;
             amenaza = k;
@@ -580,10 +618,54 @@ static void CalcularObjetivoBot(
         float ox = b.centroCarril + o.desvio;
         float izquierda = ox - margen - 0.1f;
         float derecha = ox + margen + 0.1f;
-        bool preferirIzquierda = ox >= b.x;
+        // La isla divisora se rodea por el lado de la ruta elegida.
+        bool preferirIzquierda = o.tipo == OBSTACULO_BALSAS_DIVISOR ? b.ruta == 1 : ox >= b.x;
 
-        if (preferirIzquierda && izquierda < minimo) preferirIzquierda = false;
-        else if (!preferirIzquierda && derecha > maximo) preferirIzquierda = true;
+        // Un lado es posible si entra la balsa con un margen justo, aunque el
+        // punto ideal quede fuera del carril (despues se recorta al limite).
+        float justo = mitad + RADIO_BALSA + 0.05f;
+        bool izquierdaPosible = ox - justo >= minimo;
+        bool derechaPosible = ox + justo <= maximo;
+
+        if (preferirIzquierda && !izquierdaPosible && derechaPosible) preferirIzquierda = false;
+        else if (!preferirIzquierda && !derechaPosible && izquierdaPosible) preferirIzquierda = true;
+
+        // Mirar un obstaculo mas: si el lado elegido lo tapa una roca o un
+        // tronco que viene enseguida, pasar por el otro (si hay lugar).
+        auto ladoTapado = [&](float x) {
+            for (int k = 0; k < m.cantidadObstaculos; k++)
+            {
+                const ObstaculoBalsas& s = m.obstaculos[k];
+
+                if (k == amenaza || (s.tipo != OBSTACULO_BALSAS_ROCA && s.tipo != OBSTACULO_BALSAS_TRONCO))
+                {
+                    continue;
+                }
+
+                float despues = s.p - o.p;
+
+                if (despues > 0.0f && despues < 6.0f &&
+                    std::fabs((b.centroCarril + s.desvio) - x) < s.a + RADIO_BALSA + 0.35f)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        float elegido = preferirIzquierda ? izquierda : derecha;
+        float otro = preferirIzquierda ? derecha : izquierda;
+
+        // Solo si el otro lado se alcanza antes de llegar al obstaculo; si no,
+        // es mejor pasar por el elegido y esquivar despues lo que venga.
+        bool otroAlcanzable = std::fabs(otro - b.x) <= 0.8f * std::fmax(o.p - b.p, 0.0f) + 0.5f;
+
+        if (o.tipo != OBSTACULO_BALSAS_DIVISOR && otroAlcanzable &&
+            ladoTapado(elegido) && otro >= minimo && otro <= maximo && !ladoTapado(otro))
+        {
+            preferirIzquierda = !preferirIzquierda;
+        }
 
         objetivo = preferirIzquierda ? izquierda : derecha;
     }
@@ -733,7 +815,11 @@ void MinijuegoBalsasRapido::Inicializar()
         balsas[e].equipo = e;
         balsas[e].centroCarril = CentroCarril(e);
         balsas[e].x = balsas[e].centroCarril;
-        balsas[e].ruta = GetRandomValue(0, 99) < 60 ? 0 : 1;
+        // Los bots toman siempre el remanso: el zigzag de rocas de la cascada
+        // es para la habilidad de los humanos y el bot quedaba trabado en el.
+        // Se conserva el sorteo para no alterar la secuencia del azar.
+        (void)GetRandomValue(0, 99);
+        balsas[e].ruta = 0;
         balsas[e].objetivoX = balsas[e].centroCarril;
     }
 
