@@ -3489,8 +3489,9 @@ static void DibujarAnunciosTM(
         {
             float a = Lim01TM(u * 6.0f) * Lim01TM((1.0f - u) * 4.0f);
             float y = (float)GetScreenHeight() * 0.27f - (1.0f - Lim01TM(u * 5.0f)) * 20.0f * escala;
+            // Anuncio breve: el estado de cada etiqueta (A FAVOR / EN CONTRA)
+            // y las flechas de los mastiles ya dicen cuando trepar.
             DibujarTextoMundoContornoUI("¡OLEAJE!", (float)GetScreenWidth() * 0.5f, y, UI_TEXTO_GRANDE, Color{ 150, 230, 255, 255 }, a);
-            DibujarTextoMundoContornoUI("TREPÁ CUANDO TU MÁSTIL SE INCLINE PARA TU LADO", (float)GetScreenWidth() * 0.5f, y + 34.0f * escala, UI_TEXTO, Color{ 255, 244, 220, 255 }, a);
         }
     }
 }
