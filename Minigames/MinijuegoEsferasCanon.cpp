@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModeloJugadorCompartido.h"
@@ -1509,13 +1510,11 @@ static float NieblaE(Vector3 p)
 // en lugar de mandarlos a rlgl.
 struct GrabacionE
 {
-    bool activa = false;
+    GrabadorMalla malla;
     int modo = RL_TRIANGLES;
     int enQuad = 0;
     Vector3 quad[4]{};
     Color quadColor[4]{};
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
 };
 
 static GrabacionE g_grabacionE;
@@ -1523,7 +1522,7 @@ static GrabacionE g_grabacionE;
 
 static void BeginE(int modo)
 {
-    if (g_grabacionE.activa)
+    if (g_grabacionE.malla.activa)
     {
         g_grabacionE.modo = modo;
         g_grabacionE.enQuad = 0;
@@ -1536,7 +1535,7 @@ static void BeginE(int modo)
 
 static void EndE()
 {
-    if (!g_grabacionE.activa)
+    if (!g_grabacionE.malla.activa)
     {
         rlEnd();
     }
@@ -1545,19 +1544,13 @@ static void EndE()
 
 static void GrabarVerticeE(Vector3 p, Color c)
 {
-    g_grabacionE.posiciones.push_back(p.x);
-    g_grabacionE.posiciones.push_back(p.y);
-    g_grabacionE.posiciones.push_back(p.z);
-    g_grabacionE.colores.push_back(c.r);
-    g_grabacionE.colores.push_back(c.g);
-    g_grabacionE.colores.push_back(c.b);
-    g_grabacionE.colores.push_back(c.a);
+    GrabarVerticeMalla(g_grabacionE.malla, p, c);
 }
 
 
 static Color TinteE(Color color, Vector3 p, float emisivo = 0.0f)
 {
-    if (g_grabacionE.activa)
+    if (g_grabacionE.malla.activa)
     {
         return color;
     }
@@ -1591,7 +1584,7 @@ static Color IluminarE(Color c, Vector3 n)
 
 static void VerticeE(Vector3 p, Color color)
 {
-    if (g_grabacionE.activa)
+    if (g_grabacionE.malla.activa)
     {
         if (g_grabacionE.modo == RL_QUADS)
         {
@@ -4198,50 +4191,14 @@ static const char* FS_NIEBLA_E =
 
 static void EmpezarGrabacionE()
 {
-    g_grabacionE.activa = true;
     g_grabacionE.enQuad = 0;
-    g_grabacionE.posiciones.clear();
-    g_grabacionE.colores.clear();
+    EmpezarGrabacionMalla(g_grabacionE.malla);
 }
 
 
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
 static bool TerminarGrabacionE(Mesh& malla)
 {
-    g_grabacionE.activa = false;
-    int n = (int)(g_grabacionE.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabacionE.posiciones.clear();
-        g_grabacionE.colores.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabacionE.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabacionE.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = 0.0f;
-
-    UploadMesh(&malla, false);
-    g_grabacionE.posiciones.clear();
-    g_grabacionE.colores.clear();
-    return true;
-}
-
-
-static void LiberarMallaHornoE(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
+    return TerminarGrabacionMalla(g_grabacionE.malla, malla);
 }
 
 
@@ -4250,12 +4207,12 @@ static void LiberarMallasHornoE()
 {
     for (int c = 0; c < TRAMOS_HORNO_E; c++)
     {
-        LiberarMallaHornoE(g_hornoE.tramos[c], g_hornoE.tramoValido[c]);
-        LiberarMallaHornoE(g_hornoE.utileria[c], g_hornoE.utileriaValida[c]);
+        LiberarMallaHorneada(g_hornoE.tramos[c], g_hornoE.tramoValido[c]);
+        LiberarMallaHorneada(g_hornoE.utileria[c], g_hornoE.utileriaValida[c]);
     }
 
-    LiberarMallaHornoE(g_hornoE.global, g_hornoE.globalValido);
-    LiberarMallaHornoE(g_hornoE.arenas, g_hornoE.arenasValidas);
+    LiberarMallaHorneada(g_hornoE.global, g_hornoE.globalValido);
+    LiberarMallaHorneada(g_hornoE.arenas, g_hornoE.arenasValidas);
     g_hornoE.listo = false;
     g_hornoE.clave = -1;
 }
@@ -4813,4 +4770,12 @@ void MinijuegoEsferasCanon::Dibujar(
 const ResultadoMinijuego& MinijuegoEsferasCanon::ObtenerResultado() const
 {
     return resultado;
+}
+
+
+void MinijuegoEsferasCanon::Descargar()
+{
+    LiberarMallasHornoE();
+    LiberarShaderHorneado(g_hornoE.shader);
+    LiberarMaterialHorneado(g_hornoE.material, g_hornoE.shaderListo);
 }

@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModeloJugadorCompartido.h"
@@ -1478,15 +1479,7 @@ void MinijuegoBalsasRapido::Actualizar(
 // sin bruma, 3 follaje que se mece (dato = peso), 4 agua que cae (dato =
 // velocidad). Lo que se arma cada cuadro aplica la misma bruma en CPU.
 
-struct GrabacionBalsas
-{
-    bool activa = false;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-    std::vector<float> datos;
-};
-
-static GrabacionBalsas g_grabB;
+static GrabadorMalla g_grabB;
 static Vector3 g_ojoB = { 0.0f, 11.0f, 15.0f };
 static Vector3 g_derB = { 1.0f, 0.0f, 0.0f };
 static Vector3 g_arribaB = { 0.0f, 1.0f, 0.0f };
@@ -1523,15 +1516,7 @@ static void VB(Vector3 p, Color c)
 {
     if (g_grabB.activa)
     {
-        g_grabB.posiciones.push_back(p.x);
-        g_grabB.posiciones.push_back(p.y);
-        g_grabB.posiciones.push_back(p.z);
-        g_grabB.colores.push_back(c.r);
-        g_grabB.colores.push_back(c.g);
-        g_grabB.colores.push_back(c.b);
-        g_grabB.colores.push_back(c.a);
-        g_grabB.datos.push_back(g_datoB);
-        g_grabB.datos.push_back(g_modoB);
+        GrabarVerticeMalla(g_grabB, p, c, g_datoB, g_modoB);
         return;
     }
 
@@ -1954,56 +1939,17 @@ static const char* FS_HORNO_B =
 
 static void EmpezarGrabacionB()
 {
-    g_grabB.activa = true;
-    g_grabB.posiciones.clear();
-    g_grabB.colores.clear();
-    g_grabB.datos.clear();
+    EmpezarGrabacionMalla(g_grabB);
     g_modoB = 0.0f;
     g_datoB = 0.0f;
 }
 
 
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
 static bool TerminarGrabacionB(Mesh& malla)
 {
-    g_grabB.activa = false;
     g_modoB = 0.0f;
     g_datoB = 0.0f;
-    int n = (int)(g_grabB.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabB.posiciones.clear();
-        g_grabB.colores.clear();
-        g_grabB.datos.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabB.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabB.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = g_grabB.datos[(size_t)i];
-
-    UploadMesh(&malla, false);
-    g_grabB.posiciones.clear();
-    g_grabB.colores.clear();
-    g_grabB.datos.clear();
-    return true;
-}
-
-
-static void LiberarMallaB(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
+    return TerminarGrabacionMalla(g_grabB, malla);
 }
 
 
@@ -2011,11 +1957,11 @@ static void LiberarMallasBalsas()
 {
     for (int c = 0; c < TRAMOS_B; c++)
     {
-        LiberarMallaB(g_hornoB.tramos[c], g_hornoB.tramoValido[c]);
+        LiberarMallaHorneada(g_hornoB.tramos[c], g_hornoB.tramoValido[c]);
     }
 
-    LiberarMallaB(g_hornoB.lejos, g_hornoB.lejosValido);
-    LiberarMallaB(g_hornoB.cielo, g_hornoB.cieloValido);
+    LiberarMallaHorneada(g_hornoB.lejos, g_hornoB.lejosValido);
+    LiberarMallaHorneada(g_hornoB.cielo, g_hornoB.cieloValido);
     g_hornoB.listo = false;
     g_hornoB.clave = -1;
 }
@@ -4516,3 +4462,11 @@ const ResultadoMinijuego& MinijuegoBalsasRapido::ObtenerResultado() const
 }
 
 
+
+
+void MinijuegoBalsasRapido::Descargar()
+{
+    LiberarMallasBalsas();
+    LiberarShaderHorneado(g_hornoB.shader);
+    LiberarMaterialHorneado(g_hornoB.material, g_hornoB.shaderListo);
+}

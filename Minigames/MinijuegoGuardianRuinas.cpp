@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModeloJugadorCompartido.h"
@@ -1194,14 +1195,7 @@ static Color VariarGR(Color c, int indice, int semilla, float amplitud)
 // Primitivas: lotes de triangulos o grabacion para hornear
 //--------------------------------------------------
 
-struct GrabacionGR
-{
-    bool activa = false;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-};
-
-static GrabacionGR g_grabGR;
+static GrabadorMalla g_grabGR;
 static Vector3 g_ojoGR = OJO_GR;
 static Vector3 g_derGR = { 1.0f, 0.0f, 0.0f };
 static Vector3 g_arribaGR = { 0.0f, 1.0f, 0.0f };
@@ -1226,13 +1220,7 @@ static void VGR(Vector3 p, Color c)
 {
     if (g_grabGR.activa)
     {
-        g_grabGR.posiciones.push_back(p.x);
-        g_grabGR.posiciones.push_back(p.y);
-        g_grabGR.posiciones.push_back(p.z);
-        g_grabGR.colores.push_back(c.r);
-        g_grabGR.colores.push_back(c.g);
-        g_grabGR.colores.push_back(c.b);
-        g_grabGR.colores.push_back(c.a);
+        GrabarVerticeMalla(g_grabGR, p, c);
         return;
     }
 
@@ -1569,60 +1557,12 @@ struct HornoGR
 static HornoGR g_hornoGR;
 
 
-static void EmpezarGrabacionGR()
-{
-    g_grabGR.activa = true;
-    g_grabGR.posiciones.clear();
-    g_grabGR.colores.clear();
-}
-
-
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
-static bool TerminarGrabacionGR(Mesh& malla)
-{
-    g_grabGR.activa = false;
-    int n = (int)(g_grabGR.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabGR.posiciones.clear();
-        g_grabGR.colores.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabGR.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabGR.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = 0.0f;
-
-    UploadMesh(&malla, false);
-    g_grabGR.posiciones.clear();
-    g_grabGR.colores.clear();
-    return true;
-}
-
-
-static void LiberarMallaGR(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
-}
-
-
 static void LiberarMallasGR()
 {
-    LiberarMallaGR(g_hornoGR.cielo, g_hornoGR.cieloValido);
-    LiberarMallaGR(g_hornoGR.lejos, g_hornoGR.lejosValido);
-    LiberarMallaGR(g_hornoGR.mundo, g_hornoGR.mundoValido);
-    LiberarMallaGR(g_hornoGR.luz, g_hornoGR.luzValida);
+    LiberarMallaHorneada(g_hornoGR.cielo, g_hornoGR.cieloValido);
+    LiberarMallaHorneada(g_hornoGR.lejos, g_hornoGR.lejosValido);
+    LiberarMallaHorneada(g_hornoGR.mundo, g_hornoGR.mundoValido);
+    LiberarMallaHorneada(g_hornoGR.luz, g_hornoGR.luzValida);
     g_hornoGR.listo = false;
     g_hornoGR.clave = -1;
 }
@@ -1645,11 +1585,7 @@ static void HornearGR()
 
     LiberarMallasGR();
 
-    if (!g_hornoGR.materialListo)
-    {
-        g_hornoGR.material = LoadMaterialDefault();
-        g_hornoGR.materialListo = true;
-    }
+    AsegurarMaterialHorneado(g_hornoGR.material, g_hornoGR.materialListo);
 
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;
     int paso = CalidadDecoracion() == CALIDAD_ALTA ? 1 : 2;
@@ -1658,25 +1594,25 @@ static void HornearGR()
     // El cielo se graba relativo al ojo y sin bruma.
     g_ojoGR = { 0.0f, 0.0f, 0.0f };
     g_emisGR = 1.0f;
-    EmpezarGrabacionGR();
+    EmpezarGrabacionMalla(g_grabGR);
     CieloEstaticoGR(decoracion);
-    g_hornoGR.cieloValido = TerminarGrabacionGR(g_hornoGR.cielo);
+    g_hornoGR.cieloValido = TerminarGrabacionMalla(g_grabGR, g_hornoGR.cielo);
     g_emisGR = 0.0f;
     g_ojoGR = OJO_GR;
 
-    EmpezarGrabacionGR();
+    EmpezarGrabacionMalla(g_grabGR);
     LejaniaEstaticaGR(decoracion, paso);
-    g_hornoGR.lejosValido = TerminarGrabacionGR(g_hornoGR.lejos);
+    g_hornoGR.lejosValido = TerminarGrabacionMalla(g_grabGR, g_hornoGR.lejos);
 
-    EmpezarGrabacionGR();
+    EmpezarGrabacionMalla(g_grabGR);
     MundoEstaticoGR(decoracion, paso);
-    g_hornoGR.mundoValido = TerminarGrabacionGR(g_hornoGR.mundo);
+    g_hornoGR.mundoValido = TerminarGrabacionMalla(g_grabGR, g_hornoGR.mundo);
 
     if (CalidadEfectos() != CALIDAD_BAJA)
     {
-        EmpezarGrabacionGR();
+        EmpezarGrabacionMalla(g_grabGR);
         LuzEstaticaGR(decoracion);
-        g_hornoGR.luzValida = TerminarGrabacionGR(g_hornoGR.luz);
+        g_hornoGR.luzValida = TerminarGrabacionMalla(g_grabGR, g_hornoGR.luz);
     }
 
     g_ojoGR = ojo;
@@ -4170,4 +4106,11 @@ void MinijuegoGuardianRuinas::Dibujar(
 const ResultadoMinijuego& MinijuegoGuardianRuinas::ObtenerResultado() const
 {
     return resultado;
+}
+
+
+void MinijuegoGuardianRuinas::Descargar()
+{
+    LiberarMallasGR();
+    LiberarMaterialHorneado(g_hornoGR.material, g_hornoGR.materialListo);
 }

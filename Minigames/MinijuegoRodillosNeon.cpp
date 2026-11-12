@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/ModeloJugadorCompartido.h"
 #include "Minigames/ModelosEscenariosRetro3D.h"
@@ -1240,14 +1241,7 @@ static float MitadFilaR(int n)
 // Emision de triangulos (inmediata o grabada en malla)
 //--------------------------------------------------
 
-struct GrabacionR
-{
-    bool activa = false;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-};
-
-static GrabacionR g_grabR;
+static GrabadorMalla g_grabR;
 static Vector3 g_ojoR = { 0.0f, 7.0f, 24.0f };
 static float g_emisR = 0.0f;        // 1 = superficie luminosa: casi no la tapa la bruma
 static Vector3 g_derR = { 1.0f, 0.0f, 0.0f };   // ejes de pantalla (billboards)
@@ -1271,13 +1265,7 @@ static void VR(Vector3 p, Color c)
 {
     if (g_grabR.activa)
     {
-        g_grabR.posiciones.push_back(p.x);
-        g_grabR.posiciones.push_back(p.y);
-        g_grabR.posiciones.push_back(p.z);
-        g_grabR.colores.push_back(c.r);
-        g_grabR.colores.push_back(c.g);
-        g_grabR.colores.push_back(c.b);
-        g_grabR.colores.push_back(c.a);
+        GrabarVerticeMalla(g_grabR, p, c);
         return;
     }
 
@@ -2632,58 +2620,10 @@ struct HornoSalaR
 static HornoSalaR g_hornoR;
 
 
-static void EmpezarGrabacionR()
-{
-    g_grabR.activa = true;
-    g_grabR.posiciones.clear();
-    g_grabR.colores.clear();
-}
-
-
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
-static bool TerminarGrabacionR(Mesh& malla)
-{
-    g_grabR.activa = false;
-    int n = (int)(g_grabR.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabR.posiciones.clear();
-        g_grabR.colores.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabR.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabR.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = 0.0f;
-
-    UploadMesh(&malla, false);
-    g_grabR.posiciones.clear();
-    g_grabR.colores.clear();
-    return true;
-}
-
-
-static void LiberarMallaR(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
-}
-
-
 static void LiberarMallasSalaRodillos()
 {
-    LiberarMallaR(g_hornoR.suelo, g_hornoR.sueloValido);
-    LiberarMallaR(g_hornoR.sala, g_hornoR.salaValida);
+    LiberarMallaHorneada(g_hornoR.suelo, g_hornoR.sueloValido);
+    LiberarMallaHorneada(g_hornoR.sala, g_hornoR.salaValida);
     g_hornoR.listo = false;
     g_hornoR.clave = -1;
 }
@@ -2707,21 +2647,17 @@ static void HornearSalaR(int n)
 
     LiberarMallasSalaRodillos();
 
-    if (!g_hornoR.materialListo)
-    {
-        g_hornoR.material = LoadMaterialDefault();
-        g_hornoR.materialListo = true;
-    }
+    AsegurarMaterialHorneado(g_hornoR.material, g_hornoR.materialListo);
 
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;
     bool sombras = CalidadSombras() != CALIDAD_BAJA;
     int paso = CalidadDecoracion() == CALIDAD_ALTA ? 1 : 2;
 
-    EmpezarGrabacionR();
+    EmpezarGrabacionMalla(g_grabR);
     SueloSalaR(n, decoracion, sombras);
-    g_hornoR.sueloValido = TerminarGrabacionR(g_hornoR.suelo);
+    g_hornoR.sueloValido = TerminarGrabacionMalla(g_grabR, g_hornoR.suelo);
 
-    EmpezarGrabacionR();
+    EmpezarGrabacionMalla(g_grabR);
     ParedesSalaR(decoracion);
     TechoSalaR(n, decoracion);
 
@@ -2736,7 +2672,7 @@ static void HornearSalaR(int n)
         GabineteR(XMaquinaR(k, n));
     }
 
-    g_hornoR.salaValida = TerminarGrabacionR(g_hornoR.sala);
+    g_hornoR.salaValida = TerminarGrabacionMalla(g_grabR, g_hornoR.sala);
     g_hornoR.clave = clave;
     g_hornoR.listo = true;
 }
@@ -4108,4 +4044,11 @@ void MinijuegoRodillosNeon::Dibujar(
 const ResultadoMinijuego& MinijuegoRodillosNeon::ObtenerResultado() const
 {
     return resultado;
+}
+
+
+void MinijuegoRodillosNeon::Descargar()
+{
+    LiberarMallasSalaRodillos();
+    LiberarMaterialHorneado(g_hornoR.material, g_hornoR.materialListo);
 }

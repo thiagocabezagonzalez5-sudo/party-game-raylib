@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModeloJugadorCompartido.h"
@@ -1256,14 +1257,7 @@ static float Ruido01AG(int indice, int semilla)
 }
 
 
-struct GrabacionAG
-{
-    bool activa = false;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-};
-
-static GrabacionAG g_grabAG;
+static GrabadorMalla g_grabAG;
 static Vector3 g_ojoAG = OJO_AG;           // bruma: siempre desde la camara final
 static Vector3 g_derAG = { 1.0f, 0.0f, 0.0f };
 static Vector3 g_arribaAG = { 0.0f, 1.0f, 0.0f };
@@ -1333,13 +1327,7 @@ static void VAG(Vector3 p, Color c)
 {
     if (g_grabAG.activa)
     {
-        g_grabAG.posiciones.push_back(p.x);
-        g_grabAG.posiciones.push_back(p.y);
-        g_grabAG.posiciones.push_back(p.z);
-        g_grabAG.colores.push_back(c.r);
-        g_grabAG.colores.push_back(c.g);
-        g_grabAG.colores.push_back(c.b);
-        g_grabAG.colores.push_back(c.a);
+        GrabarVerticeMalla(g_grabAG, p, c);
         return;
     }
 
@@ -1643,59 +1631,11 @@ struct HornoAG
 static HornoAG g_hornoAG;
 
 
-static void EmpezarGrabacionAG()
-{
-    g_grabAG.activa = true;
-    g_grabAG.posiciones.clear();
-    g_grabAG.colores.clear();
-}
-
-
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
-static bool TerminarGrabacionAG(Mesh& malla)
-{
-    g_grabAG.activa = false;
-    int n = (int)(g_grabAG.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabAG.posiciones.clear();
-        g_grabAG.colores.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabAG.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabAG.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = 0.0f;
-
-    UploadMesh(&malla, false);
-    g_grabAG.posiciones.clear();
-    g_grabAG.colores.clear();
-    return true;
-}
-
-
-static void LiberarMallaAG(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
-}
-
-
 static void LiberarMallasGlobo()
 {
-    LiberarMallaAG(g_hornoAG.fondo, g_hornoAG.fondoValido);
-    LiberarMallaAG(g_hornoAG.suelo, g_hornoAG.sueloValido);
-    LiberarMallaAG(g_hornoAG.escena, g_hornoAG.escenaValida);
+    LiberarMallaHorneada(g_hornoAG.fondo, g_hornoAG.fondoValido);
+    LiberarMallaHorneada(g_hornoAG.suelo, g_hornoAG.sueloValido);
+    LiberarMallaHorneada(g_hornoAG.escena, g_hornoAG.escenaValida);
     g_hornoAG.listo = false;
     g_hornoAG.clave = -1;
 }
@@ -1723,11 +1663,7 @@ static void HornearAG()
 
     LiberarMallasGlobo();
 
-    if (!g_hornoAG.materialListo)
-    {
-        g_hornoAG.material = LoadMaterialDefault();
-        g_hornoAG.materialListo = true;
-    }
+    AsegurarMaterialHorneado(g_hornoAG.material, g_hornoAG.materialListo);
 
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;
     bool sombras = CalidadSombras() != CALIDAD_BAJA;
@@ -1735,17 +1671,17 @@ static void HornearAG()
     Vector3 ojo = g_ojoAG;
     g_ojoAG = OJO_AG;
 
-    EmpezarGrabacionAG();
+    EmpezarGrabacionMalla(g_grabAG);
     FondoEstaticoAG(decoracion, paso);
-    g_hornoAG.fondoValido = TerminarGrabacionAG(g_hornoAG.fondo);
+    g_hornoAG.fondoValido = TerminarGrabacionMalla(g_grabAG, g_hornoAG.fondo);
 
-    EmpezarGrabacionAG();
+    EmpezarGrabacionMalla(g_grabAG);
     SueloEstaticoAG(decoracion, sombras);
-    g_hornoAG.sueloValido = TerminarGrabacionAG(g_hornoAG.suelo);
+    g_hornoAG.sueloValido = TerminarGrabacionMalla(g_grabAG, g_hornoAG.suelo);
 
-    EmpezarGrabacionAG();
+    EmpezarGrabacionMalla(g_grabAG);
     EscenaEstaticaAG(decoracion, paso);
-    g_hornoAG.escenaValida = TerminarGrabacionAG(g_hornoAG.escena);
+    g_hornoAG.escenaValida = TerminarGrabacionMalla(g_grabAG, g_hornoAG.escena);
 
     g_ojoAG = ojo;
     g_hornoAG.clave = clave;
@@ -3770,4 +3706,11 @@ static Vector3 PosicionGloboVisual(const AutoGlobo& a, int k, float tiempo, int 
 const ResultadoMinijuego& MinijuegoAutosGlobo::ObtenerResultado() const
 {
     return resultado;
+}
+
+
+void MinijuegoAutosGlobo::Descargar()
+{
+    LiberarMallasGlobo();
+    LiberarMaterialHorneado(g_hornoAG.material, g_hornoAG.materialListo);
 }

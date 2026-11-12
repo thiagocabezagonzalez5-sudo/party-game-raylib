@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModeloJugadorCompartido.h"
@@ -843,13 +844,6 @@ static Color VariarT(Color c, int indice, int semilla, float amplitud)
 // Lote de triangulos (inmediato o grabado para hornear)
 //--------------------------------------------------
 
-struct GrabacionTuberias
-{
-    bool activa = false;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-};
-
 struct LuzHorneadaT
 {
     Vector3 p;
@@ -859,7 +853,7 @@ struct LuzHorneadaT
 
 static const int MAX_LUCES_HORNEADAS_T = 12;
 
-static GrabacionTuberias g_grabT;
+static GrabadorMalla g_grabT;
 static Vector3 g_ojoT = { 0.0f, 9.2f, 31.0f };    // camara final (calima)
 static Vector3 g_derT = { 1.0f, 0.0f, 0.0f };
 static Vector3 g_arribaT = { 0.0f, 1.0f, 0.0f };
@@ -911,13 +905,7 @@ static void VT(Vector3 p, Color c)
 {
     if (g_grabT.activa)
     {
-        g_grabT.posiciones.push_back(p.x);
-        g_grabT.posiciones.push_back(p.y);
-        g_grabT.posiciones.push_back(p.z);
-        g_grabT.colores.push_back(c.r);
-        g_grabT.colores.push_back(c.g);
-        g_grabT.colores.push_back(c.b);
-        g_grabT.colores.push_back(c.a);
+        GrabarVerticeMalla(g_grabT, p, c);
         return;
     }
 
@@ -1247,58 +1235,10 @@ struct HornoTuberias
 static HornoTuberias g_hornoT;
 
 
-static void EmpezarGrabacionT()
-{
-    g_grabT.activa = true;
-    g_grabT.posiciones.clear();
-    g_grabT.colores.clear();
-}
-
-
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
-static bool TerminarGrabacionT(Mesh& malla)
-{
-    g_grabT.activa = false;
-    int n = (int)(g_grabT.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabT.posiciones.clear();
-        g_grabT.colores.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabT.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabT.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = 0.0f;
-
-    UploadMesh(&malla, false);
-    g_grabT.posiciones.clear();
-    g_grabT.colores.clear();
-    return true;
-}
-
-
-static void LiberarMallaT(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
-}
-
-
 static void LiberarMallasTuberias()
 {
-    LiberarMallaT(g_hornoT.escena, g_hornoT.escenaValida);
-    LiberarMallaT(g_hornoT.tubos, g_hornoT.tubosValida);
+    LiberarMallaHorneada(g_hornoT.escena, g_hornoT.escenaValida);
+    LiberarMallaHorneada(g_hornoT.tubos, g_hornoT.tubosValida);
     g_hornoT.claveEscena = -1;
     g_hornoT.claveTubos = 0;
 }
@@ -1306,11 +1246,7 @@ static void LiberarMallasTuberias()
 
 static void AsegurarMaterialT()
 {
-    if (!g_hornoT.materialListo)
-    {
-        g_hornoT.material = LoadMaterialDefault();
-        g_hornoT.materialListo = true;
-    }
+    AsegurarMaterialHorneado(g_hornoT.material, g_hornoT.materialListo);
 }
 
 
@@ -1684,12 +1620,12 @@ static void HornearTubosT(const MinijuegoTuberiasDesierto& m)
 
     if ((g_hornoT.tubosValida && g_hornoT.claveTubos == clave) || !IsWindowReady()) return;
 
-    LiberarMallaT(g_hornoT.tubos, g_hornoT.tubosValida);
+    LiberarMallaHorneada(g_hornoT.tubos, g_hornoT.tubosValida);
     AsegurarMaterialT();
-    EmpezarGrabacionT();
+    EmpezarGrabacionMalla(g_grabT);
     ColectorT(m);
     TuberiasEstaticasT(m, CalidadDecoracion() != CALIDAD_BAJA);
-    g_hornoT.tubosValida = TerminarGrabacionT(g_hornoT.tubos);
+    g_hornoT.tubosValida = TerminarGrabacionMalla(g_grabT, g_hornoT.tubos);
     g_hornoT.claveTubos = clave;
 }
 
@@ -2530,7 +2466,7 @@ static void HornearEscenaT()
 
     if ((g_hornoT.escenaValida && g_hornoT.claveEscena == clave) || !IsWindowReady()) return;
 
-    LiberarMallaT(g_hornoT.escena, g_hornoT.escenaValida);
+    LiberarMallaHorneada(g_hornoT.escena, g_hornoT.escenaValida);
     AsegurarMaterialT();
 
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;
@@ -2541,9 +2477,9 @@ static void HornearEscenaT()
     g_lucesT[g_cantidadLucesT++] = { { -11.6f, 2.2f, 5.6f }, 5.0f, Color{ 150, 80, 30, 255 } };
     g_lucesT[g_cantidadLucesT++] = { { 11.6f, 2.2f, 5.6f }, 5.0f, Color{ 150, 80, 30, 255 } };
 
-    EmpezarGrabacionT();
+    EmpezarGrabacionMalla(g_grabT);
     EscenaEstaticaT(decoracion, paso);
-    g_hornoT.escenaValida = TerminarGrabacionT(g_hornoT.escena);
+    g_hornoT.escenaValida = TerminarGrabacionMalla(g_grabT, g_hornoT.escena);
     g_hornoT.claveEscena = clave;
     g_cantidadLucesT = 0;
 }
@@ -3760,3 +3696,10 @@ const ResultadoMinijuego& MinijuegoTuberiasDesierto::ObtenerResultado() const
 }
 
 
+
+
+void MinijuegoTuberiasDesierto::Descargar()
+{
+    LiberarMallasTuberias();
+    LiberarMaterialHorneado(g_hornoT.material, g_hornoT.materialListo);
+}

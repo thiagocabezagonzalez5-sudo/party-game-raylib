@@ -132,4 +132,8 @@ struct MinijuegoBanqueteTurbo
     ) const;
 
     const ResultadoMinijuego& ObtenerResultado() const;
+
+    // Libera lo horneado en la GPU (mallas, material y shader); se rehace
+    // solo la proxima vez que se dibuje.
+    void Descargar();
 };

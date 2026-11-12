@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModeloJugadorCompartido.h"
@@ -1448,14 +1449,7 @@ static float SuaveAz(float u)
 // Emision de triangulos (inmediata o grabada en malla)
 //--------------------------------------------------
 
-struct GrabacionAz
-{
-    bool activa = false;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-};
-
-static GrabacionAz g_grabAz;
+static GrabadorMalla g_grabAz;
 static Vector3 g_ojoAz = OJO_AZ;
 static float g_emisAz = 0.0f;        // 1 = luminoso: la bruma casi no lo tapa
 static bool g_nieblaAz = true;        // false: color exacto
@@ -1494,13 +1488,7 @@ static void VAz(Vector3 p, Color c)
 {
     if (g_grabAz.activa)
     {
-        g_grabAz.posiciones.push_back(p.x);
-        g_grabAz.posiciones.push_back(p.y);
-        g_grabAz.posiciones.push_back(p.z);
-        g_grabAz.colores.push_back(c.r);
-        g_grabAz.colores.push_back(c.g);
-        g_grabAz.colores.push_back(c.b);
-        g_grabAz.colores.push_back(c.a);
+        GrabarVerticeMalla(g_grabAz, p, c);
         return;
     }
 
@@ -1829,53 +1817,11 @@ struct HornoAz
 static HornoAz g_hornoAz;
 
 
-static void EmpezarGrabacionAz()
-{
-    g_grabAz.activa = true;
-    g_grabAz.posiciones.clear();
-    g_grabAz.colores.clear();
-}
-
-
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
-static bool TerminarGrabacionAz(Mesh& malla)
-{
-    g_grabAz.activa = false;
-    int n = (int)(g_grabAz.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabAz.posiciones.clear();
-        g_grabAz.colores.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabAz.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabAz.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = 0.0f;
-
-    UploadMesh(&malla, false);
-    g_grabAz.posiciones.clear();
-    g_grabAz.colores.clear();
-    return true;
-}
-
-
 static void LiberarMallasAzucar()
 {
     for (int i = 0; i < CANTIDAD_MALLAS_AZ; i++)
     {
-        if (g_hornoAz.validas[i]) UnloadMesh(g_hornoAz.mallas[i]);
-        g_hornoAz.validas[i] = false;
-        g_hornoAz.mallas[i] = {};
+        LiberarMallaHorneada(g_hornoAz.mallas[i], g_hornoAz.validas[i]);
     }
 
     g_hornoAz.listo = false;
@@ -3171,43 +3117,39 @@ static void HornearAz()
 
     LiberarMallasAzucar();
 
-    if (!g_hornoAz.materialListo)
-    {
-        g_hornoAz.material = LoadMaterialDefault();
-        g_hornoAz.materialListo = true;
-    }
+    AsegurarMaterialHorneado(g_hornoAz.material, g_hornoAz.materialListo);
 
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;
     bool sombras = CalidadSombras() != CALIDAD_BAJA;
     g_ojoAz = OJO_AZ;
 
-    EmpezarGrabacionAz();
+    EmpezarGrabacionMalla(g_grabAz);
     BaseAz();
-    g_hornoAz.validas[MALLA_AZ_BASE] = TerminarGrabacionAz(g_hornoAz.mallas[MALLA_AZ_BASE]);
+    g_hornoAz.validas[MALLA_AZ_BASE] = TerminarGrabacionMalla(g_grabAz, g_hornoAz.mallas[MALLA_AZ_BASE]);
 
-    EmpezarGrabacionAz();
+    EmpezarGrabacionMalla(g_grabAz);
     SueloAz(decoracion, sombras);
-    g_hornoAz.validas[MALLA_AZ_SUELO] = TerminarGrabacionAz(g_hornoAz.mallas[MALLA_AZ_SUELO]);
+    g_hornoAz.validas[MALLA_AZ_SUELO] = TerminarGrabacionMalla(g_grabAz, g_hornoAz.mallas[MALLA_AZ_SUELO]);
 
-    EmpezarGrabacionAz();
+    EmpezarGrabacionMalla(g_grabAz);
     FondoAz(decoracion);
-    g_hornoAz.validas[MALLA_AZ_FONDO] = TerminarGrabacionAz(g_hornoAz.mallas[MALLA_AZ_FONDO]);
+    g_hornoAz.validas[MALLA_AZ_FONDO] = TerminarGrabacionMalla(g_grabAz, g_hornoAz.mallas[MALLA_AZ_FONDO]);
 
-    EmpezarGrabacionAz();
+    EmpezarGrabacionMalla(g_grabAz);
     UtileriaAz(decoracion);
-    g_hornoAz.validas[MALLA_AZ_UTILERIA] = TerminarGrabacionAz(g_hornoAz.mallas[MALLA_AZ_UTILERIA]);
+    g_hornoAz.validas[MALLA_AZ_UTILERIA] = TerminarGrabacionMalla(g_grabAz, g_hornoAz.mallas[MALLA_AZ_UTILERIA]);
 
-    EmpezarGrabacionAz();
+    EmpezarGrabacionMalla(g_grabAz);
     CieloAz();
-    g_hornoAz.validas[MALLA_AZ_CIELO] = TerminarGrabacionAz(g_hornoAz.mallas[MALLA_AZ_CIELO]);
+    g_hornoAz.validas[MALLA_AZ_CIELO] = TerminarGrabacionMalla(g_grabAz, g_hornoAz.mallas[MALLA_AZ_CIELO]);
 
     if (decoracion)
     {
         for (int k = 0; k < 3; k++)
         {
-            EmpezarGrabacionAz();
+            EmpezarGrabacionMalla(g_grabAz);
             NubeAz(k * 7 + 3, 1.0f);
-            g_hornoAz.validas[MALLA_AZ_NUBE_A + k] = TerminarGrabacionAz(g_hornoAz.mallas[MALLA_AZ_NUBE_A + k]);
+            g_hornoAz.validas[MALLA_AZ_NUBE_A + k] = TerminarGrabacionMalla(g_grabAz, g_hornoAz.mallas[MALLA_AZ_NUBE_A + k]);
         }
     }
 
@@ -4118,4 +4060,11 @@ const ResultadoMinijuego&
 MinijuegoBolasAzucar::ObtenerResultado() const
 {
     return resultado;
+}
+
+
+void MinijuegoBolasAzucar::Descargar()
+{
+    LiberarMallasAzucar();
+    LiberarMaterialHorneado(g_hornoAz.material, g_hornoAz.materialListo);
 }

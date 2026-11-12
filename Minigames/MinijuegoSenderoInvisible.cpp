@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModeloJugadorCompartido.h"
@@ -951,13 +952,6 @@ static Color VariarS(Color c, int indice, int semilla, float amplitud)
 // Lote de triangulos (inmediato o grabado para hornear)
 //--------------------------------------------------
 
-struct GrabacionSendero
-{
-    bool activa = false;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-};
-
 struct LuzHorneadaS
 {
     Vector3 p;
@@ -967,7 +961,7 @@ struct LuzHorneadaS
 
 static const int MAX_LUCES_HORNEADAS_S = 24;
 
-static GrabacionSendero g_grabS;
+static GrabadorMalla g_grabS;
 static Vector3 g_ojoS = { 0.0f, 20.0f, 30.0f };   // camara final (bruma)
 static float g_distOjoS = 36.0f;
 static Vector3 g_derS = { 1.0f, 0.0f, 0.0f };
@@ -1024,13 +1018,7 @@ static void VS(Vector3 p, Color c)
 {
     if (g_grabS.activa)
     {
-        g_grabS.posiciones.push_back(p.x);
-        g_grabS.posiciones.push_back(p.y);
-        g_grabS.posiciones.push_back(p.z);
-        g_grabS.colores.push_back(c.r);
-        g_grabS.colores.push_back(c.g);
-        g_grabS.colores.push_back(c.b);
-        g_grabS.colores.push_back(c.a);
+        GrabarVerticeMalla(g_grabS, p, c);
         return;
     }
 
@@ -1328,58 +1316,10 @@ struct HornoSendero
 static HornoSendero g_hornoS;
 
 
-static void EmpezarGrabacionS()
-{
-    g_grabS.activa = true;
-    g_grabS.posiciones.clear();
-    g_grabS.colores.clear();
-}
-
-
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
-static bool TerminarGrabacionS(Mesh& malla)
-{
-    g_grabS.activa = false;
-    int n = (int)(g_grabS.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabS.posiciones.clear();
-        g_grabS.colores.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabS.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabS.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = 0.0f;
-
-    UploadMesh(&malla, false);
-    g_grabS.posiciones.clear();
-    g_grabS.colores.clear();
-    return true;
-}
-
-
-static void LiberarMallaS(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
-}
-
-
 static void LiberarMallasSendero()
 {
-    LiberarMallaS(g_hornoS.escena, g_hornoS.escenaValida);
-    LiberarMallaS(g_hornoS.losas, g_hornoS.losasValida);
+    LiberarMallaHorneada(g_hornoS.escena, g_hornoS.escenaValida);
+    LiberarMallaHorneada(g_hornoS.losas, g_hornoS.losasValida);
     g_hornoS.claveEscena = -1;
     g_hornoS.claveLosas = 0;
     g_hornoS.losasListas = false;
@@ -1388,11 +1328,7 @@ static void LiberarMallasSendero()
 
 static void AsegurarMaterialS()
 {
-    if (!g_hornoS.materialListo)
-    {
-        g_hornoS.material = LoadMaterialDefault();
-        g_hornoS.materialListo = true;
-    }
+    AsegurarMaterialHorneado(g_hornoS.material, g_hornoS.materialListo);
 }
 
 
@@ -1716,12 +1652,12 @@ static void HornearLosasS(const MinijuegoSenderoInvisible& m, const Participante
 
     if (g_hornoS.losasListas && g_hornoS.claveLosas == clave) return;
 
-    LiberarMallaS(g_hornoS.losas, g_hornoS.losasValida);
+    LiberarMallaHorneada(g_hornoS.losas, g_hornoS.losasValida);
     AsegurarMaterialS();
 
-    EmpezarGrabacionS();
+    EmpezarGrabacionMalla(g_grabS);
     LosasEstaticasS(m, participantes, CalidadDecoracion() != CALIDAD_BAJA);
-    g_hornoS.losasValida = TerminarGrabacionS(g_hornoS.losas);
+    g_hornoS.losasValida = TerminarGrabacionMalla(g_grabS, g_hornoS.losas);
     g_hornoS.claveLosas = clave;
     g_hornoS.losasListas = true;
 }
@@ -2275,7 +2211,7 @@ static void HornearEscenaS(const MinijuegoSenderoInvisible& m)
 
     if ((g_hornoS.escenaValida && g_hornoS.claveEscena == clave) || !IsWindowReady()) return;
 
-    LiberarMallaS(g_hornoS.escena, g_hornoS.escenaValida);
+    LiberarMallaHorneada(g_hornoS.escena, g_hornoS.escenaValida);
     AsegurarMaterialS();
 
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;
@@ -2289,9 +2225,9 @@ static void HornearEscenaS(const MinijuegoSenderoInvisible& m)
         g_lucesS[g_cantidadLucesS++] = { g_farolesS[k].llama, g_farolesS[k].tipo == 1 ? 4.2f : 3.6f, Color{ 60, 150, 100, 255 } };
     }
 
-    EmpezarGrabacionS();
+    EmpezarGrabacionMalla(g_grabS);
     EscenaEstaticaS(m, decoracion, paso);
-    g_hornoS.escenaValida = TerminarGrabacionS(g_hornoS.escena);
+    g_hornoS.escenaValida = TerminarGrabacionMalla(g_grabS, g_hornoS.escena);
     g_hornoS.claveEscena = clave;
     g_cantidadLucesS = 0;
 }
@@ -3864,4 +3800,11 @@ void MinijuegoSenderoInvisible::Dibujar(
 const ResultadoMinijuego& MinijuegoSenderoInvisible::ObtenerResultado() const
 {
     return resultado;
+}
+
+
+void MinijuegoSenderoInvisible::Descargar()
+{
+    LiberarMallasSendero();
+    LiberarMaterialHorneado(g_hornoS.material, g_hornoS.materialListo);
 }

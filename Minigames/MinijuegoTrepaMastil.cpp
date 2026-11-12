@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModeloJugadorCompartido.h"
@@ -797,14 +798,7 @@ static float Ruido01TM(int indice, int semilla)
 }
 
 
-struct GrabacionTM
-{
-    bool activa = false;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-};
-
-static GrabacionTM g_grabTM;
+static GrabadorMalla g_grabTM;
 static Vector3 g_ojoTM = OJO_TM;
 static Vector3 g_derTM = { 1.0f, 0.0f, 0.0f };
 static Vector3 g_arribaTM = { 0.0f, 1.0f, 0.0f };
@@ -873,13 +867,7 @@ static void VTM(Vector3 p, Color c)
 {
     if (g_grabTM.activa)
     {
-        g_grabTM.posiciones.push_back(p.x);
-        g_grabTM.posiciones.push_back(p.y);
-        g_grabTM.posiciones.push_back(p.z);
-        g_grabTM.colores.push_back(c.r);
-        g_grabTM.colores.push_back(c.g);
-        g_grabTM.colores.push_back(c.b);
-        g_grabTM.colores.push_back(c.a);
+        GrabarVerticeMalla(g_grabTM, p, c);
         return;
     }
 
@@ -1216,60 +1204,12 @@ struct HornoTM
 static HornoTM g_hornoTM;
 
 
-static void EmpezarGrabacionTM()
-{
-    g_grabTM.activa = true;
-    g_grabTM.posiciones.clear();
-    g_grabTM.colores.clear();
-}
-
-
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
-static bool TerminarGrabacionTM(Mesh& malla)
-{
-    g_grabTM.activa = false;
-    int n = (int)(g_grabTM.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabTM.posiciones.clear();
-        g_grabTM.colores.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabTM.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabTM.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = 0.0f;
-
-    UploadMesh(&malla, false);
-    g_grabTM.posiciones.clear();
-    g_grabTM.colores.clear();
-    return true;
-}
-
-
-static void LiberarMallaTM(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
-}
-
-
 static void LiberarMallasMastil()
 {
-    LiberarMallaTM(g_hornoTM.cielo, g_hornoTM.cieloValido);
-    LiberarMallaTM(g_hornoTM.costa, g_hornoTM.costaValida);
-    LiberarMallaTM(g_hornoTM.agua, g_hornoTM.aguaValida);
-    LiberarMallaTM(g_hornoTM.barco, g_hornoTM.barcoValido);
+    LiberarMallaHorneada(g_hornoTM.cielo, g_hornoTM.cieloValido);
+    LiberarMallaHorneada(g_hornoTM.costa, g_hornoTM.costaValida);
+    LiberarMallaHorneada(g_hornoTM.agua, g_hornoTM.aguaValida);
+    LiberarMallaHorneada(g_hornoTM.barco, g_hornoTM.barcoValido);
     g_hornoTM.listo = false;
     g_hornoTM.clave = -1;
 }
@@ -1307,11 +1247,7 @@ static void HornearTM(const MinijuegoTrepaMastil& m, int limite)
 
     LiberarMallasMastil();
 
-    if (!g_hornoTM.materialListo)
-    {
-        g_hornoTM.material = LoadMaterialDefault();
-        g_hornoTM.materialListo = true;
-    }
+    AsegurarMaterialHorneado(g_hornoTM.material, g_hornoTM.materialListo);
 
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;
     int paso = CalidadDecoracion() == CALIDAD_ALTA ? 1 : 2;
@@ -1321,23 +1257,23 @@ static void HornearTM(const MinijuegoTrepaMastil& m, int limite)
     // El cielo se graba relativo al ojo y sin bruma.
     g_ojoTM = { 0.0f, 0.0f, 0.0f };
     g_emisTM = 1.0f;
-    EmpezarGrabacionTM();
+    EmpezarGrabacionMalla(g_grabTM);
     CieloEstaticoTM(decoracion);
-    g_hornoTM.cieloValido = TerminarGrabacionTM(g_hornoTM.cielo);
+    g_hornoTM.cieloValido = TerminarGrabacionMalla(g_grabTM, g_hornoTM.cielo);
     g_emisTM = 0.0f;
     g_ojoTM = OJO_TM;
 
-    EmpezarGrabacionTM();
+    EmpezarGrabacionMalla(g_grabTM);
     CostaEstaticaTM(decoracion, paso);
-    g_hornoTM.costaValida = TerminarGrabacionTM(g_hornoTM.costa);
+    g_hornoTM.costaValida = TerminarGrabacionMalla(g_grabTM, g_hornoTM.costa);
 
-    EmpezarGrabacionTM();
+    EmpezarGrabacionMalla(g_grabTM);
     AguaEstaticaTM(decoracion);
-    g_hornoTM.aguaValida = TerminarGrabacionTM(g_hornoTM.agua);
+    g_hornoTM.aguaValida = TerminarGrabacionMalla(g_grabTM, g_hornoTM.agua);
 
-    EmpezarGrabacionTM();
+    EmpezarGrabacionMalla(g_grabTM);
     BarcoEstaticoTM(m, limite, decoracion, paso);
-    g_hornoTM.barcoValido = TerminarGrabacionTM(g_hornoTM.barco);
+    g_hornoTM.barcoValido = TerminarGrabacionMalla(g_grabTM, g_hornoTM.barco);
 
     g_ojoTM = ojo;
     g_hornoTM.clave = clave;
@@ -3750,4 +3686,11 @@ void MinijuegoTrepaMastil::Dibujar(
 const ResultadoMinijuego& MinijuegoTrepaMastil::ObtenerResultado() const
 {
     return resultado;
+}
+
+
+void MinijuegoTrepaMastil::Descargar()
+{
+    LiberarMallasMastil();
+    LiberarMaterialHorneado(g_hornoTM.material, g_hornoTM.materialListo);
 }

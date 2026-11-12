@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModeloJugadorCompartido.h"
@@ -1826,14 +1827,7 @@ static float RuidoSuaveP(float x, float z, float escala, int semilla)
 }
 
 
-struct GrabacionPisoton
-{
-    bool activa = false;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-};
-
-static GrabacionPisoton g_grabP;
+static GrabadorMalla g_grabP;
 static Vector3 g_ojoP = OJO_PISOTON;      // bruma: siempre desde la camara final
 static Vector3 g_camP = OJO_PISOTON;      // camara actual (halos y particulas)
 static Vector3 g_derP = { 1.0f, 0.0f, 0.0f };
@@ -1900,13 +1894,7 @@ static void VP(Vector3 p, Color c)
 {
     if (g_grabP.activa)
     {
-        g_grabP.posiciones.push_back(p.x);
-        g_grabP.posiciones.push_back(p.y);
-        g_grabP.posiciones.push_back(p.z);
-        g_grabP.colores.push_back(c.r);
-        g_grabP.colores.push_back(c.g);
-        g_grabP.colores.push_back(c.b);
-        g_grabP.colores.push_back(c.a);
+        GrabarVerticeMalla(g_grabP, p, c);
         return;
     }
 
@@ -2364,58 +2352,10 @@ struct HornoPisoton
 static HornoPisoton g_hornoP;
 
 
-static void EmpezarGrabacionP()
-{
-    g_grabP.activa = true;
-    g_grabP.posiciones.clear();
-    g_grabP.colores.clear();
-}
-
-
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
-static bool TerminarGrabacionP(Mesh& malla)
-{
-    g_grabP.activa = false;
-    int n = (int)(g_grabP.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabP.posiciones.clear();
-        g_grabP.colores.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabP.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabP.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = 0.0f;
-
-    UploadMesh(&malla, false);
-    g_grabP.posiciones.clear();
-    g_grabP.colores.clear();
-    return true;
-}
-
-
-static void LiberarMallaP(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
-}
-
-
 static void LiberarMallasPisoton()
 {
-    LiberarMallaP(g_hornoP.suelo, g_hornoP.sueloValido);
-    LiberarMallaP(g_hornoP.escena, g_hornoP.escenaValida);
+    LiberarMallaHorneada(g_hornoP.suelo, g_hornoP.sueloValido);
+    LiberarMallaHorneada(g_hornoP.escena, g_hornoP.escenaValida);
     g_hornoP.listo = false;
     g_hornoP.clave = -1;
 }
@@ -2442,11 +2382,7 @@ static void HornearPisoton()
 
     LiberarMallasPisoton();
 
-    if (!g_hornoP.materialListo)
-    {
-        g_hornoP.material = LoadMaterialDefault();
-        g_hornoP.materialListo = true;
-    }
+    AsegurarMaterialHorneado(g_hornoP.material, g_hornoP.materialListo);
 
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;
     bool sombras = CalidadSombras() != CALIDAD_BAJA;
@@ -2454,13 +2390,13 @@ static void HornearPisoton()
     Vector3 ojo = g_ojoP;
     g_ojoP = OJO_PISOTON;
 
-    EmpezarGrabacionP();
+    EmpezarGrabacionMalla(g_grabP);
     SueloEstaticoP(decoracion, sombras);
-    g_hornoP.sueloValido = TerminarGrabacionP(g_hornoP.suelo);
+    g_hornoP.sueloValido = TerminarGrabacionMalla(g_grabP, g_hornoP.suelo);
 
-    EmpezarGrabacionP();
+    EmpezarGrabacionMalla(g_grabP);
     EscenaEstaticaP(decoracion, paso);
-    g_hornoP.escenaValida = TerminarGrabacionP(g_hornoP.escena);
+    g_hornoP.escenaValida = TerminarGrabacionMalla(g_grabP, g_hornoP.escena);
 
     g_ojoP = ojo;
     g_hornoP.clave = clave;
@@ -4364,3 +4300,10 @@ const ResultadoMinijuego& MinijuegoPisotonPlagas::ObtenerResultado() const
     return resultado;
 }
 
+
+
+void MinijuegoPisotonPlagas::Descargar()
+{
+    LiberarMallasPisoton();
+    LiberarMaterialHorneado(g_hornoP.material, g_hornoP.materialListo);
+}

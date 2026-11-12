@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModelosEscenariosRetro3D.h"
@@ -1146,7 +1147,7 @@ static Vector3 CruzPesca(Vector3 a, Vector3 b)
 // de mandarlos a rlgl.
 struct GrabacionPesca
 {
-    bool activa = false;
+    GrabadorMalla malla;     // texcoords = (caustica, modoShader)
     int modo = RL_TRIANGLES;
     int enQuad = 0;
     Vector3 quad[4]{};
@@ -1157,9 +1158,6 @@ struct GrabacionPesca
     Matrix matriz = MatrixIdentity();
     Matrix pila[8]{};
     int profundidad = 0;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-    std::vector<float> causticas;
 };
 
 static GrabacionPesca g_grabacionPesca;
@@ -1175,7 +1173,7 @@ static bool AnimadoPesca() { return g_partePesca != PARTE_PESCA_ESTATICA; }
 
 static void BeginPesca(int modo)
 {
-    if (g_grabacionPesca.activa)
+    if (g_grabacionPesca.malla.activa)
     {
         g_grabacionPesca.modo = modo;
         g_grabacionPesca.enQuad = 0;
@@ -1188,7 +1186,7 @@ static void BeginPesca(int modo)
 
 static void EndPesca()
 {
-    if (!g_grabacionPesca.activa)
+    if (!g_grabacionPesca.malla.activa)
     {
         rlEnd();
     }
@@ -1199,7 +1197,7 @@ static void EmpujarPesca()
 {
     GrabacionPesca& g = g_grabacionPesca;
 
-    if (!g.activa)
+    if (!g.malla.activa)
     {
         rlPushMatrix();
         return;
@@ -1214,7 +1212,7 @@ static void SoltarPesca()
 {
     GrabacionPesca& g = g_grabacionPesca;
 
-    if (!g.activa)
+    if (!g.malla.activa)
     {
         rlPopMatrix();
         return;
@@ -1228,7 +1226,7 @@ static void SoltarPesca()
 // Mismo orden que rlgl: la transformacion nueva se aplica primero.
 static void TrasladarPesca(float x, float y, float z)
 {
-    if (!g_grabacionPesca.activa)
+    if (!g_grabacionPesca.malla.activa)
     {
         rlTranslatef(x, y, z);
         return;
@@ -1240,7 +1238,7 @@ static void TrasladarPesca(float x, float y, float z)
 
 static void RotarPesca(float grados, float x, float y, float z)
 {
-    if (!g_grabacionPesca.activa)
+    if (!g_grabacionPesca.malla.activa)
     {
         rlRotatef(grados, x, y, z);
         return;
@@ -1253,15 +1251,7 @@ static void RotarPesca(float grados, float x, float y, float z)
 static void GrabarVerticePesca(Vector3 p, Color c, float caustica)
 {
     GrabacionPesca& g = g_grabacionPesca;
-    p = Vector3Transform(p, g.matriz);
-    g.posiciones.push_back(p.x);
-    g.posiciones.push_back(p.y);
-    g.posiciones.push_back(p.z);
-    g.colores.push_back(c.r);
-    g.colores.push_back(c.g);
-    g.colores.push_back(c.b);
-    g.colores.push_back(c.a);
-    g.causticas.push_back(caustica);
+    GrabarVerticeMalla(g.malla, Vector3Transform(p, g.matriz), c, caustica, g.modoShader);
 }
 
 
@@ -1269,7 +1259,7 @@ static void GrabarVerticePesca(Vector3 p, Color c, float caustica)
 // grabar la pone el shader por pixel).
 static float CantidadNieblaPesca(Vector3 p)
 {
-    if (g_grabacionPesca.activa)
+    if (g_grabacionPesca.malla.activa)
     {
         return 0.0f;
     }
@@ -1296,7 +1286,7 @@ static void VerticePesca(Vector3 p, Color color)
 {
     GrabacionPesca& g = g_grabacionPesca;
 
-    if (g.activa)
+    if (g.malla.activa)
     {
         float caustica = g.caustica;
         g.caustica = 0.0f;
@@ -2699,7 +2689,7 @@ static Color ColorTerrenoPesca(float r, float a, float y, float t, bool efectos)
         c = MezclaPesca(base, COLOR_AGUA_PESCA, 0.22f + 0.18f * prof);
         c = MezclaPesca(c, COLOR_AGUA_HONDA_PESCA, prof * 0.42f);
 
-        if (efectos && g_grabacionPesca.activa)
+        if (efectos && g_grabacionPesca.malla.activa)
         {
             // Horneado: la caustica animada la dibuja el shader por pixel.
             g_grabacionPesca.caustica = 0.34f * (1.0f - 0.35f * prof);
@@ -4758,74 +4748,32 @@ static HornoPesca g_hornoPesca;
 static void EmpezarGrabacionPesca()
 {
     GrabacionPesca& g = g_grabacionPesca;
-    g.activa = true;
+    EmpezarGrabacionMalla(g.malla);
     g.enQuad = 0;
     g.caustica = 0.0f;
     g.modoShader = 0.0f;
     g.matriz = MatrixIdentity();
     g.profundidad = 0;
-    g.posiciones.clear();
-    g.colores.clear();
-    g.causticas.clear();
 }
 
 
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
 static bool TerminarGrabacionPesca(Mesh& malla)
 {
-    GrabacionPesca& g = g_grabacionPesca;
-    g.activa = false;
-    int n = (int)(g.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    std::memcpy(malla.vertices, g.posiciones.data(), (size_t)n * 3 * sizeof(float));
-    std::memcpy(malla.colors, g.colores.data(), (size_t)n * 4);
-
-    for (int i = 0; i < n; i++)
-    {
-        malla.texcoords[i * 2] = g.causticas[(size_t)i];
-        malla.texcoords[i * 2 + 1] = g.modoShader;
-    }
-
-    UploadMesh(&malla, false);
-    g.posiciones.clear();
-    g.colores.clear();
-    g.causticas.clear();
-    return true;
-}
-
-
-static void LiberarMallaHornoPesca(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
+    return TerminarGrabacionMalla(g_grabacionPesca.malla, malla);
 }
 
 
 // Libera las mallas horneadas (se vuelven a grabar al dibujar).
 static void LiberarMallasPesca()
 {
-    LiberarMallaHornoPesca(g_hornoPesca.decorado, g_hornoPesca.decoradoValido);
-    LiberarMallaHornoPesca(g_hornoPesca.cielo, g_hornoPesca.cieloValido);
-    LiberarMallaHornoPesca(g_hornoPesca.nubes, g_hornoPesca.nubesValidas);
-    LiberarMallaHornoPesca(g_hornoPesca.agua, g_hornoPesca.aguaValida);
+    LiberarMallaHorneada(g_hornoPesca.decorado, g_hornoPesca.decoradoValido);
+    LiberarMallaHorneada(g_hornoPesca.cielo, g_hornoPesca.cieloValido);
+    LiberarMallaHorneada(g_hornoPesca.nubes, g_hornoPesca.nubesValidas);
+    LiberarMallaHorneada(g_hornoPesca.agua, g_hornoPesca.aguaValida);
 
     for (int k = 0; k < CANTIDAD_PALMERAS_PESCA; k++)
     {
-        LiberarMallaHornoPesca(g_hornoPesca.palmeras[k].malla, g_hornoPesca.palmeras[k].valida);
+        LiberarMallaHorneada(g_hornoPesca.palmeras[k].malla, g_hornoPesca.palmeras[k].valida);
     }
 
     g_hornoPesca.listo = false;
@@ -5209,4 +5157,12 @@ void MinijuegoPescaIsla::Dibujar(
 const ResultadoMinijuego& MinijuegoPescaIsla::ObtenerResultado() const
 {
     return resultado;
+}
+
+
+void MinijuegoPescaIsla::Descargar()
+{
+    LiberarMallasPesca();
+    LiberarShaderHorneado(g_hornoPesca.shader);
+    LiberarMaterialHorneado(g_hornoPesca.material, g_hornoPesca.shaderListo);
 }

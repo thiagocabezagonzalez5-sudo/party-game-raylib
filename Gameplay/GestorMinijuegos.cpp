@@ -2281,7 +2281,36 @@ void GestorMinijuegos::ReiniciarJugadoresCompartidos(
 }
 
 
+void GestorMinijuegos::DescargarMinijuego(
+    IdMinijuego id
+)
+{
+    switch (id)
+    {
+        case MINIJUEGO_ESFERAS_CANON: minijuegoEsferasCanon.Descargar(); break;
+        case MINIJUEGO_PESCA_ISLA: minijuegoPescaIsla.Descargar(); break;
+        case MINIJUEGO_RODILLOS_NEON: minijuegoRodillosNeon.Descargar(); break;
+        case MINIJUEGO_BOLAS_AZUCAR: minijuegoBolasAzucar.Descargar(); break;
+        case MINIJUEGO_GRUA_CHATARRA: minijuegoGruaChatarra.Descargar(); break;
+        case MINIJUEGO_PISOTON_PLAGAS: minijuegoPisotonPlagas.Descargar(); break;
+        case MINIJUEGO_BALSAS_RAPIDO: minijuegoBalsasRapido.Descargar(); break;
+        case MINIJUEGO_AUTOS_GLOBO: minijuegoAutosGlobo.Descargar(); break;
+        case MINIJUEGO_SENDERO_INVISIBLE: minijuegoSenderoInvisible.Descargar(); break;
+        case MINIJUEGO_BANQUETE_TURBO: minijuegoBanqueteTurbo.Descargar(); break;
+        case MINIJUEGO_TUBERIAS_DESIERTO: minijuegoTuberiasDesierto.Descargar(); break;
+        case MINIJUEGO_TREPA_MASTIL: minijuegoTrepaMastil.Descargar(); break;
+        case MINIJUEGO_GUARDIAN_RUINAS: minijuegoGuardianRuinas.Descargar(); break;
+        default: break;
+    }
+}
+
+
 void GestorMinijuegos::Descargar()
 {
+    for (int i = 0; i < CANTIDAD_MINIJUEGOS; i++)
+    {
+        DescargarMinijuego(ObtenerIdMinijuegoPorIndice(i));
+    }
+
     minijuego67.Descargar();
 }

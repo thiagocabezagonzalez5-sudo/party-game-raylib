@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModeloJugadorCompartido.h"
@@ -1405,14 +1406,7 @@ static const Vector3 TORRES_GRUA[4] = {
 };
 
 
-struct GrabacionGrua
-{
-    bool activa = false;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-};
-
-static GrabacionGrua g_grabG;
+static GrabadorMalla g_grabG;
 static Vector3 g_ojoG = OJO_GRUA;    // bruma: siempre desde la camara final
 static Vector3 g_camG = OJO_GRUA;    // camara actual (tiras y halos)
 static float g_emisG = 0.0f;          // 1 = superficie luminosa: casi no la tapa la bruma
@@ -1481,13 +1475,7 @@ static void VG(Vector3 p, Color c)
 {
     if (g_grabG.activa)
     {
-        g_grabG.posiciones.push_back(p.x);
-        g_grabG.posiciones.push_back(p.y);
-        g_grabG.posiciones.push_back(p.z);
-        g_grabG.colores.push_back(c.r);
-        g_grabG.colores.push_back(c.g);
-        g_grabG.colores.push_back(c.b);
-        g_grabG.colores.push_back(c.a);
+        GrabarVerticeMalla(g_grabG, p, c);
         return;
     }
 
@@ -1799,58 +1787,10 @@ struct HornoGrua
 static HornoGrua g_hornoG;
 
 
-static void EmpezarGrabacionG()
-{
-    g_grabG.activa = true;
-    g_grabG.posiciones.clear();
-    g_grabG.colores.clear();
-}
-
-
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
-static bool TerminarGrabacionG(Mesh& malla)
-{
-    g_grabG.activa = false;
-    int n = (int)(g_grabG.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabG.posiciones.clear();
-        g_grabG.colores.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabG.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabG.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = 0.0f;
-
-    UploadMesh(&malla, false);
-    g_grabG.posiciones.clear();
-    g_grabG.colores.clear();
-    return true;
-}
-
-
-static void LiberarMallaG(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
-}
-
-
 static void LiberarMallasGrua()
 {
-    LiberarMallaG(g_hornoG.suelo, g_hornoG.sueloValido);
-    LiberarMallaG(g_hornoG.escena, g_hornoG.escenaValida);
+    LiberarMallaHorneada(g_hornoG.suelo, g_hornoG.sueloValido);
+    LiberarMallaHorneada(g_hornoG.escena, g_hornoG.escenaValida);
     g_hornoG.listo = false;
     g_hornoG.clave = -1;
 }
@@ -1877,11 +1817,7 @@ static void HornearGrua(int n)
 
     LiberarMallasGrua();
 
-    if (!g_hornoG.materialListo)
-    {
-        g_hornoG.material = LoadMaterialDefault();
-        g_hornoG.materialListo = true;
-    }
+    AsegurarMaterialHorneado(g_hornoG.material, g_hornoG.materialListo);
 
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;
     bool sombras = CalidadSombras() != CALIDAD_BAJA;
@@ -1889,13 +1825,13 @@ static void HornearGrua(int n)
     Vector3 ojo = g_ojoG;
     g_ojoG = OJO_GRUA;
 
-    EmpezarGrabacionG();
+    EmpezarGrabacionMalla(g_grabG);
     SueloEstaticoG(n, decoracion, sombras);
-    g_hornoG.sueloValido = TerminarGrabacionG(g_hornoG.suelo);
+    g_hornoG.sueloValido = TerminarGrabacionMalla(g_grabG, g_hornoG.suelo);
 
-    EmpezarGrabacionG();
+    EmpezarGrabacionMalla(g_grabG);
     EscenaEstaticaG(n, decoracion, paso);
-    g_hornoG.escenaValida = TerminarGrabacionG(g_hornoG.escena);
+    g_hornoG.escenaValida = TerminarGrabacionMalla(g_grabG, g_hornoG.escena);
 
     g_ojoG = ojo;
     g_hornoG.clave = clave;
@@ -4176,4 +4112,11 @@ void MinijuegoGruaChatarra::Dibujar(
 const ResultadoMinijuego& MinijuegoGruaChatarra::ObtenerResultado() const
 {
     return resultado;
+}
+
+
+void MinijuegoGruaChatarra::Descargar()
+{
+    LiberarMallasGrua();
+    LiberarMaterialHorneado(g_hornoG.material, g_hornoG.materialListo);
 }

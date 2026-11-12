@@ -2,6 +2,7 @@
 
 #include "Minigames/AudioMinijuegos.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
+#include "Minigames/HorneadoMallas.h"
 #include "Minigames/HudMinijuego.h"
 #include "Minigames/MecanicasJugador.h"
 #include "Minigames/ModeloJugadorCompartido.h"
@@ -729,14 +730,7 @@ static float Ruido01BT(int indice, int semilla)
 }
 
 
-struct GrabacionBT
-{
-    bool activa = false;
-    std::vector<float> posiciones;
-    std::vector<unsigned char> colores;
-};
-
-static GrabacionBT g_grabBT;
+static GrabadorMalla g_grabBT;
 static Vector3 g_ojoBT = OJO_BT;
 static Vector3 g_derBT = { 1.0f, 0.0f, 0.0f };
 static Vector3 g_arribaBT = { 0.0f, 1.0f, 0.0f };
@@ -804,13 +798,7 @@ static void VBT(Vector3 p, Color c)
 {
     if (g_grabBT.activa)
     {
-        g_grabBT.posiciones.push_back(p.x);
-        g_grabBT.posiciones.push_back(p.y);
-        g_grabBT.posiciones.push_back(p.z);
-        g_grabBT.colores.push_back(c.r);
-        g_grabBT.colores.push_back(c.g);
-        g_grabBT.colores.push_back(c.b);
-        g_grabBT.colores.push_back(c.a);
+        GrabarVerticeMalla(g_grabBT, p, c);
         return;
     }
 
@@ -1148,60 +1136,12 @@ struct HornoBT
 static HornoBT g_hornoBT;
 
 
-static void EmpezarGrabacionBT()
-{
-    g_grabBT.activa = true;
-    g_grabBT.posiciones.clear();
-    g_grabBT.colores.clear();
-}
-
-
-// Cierra la grabacion y sube la malla (sin indices: cabe cualquier tamano).
-static bool TerminarGrabacionBT(Mesh& malla)
-{
-    g_grabBT.activa = false;
-    int n = (int)(g_grabBT.posiciones.size() / 3);
-    n -= n % 3;
-
-    if (n < 3)
-    {
-        g_grabBT.posiciones.clear();
-        g_grabBT.colores.clear();
-        return false;
-    }
-
-    malla = {};
-    malla.vertexCount = n;
-    malla.triangleCount = n / 3;
-    malla.vertices = (float*)MemAlloc((unsigned int)(n * 3 * (int)sizeof(float)));
-    malla.texcoords = (float*)MemAlloc((unsigned int)(n * 2 * (int)sizeof(float)));
-    malla.colors = (unsigned char*)MemAlloc((unsigned int)(n * 4));
-
-    for (int i = 0; i < n * 3; i++) malla.vertices[i] = g_grabBT.posiciones[(size_t)i];
-    for (int i = 0; i < n * 4; i++) malla.colors[i] = g_grabBT.colores[(size_t)i];
-    for (int i = 0; i < n * 2; i++) malla.texcoords[i] = 0.0f;
-
-    UploadMesh(&malla, false);
-    g_grabBT.posiciones.clear();
-    g_grabBT.colores.clear();
-    return true;
-}
-
-
-static void LiberarMallaBT(Mesh& malla, bool& valida)
-{
-    if (valida) UnloadMesh(malla);
-    valida = false;
-    malla = {};
-}
-
-
 static void LiberarMallasBanquete()
 {
-    LiberarMallaBT(g_hornoBT.tierra, g_hornoBT.tierraValida);
-    LiberarMallaBT(g_hornoBT.nubes, g_hornoBT.nubesValidas);
-    LiberarMallaBT(g_hornoBT.sala, g_hornoBT.salaValida);
-    LiberarMallaBT(g_hornoBT.utileria, g_hornoBT.utileriaValida);
+    LiberarMallaHorneada(g_hornoBT.tierra, g_hornoBT.tierraValida);
+    LiberarMallaHorneada(g_hornoBT.nubes, g_hornoBT.nubesValidas);
+    LiberarMallaHorneada(g_hornoBT.sala, g_hornoBT.salaValida);
+    LiberarMallaHorneada(g_hornoBT.utileria, g_hornoBT.utileriaValida);
     g_hornoBT.listo = false;
     g_hornoBT.clave = -1;
 }
@@ -1229,37 +1169,33 @@ static void HornearBT()
 
     LiberarMallasBanquete();
 
-    if (!g_hornoBT.materialListo)
-    {
-        g_hornoBT.material = LoadMaterialDefault();
-        g_hornoBT.materialListo = true;
-    }
+    AsegurarMaterialHorneado(g_hornoBT.material, g_hornoBT.materialListo);
 
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;
     int paso = CalidadDecoracion() == CALIDAD_ALTA ? 1 : 2;
     Vector3 ojo = g_ojoBT;
     g_ojoBT = OJO_BT;
 
-    EmpezarGrabacionBT();
+    EmpezarGrabacionMalla(g_grabBT);
     TierraEstaticaBT(decoracion, false);
-    g_hornoBT.tierraValida = TerminarGrabacionBT(g_hornoBT.tierra);
+    g_hornoBT.tierraValida = TerminarGrabacionMalla(g_grabBT, g_hornoBT.tierra);
 
     if (decoracion)
     {
-        EmpezarGrabacionBT();
+        EmpezarGrabacionMalla(g_grabBT);
         TierraEstaticaBT(paso == 1, true);
-        g_hornoBT.nubesValidas = TerminarGrabacionBT(g_hornoBT.nubes);
+        g_hornoBT.nubesValidas = TerminarGrabacionMalla(g_grabBT, g_hornoBT.nubes);
     }
 
-    EmpezarGrabacionBT();
+    EmpezarGrabacionMalla(g_grabBT);
     SalaEstaticaBT(decoracion);
-    g_hornoBT.salaValida = TerminarGrabacionBT(g_hornoBT.sala);
+    g_hornoBT.salaValida = TerminarGrabacionMalla(g_grabBT, g_hornoBT.sala);
 
     if (decoracion)
     {
-        EmpezarGrabacionBT();
+        EmpezarGrabacionMalla(g_grabBT);
         UtileriaEstaticaBT(paso);
-        g_hornoBT.utileriaValida = TerminarGrabacionBT(g_hornoBT.utileria);
+        g_hornoBT.utileriaValida = TerminarGrabacionMalla(g_grabBT, g_hornoBT.utileria);
     }
 
     g_ojoBT = ojo;
@@ -3074,3 +3010,10 @@ const ResultadoMinijuego& MinijuegoBanqueteTurbo::ObtenerResultado() const
     return resultado;
 }
 
+
+
+void MinijuegoBanqueteTurbo::Descargar()
+{
+    LiberarMallasBanquete();
+    LiberarMaterialHorneado(g_hornoBT.material, g_hornoBT.materialListo);
+}

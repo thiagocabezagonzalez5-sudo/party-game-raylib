@@ -245,6 +245,21 @@ static void ReiniciarEstadoExtendidoJugador(
 }
 
 
+// Al dejar un minijuego se liberan sus mallas horneadas en la GPU: el
+// horneado se rehace solo si se vuelve a dibujar.
+static void DescargarMinijuegoQueSeDeja(
+    ZonaPruebas& zona
+)
+{
+    if (zona.modoActual == PRUEBA_MINIJUEGO)
+    {
+        zona.gestorMinijuegos.DescargarMinijuego(
+            zona.gestorMinijuegos.ObtenerIdActivo()
+        );
+    }
+}
+
+
 static void PrepararTemaVisualZona(
     const ZonaPruebas& zona
 )
@@ -264,6 +279,10 @@ void ZonaPruebas::Inicializar(
     AudioJuego* audioJuego
 )
 {
+    // Una ronda de tablero termina sin pasar por aqui: lo de la anterior
+    // se libera al entrar a la siguiente.
+    DescargarMinijuegoQueSeDeja(*this);
+
     volverAlMenu = false;
     mostrarDebug = false;
     modoCatalogo = false;
@@ -307,6 +326,7 @@ void ZonaPruebas::CambiarModo(
     ModoZonaPruebas nuevoModo
 )
 {
+    DescargarMinijuegoQueSeDeja(*this);
     modoActual = nuevoModo;
 
     for (int i = 0; i < MAX_PARTICULAS_TIERRA; i++)
@@ -348,6 +368,11 @@ void ZonaPruebas::CambiarMinijuego(
     if (!EsIdMinijuegoValido(nuevoMinijuego))
     {
         return;
+    }
+
+    if (gestorMinijuegos.ObtenerIdActivo() != nuevoMinijuego)
+    {
+        DescargarMinijuegoQueSeDeja(*this);
     }
 
     modoActual = PRUEBA_MINIJUEGO;
@@ -406,6 +431,7 @@ void ZonaPruebas::Actualizar(
 
     if (!modoTablero && IsKeyPressed(KEY_ESCAPE))
     {
+        DescargarMinijuegoQueSeDeja(*this);
         volverAlMenu = true;
         return;
     }

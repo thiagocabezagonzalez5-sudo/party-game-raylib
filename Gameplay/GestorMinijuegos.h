@@ -157,5 +157,11 @@ struct GestorMinijuegos
         ContextoMinijuego& contexto
     ) const;
 
+    // Libera lo horneado en la GPU por ese minijuego (si tiene); se rehace
+    // solo la proxima vez que se dibuje.
+    void DescargarMinijuego(
+        IdMinijuego id
+    );
+
     void Descargar();
 };
