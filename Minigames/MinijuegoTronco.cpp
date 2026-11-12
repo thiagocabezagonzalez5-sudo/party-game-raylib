@@ -2677,7 +2677,6 @@ void MinijuegoTronco::Dibujar(
     const Participante participantes[]
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     DibujarEscenarioTronco(*this, jugadores, participantes, cantidadMaxima);
 

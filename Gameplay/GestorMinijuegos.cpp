@@ -2181,34 +2181,6 @@ IdMinijuego GestorMinijuegos::ObtenerIdActivo() const
 }
 
 
-void GestorMinijuegos::PrepararTemaVisualActivo() const
-{
-    if (minijuegoActivo == MINIJUEGO_COLOR_SEGURO)
-    {
-        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_LAVA);
-        return;
-    }
-
-    if (minijuegoActivo == MINIJUEGO_PELOTAS)
-    {
-        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NIEVE);
-        return;
-    }
-
-    if (minijuegoActivo == MINIJUEGO_TORMENTA_MAGNETICA)
-    {
-        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_MAGNETICO);
-        return;
-    }
-
-    if (minijuegoActivo == MINIJUEGO_REFUGIO_PINCHOS)
-    {
-        SeleccionarTemaVisualMinijuego(TEMA_VISUAL_CUEVA);
-        minijuegoRefugioPinchos.ConfigurarTaladrosVisuales();
-    }
-}
-
-
 bool GestorMinijuegos::MantieneControlIAEnReconexion() const
 {
     return

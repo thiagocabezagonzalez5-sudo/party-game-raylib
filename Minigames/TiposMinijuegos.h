@@ -3,7 +3,9 @@
 #include "raylib.h"
 #include "Core/Participante.h"
 #include "Minigames/EfectosVisualesMinijuegos.h"
-#include "Minigames/EscenariosRetro3D.h"
+#include "Minigames/ModelosEscenariosRetro3D.h"
+
+#include <cmath>
 
 #define SOMBRAS_RETRO_AUTOMATICAS
 #include "Minigames/SombrasRetro.h"

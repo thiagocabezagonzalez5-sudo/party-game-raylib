@@ -3107,7 +3107,6 @@ void MinijuegoMurosLocos::Dibujar(
 {
     (void)cantidadMaxima;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     const float t = tiempoAnimacion;
     int ancho = GetScreenWidth();

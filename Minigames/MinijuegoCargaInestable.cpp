@@ -1755,7 +1755,6 @@ void MinijuegoCargaInestable::Dibujar(
     const Participante participantes[]
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(Color{ 18, 12, 14, 255 });
 
     float progresoExplosion = 1.0f - Clamp(

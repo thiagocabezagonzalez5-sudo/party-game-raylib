@@ -3512,7 +3512,6 @@ void MinijuegoCuerdaAcantilado::Dibujar(
     bool mostrarDebug
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     PrepararContornosCue();
 
     int limite = cantidadMaxima < MAX_PARTICIPANTES ? cantidadMaxima : MAX_PARTICIPANTES;

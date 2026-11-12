@@ -988,31 +988,6 @@ inline constexpr const char* RUTA_SFX_ELIMINADO = "Assets/Audio/SFX/Minijuegos/e
 
 
 //==================================================
-// TEXTURAS OPCIONALES DE MINIJUEGOS
-//==================================================
-
-inline constexpr const char* RUTA_TEXTURA_LAVA_SUELO =
-    "Assets/Texturas/Minijuegos/ColorSeguro/lava_suelo.png";
-inline constexpr const char* RUTA_TEXTURA_LAVA_FONDO =
-    "Assets/Texturas/Minijuegos/ColorSeguro/fondo_volcanes.png";
-
-inline constexpr const char* RUTA_TEXTURA_NIEVE_SUELO =
-    "Assets/Texturas/Minijuegos/Pelotas/nieve_suelo.png";
-inline constexpr const char* RUTA_TEXTURA_NIEVE_FONDO =
-    "Assets/Texturas/Minijuegos/Pelotas/fondo_montanas.png";
-
-inline constexpr const char* RUTA_TEXTURA_CUEVA_ROCA =
-    "Assets/Texturas/Minijuegos/RefugioTaladros/roca_cueva.png";
-inline constexpr const char* RUTA_TEXTURA_CUEVA_TALADRO =
-    "Assets/Texturas/Minijuegos/RefugioTaladros/metal_taladro.png";
-
-inline constexpr const char* RUTA_TEXTURA_MAGNETICA_METAL =
-    "Assets/Texturas/Minijuegos/TormentaMagnetica/metal_arena.png";
-inline constexpr const char* RUTA_TEXTURA_MAGNETICA_ENERGIA =
-    "Assets/Texturas/Minijuegos/TormentaMagnetica/energia.png";
-
-
-//==================================================
 // SELECCION DE PERSONAJES
 //==================================================
 

@@ -2252,7 +2252,6 @@ void MinijuegoCanteraFuga::Dibujar(
 
     bool detallado = CalidadDecoracion() != CALIDAD_BAJA;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(HORIZONTE_CANTERA);
     DibujarCieloCantera(tiempoAnimacion);
 

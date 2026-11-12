@@ -1692,7 +1692,6 @@ void MinijuegoConteoExplosivo::Dibujar(
     const float t = tiempoAnimacion;
     const float movimiento = FactorMovimientoConteo();
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(Color{ 12, 14, 24, 255 });
 
     // Persiana: cae al empezar la respuesta y sube al revelar.

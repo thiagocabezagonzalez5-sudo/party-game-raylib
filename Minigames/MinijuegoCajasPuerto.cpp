@@ -2040,7 +2040,6 @@ void MinijuegoCajasPuerto::Dibujar(
 {
     (void)cantidadMaxima;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(Color{ 8, 14, 30, 255 });
     BeginMode3D(camara);
 

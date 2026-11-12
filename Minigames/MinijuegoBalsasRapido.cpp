@@ -4470,7 +4470,6 @@ void MinijuegoBalsasRapido::Dibujar(
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;
     bool efectos = CalidadEfectos() != CALIDAD_BAJA;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     Camera3D vista = VistaBalsas(*this);
     g_ojoB = vista.position;

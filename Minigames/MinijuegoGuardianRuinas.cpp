@@ -3977,7 +3977,6 @@ void MinijuegoGuardianRuinas::Dibujar(
 
     // El bucle del juego no limpia la pantalla: fondo propio siempre.
     ClearBackground(CIELO_HORIZONTE_GR);
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     Camera3D vista = VistaGR(*this);
     g_ojoGR = OJO_GR;

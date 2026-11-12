@@ -3395,7 +3395,6 @@ void MinijuegoTrazoPerfecto::Dibujar(
     const Participante participantes[]
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     const float t = tiempoAnimacion;
     bool decoracion = CalidadDecoracion() != CALIDAD_BAJA;

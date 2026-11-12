@@ -3316,7 +3316,6 @@ void MinijuegoUltimoAsiento::Dibujar(
     bool mostrarDebug
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     int limite = LimiteAsiento(cantidadMaxima);
     const float t = tiempoAnimacion;

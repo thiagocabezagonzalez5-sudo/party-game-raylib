@@ -1524,7 +1524,6 @@ void MinijuegoSecuenciaNeon::Dibujar(
         : 0.0f;
     Camera3D camara = ObtenerCamaraSecuencia(intro * intro, pulsoCamara);
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(Color{ 10, 8, 22, 255 });
     BeginMode3D(camara);
 

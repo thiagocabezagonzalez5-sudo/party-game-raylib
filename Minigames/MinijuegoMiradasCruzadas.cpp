@@ -2936,7 +2936,6 @@ void MinijuegoMiradasCruzadas::Dibujar(
     const Participante participantes[]
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(COLOR_BRUMA_MIRADAS);
 
     const float t = tiempoAnimacion;

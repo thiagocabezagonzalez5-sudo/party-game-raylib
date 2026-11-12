@@ -2429,7 +2429,6 @@ void MinijuegoIslaFuego::Dibujar(
     const EfectosIslaFuego& e = efectos;
     float t = e.tiempoAnimacion;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     DibujarCieloIsla();
 
     // Intro de la cuenta: la camara baja y se acerca hasta su lugar fijo.

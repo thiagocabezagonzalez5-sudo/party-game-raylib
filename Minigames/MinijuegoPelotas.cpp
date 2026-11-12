@@ -2799,7 +2799,6 @@ void MinijuegoPelotas::Dibujar(
     (void)cantidadMaxima;
 
     // Escenario alpino propio: sin el tema de nieve global.
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     float t = tiempoAnimacion;
     CimaPelotas cima = CalcularCimaPelotas(camara);

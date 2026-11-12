@@ -1378,7 +1378,6 @@ void MinijuegoVagonetasDuelo::Reiniciar(
         carro.tiempoTurbo = RangoAleatorioVagonetas(semillaIA, 0.2f, 0.9f);
     }
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 }
 
 
@@ -2365,7 +2364,6 @@ void MinijuegoVagonetasDuelo::Dibujar(
     int ancho = GetScreenWidth();
     int alto = GetScreenHeight();
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     if (cantidadCarros >= 2)
     {

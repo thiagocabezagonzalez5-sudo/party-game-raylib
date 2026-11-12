@@ -260,19 +260,6 @@ static void DescargarMinijuegoQueSeDeja(
 }
 
 
-static void PrepararTemaVisualZona(
-    const ZonaPruebas& zona
-)
-{
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
-
-    if (zona.modoActual == PRUEBA_MINIJUEGO)
-    {
-        zona.gestorMinijuegos.PrepararTemaVisualActivo();
-    }
-}
-
-
 void ZonaPruebas::Inicializar(
     Participante participantesJuego[],
     int cantidadParticipantesJuego,
@@ -299,7 +286,6 @@ void ZonaPruebas::Inicializar(
     contextoMinijuego.cantidadParticulas = MAX_PARTICULAS_TIERRA;
     contextoMinijuego.audio = audio;
 
-    InicializarTexturasTematicasMinijuegos();
     EstablecerAudioJugadoresMinijuego(audio);
     // Los paquetes de modelos se solicitan al activar su escenario. La cache
     // sobrevive a reinicios y regresos desde el selector o el tablero.
@@ -575,7 +561,6 @@ void ZonaPruebas::Dibujar() const
     // profundidad del frame anterior y su escena 3D desaparece.
     ClearBackground(BLACK);
 
-    PrepararTemaVisualZona(*this);
     EstablecerRondaOficialTableroMinijuegos(modoTablero);
     EstablecerBarraAyudaCatalogoMinijuegos(
         modoCatalogo && !modoTablero && modoActual == PRUEBA_MINIJUEGO
@@ -730,6 +715,5 @@ void ZonaPruebas::Descargar()
     gestorMinijuegos.Descargar();
     pruebaModelos.Descargar();
     DescargarModelosEscenariosRetro3D();
-    DescargarTexturasTematicasMinijuegos();
     EstablecerAudioJugadoresMinijuego(nullptr);
 }

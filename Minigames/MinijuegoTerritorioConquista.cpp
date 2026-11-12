@@ -3526,7 +3526,6 @@ void MinijuegoTerritorioConquista::Dibujar(
     bool mostrarDebug
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     int limite = cantidadMaxima < MAX_PARTICIPANTES ? cantidadMaxima : MAX_PARTICIPANTES;
     const float t = tiempoAnimacion;

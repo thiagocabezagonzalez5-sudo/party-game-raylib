@@ -4507,7 +4507,6 @@ void MinijuegoDefensaNucleo::Dibujar(
     bool mostrarDebug
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     const float t = tiempoAnimacion;
     int limite = LimiteJugadoresDefensa(cantidadMaxima);

@@ -2737,7 +2737,6 @@ void Minijuego67::Dibujar(
     const Participante participantes[]
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(NIEBLA_67);
 
     int ancho = GetScreenWidth();

@@ -3222,7 +3222,6 @@ void MinijuegoPasarelasVacio::Dibujar(
     bool mostrarDebug
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     const float t = tiempoAnimacion;
     int ancho = GetScreenWidth();

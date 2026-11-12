@@ -314,9 +314,6 @@ void DibujarVistaPreviaTablero(
 
     ClearBackground(definicion.colorFondo);
 
-    // BeginMode3D esta redefinido por EfectosVisualesMinijuegos.
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
-
     BeginMode3D(camara);
     DibujarEscenaTablero3D(partidaVistaPrevia);
     EndMode3D();

@@ -4232,7 +4232,6 @@ void MinijuegoTesoreroAcorralado::Dibujar(
     int ancho = GetScreenWidth();
     int alto = GetScreenHeight();
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     // Entrada: durante la cuenta la camara baja desde mas alto y lejos.
     Camera3D vista = camara;

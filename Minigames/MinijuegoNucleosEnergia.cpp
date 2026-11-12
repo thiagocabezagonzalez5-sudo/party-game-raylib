@@ -1984,7 +1984,6 @@ void MinijuegoNucleosEnergia::Dibujar(
 {
     float t = tiempoAnimacion;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(Color{ 14, 16, 26, 255 });
     BeginMode3D(camara);
 

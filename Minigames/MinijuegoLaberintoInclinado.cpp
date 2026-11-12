@@ -3891,7 +3891,6 @@ void MinijuegoLaberintoInclinado::Dibujar(
 {
     (void)jugadores;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     int limite = cantidadMaxima < MAX_PARTICIPANTES ? cantidadMaxima : MAX_PARTICIPANTES;
     const float t = relojVisual;

@@ -3418,7 +3418,6 @@ void MinijuegoTormentaMagnetica::Dibujar(
 {
     (void)cantidadMaxima;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     const float t = tiempoVisual;
     int ancho = GetScreenWidth();

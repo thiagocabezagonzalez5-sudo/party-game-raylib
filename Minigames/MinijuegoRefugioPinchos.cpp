@@ -3588,7 +3588,6 @@ void MinijuegoRefugioPinchos::Dibujar(
     bool mostrarDebug
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(Color{ 14, 12, 14, 255 });
 
     BeginMode3D(camara);
@@ -3875,26 +3874,3 @@ const ResultadoMinijuego& MinijuegoRefugioPinchos::ObtenerResultado() const
 }
 
 
-void MinijuegoRefugioPinchos::ConfigurarTaladrosVisuales() const
-{
-    // Este minijuego dibuja su propio escenario (Dibujar selecciona
-    // TEMA_VISUAL_NINGUNO); se publica el estado por compatibilidad con el
-    // tema global de cueva.
-    DireccionPinchos lado = patronActivo ? patron.salvas[0].lado : PINCHOS_DESDE_ARRIBA;
-    float progreso = 0.0f;
-
-    if (patronActivo)
-    {
-        for (int c = 0; c < CantidadCarrilesPinchos(lado); c++)
-        {
-            float f = EstadoCarrilSalvaPinchos(*this, patron.salvas[0], c).fraccion;
-            if (f > progreso) progreso = f;
-        }
-    }
-
-    ConfigurarTaladrosVisualesMinijuego(
-        (int)lado,
-        progreso,
-        fase == FASE_PINCHOS_AVISO
-    );
-}

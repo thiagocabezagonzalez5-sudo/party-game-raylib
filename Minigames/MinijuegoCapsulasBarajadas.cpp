@@ -1819,7 +1819,6 @@ void MinijuegoCapsulasBarajadas::Dibujar(
     bool jugando = fase == FASE_CAPSULAS_JUGANDO;
     bool revelando = jugando && subfase == SUBFASE_CAPSULAS_REVELAR;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(Color{ 16, 22, 30, 255 });
     BeginMode3D(vista);
 

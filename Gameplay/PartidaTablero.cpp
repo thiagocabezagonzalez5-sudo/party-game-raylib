@@ -4555,10 +4555,6 @@ void PartidaTablero::Dibujar() const
 {
     ClearBackground(definicion->colorFondo);
 
-    // BeginMode3D esta redefinido por EfectosVisualesMinijuegos: el tablero
-    // nunca debe heredar el tema visual del ultimo minijuego.
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
-
     BeginMode3D(camara);
 
     DibujarEscenaTablero3D(*this);

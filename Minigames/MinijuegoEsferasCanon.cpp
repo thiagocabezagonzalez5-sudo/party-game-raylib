@@ -4428,7 +4428,6 @@ void MinijuegoEsferasCanon::Dibujar(
     bool sombras = CalidadSombras() != CALIDAD_BAJA;
     int paso = completo ? 1 : 2;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     // Vista: la camara de la logica, mirando un poco mas adelante por la
     // bajada; en la cuenta llega desde mas alto y atras.

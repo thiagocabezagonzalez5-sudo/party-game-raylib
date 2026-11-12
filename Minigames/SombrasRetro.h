@@ -251,43 +251,6 @@ inline bool EsCuboJugadorEstandarRetro(
 }
 
 
-inline bool EsAcumulacionNieveViejaRetro(
-    Vector3 posicion,
-    float radio,
-    Color color
-)
-{
-    if (
-        ObtenerEstadoEfectosVisualesMinijuegos().tema !=
-        TEMA_VISUAL_NIEVE
-    )
-    {
-        return false;
-    }
-
-    bool casiBlanco =
-        color.r >= 238 &&
-        color.g >= 238 &&
-        color.b >= 238;
-
-    bool alturaBorde =
-        posicion.y >= -0.55f &&
-        posicion.y <= -0.08f;
-
-    bool radioBorde =
-        radio >= 0.35f &&
-        radio <= 0.58f;
-
-    // El minijuego antiguo dibujaba doce esferas blancas alrededor de la
-    // cima. Con el nuevo escenario parecian bolas gigantes flotando.
-    // Las filtramos aqui sin tocar la fisica ni las pelotas-jugador.
-    return
-        casiBlanco &&
-        alturaBorde &&
-        radioBorde;
-}
-
-
 // Calidad de sombras para PROPS (cubos, esferas y cilindros): BAJA no las
 // dibuja, MEDIA las reduce a objetos mas grandes y a 6 lados. Las sombras de
 // personajes (DrawModelEx) y de pelotas-jugador se mantienen en todos los
@@ -362,17 +325,6 @@ inline void DibujarEsferaConSombraRetro(
     Color color
 )
 {
-    if (
-        EsAcumulacionNieveViejaRetro(
-            posicion,
-            radio,
-            color
-        )
-    )
-    {
-        return;
-    }
-
     // Las pelotas-jugador ya proyectan su propia sombra desde
     // UtilidadesMinijuegos. Evitamos dibujarla dos veces.
     bool pelotaJugador =

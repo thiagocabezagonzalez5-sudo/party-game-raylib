@@ -3961,7 +3961,6 @@ void MinijuegoVetaCristal::Dibujar(
     bool efectos = CalidadEfectos() != CALIDAD_BAJA;
     int paso = CalidadDecoracion() == CALIDAD_ALTA ? 1 : 2;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     // Entrada: durante la cuenta la camara baja desde mas alto y lejos.
     Camera3D vista = camara;

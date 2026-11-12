@@ -2266,7 +2266,6 @@ void MinijuegoCapitanManda::Dibujar(
 {
     const float t = tiempoAnimacion;
 
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(Color{ 96, 140, 204, 255 });
 
     // Camara fija; en la cuenta se acerca un poco (x reducir movimiento).

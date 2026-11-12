@@ -2163,7 +2163,6 @@ void MinijuegoColorSeguro::Dibujar(
     const float t = tiempoAnimacion;
 
     // Escenario propio: sin el tema de lava global.
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
     ClearBackground(Color{ 40, 18, 16, 255 });
 
     // Intro de la cuenta: la camara baja hasta su lugar fijo.

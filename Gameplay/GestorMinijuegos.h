@@ -144,8 +144,6 @@ struct GestorMinijuegos
 
     IdMinijuego ObtenerIdActivo() const;
 
-    void PrepararTemaVisualActivo() const;
-
     bool MantieneControlIAEnReconexion() const;
 
     void ReiniciarJugadorCompartido(

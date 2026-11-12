@@ -3995,7 +3995,6 @@ void MinijuegoLluviaApilada::Dibujar(
     bool mostrarDebug
 ) const
 {
-    SeleccionarTemaVisualMinijuego(TEMA_VISUAL_NINGUNO);
 
     int limite = LimiteJugadoresLluvia(cantidadMaxima);
     const float t = tiempoAnimacion;
