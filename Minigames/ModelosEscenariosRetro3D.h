@@ -108,13 +108,6 @@ struct ModelosEscenariosRetro3D
     RecursoModeloEscenarioRetro3D gruaChatarra[CANTIDAD_MODELOS_GRUA_CHATARRA_3D];
     RecursoModeloEscenarioRetro3D pisotonPlagas[CANTIDAD_MODELOS_PISOTON_PLAGAS_3D];
     ReposoMallaPisotonRetro3D animacionesPisoton[4]; // patas, cola, petalos pares/impares
-    RecursoModeloEscenarioRetro3D balsasRapido[CANTIDAD_MODELOS_BALSAS_RAPIDO_3D];
-    RecursoModeloEscenarioRetro3D autosGlobo[CANTIDAD_MODELOS_AUTOS_GLOBO_3D];
-    RecursoModeloEscenarioRetro3D senderoInvisible[CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D];
-    RecursoModeloEscenarioRetro3D banqueteTurbo[CANTIDAD_MODELOS_BANQUETE_TURBO_3D];
-    RecursoModeloEscenarioRetro3D tuberiasDesierto[CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D];
-    RecursoModeloEscenarioRetro3D trepaMastil[CANTIDAD_MODELOS_TREPA_MASTIL_3D];
-    RecursoModeloEscenarioRetro3D guardianRuinas[CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D];
     float* franjasCintaGrua = nullptr; // Reposo CPU; una unica malla/VBO para ambas cintas.
     AnimacionRodillosRetro3D animacionesRodillos[4]; // suelo, dos LEDs, linea
     AnimacionMallaPescaRetro3D animacionesPesca[5]; // gaviota, humo y tres colas
@@ -628,24 +621,6 @@ inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteTesoreroCercadoRetro3D()
         definiciones, CANTIDAD_MODELOS_TESORERO_CERCADO_3D };
 }
 
-inline void CargarPaqueteTesoreroCercadoRetro3D()
-{
-    PaqueteModelosEscenarioRetro3D paquete = ObtenerPaqueteTesoreroCercadoRetro3D();
-    CargarPaqueteModelosEscenarioRetro3D(paquete);
-    // Las piezas animadas necesitan estas primitives del GLB v1. Validar
-    // antes de dibujar evita mezclar vistas parciales con su fallback.
-    const int mallasEsperadas[] = {4,5,4,4,4,7,7,7,6,6,5,5,5,4,3,3};
-    for (int i = 0; i < paquete.cantidad; i++)
-    {
-        RecursoModeloEscenarioRetro3D& recurso = paquete.recursos[i];
-        if (!recurso.cargado || recurso.modelo.meshCount == mallasEsperadas[i]) continue;
-        UnloadModel(recurso.modelo);
-        recurso.modelo = {};
-        recurso.cargado = false;
-        TraceLog(LOG_WARNING, "Primitives inesperadas en escenario; se usan primitivas: %s", recurso.ruta);
-    }
-}
-
 inline bool DibujarModeloTesoreroCercadoRetro3D(
     ModeloTesoreroCercado3D pieza, Vector3 posicion, float anguloY = 0.0f,
     Vector3 escala = {1,1,1}, int malla = -1, bool colorDinamico = false,
@@ -696,61 +671,6 @@ inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteDescensoNubesRetro3D()
     }
     return { ObtenerModelosEscenariosRetro3D().descensoNubes,
         definiciones, CANTIDAD_MODELOS_DESCENSO_NUBES_3D };
-}
-
-inline void CargarPaqueteDescensoNubesRetro3D()
-{
-    PaqueteModelosEscenarioRetro3D paquete = ObtenerPaqueteDescensoNubesRetro3D();
-    CargarPaqueteModelosEscenarioRetro3D(paquete);
-    const int mallasEsperadas[] = {6,6,3,3,2,3,5,3,2,2,4,3,4,5,4,4,4,4,7};
-    for (int i = 0; i < paquete.cantidad; i++)
-    {
-        RecursoModeloEscenarioRetro3D& recurso = paquete.recursos[i];
-        if (!recurso.cargado || recurso.modelo.meshCount == mallasEsperadas[i]) continue;
-        UnloadModel(recurso.modelo);
-        recurso.modelo = {};
-        recurso.cargado = false;
-        TraceLog(LOG_WARNING, "Primitives inesperadas en escenario; se usan primitivas: %s", recurso.ruta);
-    }
-
-    AlasDescensoNubesRetro3D& alas = ObtenerModelosEscenariosRetro3D().alasNubes;
-    RecursoModeloEscenarioRetro3D& ave = paquete.recursos[MODELO_NUBES_AVE];
-    if (alas.intentada || !ave.cargado) return;
-    alas.intentada = true;
-    // GLB v1: primitive 0 comienza con el cuerpo (|X|<=.22), seguido
-    // de las alas interiores. Primitive 1 contiene las alas exteriores.
-    Mesh& cuerpo = ave.modelo.meshes[0];
-    for (int v = 0; v < cuerpo.vertexCount; v++)
-    {
-        if (std::fabs(cuerpo.vertices[v * 3]) <= 0.30f) continue;
-        alas.inicioAlas = v / 3 * 3;
-        break;
-    }
-    bool valida = alas.inicioAlas > 0;
-    for (int i = 0; i < 2 && valida; i++)
-    {
-        Mesh& malla = ave.modelo.meshes[i];
-        if (!malla.normals || !malla.vboId || !malla.vboId[0] || !malla.vboId[2])
-        { valida = false; break; }
-        unsigned int bytes = (unsigned int)malla.vertexCount * 3 * sizeof(float);
-        alas.vertices[i] = (float*)MemAlloc(bytes);
-        alas.normales[i] = (float*)MemAlloc(bytes);
-        valida = alas.vertices[i] && alas.normales[i];
-        if (valida)
-        {
-            std::memcpy(alas.vertices[i], malla.vertices, bytes);
-            std::memcpy(alas.normales[i], malla.normals, bytes);
-        }
-    }
-    if (!valida)
-    {
-        DescargarAlasDescensoNubesRetro3D();
-        alas.intentada = true;
-        UnloadModel(ave.modelo);
-        ave.modelo = {};
-        ave.cargado = false;
-        TraceLog(LOG_WARNING, "No se pudo preparar el aleteo; se usan primitivas: %s", ave.ruta);
-    }
 }
 
 inline bool DibujarModeloDescensoNubesRetro3D(
@@ -840,22 +760,6 @@ inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteVoleaMagmaRetro3D()
     }
     return { ObtenerModelosEscenariosRetro3D().voleaMagma,
         definiciones, CANTIDAD_MODELOS_VOLEA_MAGMA_3D };
-}
-
-inline void CargarPaqueteVoleaMagmaRetro3D()
-{
-    PaqueteModelosEscenarioRetro3D paquete = ObtenerPaqueteVoleaMagmaRetro3D();
-    CargarPaqueteModelosEscenarioRetro3D(paquete);
-    const int mallasEsperadas[] = {3,8,3,5,4,6,6,3,5,4,4,4,2,3,3,1,2};
-    for (int i = 0; i < paquete.cantidad; i++)
-    {
-        RecursoModeloEscenarioRetro3D& recurso = paquete.recursos[i];
-        if (!recurso.cargado || recurso.modelo.meshCount == mallasEsperadas[i]) continue;
-        UnloadModel(recurso.modelo);
-        recurso.modelo = {};
-        recurso.cargado = false;
-        TraceLog(LOG_WARNING, "Primitives inesperadas en escenario; se usan primitivas: %s", recurso.ruta);
-    }
 }
 
 inline Color ColorMaterialVoleaMagmaRetro3D(ModeloVoleaMagma3D pieza, int malla)
@@ -1709,261 +1613,6 @@ inline void ValidarMallasPaqueteEscenarioRetro3D(PaqueteModelosEscenarioRetro3D 
     }
 }
 
-// BALSAS DEL RAPIDO
-inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteBalsasRapidoRetro3D()
-{
-    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_BALSAS_RAPIDO_3D];
-    static bool definidas = false;
-    if (!definidas)
-    {
-        for (int i = 0; i < CANTIDAD_MODELOS_BALSAS_RAPIDO_3D; i++)
-            definiciones[i].ruta = RUTAS_MODELOS_BALSAS_RAPIDO_3D[i];
-        definiciones[MODELO_BALSAS_BALSA].mallaColor = 4; // Bandera COLOR_DINAMICO.
-        definidas = true;
-    }
-    return {ObtenerModelosEscenariosRetro3D().balsasRapido,
-        definiciones, CANTIDAD_MODELOS_BALSAS_RAPIDO_3D};
-}
-
-inline void CargarPaqueteBalsasRapidoRetro3D()
-{
-    static constexpr int esperadas[] =
-        {3,3,4,6,2,3,5,2,2,3,3,3,2,2,4,3,4,2,1,2,5,3,5,2};
-    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_BALSAS_RAPIDO_3D,
-        "Mallas esperadas de Balsas del Rapido");
-    auto paquete = ObtenerPaqueteBalsasRapidoRetro3D();
-    CargarPaqueteModelosEscenarioRetro3D(paquete);
-    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Balsas del Rapido");
-}
-
-inline bool DibujarModeloBalsasRapidoRetro3D(ModeloBalsasRapido3D pieza,
-    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
-    Vector3 escala = {1,1,1}, Color color = WHITE)
-{
-    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_BALSAS_RAPIDO_3D) return false;
-    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().balsasRapido[pieza],
-        posicion, eje, angulo, escala, color);
-}
-
-// AUTOS DE GLOBO
-inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteAutosGloboRetro3D()
-{
-    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_AUTOS_GLOBO_3D];
-    static bool definidas = false;
-    if (!definidas)
-    {
-        for (int i = 0; i < CANTIDAD_MODELOS_AUTOS_GLOBO_3D; i++)
-            definiciones[i].ruta = RUTAS_MODELOS_AUTOS_GLOBO_3D[i];
-        // Primitives COLOR_DINAMICO del paquete v1 (BOMBILLAS queda fijo).
-        definiciones[MODELO_AUTOGLOBO_VEHICULO_TRAFICO].mallaColor = 0;
-        definiciones[MODELO_AUTOGLOBO_HOLOGRAMA_ANILLOS].mallaColor = 0;
-        definiciones[MODELO_AUTOGLOBO_AUTO].mallaColor = 0;
-        definiciones[MODELO_AUTOGLOBO_GLOBO].mallaColor = 0;
-        definidas = true;
-    }
-    return {ObtenerModelosEscenariosRetro3D().autosGlobo,
-        definiciones, CANTIDAD_MODELOS_AUTOS_GLOBO_3D};
-}
-
-inline void CargarPaqueteAutosGloboRetro3D()
-{
-    static constexpr int esperadas[] =
-        {4,3,5,5,5,6,5,3,3,3,3,3,3,4,2,3,3,3,7,4,1,2,1};
-    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_AUTOS_GLOBO_3D,
-        "Mallas esperadas de Autos de Globo");
-    auto paquete = ObtenerPaqueteAutosGloboRetro3D();
-    CargarPaqueteModelosEscenarioRetro3D(paquete);
-    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Autos de Globo");
-}
-
-inline bool DibujarModeloAutosGloboRetro3D(ModeloAutosGlobo3D pieza,
-    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
-    Vector3 escala = {1,1,1}, Color color = WHITE)
-{
-    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_AUTOS_GLOBO_3D) return false;
-    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().autosGlobo[pieza],
-        posicion, eje, angulo, escala, color);
-}
-
-// SENDERO INVISIBLE
-inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteSenderoInvisibleRetro3D()
-{
-    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D];
-    static bool definidas = false;
-    if (!definidas)
-    {
-        for (int i = 0; i < CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D; i++)
-            definiciones[i].ruta = RUTAS_MODELOS_SENDERO_INVISIBLE_3D[i];
-        definiciones[MODELO_SENDERO_LOSA_SALIDA].mallaColor = 2; // Marcas del jugador.
-        definidas = true;
-    }
-    return {ObtenerModelosEscenariosRetro3D().senderoInvisible,
-        definiciones, CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D};
-}
-
-inline void CargarPaqueteSenderoInvisibleRetro3D()
-{
-    static constexpr int esperadas[] =
-        {3,4,3,3,2,2,3,2,3,3,6,2,2,4,3,3,4,2,3};
-    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D,
-        "Mallas esperadas de Sendero Invisible");
-    auto paquete = ObtenerPaqueteSenderoInvisibleRetro3D();
-    CargarPaqueteModelosEscenarioRetro3D(paquete);
-    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Sendero Invisible");
-}
-
-inline bool DibujarModeloSenderoInvisibleRetro3D(ModeloSenderoInvisible3D pieza,
-    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
-    Vector3 escala = {1,1,1}, Color color = WHITE)
-{
-    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_SENDERO_INVISIBLE_3D) return false;
-    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().senderoInvisible[pieza],
-        posicion, eje, angulo, escala, color);
-}
-
-// BANQUETE TURBO
-inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteBanqueteTurboRetro3D()
-{
-    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_BANQUETE_TURBO_3D];
-    static bool definidas = false;
-    if (!definidas)
-    {
-        for (int i = 0; i < CANTIDAD_MODELOS_BANQUETE_TURBO_3D; i++)
-            definiciones[i].ruta = RUTAS_MODELOS_BANQUETE_TURBO_3D[i];
-        // Primitives COLOR_JUGADOR del paquete v1.
-        definiciones[MODELO_BANQUETE_MESA].mallaColor = 4;
-        definiciones[MODELO_BANQUETE_TABURETE].mallaColor = 1;
-        definidas = true;
-    }
-    return {ObtenerModelosEscenariosRetro3D().banqueteTurbo,
-        definiciones, CANTIDAD_MODELOS_BANQUETE_TURBO_3D};
-}
-
-inline void CargarPaqueteBanqueteTurboRetro3D()
-{
-    static constexpr int esperadas[] =
-        {6,6,4,3,3,3,4,6,3,4,7,3,3,3,6};
-    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_BANQUETE_TURBO_3D,
-        "Mallas esperadas de Banquete Turbo");
-    auto paquete = ObtenerPaqueteBanqueteTurboRetro3D();
-    CargarPaqueteModelosEscenarioRetro3D(paquete);
-    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Banquete Turbo");
-}
-
-inline bool DibujarModeloBanqueteTurboRetro3D(ModeloBanqueteTurbo3D pieza,
-    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
-    Vector3 escala = {1,1,1}, Color color = WHITE)
-{
-    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_BANQUETE_TURBO_3D) return false;
-    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().banqueteTurbo[pieza],
-        posicion, eje, angulo, escala, color);
-}
-
-// TUBERIAS DEL DESIERTO
-inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteTuberiasDesiertoRetro3D()
-{
-    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D];
-    static bool definidas = false;
-    if (!definidas)
-    {
-        for (int i = 0; i < CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D; i++)
-            definiciones[i].ruta = RUTAS_MODELOS_TUBERIAS_DESIERTO_3D[i];
-        definidas = true;
-    }
-    return {ObtenerModelosEscenariosRetro3D().tuberiasDesierto,
-        definiciones, CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D};
-}
-
-inline void CargarPaqueteTuberiasDesiertoRetro3D()
-{
-    static constexpr int esperadas[] =
-        {3,4,5,2,3,3,2,2,4,3,3,3,2,4,2,2,5,2,2,2};
-    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D,
-        "Mallas esperadas de Tuberias del Desierto");
-    auto paquete = ObtenerPaqueteTuberiasDesiertoRetro3D();
-    CargarPaqueteModelosEscenarioRetro3D(paquete);
-    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Tuberias del Desierto");
-}
-
-inline bool DibujarModeloTuberiasDesiertoRetro3D(ModeloTuberiasDesierto3D pieza,
-    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
-    Vector3 escala = {1,1,1}, Color color = WHITE)
-{
-    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_TUBERIAS_DESIERTO_3D) return false;
-    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().tuberiasDesierto[pieza],
-        posicion, eje, angulo, escala, color);
-}
-
-// TREPA EL MASTIL
-inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteTrepaMastilRetro3D()
-{
-    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_TREPA_MASTIL_3D];
-    static bool definidas = false;
-    if (!definidas)
-    {
-        for (int i = 0; i < CANTIDAD_MODELOS_TREPA_MASTIL_3D; i++)
-            definiciones[i].ruta = RUTAS_MODELOS_TREPA_MASTIL_3D[i];
-        definidas = true;
-    }
-    return {ObtenerModelosEscenariosRetro3D().trepaMastil,
-        definiciones, CANTIDAD_MODELOS_TREPA_MASTIL_3D};
-}
-
-inline void CargarPaqueteTrepaMastilRetro3D()
-{
-    static constexpr int esperadas[] =
-        {5,4,4,4,3,1,1,1,1,4,3,3,3,3,3,4,4,4,1,3,4,3,1,1,4};
-    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_TREPA_MASTIL_3D,
-        "Mallas esperadas de Trepa el Mastil");
-    auto paquete = ObtenerPaqueteTrepaMastilRetro3D();
-    CargarPaqueteModelosEscenarioRetro3D(paquete);
-    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Trepa el Mastil");
-}
-
-inline bool DibujarModeloTrepaMastilRetro3D(ModeloTrepaMastil3D pieza,
-    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
-    Vector3 escala = {1,1,1}, Color color = WHITE)
-{
-    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_TREPA_MASTIL_3D) return false;
-    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().trepaMastil[pieza],
-        posicion, eje, angulo, escala, color);
-}
-
-// GUARDIAN DE RUINAS
-inline PaqueteModelosEscenarioRetro3D ObtenerPaqueteGuardianRuinasRetro3D()
-{
-    static DefinicionModeloEscenarioRetro3D definiciones[CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D];
-    static bool definidas = false;
-    if (!definidas)
-    {
-        for (int i = 0; i < CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D; i++)
-            definiciones[i].ruta = RUTAS_MODELOS_GUARDIAN_RUINAS_3D[i];
-        definidas = true;
-    }
-    return {ObtenerModelosEscenariosRetro3D().guardianRuinas,
-        definiciones, CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D};
-}
-
-inline void CargarPaqueteGuardianRuinasRetro3D()
-{
-    static constexpr int esperadas[] =
-        {3,4,3,3,5,3,4,2,4,2,6,2,3,4,3,2,3,3,4,4};
-    static_assert(sizeof(esperadas) / sizeof(esperadas[0]) == CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D,
-        "Mallas esperadas de Guardian de Ruinas");
-    auto paquete = ObtenerPaqueteGuardianRuinasRetro3D();
-    CargarPaqueteModelosEscenarioRetro3D(paquete);
-    ValidarMallasPaqueteEscenarioRetro3D(paquete, esperadas, "Guardian de Ruinas");
-}
-
-inline bool DibujarModeloGuardianRuinasRetro3D(ModeloGuardianRuinas3D pieza,
-    Vector3 posicion = {}, float angulo = 0, Vector3 eje = {0,1,0},
-    Vector3 escala = {1,1,1}, Color color = WHITE)
-{
-    if (pieza < 0 || pieza >= CANTIDAD_MODELOS_GUARDIAN_RUINAS_3D) return false;
-    return DibujarModeloEscenarioRetro3D(ObtenerModelosEscenariosRetro3D().guardianRuinas[pieza],
-        posicion, eje, angulo, escala, color);
-}
-
 inline void DescargarModelosEscenariosRetro3D()
 {
     ModelosEscenariosRetro3D& recursos =
@@ -2012,20 +1661,6 @@ inline void DescargarModelosEscenariosRetro3D()
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.racimoToxico)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     for (RecursoModeloEscenarioRetro3D& recurso : recursos.tesoreroCercado)
-        DescargarSlotModeloEscenarioRetro3D(recurso);
-    for (RecursoModeloEscenarioRetro3D& recurso : recursos.balsasRapido)
-        DescargarSlotModeloEscenarioRetro3D(recurso);
-    for (RecursoModeloEscenarioRetro3D& recurso : recursos.autosGlobo)
-        DescargarSlotModeloEscenarioRetro3D(recurso);
-    for (RecursoModeloEscenarioRetro3D& recurso : recursos.senderoInvisible)
-        DescargarSlotModeloEscenarioRetro3D(recurso);
-    for (RecursoModeloEscenarioRetro3D& recurso : recursos.banqueteTurbo)
-        DescargarSlotModeloEscenarioRetro3D(recurso);
-    for (RecursoModeloEscenarioRetro3D& recurso : recursos.tuberiasDesierto)
-        DescargarSlotModeloEscenarioRetro3D(recurso);
-    for (RecursoModeloEscenarioRetro3D& recurso : recursos.trepaMastil)
-        DescargarSlotModeloEscenarioRetro3D(recurso);
-    for (RecursoModeloEscenarioRetro3D& recurso : recursos.guardianRuinas)
         DescargarSlotModeloEscenarioRetro3D(recurso);
     recursos.inicializados = false;
 }
