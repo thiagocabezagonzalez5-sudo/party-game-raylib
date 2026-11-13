@@ -136,3 +136,7 @@ struct JugadorPrueba
 // Duraciones compartidas de la animacion del golpe (segundos).
 inline constexpr float DURACION_ANTICIPACION_GOLPE = 0.07f;
 inline constexpr float DURACION_ANIMACION_GOLPE = 0.40f;
+
+// Inmunidad breve al recuperarse de un aturdimiento: evita encadenar
+// golpes sobre alguien que recien se levanta.
+inline constexpr float INMUNIDAD_TRAS_ATURDIDO = 0.45f;

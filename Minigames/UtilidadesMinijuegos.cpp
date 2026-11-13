@@ -1175,12 +1175,29 @@ void ReiniciarJugadorPrueba(
 
     jugador.multiplicadorRalentizacion =
         1.0f;
+
+    jugador.tiempoAnticipacionGolpe =
+        0.0f;
+
+    jugador.tiempoAnimacionGolpe =
+        0.0f;
+
+    jugador.tiempoAturdido =
+        0.0f;
+
+    jugador.duracionAturdido =
+        0.0f;
+
+    jugador.derribado =
+        false;
+
+    jugador.direccionGolpeRecibido = {};
 }
 
 
 void ActualizarJugadorPrueba(
     JugadorPrueba& jugador,
-    const InputMinijuegoParticipante& entrada,
+    const InputMinijuegoParticipante& entradaOriginal,
     BloquePrueba bloques[],
     int cantidadBloques,
     ParticulaTierra particulas[],
@@ -1191,6 +1208,42 @@ void ActualizarJugadorPrueba(
     float deltaTime
 )
 {
+    InputMinijuegoParticipante entrada = entradaOriginal;
+
+    //------------------------------
+    // ATURDIMIENTO
+    //------------------------------
+    //
+    // Mientras dura no hay control: el empuje del golpe sigue actuando
+    // (se desliza o cae de espaldas) pero no puede moverse, saltar ni
+    // golpear. Al terminar recupera el control solo, con una inmunidad
+    // breve para no ser golpeado de nuevo apenas se levanta.
+
+    if (jugador.tiempoAturdido > 0.0f)
+    {
+        entrada.izquierda = false;
+        entrada.derecha = false;
+        entrada.adelante = false;
+        entrada.atras = false;
+        entrada.saltar = false;
+        entrada.golpear = false;
+
+        jugador.tiempoAturdido -=
+            deltaTime;
+
+        if (jugador.tiempoAturdido <= 0.0f)
+        {
+            jugador.tiempoAturdido = 0.0f;
+            jugador.duracionAturdido = 0.0f;
+            jugador.derribado = false;
+
+            if (jugador.tiempoInmunidad < INMUNIDAD_TRAS_ATURDIDO)
+            {
+                jugador.tiempoInmunidad = INMUNIDAD_TRAS_ATURDIDO;
+            }
+        }
+    }
+
     if (jugador.tiempoInmunidad > 0.0f)
     {
         jugador.tiempoInmunidad -=
@@ -1230,23 +1283,57 @@ void ActualizarJugadorPrueba(
         }
     }
 
+    if (jugador.tiempoAnimacionGolpe > 0.0f)
+    {
+        jugador.tiempoAnimacionGolpe -=
+            deltaTime;
+
+        if (jugador.tiempoAnimacionGolpe < 0.0f)
+        {
+            jugador.tiempoAnimacionGolpe =
+                0.0f;
+        }
+    }
+
+    // Tras la anticipacion (brazo hacia atras) el golpe queda activo: el
+    // impacto coincide con el brazo extendiendose, no con el boton.
+    if (jugador.tiempoAnticipacionGolpe > 0.0f)
+    {
+        jugador.tiempoAnticipacionGolpe -=
+            deltaTime;
+
+        if (jugador.tiempoAnticipacionGolpe <= 0.0f)
+        {
+            jugador.tiempoAnticipacionGolpe =
+                0.0f;
+
+            jugador.golpeando =
+                true;
+
+            jugador.golpeYaConecto =
+                false;
+
+            jugador.tiempoGolpe =
+                0.20f;
+        }
+    }
+
     if (
         entrada.golpear &&
         jugador.cooldownGolpe <= 0.0f &&
-        !jugador.golpeSueloActivo
+        !jugador.golpeSueloActivo &&
+        !jugador.golpeando &&
+        jugador.tiempoAnticipacionGolpe <= 0.0f
     )
     {
-        jugador.golpeando =
-            true;
+        jugador.tiempoAnticipacionGolpe =
+            DURACION_ANTICIPACION_GOLPE;
 
-        jugador.golpeYaConecto =
-            false;
-
-        jugador.tiempoGolpe =
-            0.20f;
+        jugador.tiempoAnimacionGolpe =
+            DURACION_ANIMACION_GOLPE;
 
         jugador.cooldownGolpe =
-            0.48f;
+            0.48f + DURACION_ANTICIPACION_GOLPE;
     }
 
     if (jugador.cooldownChoque > 0.0f)
@@ -1577,6 +1664,7 @@ bool ResolverGolpesSuelo(
                 !participantes[j].conectado ||
                 objetivo.cayendo ||
                 objetivo.aplastado ||
+                objetivo.tiempoAturdido > 0.0f ||
                 objetivo.tiempoInmunidad > 0.0f
             )
             {
@@ -1627,6 +1715,12 @@ bool ResolverGolpesSuelo(
 
             objetivo.golpeando =
                 false;
+
+            objetivo.tiempoAnticipacionGolpe =
+                0.0f;
+
+            objetivo.tiempoAnimacionGolpe =
+                0.0f;
 
             objetivo.preparandoGolpeSuelo =
                 false;

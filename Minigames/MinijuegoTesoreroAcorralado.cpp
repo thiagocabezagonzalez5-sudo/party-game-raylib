@@ -567,9 +567,7 @@ static void ResolverGolpesTesorero(
             atacante.aplastado ||
             !atacante.golpeando ||
             atacante.golpeYaConecto ||
-            tesorero.cayendo ||
-            tesorero.aplastado ||
-            tesorero.tiempoInmunidad > 0.0f
+            !PuedeRecibirGolpeJugador(tesorero)
         )
         {
             continue;
@@ -600,10 +598,13 @@ static void ResolverGolpesTesorero(
             continue;
         }
 
-        tesorero.empuje.x += normalX * FUERZA_GOLPE_JUGADOR_ESTANDAR;
-        tesorero.empuje.z += normalZ * FUERZA_GOLPE_JUGADOR_ESTANDAR;
-        tesorero.tiempoRalentizado = DURACION_RALENTIZACION_GOLPE;
-        tesorero.multiplicadorRalentizacion = MULTIPLICADOR_VELOCIDAD_RALENTIZADO;
+        // Mismo impacto que el resto de los modos, siempre leve: con tres
+        // atacantes un derribo dejaria al tesorero sin escapatoria.
+        AplicarGolpeRecibidoJugador(
+            tesorero,
+            DireccionEmpujeGolpeJugador(atacante, normalX, normalZ),
+            false
+        );
         tesorero.tiempoInmunidad = INMUNIDAD_TESORERO;
         atacante.golpeYaConecto = true;
 
@@ -638,6 +639,7 @@ static void ResolverGolpesTesorero(
                 minijuego.estadosJugadores[j].equipo < 0 ||
                 minijuego.estadosJugadores[j].equipo == minijuego.estadosJugadores[i].equipo ||
                 objetivo.cayendo ||
+                objetivo.tiempoAturdido > 0.0f ||
                 objetivo.aplastado ||
                 objetivo.tiempoInmunidad > 0.0f
             )
@@ -659,6 +661,8 @@ static void ResolverGolpesTesorero(
             objetivo.aplastado = true;
             objetivo.tiempoAplastado = DURACION_APLASTADO_GROUND_POUND;
             objetivo.golpeando = false;
+            objetivo.tiempoAnticipacionGolpe = 0.0f;
+            objetivo.tiempoAnimacionGolpe = 0.0f;
             objetivo.preparandoGolpeSuelo = false;
             objetivo.tiempoPreparacionGolpeSuelo = 0.0f;
             objetivo.golpeSueloActivo = false;

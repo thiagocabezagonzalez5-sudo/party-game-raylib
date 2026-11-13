@@ -324,6 +324,10 @@ static void EliminarJugadorAsiento(
     jugador.enSuelo = true;
     jugador.cayendo = false;
     jugador.golpeando = false;
+    jugador.tiempoAnticipacionGolpe = 0.0f;
+    jugador.tiempoAnimacionGolpe = 0.0f;
+    jugador.tiempoAturdido = 0.0f;
+    jugador.derribado = false;
     jugador.preparandoGolpeSuelo = false;
     jugador.golpeSueloActivo = false;
     jugador.impactoGolpeSuelo = false;

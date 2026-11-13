@@ -19,9 +19,24 @@ const float GRAVEDAD_JUGADOR_ESTANDAR = 18.0f;
 const float DURACION_RESPAWN_JUGADOR_ESTANDAR = 1.2f;
 
 const float COOLDOWN_GOLPE_JUGADOR_ESTANDAR = 0.80f;
-const float FUERZA_GOLPE_JUGADOR_ESTANDAR = 4.2f;
 const float DURACION_RALENTIZACION_GOLPE = 0.70f;
 const float MULTIPLICADOR_VELOCIDAD_RALENTIZADO = 0.45f;
+
+// Empuje del golpe. Es un impulso que se frena solo (factor 5.5/s en el
+// movimiento normal), asi que recorre aprox. fuerza / 5.5: unos 1.5 m el
+// golpe normal y 2.1 m el fuerte. Las colisiones con bloques se resuelven
+// en subpasos de 0.3 m, por lo que no atraviesa paredes.
+const float FUERZA_GOLPE_JUGADOR_ESTANDAR = 8.5f;
+const float FUERZA_GOLPE_JUGADOR_FUERTE = 11.5f;
+
+// Aturdimiento: el golpe normal tambalea, el fuerte (golpear corriendo)
+// derriba y deja al rival acostado hasta que se levanta.
+const float DURACION_ATURDIDO_GOLPE = 0.55f;
+const float DURACION_ATURDIDO_DERRIBO = 1.05f;
+
+// Fraccion de la velocidad maxima hacia adelante para que el golpe cuente
+// como "corriendo".
+const float FRACCION_VELOCIDAD_GOLPE_FUERTE = 0.60f;
 
 // Preparacion mas corta: conserva la lectura del movimiento pero responde
 // bastante antes. Durante toda la preparacion y la caida el jugador sigue
@@ -267,6 +282,8 @@ inline void ActualizarJugadorPruebaNormal(
         jugador.tiempoPreparacionGolpeSuelo =
             DURACION_PREPARACION_GROUND_POUND;
         jugador.golpeando = false;
+        jugador.tiempoAnticipacionGolpe = 0.0f;
+        jugador.tiempoAnimacionGolpe = 0.0f;
     }
 
     if (jugador.enSuelo && jugador.preparandoGolpeSuelo)
@@ -654,6 +671,103 @@ inline void CrearParticulasImpactoGolpe(
 // GOLPE HORIZONTAL
 //==================================================
 
+// Un jugador solo puede recibir un golpe si no esta ya en otro estado de
+// impacto (aturdido, aplastado, cayendo) ni inmune.
+inline bool PuedeRecibirGolpeJugador(
+    const JugadorPrueba& objetivo
+)
+{
+    return
+        !objetivo.cayendo &&
+        !objetivo.aplastado &&
+        objetivo.tiempoAturdido <= 0.0f &&
+        objetivo.tiempoInmunidad <= 0.0f;
+}
+
+
+// Golpe fuerte: el atacante venia corriendo hacia donde mira.
+inline bool EsGolpeFuerteJugador(
+    const JugadorPrueba& atacante
+)
+{
+    float avance =
+        atacante.velocidad.x * atacante.direccionMirada.x +
+        atacante.velocidad.z * atacante.direccionMirada.z;
+
+    float maxima =
+        atacante.velocidadMovimiento > 1.0f
+        ? atacante.velocidadMovimiento
+        : 1.0f;
+
+    return avance >= maxima * FRACCION_VELOCIDAD_GOLPE_FUERTE;
+}
+
+
+// Direccion del empuje: sobre todo la linea entre ambos (posicion) y en
+// parte hacia donde mira el atacante (orientacion). Siempre horizontal.
+inline Vector3 DireccionEmpujeGolpeJugador(
+    const JugadorPrueba& atacante,
+    float normalX,
+    float normalZ
+)
+{
+    float x = normalX * 0.6f + atacante.direccionMirada.x * 0.4f;
+    float z = normalZ * 0.6f + atacante.direccionMirada.z * 0.4f;
+    float largo = std::sqrt(x * x + z * z);
+
+    if (largo < 0.001f)
+    {
+        return { normalX, 0.0f, normalZ };
+    }
+
+    return { x / largo, 0.0f, z / largo };
+}
+
+
+// Aplica el impacto completo a quien recibe el golpe: empuje, aturdimiento
+// (tambaleo o derribo) y cancelacion de lo que estuviera haciendo. El
+// empuje reemplaza al anterior para que no se acumulen impulsos.
+inline void AplicarGolpeRecibidoJugador(
+    JugadorPrueba& objetivo,
+    Vector3 direccion,
+    bool fuerte
+)
+{
+    float fuerza =
+        fuerte
+        ? FUERZA_GOLPE_JUGADOR_FUERTE
+        : FUERZA_GOLPE_JUGADOR_ESTANDAR;
+
+    objetivo.empuje.x = direccion.x * fuerza;
+    objetivo.empuje.z = direccion.z * fuerza;
+
+    objetivo.tiempoAturdido =
+        fuerte
+        ? DURACION_ATURDIDO_DERRIBO
+        : DURACION_ATURDIDO_GOLPE;
+
+    objetivo.duracionAturdido = objetivo.tiempoAturdido;
+    objetivo.derribado = fuerte;
+    objetivo.direccionGolpeRecibido = direccion;
+
+    objetivo.golpeando = false;
+    objetivo.tiempoGolpe = 0.0f;
+    objetivo.tiempoAnticipacionGolpe = 0.0f;
+    objetivo.tiempoAnimacionGolpe = 0.0f;
+    objetivo.preparandoGolpeSuelo = false;
+    objetivo.tiempoPreparacionGolpeSuelo = 0.0f;
+
+    objetivo.tiempoRalentizado = DURACION_RALENTIZACION_GOLPE;
+    objetivo.multiplicadorRalentizacion =
+        MULTIPLICADOR_VELOCIDAD_RALENTIZADO;
+
+    if (fuerte)
+    {
+        ActivarTemblorCamaraGeneral(0.07f, 0.16f);
+    }
+}
+
+
 inline void ResolverGolpesJugadoresConEfectos(
     JugadorPrueba jugadores[],
     const Participante participantes[],
@@ -694,9 +808,7 @@ inline void ResolverGolpesJugadoresConEfectos(
             if (
                 !participantes[j].activo ||
                 !participantes[j].conectado ||
-                objetivo.cayendo ||
-                objetivo.aplastado ||
-                objetivo.tiempoInmunidad > 0.0f
+                !PuedeRecibirGolpeJugador(objetivo)
             )
             {
                 continue;
@@ -736,11 +848,11 @@ inline void ResolverGolpesJugadoresConEfectos(
             float normalX = mejorNormalX;
             float normalZ = mejorNormalZ;
 
-            objetivo.empuje.x += normalX * FUERZA_GOLPE_JUGADOR_ESTANDAR;
-            objetivo.empuje.z += normalZ * FUERZA_GOLPE_JUGADOR_ESTANDAR;
-            objetivo.tiempoRalentizado = DURACION_RALENTIZACION_GOLPE;
-            objetivo.multiplicadorRalentizacion =
-                MULTIPLICADOR_VELOCIDAD_RALENTIZADO;
+            AplicarGolpeRecibidoJugador(
+                objetivo,
+                DireccionEmpujeGolpeJugador(atacante, normalX, normalZ),
+                EsGolpeFuerteJugador(atacante)
+            );
 
             Vector3 posicionImpacto =
             {

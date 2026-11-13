@@ -534,6 +534,8 @@ static void ConvertirEnImpactoDirecto(
     jugador.golpeSueloActivo = false;
     jugador.preparandoGolpeSuelo = false;
     jugador.golpeando = false;
+    jugador.tiempoAnticipacionGolpe = 0.0f;
+    jugador.tiempoAnimacionGolpe = 0.0f;
 
     estado.impactoDirecto = true;
     estado.tiempoHastaEliminacionDirecta = DURACION_VUELO_DIRECTO;
