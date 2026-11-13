@@ -58,66 +58,22 @@
 #include "Minigames/MinijuegoVagonetasDuelo.h"
 #include "Minigames/MinijuegoGemasDeslizantes.h"
 
+#include "Gameplay/ListaMinijuegos.h"
+
 
 // Punto unico de propiedad y dispatch de los minijuegos.
-// Las diferencias de firmas permanecen visibles en GestorMinijuegos.cpp.
+// Los miembros y cada dispatch se generan desde LISTA_MINIJUEGOS
+// (Gameplay/ListaMinijuegos.h); las firmas distintas estan en esa tabla.
 struct GestorMinijuegos
 {
     IdMinijuego minijuegoActivo = MINIJUEGO_COLOR_SEGURO;
 
-    MinijuegoColorSeguro minijuegoColor;
-    MinijuegoPelotas minijuegoPelotas;
-    MinijuegoTronco minijuegoTronco;
-    Minijuego67 minijuego67;
-    MinijuegoIslaFuego minijuegoIslaFuego;
-    MinijuegoCapitanManda minijuegoCapitanManda;
-    MinijuegoBarraGiratoria minijuegoBarraGiratoria;
-    MinijuegoNucleosEnergia minijuegoNucleosEnergia;
-    MinijuegoRefugioPinchos minijuegoRefugioPinchos;
-    MinijuegoMiradasCruzadas minijuegoMiradasCruzadas;
-    MinijuegoMurosLocos minijuegoMurosLocos;
-    MinijuegoTormentaMagnetica minijuegoTormentaMagnetica;
-    MinijuegoConteoExplosivo minijuegoConteoExplosivo;
-    MinijuegoPasoSilencioso minijuegoPasoSilencioso;
-    MinijuegoCircuitoVoltaje minijuegoCircuitoVoltaje;
-    MinijuegoTrazoPerfecto minijuegoTrazoPerfecto;
-    MinijuegoCargaInestable minijuegoCargaInestable;
-    MinijuegoSecuenciaNeon minijuegoSecuenciaNeon;
-    MinijuegoInterruptoresCaos minijuegoInterruptoresCaos;
-    MinijuegoTanquesPlasma minijuegoTanquesPlasma;
-    MinijuegoPasarelasVacio minijuegoPasarelasVacio;
-    MinijuegoCanteraFuga minijuegoCanteraFuga;
-    MinijuegoTerritorioConquista minijuegoTerritorioConquista;
-    MinijuegoDefensaNucleo minijuegoDefensaNucleo;
-    MinijuegoLluviaApilada minijuegoLluviaApilada;
-    MinijuegoCuerdaAcantilado minijuegoCuerdaAcantilado;
-    MinijuegoUltimoAsiento minijuegoUltimoAsiento;
-    MinijuegoCajasPuerto minijuegoCajasPuerto;
-    MinijuegoLaberintoInclinado minijuegoLaberintoInclinado;
-    MinijuegoVetaCristal minijuegoVetaCristal;
-    MinijuegoCapsulasBarajadas minijuegoCapsulasBarajadas;
-    MinijuegoBateoMeteorico minijuegoBateoMeteorico;
-    MinijuegoRacimoToxico minijuegoRacimoToxico;
-    MinijuegoTesoreroAcorralado minijuegoTesoreroAcorralado;
-    MinijuegoDescensoNubes minijuegoDescensoNubes;
-    MinijuegoVoleaMagma minijuegoVoleaMagma;
-    MinijuegoParejasGlaciar minijuegoParejasGlaciar;
-    MinijuegoEsferasCanon minijuegoEsferasCanon;
-    MinijuegoPescaIsla minijuegoPescaIsla;
-    MinijuegoRodillosNeon minijuegoRodillosNeon;
-    MinijuegoBolasAzucar minijuegoBolasAzucar;
-    MinijuegoGruaChatarra minijuegoGruaChatarra;
-    MinijuegoPisotonPlagas minijuegoPisotonPlagas;
-    MinijuegoBalsasRapido minijuegoBalsasRapido;
-    MinijuegoAutosGlobo minijuegoAutosGlobo;
-    MinijuegoSenderoInvisible minijuegoSenderoInvisible;
-    MinijuegoBanqueteTurbo minijuegoBanqueteTurbo;
-    MinijuegoTuberiasDesierto minijuegoTuberiasDesierto;
-    MinijuegoTrepaMastil minijuegoTrepaMastil;
-    MinijuegoGuardianRuinas minijuegoGuardianRuinas;
-    MinijuegoCablesCruzados minijuegoCablesCruzados;
-    MinijuegoVagonetasDuelo minijuegoVagonetasDuelo;
-    MinijuegoGemasDeslizantes minijuegoGemasDeslizantes;
+#define GM_DECLARAR_MIEMBRO(id, Tipo, miembro, activar, reiniciar, actualizar, dibujar, audio, ia, descarga) \
+    Tipo miembro;
+
+    LISTA_MINIJUEGOS(GM_DECLARAR_MIEMBRO)
+
+#undef GM_DECLARAR_MIEMBRO
 
     void Inicializar();
 
