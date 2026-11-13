@@ -17,6 +17,7 @@
 #include "UI/PantallaLogo.h"
 #include "UI/RuletaMinijuegos.h"
 #include "UI/FlujoPartida.h"
+#include "UI/Cinematicas.h"
 #include "UI/SeleccionMinijuegos.h"
 #include "UI/SeleccionPersonajes.h"
 
@@ -46,6 +47,13 @@ struct Juego
     IntroTablero introTablero;
     OrdenTurno ordenTurno;
     ResultadosPartida resultadosPartida;
+
+    // Cinematicas (ver UI/Cinematicas.h). El minijuego elegido por la
+    // ruleta se activa al terminar su presentacion.
+    CinematicaApertura cinematicaApertura;
+    CinematicaMinijuego cinematicaMinijuego;
+    CinematicaCampeon cinematicaCampeon;
+    IdMinijuego minijuegoPresentado = MINIJUEGO_COLOR_SEGURO;
 
     ZonaPruebas zonaPruebas;
     PartidaTablero partidaTablero;

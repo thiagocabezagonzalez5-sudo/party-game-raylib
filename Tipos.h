@@ -36,5 +36,12 @@ enum EstadoJuego
     // Tablero: fin de ronda -> ruleta -> minijuego -> resultado -> tablero.
     ESTADO_RULETA_MINIJUEGO,
     ESTADO_MINIJUEGO,
-    ESTADO_RESULTADO
+    ESTADO_RESULTADO,
+
+    // Cinematicas (UI/Cinematicas): apertura tras el logo, presentacion
+    // del minijuego tras la ruleta y festejo del campeon antes de los
+    // resultados. Todas se pueden omitir.
+    ESTADO_CINEMATICA_APERTURA,
+    ESTADO_INTRO_MINIJUEGO,
+    ESTADO_CINEMATICA_CAMPEON
 };

@@ -756,10 +756,12 @@ static CategoriaMusica ObtenerCategoriaMusicaEstado(
         case ESTADO_INTRO_TABLERO:
         case ESTADO_ORDEN_TURNO:
         case ESTADO_RESULTADOS_PARTIDA:
+        case ESTADO_CINEMATICA_CAMPEON:
             return MUSICA_TABLERO;
 
         case ESTADO_ZONA_PRUEBAS:
         case ESTADO_MINIJUEGO:
+        case ESTADO_INTRO_MINIJUEGO:
             return MUSICA_MINIJUEGO;
 
         default:
@@ -819,9 +821,64 @@ void Juego::Actualizar(
                 pantallaLogo.Termino()
             )
             {
-                menuPrincipal.PrepararEntrada(true);
+                // La musica del menu acompana la cinematica de apertura.
                 audio.ReproducirMusicaMenu();
+                cinematicaApertura.Inicializar();
+                estado = ESTADO_CINEMATICA_APERTURA;
+            }
+
+            break;
+        }
+
+        case ESTADO_CINEMATICA_APERTURA:
+        {
+            cinematicaApertura.Actualizar(deltaTime);
+
+            if (cinematicaApertura.estado.terminada)
+            {
+                menuPrincipal.PrepararEntrada(true);
                 estado = ESTADO_MENU;
+            }
+
+            break;
+        }
+
+        case ESTADO_INTRO_MINIJUEGO:
+        {
+            ActualizarConexionesParticipantes(
+                participantes,
+                MAX_PARTICIPANTES
+            );
+
+            cinematicaMinijuego.Actualizar(deltaTime);
+
+            if (cinematicaMinijuego.estado.terminada)
+            {
+                zonaPruebas.Inicializar(
+                    rondaEsDuelo ? participantesDuelo : participantes,
+                    MAX_PARTICIPANTES,
+                    &audio
+                );
+
+                zonaPruebas.modoCatalogo = true;
+                zonaPruebas.modoTablero = true;
+                zonaPruebas.CambiarMinijuego(minijuegoPresentado);
+
+                tiempoResultadoMinijuegoTablero = 0.0f;
+                tiempoRondaMinijuegoTablero = 0.0f;
+                estado = ESTADO_MINIJUEGO;
+            }
+
+            break;
+        }
+
+        case ESTADO_CINEMATICA_CAMPEON:
+        {
+            cinematicaCampeon.Actualizar(deltaTime);
+
+            if (cinematicaCampeon.estado.terminada)
+            {
+                estado = ESTADO_RESULTADOS_PARTIDA;
             }
 
             break;
@@ -1348,8 +1405,16 @@ void Juego::Actualizar(
                     break;
                 }
 
+                // La clasificacion la calcula ResultadosPartida; el festejo
+                // del campeon la usa antes de mostrar la tabla.
                 resultadosPartida.Inicializar(partidaTablero);
-                estado = ESTADO_RESULTADOS_PARTIDA;
+                cinematicaCampeon.Inicializar(
+                    resultadosPartida.ranking,
+                    resultadosPartida.puesto,
+                    resultadosPartida.cantidad,
+                    participantes
+                );
+                estado = ESTADO_CINEMATICA_CAMPEON;
                 break;
             }
 
@@ -1475,22 +1540,18 @@ void Juego::Actualizar(
 
             if (ruletaMinijuegos.Termino())
             {
-                IdMinijuego minijuegoElegido =
+                // Presentacion breve; el minijuego se activa al terminarla
+                // (ver ESTADO_INTRO_MINIJUEGO).
+                minijuegoPresentado =
                     ruletaMinijuegos.ObtenerMinijuegoElegido();
 
-                zonaPruebas.Inicializar(
+                cinematicaMinijuego.Inicializar(
+                    minijuegoPresentado,
                     rondaEsDuelo ? participantesDuelo : participantes,
-                    MAX_PARTICIPANTES,
-                    &audio
+                    rondaEsDuelo
                 );
 
-                zonaPruebas.modoCatalogo = true;
-                zonaPruebas.modoTablero = true;
-                zonaPruebas.CambiarMinijuego(minijuegoElegido);
-
-                tiempoResultadoMinijuegoTablero = 0.0f;
-                tiempoRondaMinijuegoTablero = 0.0f;
-                estado = ESTADO_MINIJUEGO;
+                estado = ESTADO_INTRO_MINIJUEGO;
             }
 
             break;
@@ -1770,6 +1831,18 @@ void Juego::Dibujar()
 
         case ESTADO_RESULTADOS_PARTIDA:
             resultadosPartida.Dibujar(participantes);
+            break;
+
+        case ESTADO_CINEMATICA_APERTURA:
+            cinematicaApertura.Dibujar();
+            break;
+
+        case ESTADO_INTRO_MINIJUEGO:
+            cinematicaMinijuego.Dibujar();
+            break;
+
+        case ESTADO_CINEMATICA_CAMPEON:
+            cinematicaCampeon.Dibujar();
             break;
 
         case ESTADO_SELECCION_MINIJUEGO:

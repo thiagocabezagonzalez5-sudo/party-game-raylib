@@ -30,6 +30,9 @@ static const char* NombreEstado(EstadoJuego e)
         case ESTADO_RESULTADO: return "RESULTADO";
         case ESTADO_RESULTADOS_PARTIDA: return "RESULTADOS_PARTIDA";
         case ESTADO_ZONA_PRUEBAS: return "ZONA_PRUEBAS";
+        case ESTADO_INTRO_MINIJUEGO: return "INTRO_MINIJUEGO";
+        case ESTADO_CINEMATICA_CAMPEON: return "CINEMATICA_CAMPEON";
+        case ESTADO_CINEMATICA_APERTURA: return "CINEMATICA_APERTURA";
         default: return "OTRO";
     }
 }
