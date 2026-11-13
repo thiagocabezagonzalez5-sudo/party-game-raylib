@@ -15,7 +15,7 @@
 //
 // Pantallas que rodean a PartidaTablero:
 //
-//   jugadores -> SeleccionTablero -> ConfiguracionPartida -> IntroTablero
+//   jugadores -> SeleccionTablero -> ConfiguracionPartida -> CinematicaTablero
 //   -> OrdenTurno -> partida -> ResultadosPartida
 //
 // Todas comparten las mismas reglas de entrada:
@@ -24,7 +24,7 @@
 //     que la pulsacion que abrio la pantalla no la confirme sola.
 //   - El stick/cruceta del mando solo cuenta al INICIAR el movimiento.
 //   - Cancelar (ESC / B / Backspace / Shift) vuelve a la pantalla anterior.
-//     Excepcion: IntroTablero no tiene a donde volver (la partida ya esta
+//     Excepcion: CinematicaTablero (UI/Cinematicas) no tiene a donde volver (la partida ya esta
 //     preparada) y lo ignora; solo se salta confirmando.
 
 inline constexpr float BLOQUEO_ENTRADA_FLUJO = 0.30f;
@@ -152,46 +152,6 @@ struct ConfiguracionPartida
     ) const;
 
     int ObtenerRondas() const;
-};
-
-
-//==================================================
-// INTRO DEL TABLERO
-//==================================================
-
-struct IntroTablero
-{
-    static constexpr float DURACION = 5.5f;
-
-    IdTablero tablero = TABLERO_ISLA_ARBOLEDA;
-    int rondas = 5;
-
-    float tiempo = 0.0f;
-    bool terminada = false;
-
-    LectorEntradaFlujo lector;
-
-    // Presentacion "tierra a la vista" (EstiloUI): el mapa a pantalla
-    // completa, el nombre pintado sobre el mundo y una bitacora al pie con
-    // la historia, el objetivo y el gimmick. Un barco cruza la ruta de la
-    // bitacora mientras corre el tiempo de la presentacion.
-    TarjetaUI bitacora;
-
-    // Mascara de controles de los humanos (ver SeleccionTablero).
-    int controlesAyuda = -1;
-
-    void Inicializar(
-        IdTablero idTablero,
-        int cantidadRondas
-    );
-
-    void Actualizar(
-        float deltaTime,
-        const Participante participantes[],
-        int cantidad
-    );
-
-    void Dibujar() const;
 };
 
 

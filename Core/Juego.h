@@ -44,7 +44,6 @@ struct Juego
     // Pantallas de la partida de tablero (ver UI/FlujoPartida.h).
     SeleccionTablero seleccionTablero;
     ConfiguracionPartida configuracionPartida;
-    IntroTablero introTablero;
     OrdenTurno ordenTurno;
     ResultadosPartida resultadosPartida;
 
@@ -53,6 +52,7 @@ struct Juego
     CinematicaApertura cinematicaApertura;
     CinematicaMinijuego cinematicaMinijuego;
     CinematicaCampeon cinematicaCampeon;
+    CinematicaTablero cinematicaTablero;
     IdMinijuego minijuegoPresentado = MINIJUEGO_COLOR_SEGURO;
 
     ZonaPruebas zonaPruebas;

@@ -261,7 +261,11 @@ struct FormaPersonajeBloque
 };
 
 
-static const FormaPersonajeBloque FORMAS[CANTIDAD_PERSONAJES_BLOQUE] =
+// El vendedor de la tienda usa el mismo cuerpo con una forma propia, en el
+// indice siguiente a los cuatro jugables (no es elegible en la seleccion).
+static const int PERSONAJE_VENDEDOR = CANTIDAD_PERSONAJES_BLOQUE;
+
+static const FormaPersonajeBloque FORMAS[CANTIDAD_PERSONAJES_BLOQUE + 1] =
 {
     // BRICO: albanil robusto, torso ancho y piernas cortas.
     {
@@ -317,6 +321,20 @@ static const FormaPersonajeBloque FORMAS[CANTIDAD_PERSONAJES_BLOQUE] =
         Color{ 214, 150, 92, 255 },
         Color{ 166, 108, 62, 255 },
         Color{ 214, 150, 92, 255 }
+    },
+
+    // DON CAMBALACHE: vendedor panzon con delantal y gorro a rayas.
+    {
+        "DON CAMBALACHE", "Todo tiene precio", Color{ 70, 160, 90, 255 },
+        0.38f, 0.22f, 0.13f,
+        0.66f, 0.44f, 0.40f,
+        0.17f, 0.38f,
+        0.46f, 0.42f, 0.42f,
+        0.26f,
+        Color{ 240, 190, 150, 255 },
+        Color{ 92, 62, 42, 255 },
+        Color{ 60, 40, 30, 255 },
+        Color{ 240, 190, 150, 255 }
     }
 };
 
@@ -400,10 +418,13 @@ static void DibujarOjos(
             continue;
         }
 
+        // apertura > 1 = susto: el ojo tambien se ensancha.
+        float ancho = apertura > 1.0f ? tam.x * (1.0f + (apertura - 1.0f) * 0.6f) : tam.x;
+
         Caja(
             cabeza,
             centro,
-            { tam.x, tam.y * apertura, tam.z },
+            { ancho, tam.y * apertura, tam.z },
             COLOR_OJO,
             alpha
         );
@@ -441,6 +462,42 @@ static float AperturaOjos(
 }
 
 
+// Apertura de ojos segun la pose: con susto quedan muy abiertos y no
+// parpadean.
+static float AperturaOjosPose(
+    const PosePersonajeBloque& pose,
+    int personaje
+)
+{
+    if (pose.susto > 0.05f)
+    {
+        return 1.0f + 0.5f * (pose.susto > 1.0f ? 1.0f : pose.susto);
+    }
+
+    return AperturaOjos(pose.tiempo, personaje);
+}
+
+
+// Apertura de la boca 0..1: en O con susto, abre y cierra al hablar.
+static float AperturaBoca(
+    const PosePersonajeBloque& pose
+)
+{
+    if (pose.susto > 0.4f)
+    {
+        return 1.0f;
+    }
+
+    if (pose.hablando)
+    {
+        float s = std::sin(pose.tiempo * 15.0f) * 0.5f + 0.5f;
+        return 0.15f + 0.6f * s * s;
+    }
+
+    return 0.0f;
+}
+
+
 //==================================================
 // CABEZAS
 //==================================================
@@ -471,7 +528,7 @@ static void CabezaBrico(
     Caja(m, { 0, A + 0.01f, 0 }, { f.anchoCabeza + 0.05f, 0.035f, f.fondoCabeza + 0.05f }, Color{ 240, 120, 30, 255 }, alpha);
 
     // Cejas gruesas (se fruncen al golpear).
-    float ceno = pose.golpe >= 0.0f ? 0.02f : 0.0f;
+    float ceno = (pose.golpe >= 0.0f ? 0.02f : 0.0f) - 0.03f * pose.susto;
     Color pelo = { 92, 58, 34, 255 };
 
     for (int lado = -1; lado <= 1; lado += 2)
@@ -479,12 +536,13 @@ static void CabezaBrico(
         Caja(m, { lado * 0.10f, A * 0.73f - ceno, frente + 0.01f }, { 0.13f, 0.04f, 0.02f }, pelo, alpha);
     }
 
-    DibujarOjos(m, frente, A * 0.58f, 0.10f, { 0.07f, 0.085f, 0.02f }, AperturaOjos(pose.tiempo, PERSONAJE_BRICO), pose.aturdido, alpha);
+    DibujarOjos(m, frente, A * 0.58f, 0.10f, { 0.07f, 0.085f, 0.02f }, AperturaOjosPose(pose, PERSONAJE_BRICO), pose.aturdido, alpha);
 
     // Nariz, bigote y sonrisa.
     Caja(m, { 0, A * 0.43f, frente + 0.025f }, { 0.07f, 0.07f, 0.05f }, Mezclar(f.piel, Color{ 200, 90, 70, 255 }, 0.25f), alpha);
     Caja(m, { 0, A * 0.31f, frente + 0.015f }, { 0.24f, 0.055f, 0.03f }, pelo, alpha);
-    Caja(m, { 0, A * 0.19f, frente + 0.008f }, { 0.12f, 0.028f, 0.02f }, Color{ 120, 40, 40, 255 }, alpha);
+    float boca = AperturaBoca(pose);
+    Caja(m, { 0, A * 0.19f - 0.02f * boca, frente + 0.008f }, { 0.12f - 0.04f * boca, 0.028f + 0.06f * boca, 0.02f }, Color{ 120, 40, 40, 255 }, alpha);
 }
 
 
@@ -522,7 +580,7 @@ static void CabezaPixi(
         Caja(m, { lado * 0.09f, A + 0.01f, zLente + 0.026f }, { 0.085f, 0.068f, 0.012f }, Color{ 120, 220, 240, 255 }, alpha, true);
     }
 
-    DibujarOjos(m, frente, A * 0.56f, 0.09f, { 0.075f, 0.105f, 0.02f }, AperturaOjos(pose.tiempo, PERSONAJE_PIXI), pose.aturdido, alpha);
+    DibujarOjos(m, frente, A * 0.56f, 0.09f, { 0.075f, 0.105f, 0.02f }, AperturaOjosPose(pose, PERSONAJE_PIXI), pose.aturdido, alpha);
 
     // Pecas y sonrisa abierta.
     Color peca = { 196, 112, 72, 255 };
@@ -541,7 +599,8 @@ static void CabezaPixi(
         }
     }
 
-    Caja(m, { 0, A * 0.24f, frente + 0.008f }, { 0.09f, 0.045f, 0.02f }, Color{ 150, 50, 64, 255 }, alpha);
+    float boca = AperturaBoca(pose);
+    Caja(m, { 0, A * 0.24f - 0.015f * boca, frente + 0.008f }, { 0.09f - 0.02f * boca, 0.045f + 0.045f * boca, 0.02f }, Color{ 150, 50, 64, 255 }, alpha);
 
     // Coleta alta que se balancea.
     float vaiven =
@@ -580,19 +639,27 @@ static void CabezaRoboto(
     // Visor oscuro con ojos LED.
     Caja(m, { 0, A * 0.58f, frente + 0.012f }, { f.anchoCabeza * 0.86f, A * 0.36f, 0.03f }, Color{ 34, 40, 56, 255 }, alpha);
 
-    float apertura = AperturaOjos(pose.tiempo, PERSONAJE_ROBOTO);
+    float apertura = AperturaOjosPose(pose, PERSONAJE_ROBOTO);
     Color led = pose.aturdido ? Color{ 255, 120, 60, 255 } : Color{ 96, 240, 255, 255 };
 
     for (int lado = -1; lado <= 1; lado += 2)
     {
         float alto = pose.aturdido ? 0.02f : 0.06f * apertura;
-        Caja(m, { lado * 0.10f, A * 0.58f, frente + 0.032f }, { 0.11f, alto, 0.014f }, led, alpha, true);
+        float ancho = apertura > 1.0f ? 0.11f * (1.0f + (apertura - 1.0f) * 0.4f) : 0.11f;
+        Caja(m, { lado * 0.10f, A * 0.58f, frente + 0.032f }, { ancho, alto, 0.014f }, led, alpha, true);
     }
 
-    // Boca de rejilla.
+    // Boca de rejilla; al hablar o asustarse se enciende una barra LED.
     for (int k = 0; k < 3; k++)
     {
         Caja(m, { 0, A * 0.17f + k * 0.035f, frente + 0.008f }, { 0.17f, 0.018f, 0.02f }, Color{ 50, 56, 70, 255 }, alpha);
+    }
+
+    float boca = AperturaBoca(pose);
+
+    if (boca > 0.0f)
+    {
+        Caja(m, { 0, A * 0.205f, frente + 0.02f }, { 0.12f, 0.012f + 0.05f * boca, 0.008f }, led, alpha, true);
     }
 
     // Antena con luz que late; se mece con el movimiento.
@@ -644,15 +711,75 @@ static void CabezaMomo(
     // Mancha clara de la frente y hocico.
     Caja(m, { 0, A * 0.30f, frente + 0.035f }, { 0.24f, 0.14f, 0.07f }, crema, alpha);
     Caja(m, { 0, A * 0.37f, frente + 0.078f }, { 0.08f, 0.05f, 0.025f }, COLOR_OJO, alpha);
-    Caja(m, { 0, A * 0.25f, frente + 0.074f }, { 0.07f, 0.02f, 0.02f }, Color{ 120, 60, 60, 255 }, alpha);
+    float boca = AperturaBoca(pose);
+    Caja(m, { 0, A * 0.25f - 0.015f * boca, frente + 0.074f }, { 0.07f - 0.02f * boca, 0.02f + 0.05f * boca, 0.02f }, Color{ 120, 60, 60, 255 }, alpha);
 
-    DibujarOjos(m, frente, A * 0.60f, 0.135f, { 0.095f, 0.12f, 0.02f }, AperturaOjos(pose.tiempo, PERSONAJE_MOMO), pose.aturdido, alpha);
+    DibujarOjos(m, frente, A * 0.60f, 0.135f, { 0.095f, 0.12f, 0.02f }, AperturaOjosPose(pose, PERSONAJE_MOMO), pose.aturdido, alpha);
 
     // Cachetes rosados.
     for (int lado = -1; lado <= 1; lado += 2)
     {
         Caja(m, { lado * 0.20f, A * 0.40f, frente + 0.006f }, { 0.08f, 0.04f, 0.012f }, rosa, alpha);
     }
+}
+
+
+static void CabezaVendedor(
+    const FormaPersonajeBloque& f,
+    const Matrix& m,
+    const PosePersonajeBloque& pose,
+    float alpha
+)
+{
+    const float A = f.altoCabeza;
+    const float frente = f.fondoCabeza * 0.5f;
+    const Color pelo = { 70, 44, 30, 255 };
+    const Color rojo = { 214, 58, 52, 255 };
+    const Color blanco = { 250, 244, 232, 255 };
+
+    CajaBiselada(m, { 0, A * 0.5f, 0 }, { f.anchoCabeza, A, f.fondoCabeza }, 0.035f, f.piel, alpha);
+
+    // Orejas y patillas.
+    for (int lado = -1; lado <= 1; lado += 2)
+    {
+        Caja(m, { lado * (f.anchoCabeza * 0.5f + 0.02f), A * 0.50f, 0.0f }, { 0.04f, 0.09f, 0.08f }, Mezclar(f.piel, BLACK, 0.08f), alpha);
+        Caja(m, { lado * (f.anchoCabeza * 0.5f - 0.01f), A * 0.66f, frente - 0.10f }, { 0.04f, 0.16f, 0.12f }, pelo, alpha);
+    }
+
+    // Gorro de vendedor a rayas rojas y blancas con cinta verde y moneda.
+    const float anchoGorro = f.anchoCabeza + 0.04f;
+    const int franjas = 5;
+
+    for (int k = 0; k < franjas; k++)
+    {
+        float x = -anchoGorro * 0.5f + anchoGorro * ((float)k + 0.5f) / (float)franjas;
+        Caja(m, { x, A + 0.09f, 0 }, { anchoGorro / (float)franjas, 0.16f, f.fondoCabeza + 0.04f }, k % 2 == 0 ? rojo : blanco, alpha);
+    }
+
+    Caja(m, { 0, A + 0.03f, 0 }, { anchoGorro + 0.02f, 0.05f, f.fondoCabeza + 0.06f }, f.distintivo, alpha);
+    Caja(m, { 0, A + 0.04f, frente + 0.045f }, { 0.07f, 0.07f, 0.02f }, Color{ 255, 206, 60, 255 }, alpha, true);
+    Caja(m, { 0, A + 0.002f, frente + 0.07f }, { anchoGorro, 0.025f, 0.10f }, rojo, alpha);
+
+    // Cejas pobladas (suben con el susto).
+    for (int lado = -1; lado <= 1; lado += 2)
+    {
+        Caja(m, { lado * 0.10f, A * 0.74f + 0.03f * pose.susto, frente + 0.01f }, { 0.12f, 0.035f, 0.02f }, pelo, alpha);
+    }
+
+    DibujarOjos(m, frente, A * 0.60f, 0.10f, { 0.07f, 0.08f, 0.02f }, AperturaOjosPose(pose, PERSONAJE_VENDEDOR), pose.aturdido, alpha);
+
+    // Nariz grande, cachetes, bigote de manubrio y boca.
+    Caja(m, { 0, A * 0.44f, frente + 0.035f }, { 0.09f, 0.08f, 0.07f }, Mezclar(f.piel, Color{ 220, 100, 80, 255 }, 0.30f), alpha);
+
+    for (int lado = -1; lado <= 1; lado += 2)
+    {
+        Caja(m, { lado * 0.15f, A * 0.40f, frente + 0.006f }, { 0.07f, 0.04f, 0.012f }, Color{ 246, 150, 140, 255 }, alpha);
+        Caja(m, { lado * 0.08f, A * 0.31f, frente + 0.02f }, { 0.14f, 0.055f, 0.04f }, pelo, alpha);
+        Caja(m, { lado * 0.165f, A * 0.35f, frente + 0.02f }, { 0.05f, 0.05f, 0.04f }, pelo, alpha);
+    }
+
+    float boca = AperturaBoca(pose);
+    Caja(m, { 0, A * 0.19f - 0.015f * boca, frente + 0.008f }, { 0.11f - 0.03f * boca, 0.026f + 0.05f * boca, 0.02f }, Color{ 120, 40, 40, 255 }, alpha);
 }
 
 
@@ -705,6 +832,24 @@ static void DetallesTorso(
 
         // Cintura metalica.
         Caja(m, { 0, yBase + 0.03f, 0 }, { f.anchoTorso * 0.86f, 0.07f, f.fondoTorso * 0.86f }, Color{ 96, 104, 120, 255 }, alpha);
+    }
+    else if (personaje == PERSONAJE_VENDEDOR)
+    {
+        // Delantal verde con tiras, bolsillo y moneda bordada.
+        Color delantal = f.distintivo;
+        Color oscuro = Mezclar(delantal, BLACK, 0.25f);
+
+        Caja(m, { 0, yBase + T * 0.42f, frente + 0.012f }, { f.anchoTorso * 0.78f, T * 0.84f, 0.02f }, delantal, alpha);
+        Caja(m, { 0, yBase - 0.10f, frente + 0.03f }, { f.anchoTorso * 0.86f, 0.22f, 0.02f }, delantal, alpha);
+        Caja(m, { 0, yBase + 0.02f, frente + 0.026f }, { f.anchoTorso * 0.80f, 0.05f, 0.012f }, oscuro, alpha);
+
+        for (int lado = -1; lado <= 1; lado += 2)
+        {
+            Caja(m, { lado * 0.17f, yBase + T * 0.92f, frente + 0.006f }, { 0.05f, T * 0.20f, 0.014f }, oscuro, alpha);
+        }
+
+        Caja(m, { 0, yBase + T * 0.38f, frente + 0.026f }, { 0.20f, 0.12f, 0.012f }, oscuro, alpha);
+        Caja(m, { 0, yBase + T * 0.40f, frente + 0.034f }, { 0.07f, 0.07f, 0.01f }, Color{ 255, 206, 60, 255 }, alpha, true);
     }
     else
     {
@@ -843,6 +988,58 @@ static void DibujarEstrellitas(
 // POSE Y DIBUJO
 //==================================================
 
+// Angulos objetivo de un brazo para un gesto. lado -1 = brazo derecho.
+// pitch < 0 lleva el brazo al frente/arriba; roll > 0 lo abre hacia afuera.
+// Devuelve false si el gesto no mueve ese brazo.
+static bool ObjetivoBrazoGesto(
+    GestoPersonajeBloque gesto,
+    int lado,
+    float tiempo,
+    float& pitch,
+    float& roll
+)
+{
+    switch (gesto)
+    {
+        case GESTO_SALUDAR:
+            if (lado > 0) return false;
+            pitch = -0.25f;
+            roll = 2.55f + 0.35f * std::sin(tiempo * 11.0f);
+            return true;
+
+        case GESTO_SENALAR:
+            if (lado > 0) return false;
+            pitch = -1.50f;
+            roll = 0.22f;
+            return true;
+
+        case GESTO_PRESENTAR:
+            pitch = -0.75f;
+            roll = 0.95f + 0.05f * std::sin(tiempo * 3.0f + lado);
+            return true;
+
+        case GESTO_FESTEJAR:
+            pitch = -0.30f;
+            roll = 2.65f + 0.20f * std::sin(tiempo * 9.0f + lado * 1.4f);
+            return true;
+
+        case GESTO_MANOS_CABEZA:
+            pitch = -2.80f;
+            roll = 0.32f + 0.05f * std::sin(tiempo * 14.0f + lado);
+            return true;
+
+        case GESTO_SORPRESA:
+            pitch = -0.95f;
+            roll = 1.25f;
+            return true;
+
+        case GESTO_NINGUNO:
+            break;
+    }
+
+    return false;
+}
+
 // Angulos de los brazos y del torso para el golpe segun su progreso:
 // anticipacion (brazo atras), impacto (brazo al frente), sostener y volver.
 struct PoseGolpe
@@ -900,7 +1097,9 @@ static PoseGolpe CalcularPoseGolpe(
 }
 
 
-void DibujarPersonajeBloque(
+// Cuerpo comun de los personajes de bloques. "personaje" ya es un indice
+// valido de FORMAS (0..3 jugables o PERSONAJE_VENDEDOR).
+static void DibujarCuerpoBloque(
     int personaje,
     Vector3 pies,
     float anguloY,
@@ -909,8 +1108,6 @@ void DibujarPersonajeBloque(
     const PosePersonajeBloque& pose
 )
 {
-    personaje = NormalizarPersonajeBloque(personaje);
-
     const FormaPersonajeBloque& f = FORMAS[personaje];
     const float alpha = pose.alpha;
 
@@ -1058,6 +1255,20 @@ void DibujarPersonajeBloque(
         // Tambaleo: brazos abiertos para no perder el equilibrio.
         roll += 0.70f * pose.tambaleo;
 
+        // Gesto (saludar, senalar...) mezclado con la pose base.
+        if (pose.pesoGesto > 0.0f && caida < 0.01f)
+        {
+            float pitchGesto = 0.0f;
+            float rollGesto = 0.0f;
+
+            if (ObjetivoBrazoGesto(pose.gesto, lado, pose.tiempo, pitchGesto, rollGesto))
+            {
+                float w = pose.pesoGesto > 1.0f ? 1.0f : pose.pesoGesto;
+                pitch += (pitchGesto - pitch) * w;
+                roll += (rollGesto - roll) * w;
+            }
+        }
+
         // Caida: brazos por encima de la cabeza y abiertos.
         pitch += (-2.55f - pitch) * caida;
         roll += 0.45f * caida;
@@ -1079,7 +1290,7 @@ void DibujarPersonajeBloque(
 
     Matrix cabeza = Hijo(
         MatrixMultiply(
-            MatrixMultiply(MatrixRotateZ(bamboleo), MatrixRotateX(cabeceo)),
+            MatrixMultiply(MatrixMultiply(MatrixRotateY(pose.giroCabeza), MatrixRotateZ(bamboleo)), MatrixRotateX(cabeceo)),
             MatrixTranslate(0.0f, yCuello + 0.025f, 0.0f)
         ),
         tronco
@@ -1090,6 +1301,7 @@ void DibujarPersonajeBloque(
         case PERSONAJE_BRICO: CabezaBrico(f, cabeza, pose, alpha); break;
         case PERSONAJE_PIXI: CabezaPixi(f, cabeza, pose, alpha); break;
         case PERSONAJE_ROBOTO: CabezaRoboto(f, cabeza, pose, alpha); break;
+        case PERSONAJE_VENDEDOR: CabezaVendedor(f, cabeza, pose, alpha); break;
         default: CabezaMomo(f, cabeza, pose, alpha); break;
     }
 
@@ -1106,4 +1318,35 @@ void DibujarPersonajeBloque(
 
         DibujarEstrellitas(coronilla, factor, pose.tiempo, alpha);
     }
+}
+
+
+void DibujarPersonajeBloque(
+    int personaje,
+    Vector3 pies,
+    float anguloY,
+    float escala,
+    Color colorJugador,
+    const PosePersonajeBloque& pose
+)
+{
+    DibujarCuerpoBloque(NormalizarPersonajeBloque(personaje), pies, anguloY, escala, colorJugador, pose);
+}
+
+
+void DibujarVendedorBloque(
+    Vector3 pies,
+    float anguloY,
+    float escala,
+    const PosePersonajeBloque& pose
+)
+{
+    // Camisa crema bajo el delantal.
+    DibujarCuerpoBloque(PERSONAJE_VENDEDOR, pies, anguloY, escala, Color{ 244, 232, 210, 255 }, pose);
+}
+
+
+const char* ObtenerNombreVendedorBloque()
+{
+    return FORMAS[PERSONAJE_VENDEDOR].nombre;
 }

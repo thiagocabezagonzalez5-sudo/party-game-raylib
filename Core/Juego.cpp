@@ -1213,8 +1213,9 @@ void Juego::Actualizar(
                     true
                 );
 
-                introTablero.Inicializar(
-                    configuracionPartida.tablero,
+                // Presentacion del tablero real por su personaje guia.
+                cinematicaTablero.Inicializar(
+                    partidaTablero,
                     configuracionPartida.ObtenerRondas()
                 );
 
@@ -1231,13 +1232,9 @@ void Juego::Actualizar(
                 MAX_PARTICIPANTES
             );
 
-            introTablero.Actualizar(
-                deltaTime,
-                participantes,
-                MAX_PARTICIPANTES
-            );
+            cinematicaTablero.Actualizar(deltaTime);
 
-            if (introTablero.terminada)
+            if (cinematicaTablero.estado.terminada)
             {
                 ordenTurno.Inicializar(partidaTablero);
                 estado = ESTADO_ORDEN_TURNO;
@@ -1822,7 +1819,7 @@ void Juego::Dibujar()
             break;
 
         case ESTADO_INTRO_TABLERO:
-            introTablero.Dibujar();
+            cinematicaTablero.Dibujar();
             break;
 
         case ESTADO_ORDEN_TURNO:

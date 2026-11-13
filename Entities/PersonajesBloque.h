@@ -33,6 +33,20 @@ enum IdPersonajeBloque
 };
 
 
+// Gestos de brazos para presentaciones y reacciones (cinematicas, tienda,
+// casillas de caos). Se mezclan con la pose base segun pesoGesto.
+enum GestoPersonajeBloque
+{
+    GESTO_NINGUNO = 0,
+    GESTO_SALUDAR,          // brazo derecho arriba, la mano se agita
+    GESTO_SENALAR,          // brazo derecho estirado hacia el frente
+    GESTO_PRESENTAR,        // ambos brazos abiertos ("¡miren esto!")
+    GESTO_FESTEJAR,         // ambos brazos arriba
+    GESTO_MANOS_CABEZA,     // manos a la cabeza (preocupacion)
+    GESTO_SORPRESA          // brazos a medio subir, palmas afuera
+};
+
+
 // Estado de animacion. Todas las animaciones son transformaciones de las
 // partes del cuerpo calculadas en el momento del dibujo (sin esqueleto).
 struct PosePersonajeBloque
@@ -66,7 +80,32 @@ struct PosePersonajeBloque
 
     // Transparencia general (parpadeo de inmunidad).
     float alpha = 1.0f;
+
+    // Gesto de brazos y su mezcla 0..1 con la pose base.
+    GestoPersonajeBloque gesto = GESTO_NINGUNO;
+    float pesoGesto = 0.0f;
+
+    // Giro de la cabeza hacia los costados (radianes, + = a su izquierda).
+    float giroCabeza = 0.0f;
+
+    // Susto 0..1: ojos muy abiertos sin parpadeo, cejas arriba y boca en O.
+    float susto = 0.0f;
+
+    // Hablando: la boca se abre y cierra (cinematicas).
+    bool hablando = false;
 };
+
+
+// Vendedor de la tienda: personaje de bloques propio (no es jugable), con
+// delantal, gorro a rayas y bigote. Mismas convenciones que los jugadores.
+void DibujarVendedorBloque(
+    Vector3 pies,
+    float anguloY,
+    float escala,
+    const PosePersonajeBloque& pose
+);
+
+const char* ObtenerNombreVendedorBloque();
 
 
 const char* ObtenerNombrePersonajeBloque(
