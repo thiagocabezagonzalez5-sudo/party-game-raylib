@@ -216,7 +216,7 @@ static float Parpadeo(
 static float Hash2(int a, int b)
 {
     unsigned int h =
-        (unsigned int)(a * 374761393 + b * 668265263);
+        ((unsigned int)a * 374761393u + (unsigned int)b * 668265263u);
 
     h = (h ^ (h >> 13)) * 1274126177u;
 

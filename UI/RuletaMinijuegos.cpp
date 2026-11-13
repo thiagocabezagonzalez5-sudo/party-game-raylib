@@ -669,7 +669,7 @@ static void DibujarSelloRuleta(
     if (formato >= 0)
     {
         DibujarIconoFormatoMinijuego(
-            (FormatoMinijuego)formato,
+            (FormatoMiniaturaMinijuego)formato,
             Vector2{ x + Px(5.0f) + anchoIcono * 0.5f, y + alto * 0.5f },
             alto * 0.55f,
             alfa
@@ -1011,7 +1011,7 @@ void RuletaMinijuegos::DibujarTendedero() const
 
         DibujarNueveCortes(estilo.placa, 8, placa, EscalaUI(), Fade(WHITE, alfa));
 
-        FormatoMinijuego formato = ObtenerFormatoMinijuego(centrado);
+        FormatoMiniaturaMinijuego formato = ObtenerFormatoMinijuego(centrado);
         const char* textoFormato = ObtenerNombreFormatoMinijuego(formato);
         const char* textoJugadores = ObtenerTextoJugadoresMinijuego(centrado);
 

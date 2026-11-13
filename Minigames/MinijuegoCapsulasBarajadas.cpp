@@ -1120,7 +1120,7 @@ static void CajaSombreadaCapsulas(Vector3 c, Vector3 t, Color color)
 
 static float HashCapsulas(int a, int b)
 {
-    unsigned int h = (unsigned int)(a * 73856093) ^ (unsigned int)(b * 19349663);
+    unsigned int h = ((unsigned int)a * 73856093u) ^ ((unsigned int)b * 19349663u);
     h = (h ^ (h >> 13)) * 1274126177u;
     return (float)(h & 0xFFFFu) / 65535.0f;
 }

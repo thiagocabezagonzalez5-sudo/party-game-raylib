@@ -14,7 +14,7 @@
 
 // Quien compite contra quien. El catalogo no guarda este dato: se
 // deduce de requiereParDeJugadores y de la descripcion de cada juego.
-enum FormatoMinijuego
+enum FormatoMiniaturaMinijuego
 {
     FORMATO_TODOS_CONTRA_TODOS = 0,
     FORMATO_UNO_CONTRA_TRES,
@@ -24,18 +24,18 @@ enum FormatoMinijuego
     CANTIDAD_FORMATOS_MINIJUEGO
 };
 
-FormatoMinijuego ObtenerFormatoMinijuego(
+FormatoMiniaturaMinijuego ObtenerFormatoMinijuego(
     IdMinijuego id
 );
 
 // "TODOS CONTRA TODOS", "1 VS 3", "2 VS 2" o "1 VS 1" (duelo).
 const char* ObtenerNombreFormatoMinijuego(
-    FormatoMinijuego formato
+    FormatoMiniaturaMinijuego formato
 );
 
 // Color propio de cada formato (chinches y sellos).
 Color ObtenerColorFormatoMinijuego(
-    FormatoMinijuego formato
+    FormatoMiniaturaMinijuego formato
 );
 
 // "2 A 4 JUGADORES", "2 O 4 JUGADORES" si solo admite parejas o
@@ -47,7 +47,7 @@ const char* ObtenerTextoJugadoresMinijuego(
 // Fichas de jugador que explican el formato (4 sueltas, 1 | 3, 2 | 2, 1 | 1),
 // centradas en `centro`; `alto` en pixeles.
 void DibujarIconoFormatoMinijuego(
-    FormatoMinijuego formato,
+    FormatoMiniaturaMinijuego formato,
     Vector2 centro,
     float alto,
     float alfa = 1.0f

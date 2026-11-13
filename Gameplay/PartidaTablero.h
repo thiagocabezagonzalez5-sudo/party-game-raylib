@@ -140,6 +140,9 @@ struct PartidaTablero
     InputSeleccionParticipante (*lectorEntrada)(const Participante&) =
         LeerInputSeleccionParticipante;
 
+    // Solo visual: oculta la flecha del turno (presentacion del tablero).
+    bool ocultarIndicadorTurno = false;
+
     bool minijuegoSolicitado = false;
     bool salidaSolicitada = false;
     bool inicializado = false;

@@ -19,6 +19,7 @@
 #include "Core/Juego.h"
 #include "Minigames/HudMinijuego.h"
 #include "Systems/CalidadGrafica.h"
+#include "UI/MiniaturasMinijuegos.h"
 
 #include "rlgl.h"
 
@@ -28,11 +29,6 @@
 #include <cstring>
 #include <ctime>
 #include <random>
-
-// UI/MiniaturasMinijuegos.h no se puede incluir junto a Core/Juego.h (los
-// dos definen un enum FormatoMinijuego): solo hace falta esta funcion suya
-// (UI/MiniaturasMinijuegos.cpp).
-const char* ObtenerRutaMiniaturaMinijuego(IdMinijuego id);
 
 static Juego juego;
 

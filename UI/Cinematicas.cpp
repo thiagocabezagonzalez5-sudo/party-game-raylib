@@ -903,6 +903,7 @@ static float InicioFrasePlano(int indice)
 void CinematicaTablero::Inicializar(PartidaTablero& partidaTablero, int cantidadRondas)
 {
     partida = &partidaTablero;
+    partidaTablero.ocultarIndicadorTurno = true;
     rondas = cantidadRondas;
     guion = &ObtenerGuionCinematicaTablero(partidaTablero.idTablero);
     cantidad = 0;
@@ -1058,10 +1059,19 @@ void CinematicaTablero::Actualizar(float deltaTime)
 {
     AvanzarCinematica(estado, deltaTime);
 
+    if (partida == nullptr)
+    {
+        return;
+    }
+
     // Solo el reloj visual del tablero (agua, luces, gimmick animado).
-    if (partida != nullptr && !estado.terminada)
+    if (!estado.terminada)
     {
         partida->tiempoTablero += deltaTime;
+    }
+    else
+    {
+        partida->ocultarIndicadorTurno = false;
     }
 }
 

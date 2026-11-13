@@ -1968,7 +1968,8 @@ static void DibujarFichasTableroFinal(
 
         if (
             indiceParticipante == participanteTurno &&
-            partida.fase != FASE_PARTIDA_TABLERO_TERMINADA
+            partida.fase != FASE_PARTIDA_TABLERO_TERMINADA &&
+            !partida.ocultarIndicadorTurno
         )
         {
             // Flecha amarilla que rebota sobre la ficha activa.

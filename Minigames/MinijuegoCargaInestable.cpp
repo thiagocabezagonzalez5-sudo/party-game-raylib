@@ -930,7 +930,7 @@ static Color AlfaCarga(Color color, float alfa)
 
 static float HashCarga(int a, int b)
 {
-    unsigned int h = (unsigned int)(a * 73856093) ^ (unsigned int)(b * 19349663);
+    unsigned int h = ((unsigned int)a * 73856093u) ^ ((unsigned int)b * 19349663u);
     h = (h ^ (h >> 13)) * 1274126177u;
     h ^= h >> 16;
     return (float)(h & 0xFFFF) / 65535.0f;

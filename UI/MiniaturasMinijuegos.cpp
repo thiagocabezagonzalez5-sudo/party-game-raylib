@@ -9,7 +9,7 @@
 // FORMATO Y JUGADORES
 //==================================================
 
-FormatoMinijuego ObtenerFormatoMinijuego(
+FormatoMiniaturaMinijuego ObtenerFormatoMinijuego(
     IdMinijuego id
 )
 {
@@ -53,7 +53,7 @@ FormatoMinijuego ObtenerFormatoMinijuego(
 
 
 const char* ObtenerNombreFormatoMinijuego(
-    FormatoMinijuego formato
+    FormatoMiniaturaMinijuego formato
 )
 {
     switch (formato)
@@ -77,7 +77,7 @@ const char* ObtenerNombreFormatoMinijuego(
 
 
 Color ObtenerColorFormatoMinijuego(
-    FormatoMinijuego formato
+    FormatoMiniaturaMinijuego formato
 )
 {
     switch (formato)
@@ -132,7 +132,7 @@ static void DibujarFichaFormato(
 
 
 void DibujarIconoFormatoMinijuego(
-    FormatoMinijuego formato,
+    FormatoMiniaturaMinijuego formato,
     Vector2 centro,
     float alto,
     float alfa

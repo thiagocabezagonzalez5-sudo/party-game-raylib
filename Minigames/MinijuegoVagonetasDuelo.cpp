@@ -1554,7 +1554,7 @@ static MarcoVagonetas MarcoPistaVagonetas(float s)
 
 static float HashVagonetas(int a, int b = 0)
 {
-    unsigned int h = (unsigned int)(a * 73856093) ^ (unsigned int)(b * 19349663) ^ 0x9E3779B9u;
+    unsigned int h = ((unsigned int)a * 73856093u) ^ ((unsigned int)b * 19349663u) ^ 0x9E3779B9u;
     h ^= h >> 15; h *= 2246822519u; h ^= h >> 13; h *= 3266489917u; h ^= h >> 16;
     return (float)(h & 0xFFFFFFu) / 16777216.0f;
 }

@@ -1313,7 +1313,7 @@ static const float LUZ_Z_ISLA = -0.174f;
 
 static float Hash01Isla(int a, int b)
 {
-    unsigned int h = (unsigned int)(a * 73856093) ^ (unsigned int)(b * 19349663);
+    unsigned int h = ((unsigned int)a * 73856093u) ^ ((unsigned int)b * 19349663u);
     h ^= h >> 13;
     h *= 0x5bd1e995u;
     h ^= h >> 15;

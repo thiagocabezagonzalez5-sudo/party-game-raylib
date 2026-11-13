@@ -481,7 +481,7 @@ static float DibujarSello(
     if (formato >= 0)
     {
         DibujarIconoFormatoMinijuego(
-            (FormatoMinijuego)formato,
+            (FormatoMiniaturaMinijuego)formato,
             Vector2{ x + Px(8.0f) + anchoIcono * 0.5f - Px(3.0f), y + alto * 0.5f },
             alto * 0.55f,
             alfa
@@ -839,7 +839,7 @@ static void DibujarLeyendaFormatos(
 
     for (int f = CANTIDAD_FORMATOS_MINIJUEGO - 1; f >= 0; f--)
     {
-        FormatoMinijuego formato = (FormatoMinijuego)f;
+        FormatoMiniaturaMinijuego formato = (FormatoMiniaturaMinijuego)f;
         const char* nombre = ObtenerNombreFormatoMinijuego(formato);
 
         x -= (float)MeasureText(nombre, tamano);
@@ -1334,7 +1334,7 @@ static void DibujarFichaTablon(
 {
     const IdMinijuego id = ObtenerIdMinijuegoPorIndice(seleccion.indiceSeleccionado);
     const DatosMinijuegoCatalogo& datos = ObtenerDatosMinijuego(id);
-    const FormatoMinijuego formato = ObtenerFormatoMinijuego(id);
+    const FormatoMiniaturaMinijuego formato = ObtenerFormatoMinijuego(id);
 
     Rectangle rect = RectRef(
         FICHA_TABLON.x,
@@ -1779,7 +1779,7 @@ static void DibujarCartelPrevia(
 
     const IdMinijuego id = previa.id;
     const DatosMinijuegoCatalogo& datos = ObtenerDatosMinijuego(id);
-    const FormatoMinijuego formato = ObtenerFormatoMinijuego(id);
+    const FormatoMiniaturaMinijuego formato = ObtenerFormatoMinijuego(id);
 
     if (DibujaFija(capa))
     {
