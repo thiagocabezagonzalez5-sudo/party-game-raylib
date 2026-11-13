@@ -3,6 +3,21 @@
 
 #include "raymath.h"
 
+#include <cmath>
+
+
+// Vitrina de los cuatro personajes de bloques y de sus animaciones
+// procedurales (Zona de Pruebas). Cada animacion se repite en bucle.
+
+static const char* NOMBRES_ANIMACION_PRUEBA[CANTIDAD_ANIMACIONES_PRUEBA_MODELOS] =
+{
+    "REPOSO",
+    "CAMINAR",
+    "GOLPE",
+    "CAIDA Y LEVANTARSE",
+    "GOLPE LEVE (TAMBALEO)",
+    "SALTO"
+};
 
 
 //==================================================
@@ -39,13 +54,6 @@ void PruebaModelos::Inicializar()
         CAMERA_PERSPECTIVE;
 
     Reiniciar();
-
-    InicializarModeloJugadorCompartido();
-
-    if (AnimacionIdleModeloJugadorCompartidoActiva())
-    {
-        AplicarFotogramaIdleModeloJugadorCompartido(0);
-    }
 }
 
 
@@ -55,13 +63,16 @@ void PruebaModelos::Reiniciar()
         0.0f;
 
     escala =
-        0.25f;
+        ESCALA_MODELO_JUGADOR_3D * 1.6f;
 
     rotacionAutomatica =
         true;
 
-    fotogramaAnimacionIdle =
+    tiempo =
         0.0f;
+
+    animacion =
+        ANIMACION_PRUEBA_REPOSO;
 }
 
 
@@ -73,6 +84,9 @@ void PruebaModelos::Actualizar(
     float deltaTime
 )
 {
+    tiempo +=
+        deltaTime;
+
     if (IsKeyDown(KEY_LEFT))
     {
         rotacion -=
@@ -97,17 +111,8 @@ void PruebaModelos::Actualizar(
             0.22f * deltaTime;
     }
 
-    if (escala < 0.05f)
-    {
-        escala =
-            0.05f;
-    }
-
-    if (escala > 1.50f)
-    {
-        escala =
-            1.50f;
-    }
+    escala =
+        Clamp(escala, 0.10f, 1.20f);
 
     if (IsKeyPressed(KEY_SPACE))
     {
@@ -115,34 +120,26 @@ void PruebaModelos::Actualizar(
             !rotacionAutomatica;
     }
 
+    // 1..6 eligen la animacion; TAB pasa a la siguiente.
+    for (int i = 0; i < CANTIDAD_ANIMACIONES_PRUEBA_MODELOS; i++)
+    {
+        if (IsKeyPressed(KEY_ONE + i))
+        {
+            animacion = (AnimacionPruebaModelos)i;
+            tiempo = 0.0f;
+        }
+    }
+
+    if (IsKeyPressed(KEY_TAB))
+    {
+        animacion = (AnimacionPruebaModelos)((animacion + 1) % CANTIDAD_ANIMACIONES_PRUEBA_MODELOS);
+        tiempo = 0.0f;
+    }
+
     if (rotacionAutomatica)
     {
         rotacion +=
             28.0f * deltaTime;
-    }
-
-    if (AnimacionIdleModeloJugadorCompartidoActiva())
-    {
-        const float FOTOGRAMAS_POR_SEGUNDO =
-            30.0f;
-
-        fotogramaAnimacionIdle +=
-            FOTOGRAMAS_POR_SEGUNDO *
-            deltaTime;
-
-        int cantidadFotogramas =
-            ObtenerCantidadFotogramasIdleModeloJugadorCompartido();
-
-        if (cantidadFotogramas > 0)
-        {
-            int fotogramaActual =
-                (int)fotogramaAnimacionIdle %
-                cantidadFotogramas;
-
-            AplicarFotogramaIdleModeloJugadorCompartido(
-                fotogramaActual
-            );
-        }
     }
 }
 
@@ -151,20 +148,61 @@ void PruebaModelos::Actualizar(
 // DIBUJAR
 //==================================================
 
+// Pose de la animacion elegida en el instante "t" (bucles de 1.6 s).
+static PosePersonajeBloque PoseVitrina(
+    AnimacionPruebaModelos animacion,
+    float t,
+    float desfase
+)
+{
+    PosePersonajeBloque pose;
+    pose.tiempo = t + desfase;
+
+    const float CICLO = 1.6f;
+    float u = std::fmod(t, CICLO) / CICLO;
+
+    switch (animacion)
+    {
+        case ANIMACION_PRUEBA_CAMINAR:
+            pose.caminar = 1.0f;
+            pose.faseCaminar = pose.tiempo * 11.0f;
+            break;
+
+        case ANIMACION_PRUEBA_GOLPE:
+            pose.golpe = u < 0.5f ? u / 0.5f : -1.0f;
+            break;
+
+        case ANIMACION_PRUEBA_CAIDA:
+            pose.aturdido = u > 0.1f && u < 0.85f;
+            pose.caida =
+                u < 0.10f ? u / 0.10f :
+                u < 0.65f ? 1.0f :
+                u < 0.85f ? 1.0f - (u - 0.65f) / 0.20f :
+                0.0f;
+            break;
+
+        case ANIMACION_PRUEBA_TAMBALEO:
+            pose.aturdido = u < 0.6f;
+            pose.tambaleo =
+                u < 0.08f ? u / 0.08f :
+                u < 0.60f ? 1.0f - (u - 0.08f) / 0.52f :
+                0.0f;
+            break;
+
+        case ANIMACION_PRUEBA_SALTO:
+            pose.enAire = u < 0.55f;
+            break;
+
+        default:
+            break;
+    }
+
+    return pose;
+}
+
+
 void PruebaModelos::Dibujar() const
 {
-    const Model* modelo =
-        ObtenerModeloJugadorCompartidoRender();
-
-    bool modeloCargado =
-        modelo != nullptr;
-
-    bool animacionIdleActiva =
-        AnimacionIdleModeloJugadorCompartidoActiva();
-
-    int cantidadAnimaciones =
-        ObtenerCantidadAnimacionesModeloJugadorCompartido();
-
     ClearBackground(
         Color{
             115,
@@ -196,14 +234,6 @@ void PruebaModelos::Dibujar() const
         }
     );
 
-    Vector3 posiciones[4] =
-    {
-        { -3.0f, 0.35f, 0.0f },
-        { -1.0f, 0.35f, 0.0f },
-        { 1.0f, 0.35f, 0.0f },
-        { 3.0f, 0.35f, 0.0f }
-    };
-
     Color colores[4] =
     {
         RED,
@@ -214,15 +244,17 @@ void PruebaModelos::Dibujar() const
 
     for (
         int i = 0;
-        i < 4;
+        i < CANTIDAD_PERSONAJES_BLOQUE;
         i++
     )
     {
+        Vector3 pedestal = { -3.0f + 2.0f * i, 0.0f, 0.0f };
+
         DrawCylinder(
             Vector3{
-                posiciones[i].x,
+                pedestal.x,
                 0.12f,
-                posiciones[i].z
+                pedestal.z
             },
             0.75f,
             0.75f,
@@ -231,45 +263,31 @@ void PruebaModelos::Dibujar() const
             DARKGRAY
         );
 
-        if (modeloCargado)
+        PosePersonajeBloque pose =
+            PoseVitrina(animacion, tiempo, i * 0.37f);
+
+        float salto = 0.0f;
+
+        if (pose.enAire)
         {
-            DrawModelEx(
-                *modelo,
-                posiciones[i],
-                Vector3{
-                    0.0f,
-                    1.0f,
-                    0.0f
-                },
-                rotacion,
-                Vector3{
-                    escala,
-                    escala,
-                    escala
-                },
-                colores[i]
-            );
+            float u = std::fmod(tiempo, 1.6f) / (1.6f * 0.55f);
+            salto = 4.0f * u * (1.0f - u) * 0.8f;
         }
-        else
-        {
-            DrawCube(
-                Vector3{
-                    posiciones[i].x,
-                    1.0f,
-                    posiciones[i].z
-                },
-                0.8f,
-                1.8f,
-                0.8f,
-                colores[i]
-            );
-        }
+
+        DibujarPersonajeBloque(
+            i,
+            { pedestal.x, 0.24f + salto, pedestal.z },
+            rotacion,
+            escala,
+            colores[i],
+            pose
+        );
     }
 
     EndMode3D();
 
     DrawText(
-        "PRUEBA DE MODELOS",
+        "PRUEBA DE PERSONAJES",
         25,
         25,
         30,
@@ -277,38 +295,26 @@ void PruebaModelos::Dibujar() const
     );
 
     DrawText(
-        modeloCargado
-        ? "GLB CARGADO CORRECTAMENTE"
-        : "MODELO NO CARGADO - SE MUESTRAN CUBOS",
+        TextFormat(
+            "Animacion: %s",
+            NOMBRES_ANIMACION_PRUEBA[animacion]
+        ),
         25,
         70,
         22,
-        modeloCargado
-        ? DARKGREEN
-        : MAROON
+        DARKGREEN
     );
 
-    DrawText(
-        TextFormat(
-            "Ruta: %s",
-            RUTA_MODELO_JUGADOR_3D
-        ),
-        25,
-        105,
-        18,
-        BLACK
-    );
-
-    if (modeloCargado)
+    for (int i = 0; i < CANTIDAD_PERSONAJES_BLOQUE; i++)
     {
         DrawText(
             TextFormat(
-                "Meshes: %d   Materiales: %d",
-                modelo->meshCount,
-                modelo->materialCount
+                "%s - %s",
+                ObtenerNombrePersonajeBloque(i),
+                ObtenerLemaPersonajeBloque(i)
             ),
             25,
-            135,
+            105 + 26 * i,
             18,
             BLACK
         );
@@ -321,35 +327,13 @@ void PruebaModelos::Dibujar() const
             escala
         ),
         25,
-        165,
+        215,
         18,
         BLACK
     );
 
-    if (modeloCargado)
-    {
-        DrawText(
-            animacionIdleActiva
-            ? TextFormat(
-                "Idle activo: %s   Clips: %d",
-                ObtenerNombreIdleModeloJugadorCompartido(),
-                cantidadAnimaciones
-            )
-            : TextFormat(
-                "Idle no encontrado   Clips: %d",
-                cantidadAnimaciones
-            ),
-            25,
-            195,
-            18,
-            animacionIdleActiva
-            ? DARKGREEN
-            : MAROON
-        );
-    }
-
     DrawText(
-        "FLECHAS IZQ/DER: rotar   ARRIBA/ABAJO: escala",
+        "1-6 / TAB: animación   FLECHAS IZQ/DER: rotar   ARRIBA/ABAJO: escala",
         25,
         GetScreenHeight() - 80,
         18,
@@ -372,6 +356,7 @@ void PruebaModelos::Dibujar() const
 
 void PruebaModelos::Descargar()
 {
-    // El modelo y sus animaciones pertenecen a ModeloJugadorCompartido.
-    // PruebaModelos conserva solo estado local de inspeccion.
+    // Los personajes son procedurales: esta prueba no carga recursos y
+    // solo guarda estado local de inspeccion. Se conserva por simetria con
+    // el resto de pruebas de ZonaPruebas.
 }

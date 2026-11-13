@@ -1922,11 +1922,34 @@ static void DibujarFichasTableroFinal(
             );
         }
 
+        // La ficha que avanza mira hacia la casilla destino y salta con los
+        // brazos arriba; las demas esperan mirando a camara.
+        PosePersonajeBloque pose = CrearPoseReposoPersonaje();
+        float angulo = 0.0f;
+
+        if (
+            indiceParticipante == participanteTurno &&
+            partida.fase == FASE_PARTIDA_TABLERO_MOVIENDO
+        )
+        {
+            float dx = partida.posicionFinMovimiento.x - partida.posicionInicioMovimiento.x;
+            float dz = partida.posicionFinMovimiento.z - partida.posicionInicioMovimiento.z;
+
+            if (dx * dx + dz * dz > 0.0001f)
+            {
+                angulo = std::atan2(dx, dz) * RAD2DEG;
+            }
+
+            pose.enAire = cuerpo.y - 1.03f > 0.03f;
+        }
+
         DibujarModeloJugadorEnPosicion(
+            ObtenerPersonajeParticipante(partida.participantes[indiceParticipante]),
             posicionPies,
-            0.0f,
+            angulo,
             color,
-            0.18f
+            0.18f,
+            pose
         );
 
         if (

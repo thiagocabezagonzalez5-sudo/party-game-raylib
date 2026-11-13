@@ -979,6 +979,7 @@ static void DibujarFichas(
         posicionPies.y -= 0.31f;
 
         DibujarModeloJugadorEnPosicion(
+            ObtenerPersonajeParticipante(prototipo.participantes[indiceParticipante]),
             posicionPies,
             0.0f,
             color,

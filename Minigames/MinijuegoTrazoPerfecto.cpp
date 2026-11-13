@@ -3082,7 +3082,7 @@ static void DibujarPintoresTrazo(const MinijuegoTrazoPerfecto& m, const Particip
 
         // De espaldas, mirando su lienzo; al terminar se dan vuelta.
         float angulo = m.fase == FASE_TRAZO_TERMINADO ? 0.0f : 180.0f - m.jugadores[i].cursor.x * 14.0f;
-        DibujarModeloJugadorEnPosicion(pies, angulo, participantes[i].color);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), pies, angulo, participantes[i].color);
     }
 }
 

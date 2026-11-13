@@ -265,7 +265,7 @@ int main()
     for (int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de CloseWindow");
     for (const auto& reposo:ObtenerModelosEscenariosRetro3D().animacionesPisoton)
         Comprobar(!reposo.vertices && !reposo.normales,"Reposos CPU de animacion liberados");
-    DescargarModeloJugadorCompartido(); CloseWindow();
+    CloseWindow();
     std::printf("Verificacion Pisoton de Plagas 2/3/4 participantes: %d errores\n",errores);
     return errores ? 1 : 0;
 }

@@ -252,7 +252,7 @@ int main()
                 continue;
             }
             Comprobar(r.cargado,RUTAS_MODELOS_RACIMO_TOXICO_3D[i]);
-            if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
+            if (!r.cargado) { zona.Descargar(); CloseWindow(); return 2; }
             if (cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Instancias comparten recursos");
             bool bombillas=i==MODELO_RACIMO_ARO || i==MODELO_RACIMO_LUCIERNAGA;
@@ -347,7 +347,7 @@ int main()
     for (const auto& r:almacen.bateoMeteorico) Comprobar(!r.cargaIntentada,"No cargar Bateo");
     zona.Descargar(); zona.Descargar();
     for (int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de cerrar contexto grafico");
-    DescargarModeloJugadorCompartido(); CloseWindow();
+    CloseWindow();
     std::printf("Verificacion Racimo Toxico 2/3/4 participantes: %d errores\n",errores);
     return errores==0 ? 0 : 1;
 }

@@ -327,7 +327,7 @@ int main()
         {
             const auto& r = recursos[i];
             Comprobar(r.cargado,RUTAS_MODELOS_CAPSULAS_BARAJADAS_3D[i]);
-            if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
+            if (!r.cargado) { zona.Descargar(); CloseWindow(); return 2; }
             if (cantidad == 2) mallas[i] = r.modelo.meshes;
             Comprobar(cargas[i] == 1 && mallas[i] == r.modelo.meshes, "Entrada y participantes comparten las mallas");
             bool dinamico = i == MODELO_CAPSULAS_TUBO || i == MODELO_CAPSULAS_BALIZA ||
@@ -516,7 +516,6 @@ int main()
     for (int i = 0; i < CANTIDAD_MODELOS_CAPSULAS_BARAJADAS_3D; i++)
         Comprobar(!recursos[i].cargado && !recursos[i].cargaIntentada && !recursos[i].modelo.meshes && cargas[i] == descargas[i],
             "Descarga simetrica e idempotente antes de cerrar OpenGL");
-    DescargarModeloJugadorCompartido();
     CloseWindow();
     std::printf("Verificacion Capsulas Barajadas 2/3/4 participantes: %d errores\n",errores);
     return errores == 0 ? 0 : 1;

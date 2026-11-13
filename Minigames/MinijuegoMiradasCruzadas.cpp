@@ -2652,7 +2652,7 @@ static void DibujarTitereMiradas(
             DibujarSombraRetroCircular({ pies.x, pies.y + 0.02f, pies.z + 0.1f }, 0.46f, 0.38f, pies.y + 0.025f);
         }
 
-        DibujarModeloJugadorEnPosicion(cuerpo, v.giro * 0.5f, color, escalaModelo);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[indice]), cuerpo, v.giro * 0.5f, color, escalaModelo);
     }
 
     if (aparicion <= 0.01f)

@@ -960,7 +960,6 @@ int main(int argc, char** argv)
 
     partida = PartidaTablero{};
     DescargarVistaPreviaTableros();
-    DescargarModeloJugadorCompartido();
     DescargarEstiloUIGlobal();
     CloseWindow();
 

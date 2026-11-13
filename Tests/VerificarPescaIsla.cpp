@@ -304,7 +304,7 @@ int main()
                 continue;
             }
             Comprobar(r.cargado,RUTAS_MODELOS_PESCA_ISLENA_3D[i]);
-            if(!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
+            if(!r.cargado) { zona.Descargar(); CloseWindow(); return 2; }
             if(cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Carga unica entre rondas y participantes");
             for(int j=0;j<r.modelo.meshCount;j++) Comprobar(r.modelo.meshes[j].colors!=nullptr,"Colores de vertice conservados");
@@ -401,7 +401,7 @@ int main()
     for(int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de CloseWindow");
     for(const auto& a:ObtenerModelosEscenariosRetro3D().animacionesPesca)
         Comprobar(!a.vertices && !a.normales && !a.colores,"Liberar copias CPU de animacion");
-    DescargarModeloJugadorCompartido(); CloseWindow();
+    CloseWindow();
     std::printf("Verificacion Pesca Islena 2/3/4 participantes: %d errores\n",errores);
     return errores==0 ? 0 : 1;
 }

@@ -3643,7 +3643,7 @@ void MinijuegoTrepaMastil::Dibujar(
         }
 
         float giroY = tr.llego ? 0.0f : 180.0f - 18.0f * (float)tr.lado;
-        DibujarModeloJugadorEnPosicion({ j.posicion.x, j.posicion.y - 0.7f, j.posicion.z }, giroY, color);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), { j.posicion.x, j.posicion.y - 0.7f, j.posicion.z }, giroY, color);
 
         if (mostrarDebug)
         {

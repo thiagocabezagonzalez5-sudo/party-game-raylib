@@ -320,7 +320,7 @@ int main()
     for (const auto& r:almacen.capsulasBarajadas) Comprobar(!r.cargaIntentada,"No cargar Capsulas");
     zona.Descargar(); zona.Descargar();
     for (int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de CloseWindow");
-    DescargarModeloJugadorCompartido(); CloseWindow();
+    CloseWindow();
     std::printf("Verificacion Bateo Meteorico 2/3/4 participantes: %d errores\n",errores);
     return errores==0 ? 0 : 1;
 }

@@ -2470,7 +2470,7 @@ static void DibujarJugadoresPaso(const MinijuegoPasoSilencioso& m, const Partici
 
         // Avanzan de espaldas hacia el gigante; al terminar se dan vuelta.
         float angulo = m.fase == FASE_PASO_TERMINADO ? 0.0f : 180.0f;
-        DibujarModeloJugadorEnPosicion(pies, angulo, participantes[i].color);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), pies, angulo, participantes[i].color);
     }
 }
 

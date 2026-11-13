@@ -234,7 +234,7 @@ int main()
             const auto& r=Recursos()[i];
             if(!Jugable(i)) { Comprobar(!r.cargaIntentada && cargas[i]==0,"No cargar el decorado GLB reemplazado"); continue; }
             Comprobar(r.cargado,RUTAS_MODELOS_ESFERAS_CANON_3D[i]);
-            if(!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
+            if(!r.cargado) { zona.Descargar(); CloseWindow(); return 2; }
             if(cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Carga unica entre rondas y participantes");
             for(int j=0;j<r.modelo.meshCount;j++) Comprobar(r.modelo.meshes[j].colors!=nullptr,"Colores de vertice conservados");
@@ -332,7 +332,7 @@ int main()
     for(const auto& r:almacen.descensoNubes) Comprobar(!r.cargaIntentada,"No cargar Nubes");
     zona.Descargar(); zona.Descargar();
     for(int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de CloseWindow");
-    DescargarModeloJugadorCompartido(); CloseWindow();
+    CloseWindow();
     std::printf("Verificacion Esferas del Canon 2/3/4 participantes: %d errores\n",errores);
     return errores==0 ? 0 : 1;
 }

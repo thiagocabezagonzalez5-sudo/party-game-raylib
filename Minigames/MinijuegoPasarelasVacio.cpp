@@ -2859,7 +2859,7 @@ static void DibujarCaidasPasarelas(const MinijuegoPasarelasVacio& m, const Parti
         rlPushMatrix();
         rlTranslatef(caida.posicion.x, caida.posicion.y, caida.posicion.z);
         rlRotatef(caida.tiempo * 300.0f, 1.0f, 0.0f, 0.4f);
-        DibujarModeloJugadorEnPosicion({ 0.0f, -0.7f, 0.0f }, caida.angulo + caida.tiempo * 90.0f, participantes[i].color);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), { 0.0f, -0.7f, 0.0f }, caida.angulo + caida.tiempo * 90.0f, participantes[i].color);
         rlPopMatrix();
     }
 }

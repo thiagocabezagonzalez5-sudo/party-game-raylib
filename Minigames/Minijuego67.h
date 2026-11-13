@@ -162,8 +162,6 @@ struct Minijuego67
     // propio viewport y recorte (como Vagonetas): sin RenderTexture.
     Camera3D camarasEquipo[2]{};
 
-    float fotogramaAnimacionIdle = 0.0f;
-
     // Reloj de las animaciones (Dibujar es const).
     float tiempoAnimacion = 0.0f;
 

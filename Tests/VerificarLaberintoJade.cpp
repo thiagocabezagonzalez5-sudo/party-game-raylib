@@ -207,7 +207,7 @@ int main()
         {
             const auto& r=almacen.laberintoJade[i];
             Comprobar(r.cargado,RUTAS_MODELOS_LABERINTO_JADE_3D[i]);
-            if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
+            if (!r.cargado) { zona.Descargar(); CloseWindow(); return 2; }
             if (cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(mallas[i]==r.modelo.meshes,"Mallas compartidas al reentrar");
             Comprobar(r.modelo.materialCount<=16,"Limite de materiales de la prueba");
@@ -325,7 +325,6 @@ int main()
     observar=false;
     zona.Descargar(); zona.Descargar();
     for (const auto& r:almacen.laberintoJade) Comprobar(!r.cargado && !r.cargaIntentada && !r.modelo.meshes,"Descarga simetrica antes de CloseWindow");
-    DescargarModeloJugadorCompartido();
     CloseWindow();
     std::printf("Laberinto Jade, 3 disenos x 2/3/4 jugadores: %d errores\n",errores);
     return errores==0?0:1;

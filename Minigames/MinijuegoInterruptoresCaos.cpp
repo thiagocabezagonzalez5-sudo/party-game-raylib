@@ -3191,7 +3191,7 @@ static void DibujarOperadoresCentral(const MinijuegoInterruptoresCaos& m, const 
         rlPushMatrix();
         rlTranslatef(pose.pies.x, pose.pies.y, pose.pies.z);
         rlRotatef(pose.caida, 1.0f, 0.0f, 0.0f);
-        DibujarModeloJugadorEnPosicion({ 0.0f, 0.0f, 0.0f }, pose.giro, color);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), { 0.0f, 0.0f, 0.0f }, pose.giro, color);
         rlPopMatrix();
     }
 }

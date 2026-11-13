@@ -2930,7 +2930,7 @@ static void DibujarAutosAG(const MinijuegoAutosGlobo& m, const Participante part
             // Pies hundidos en la cabina: se lee sentado.
             Vector3 asiento = LocalAG(marco, -0.14f, 0.1f, 0.0f);
             float angulo = std::atan2(marco.f.x, marco.f.z) * RAD2DEG;
-            DibujarModeloJugadorEnPosicion(asiento, angulo, participantes[i].color, ESCALA_MODELO_JUGADOR_3D * 0.52f);
+            DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), asiento, angulo, participantes[i].color, ESCALA_MODELO_JUGADOR_3D * 0.52f);
         }
         else if (m.visual.caida[i] >= 0.0f && m.visual.caida[i] < 2.6f)
         {
@@ -2940,7 +2940,7 @@ static void DibujarAutosAG(const MinijuegoAutosGlobo& m, const Participante part
             rlPushMatrix();
             rlTranslatef(p.x, p.y, p.z);
             rlRotatef(c * 300.0f, -dz, 0.0f, dx);
-            DibujarModeloJugadorEnPosicion({ 0.0f, -0.4f, 0.0f }, c * 200.0f, participantes[i].color, ESCALA_MODELO_JUGADOR_3D * 0.52f);
+            DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), { 0.0f, -0.4f, 0.0f }, c * 200.0f, participantes[i].color, ESCALA_MODELO_JUGADOR_3D * 0.52f);
             rlPopMatrix();
         }
     }

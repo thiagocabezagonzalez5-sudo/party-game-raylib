@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Participante.h"
+#include "Entities/PersonajesBloque.h"
 #include "raylib.h"
 
 
@@ -12,7 +13,7 @@ inline constexpr int MAX_JUGADORES_SELECCION =
     MAX_PARTICIPANTES;
 
 inline constexpr int MAX_PERSONAJES_SELECCION =
-    4;
+    CANTIDAD_PERSONAJES_BLOQUE;
 
 
 //==================================================
@@ -127,8 +128,8 @@ struct SolicitudInicioSeleccion
 // PERSONAJE
 //==================================================
 //
-// El roster son los 4 personajes reales del juego. Se muestran en 3D con
-// el modelo compartido (Minigames/ModeloJugadorCompartido); aqui solo
+// El roster son los 4 personajes de bloques (Entities/PersonajesBloque).
+// Se dibujan proceduralmente en la escena 3D; aqui solo
 // viven el nombre y el color de cada uno. No se cargan texturas propias.
 
 struct PersonajeSeleccion

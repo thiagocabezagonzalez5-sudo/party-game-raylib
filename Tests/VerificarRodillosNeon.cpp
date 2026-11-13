@@ -260,7 +260,7 @@ int main()
     zona.Descargar(); zona.Descargar();
     for(int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && Recursos()[i].modelo.meshes==nullptr,"Descarga simetrica antes de CloseWindow");
     for(auto& a:ObtenerModelosEscenariosRetro3D().animacionesRodillos) Comprobar(!a.vertices && !a.colores[0] && !a.colores[1],"Copias CPU liberadas");
-    DescargarModeloJugadorCompartido(); CloseWindow();
+    CloseWindow();
     std::printf("Verificacion Rodillos Neon 2/3/4 participantes: %d errores\n",errores);
     return errores?1:0;
 }

@@ -118,4 +118,21 @@ struct JugadorPrueba
     // moderada y el ground pound una version deliberadamente exagerada.
     float tiempoRalentizado = 0.0f;
     float multiplicadorRalentizacion = 1.0f;
+
+    // Animacion del golpe: breve anticipacion antes de que el golpe quede
+    // activo y duracion visual total (incluye la recuperacion).
+    float tiempoAnticipacionGolpe = 0.0f;
+    float tiempoAnimacionGolpe = 0.0f;
+
+    // Aturdimiento por recibir un golpe: sin control mientras dure. Un
+    // golpe fuerte ademas lo derriba (cae de espaldas y se levanta).
+    float tiempoAturdido = 0.0f;
+    float duracionAturdido = 0.0f;
+    bool derribado = false;
+    Vector3 direccionGolpeRecibido{};
 };
+
+
+// Duraciones compartidas de la animacion del golpe (segundos).
+inline constexpr float DURACION_ANTICIPACION_GOLPE = 0.07f;
+inline constexpr float DURACION_ANIMACION_GOLPE = 0.40f;

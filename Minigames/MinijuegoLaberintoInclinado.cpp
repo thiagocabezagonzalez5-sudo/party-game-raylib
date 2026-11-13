@@ -3135,7 +3135,7 @@ static void DibujarOperadoresJade(
         rlTranslatef(pies.x + sacudida, pies.y + 0.17f + salto, pies.z);
         rlRotatef(-e.inclinacionX * 7.0f, 0.0f, 0.0f, 1.0f);
         rlRotatef(e.inclinacionZ * 7.0f, 1.0f, 0.0f, 0.0f);
-        DibujarModeloJugadorEnPosicion({ 0.0f, 0.0f, 0.0f }, angulo, color, ESCALA_MODELO_JUGADOR_3D * escala);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), { 0.0f, 0.0f, 0.0f }, angulo, color, ESCALA_MODELO_JUGADOR_3D * escala);
         rlPopMatrix();
     }
 }

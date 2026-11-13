@@ -1893,24 +1893,18 @@ static void DibujarJugador67(
         participante.color
     );
 
-    const Model* modeloJugador =
-        ObtenerModeloJugadorCompartidoRender();
+    // Personaje elegido; aturdido muestra estrellitas y ojos en cruz.
+    PosePersonajeBloque pose = CrearPoseReposoPersonaje();
+    pose.aturdido = estado.tiempoStun > 0.0f;
 
-    if (modeloJugador != nullptr)
-    {
-        (DrawModelEx)(
-            *modeloJugador,
-            { x, 0.06f, z },
-            { 0.0f, 1.0f, 0.0f },
-            giro,
-            { 0.25f, 0.25f, 0.25f },
-            color
-        );
-    }
-    else
-    {
-        Cubo67({ x, 0.84f, z }, { 0.72f, 1.55f, 0.72f }, color);
-    }
+    DibujarModeloJugadorEnPosicion(
+        ObtenerPersonajeParticipante(participante),
+        { x, 0.06f, z },
+        giro,
+        color,
+        ESCALA_MODELO_JUGADOR_3D,
+        pose
+    );
 
     if (estado.llevaPieza)
     {
@@ -2307,8 +2301,6 @@ void Minijuego67::Inicializar()
         camarasEquipo[equipo].fovy = 14.4f;
         camarasEquipo[equipo].projection = CAMERA_ORTHOGRAPHIC;
     }
-
-    InicializarModeloJugadorCompartido();
 }
 
 
@@ -2408,7 +2400,6 @@ void Minijuego67::Reiniciar(
     tiempoPreparacion = DURACION_PREPARACION_67;
     tiempoPartida = DURACION_PARTIDA_67;
     velocidadCintas = 0.30f;
-    fotogramaAnimacionIdle = 0.0f;
     equipoGanador = -1;
     empate = false;
 
@@ -2481,23 +2472,6 @@ void Minijuego67::Actualizar(
 {
     tiempoAnimacion += deltaTime;
     ActualizarEfectos67(*this, deltaTime);
-
-    if (AnimacionIdleModeloJugadorCompartidoActiva())
-    {
-        fotogramaAnimacionIdle +=
-            30.0f * deltaTime;
-
-        int cantidadFotogramas =
-            ObtenerCantidadFotogramasIdleModeloJugadorCompartido();
-
-        if (cantidadFotogramas > 0)
-        {
-            AplicarFotogramaIdleModeloJugadorCompartido(
-                (int)fotogramaAnimacionIdle %
-                cantidadFotogramas
-            );
-        }
-    }
 
     int mascaraActual =
         CrearMascaraParticipantes67(participantes, cantidadMaxima);

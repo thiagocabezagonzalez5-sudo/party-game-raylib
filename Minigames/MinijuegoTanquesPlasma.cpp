@@ -2832,7 +2832,7 @@ static void CascoTanque(Color cuerpo, Color oscuro, float giroOrugas, int vidas,
 
 
 // Torreta con el canon de plasma y el piloto asomado por la escotilla.
-static void TorretaTanque(Color cuerpo, Color claro, Color colorJugador, float retroceso, float t, bool conPiloto)
+static void TorretaTanque(Color cuerpo, Color claro, Color colorJugador, int personaje, float retroceso, float t, bool conPiloto)
 {
     Color metal = Color{ 196, 200, 216, 255 };
     float r = retroceso * 0.22f;
@@ -2862,7 +2862,7 @@ static void TorretaTanque(Color cuerpo, Color claro, Color colorJugador, float r
 
     if (conPiloto)
     {
-        DibujarModeloJugadorEnPosicion({ -0.1f, 0.78f, 0.0f }, 90.0f, colorJugador, ESCALA_MODELO_JUGADOR_3D * 0.42f);
+        DibujarModeloJugadorEnPosicion(personaje, { -0.1f, 0.78f, 0.0f }, 90.0f, colorJugador, ESCALA_MODELO_JUGADOR_3D * 0.42f);
     }
 }
 
@@ -2894,7 +2894,7 @@ static void DibujarTanqueTanques(const MinijuegoTanquesPlasma& m, int i, const P
         rlTranslatef(p.x, p.y, p.z);
         rlRotatef(-anguloTorreta * RAD2DEG + 90.0f * u, 0.0f, 1.0f, 0.0f);
         rlRotatef(70.0f * u, 1.0f, 0.0f, 0.0f);
-        TorretaTanque(quemado, TonoTanques(quemado, 1.2f), Color{ 60, 56, 64, 255 }, 0.0f, tiempo, false);
+        TorretaTanque(quemado, TonoTanques(quemado, 1.2f), Color{ 60, 56, 64, 255 }, ObtenerPersonajeParticipante(participante), 0.0f, tiempo, false);
         rlPopMatrix();
 
         // El piloto sale despedido y queda parado al lado.
@@ -2907,7 +2907,7 @@ static void DibujarTanqueTanques(const MinijuegoTanquesPlasma& m, int i, const P
         };
         float vuelta = e < 1.0f ? 540.0f * e : 0.0f;
         DibujarSombraRetroCircular({ pies.x, pies.y, pies.z }, 0.35f, 0.35f, 0.02f, 0.3f, 10);
-        DibujarModeloJugadorEnPosicion(pies, vuelta, participante.color, ESCALA_MODELO_JUGADOR_3D * 0.62f);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participante), pies, vuelta, participante.color, ESCALA_MODELO_JUGADOR_3D * 0.62f);
         return;
     }
 
@@ -2938,7 +2938,7 @@ static void DibujarTanqueTanques(const MinijuegoTanquesPlasma& m, int i, const P
     rlPushMatrix();
     rlTranslatef(base.x, 0.0f, base.z);
     rlRotatef(-anguloTorreta * RAD2DEG, 0.0f, 1.0f, 0.0f);
-    TorretaTanque(color, claro, participante.color, t.retroceso, tiempo, true);
+    TorretaTanque(color, claro, participante.color, ObtenerPersonajeParticipante(participante), t.retroceso, tiempo, true);
     rlPopMatrix();
 }
 

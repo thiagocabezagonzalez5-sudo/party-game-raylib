@@ -22,8 +22,8 @@ struct Jugador{
     // PARTIDA
     int puntaje;
 
-    // VISUAL
-    Model modelo;
+    // VISUAL (personaje de bloques, ver Entities/PersonajesBloque.h)
+    int personaje;
 
     float rotacion;
     float escala;

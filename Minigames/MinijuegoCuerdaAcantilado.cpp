@@ -3002,7 +3002,7 @@ static void DibujarCuerdaCue(const MinijuegoCuerdaAcantilado& m, int limite, Esc
 }
 
 
-static void DibujarJugadorInclinadoCue(Vector3 pies, bool haciaDerecha, float inclinacionGrados, Color color, float escala)
+static void DibujarJugadorInclinadoCue(int personaje, Vector3 pies, bool haciaDerecha, float inclinacionGrados, Color color, float escala)
 {
     // Positivo inclina hacia -X; el trio (a la derecha) se invierte.
     float angulo = haciaDerecha ? inclinacionGrados : -inclinacionGrados;
@@ -3011,7 +3011,7 @@ static void DibujarJugadorInclinadoCue(Vector3 pies, bool haciaDerecha, float in
     rlPushMatrix();
     rlTranslatef(pies.x, pies.y, pies.z);
     rlRotatef(angulo, 0.0f, 0.0f, 1.0f);
-    DibujarModeloJugadorEnPosicion({ 0.0f, 0.0f, 0.0f }, mirada, color, ESCALA_MODELO_JUGADOR_3D * escala);
+    DibujarModeloJugadorEnPosicion(personaje, { 0.0f, 0.0f, 0.0f }, mirada, color, ESCALA_MODELO_JUGADOR_3D * escala);
     rlPopMatrix();
 }
 
@@ -3069,7 +3069,7 @@ static void DibujarJugadoresCue(
         }
 
         float escala = 1.0f + 0.07f * m.destelloTiron[i];
-        DibujarJugadorInclinadoCue(pies, estado.equipo == 0, inclinacion, color, escala);
+        DibujarJugadorInclinadoCue(ObtenerPersonajeParticipante(participantes[i]), pies, estado.equipo == 0, inclinacion, color, escala);
 
         if (mostrarDebug)
         {

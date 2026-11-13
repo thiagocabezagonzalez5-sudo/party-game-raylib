@@ -2042,7 +2042,7 @@ static void DibujarJugadoresCapitan3D(
         {
             float tiembla = std::sin(t * 60.0f) * 0.07f * jugador.sacudida;
             DibujarSombraRetroCircular({ base.x, 0.08f, base.z }, 0.45f, 0.38f, 0.1f);
-            DibujarModeloJugadorEnPosicion({ base.x + tiembla, 0.08f, base.z }, jugador.giroVisual, color, ESCALA_JUGADOR_CAPITAN * ESCALA_MODELO_JUGADOR_3D);
+            DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), { base.x + tiembla, 0.08f, base.z }, jugador.giroVisual, color, ESCALA_JUGADOR_CAPITAN * ESCALA_MODELO_JUGADOR_3D);
             continue;
         }
 
@@ -2062,7 +2062,7 @@ static void DibujarJugadoresCapitan3D(
             rlPushMatrix();
             rlTranslatef(p.x, p.y + 0.7f, p.z);
             rlRotatef(-lado * 330.0f * u, 0.0f, 0.0f, 1.0f);
-            DibujarModeloJugadorEnPosicion({ 0.0f, -0.7f, 0.0f }, jugador.giroVisual, color, ESCALA_JUGADOR_CAPITAN * ESCALA_MODELO_JUGADOR_3D);
+            DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), { 0.0f, -0.7f, 0.0f }, jugador.giroVisual, color, ESCALA_JUGADOR_CAPITAN * ESCALA_MODELO_JUGADOR_3D);
             rlPopMatrix();
         }
     }
@@ -2096,7 +2096,7 @@ static void DibujarNaufragosCapitan(
         float y = NIVEL_MAR_CAPITAN + bob - 0.5f * hundido;
         Color color = participantes[i].color;
 
-        DibujarModeloJugadorEnPosicion({ agua.x, y - 1.0f, agua.z }, 0.0f, color, ESCALA_JUGADOR_CAPITAN * ESCALA_MODELO_JUGADOR_3D);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), { agua.x, y - 1.0f, agua.z }, 0.0f, color, ESCALA_JUGADOR_CAPITAN * ESCALA_MODELO_JUGADOR_3D);
         ToroCapitan({ agua.x, y + 0.05f, agua.z }, 0.5f, 0.13f, Color{ 244, 242, 236, 255 }, color, 4);
     }
 }

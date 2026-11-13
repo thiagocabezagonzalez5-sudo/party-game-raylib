@@ -2969,7 +2969,7 @@ void MinijuegoBanqueteTurbo::Dibujar(
             color = MezclaBT(color, Color{ 255, 60, 40, 255 }, 0.45f + 0.25f * std::sin(tiempoAnimacion * 18.0f));
         }
 
-        DibujarModeloJugadorEnPosicion({ j.posicion.x, j.posicion.y - 1.0f, j.posicion.z }, ObtenerAnguloModeloJugadorCompartido(j), color);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), { j.posicion.x, j.posicion.y - 1.0f, j.posicion.z }, ObtenerAnguloModeloJugadorCompartido(j), color, ESCALA_MODELO_JUGADOR_3D, CrearPoseJugadorPrueba(j));
 
         if (mostrarDebug)
         {

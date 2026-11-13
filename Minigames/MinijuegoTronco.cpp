@@ -2220,7 +2220,7 @@ static void DibujarJugadoresEquipoTronco(
             ? 90.0f
             : -90.0f;
 
-        DibujarModeloJugadorEnPosicion(pies, anguloY, color);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), pies, anguloY, color);
     }
 }
 

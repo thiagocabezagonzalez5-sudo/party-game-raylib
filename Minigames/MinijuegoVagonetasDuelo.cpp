@@ -2032,7 +2032,7 @@ static void DibujarCarroVagonetas(
     JugadorPrueba visual{};
     visual.direccionMirada = { std::sin(m.rumbo), 0.0f, -std::cos(m.rumbo) };
     // MODELO FUTURO: personaje agachado dentro de la vagoneta.
-    DibujarModeloJugadorEnPosicion(
+    DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[c.participante]),
         { base.x, y0 + 0.64f, base.z },
         ObtenerAnguloModeloJugadorCompartido(visual),
         participantes[c.participante].color,

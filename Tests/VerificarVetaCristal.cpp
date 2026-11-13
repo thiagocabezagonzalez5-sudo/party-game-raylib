@@ -236,7 +236,7 @@ int main()
                 continue;
             }
             Comprobar(r.cargado, RUTAS_MODELOS_VETA_CRISTAL_3D[i]);
-            if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
+            if (!r.cargado) { zona.Descargar(); CloseWindow(); return 2; }
             if (cantidad == 2) mallas[i] = r.modelo.meshes;
             Comprobar(mallas[i] == r.modelo.meshes && cargas[i] == 1, "Carga unica entre participantes y entradas");
             Comprobar(r.modelo.materialCount <= 16, "Limite de materiales observados");
@@ -476,7 +476,6 @@ int main()
         Comprobar(!r.cargado && !r.cargaIntentada && !r.modelo.meshes && cargas[i] == descargas[i],
             "Descarga simetrica e idempotente antes de CloseWindow");
     }
-    DescargarModeloJugadorCompartido();
     CloseWindow();
     std::printf("Verificacion Veta de Cristal 2/3/4 participantes: %d errores\n",errores);
     return errores == 0 ? 0 : 1;

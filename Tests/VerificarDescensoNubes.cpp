@@ -311,7 +311,7 @@ int main()
                 continue;
             }
             Comprobar(r.cargado,RUTAS_MODELOS_DESCENSO_NUBES_3D[i]);
-            if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
+            if (!r.cargado) { zona.Descargar(); CloseWindow(); return 2; }
             if (cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Carga unica compartida por jugadores y reinicios");
             for (int j=0;j<r.modelo.meshCount;j++) Comprobar(r.modelo.meshes[j].colors!=nullptr,"Colores de vertices conservados");
@@ -402,7 +402,7 @@ int main()
     zona.Descargar(); zona.Descargar();
     for (int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de CloseWindow");
     Comprobar(!almacen.alasNubes.vertices[0] && !almacen.alasNubes.normales[1],"Liberar tambien copias CPU de alas");
-    DescargarModeloJugadorCompartido(); CloseWindow();
+    CloseWindow();
     std::printf("Verificacion Descenso en Nubes 2/3/4 participantes: %d errores\n",errores);
     return errores==0 ? 0 : 1;
 }

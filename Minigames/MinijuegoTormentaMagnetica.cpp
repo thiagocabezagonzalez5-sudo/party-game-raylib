@@ -2865,7 +2865,7 @@ static void DibujarCaidasTormenta(
         }
 
         Vector3 pies = { e.posicionCaida.x, e.posicionCaida.y - 0.7f, e.posicionCaida.z };
-        DibujarModeloJugadorEnPosicion(pies, e.tiempoCaida * 220.0f, participantes[i].color);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), pies, e.tiempoCaida * 220.0f, participantes[i].color);
     }
 }
 

@@ -2816,7 +2816,7 @@ static void DibujarCaidasBarra(
         rlPushMatrix();
         rlTranslatef(e.posicionCaida.x, e.posicionCaida.y, e.posicionCaida.z);
         rlRotatef(e.tiempoCaida * 420.0f, e.velocidadCaida.z, 0.0f, -e.velocidadCaida.x);
-        DibujarModeloJugadorEnPosicion({ 0.0f, -0.7f, 0.0f }, e.tiempoCaida * 90.0f, participantes[i].color);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), { 0.0f, -0.7f, 0.0f }, e.tiempoCaida * 90.0f, participantes[i].color);
         rlPopMatrix();
     }
 }

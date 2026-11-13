@@ -18,18 +18,13 @@ inline constexpr const char* RUTA_CONFIGURACION_JUEGO =
 
 
 //==================================================
-// MODELO GENERAL DEL JUGADOR
+// PERSONAJES DEL JUGADOR
 //==================================================
 
-inline constexpr const char* RUTA_MODELO_JUGADOR_3D =
-    //"Assets/Modelos/Jugador_Raylib_Normalizado.glb";
-    "Assets/Modelos/tung_tung_tung_sahur.glb";
-
+// Los personajes son procedurales (Entities/PersonajesBloque): no tienen
+// archivo. Esta es su escala normal de juego (unos 1.45 de alto).
 inline constexpr float ESCALA_MODELO_JUGADOR_3D =
     0.25f;
-
-inline constexpr float ROTACION_X_MODELO_JUGADOR_3D =
-    0.0f;
 
 
 //==================================================

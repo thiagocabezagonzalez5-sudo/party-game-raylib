@@ -192,7 +192,6 @@ int main()
     zona.Descargar(); // Descarga idempotente antes de cerrar el contexto.
     for (const auto& r : almacen.ultimoAsiento)
         Comprobar(!r.cargado && !r.cargaIntentada && r.modelo.meshes == nullptr, "Descarga simetrica del paquete");
-    DescargarModeloJugadorCompartido();
     CloseWindow();
     std::printf("Verificacion integrada 2/3/4 jugadores: %d errores\n", errores);
     return errores == 0 ? 0 : 1;

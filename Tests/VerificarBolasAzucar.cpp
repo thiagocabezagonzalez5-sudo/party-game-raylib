@@ -234,7 +234,7 @@ int main()
     Comprobar(usos[MODELO_AZUCAR_BOLA]>0,"La bola jugable se usa en el juego integrado");
     zona.Descargar(); zona.Descargar();
     for(int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de CloseWindow");
-    DescargarModeloJugadorCompartido(); CloseWindow();
+    CloseWindow();
     std::printf("Verificacion Bolas de Azucar 2/3/4 participantes: %d errores\n",errores);
     return errores?1:0;
 }

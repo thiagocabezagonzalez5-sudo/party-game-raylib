@@ -233,7 +233,7 @@ int main()
         for (int i=P0;i<N;i++)
         {
             auto& r=Recursos()[i]; Comprobar(r.cargado,RUTAS_MODELOS_TESORERO_CERCADO_3D[i]);
-            if (!r.cargado) { zona.Descargar(); DescargarModeloJugadorCompartido(); CloseWindow(); return 2; }
+            if (!r.cargado) { zona.Descargar(); CloseWindow(); return 2; }
             if (cantidad==2) mallas[i]=r.modelo.meshes;
             Comprobar(cargas[i]==1 && r.modelo.meshes==mallas[i],"Carga unica y mallas compartidas");
             for (int j=0;j<r.modelo.meshCount;j++) Comprobar(r.modelo.meshes[j].colors!=nullptr,"Conservar colores de vertices");
@@ -327,7 +327,7 @@ int main()
     for (const auto& r:almacen.racimoToxico) Comprobar(!r.cargaIntentada,"No cargar Racimo");
     zona.Descargar(); zona.Descargar();
     for (int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de CloseWindow");
-    DescargarModeloJugadorCompartido(); CloseWindow();
+    CloseWindow();
     std::printf("Verificacion Tesorero Acorralado 2/3/4 participantes: %d errores\n",errores);
     return errores==0 ? 0 : 1;
 }

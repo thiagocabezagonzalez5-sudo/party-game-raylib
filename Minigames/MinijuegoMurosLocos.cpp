@@ -2736,7 +2736,7 @@ static void DibujarCaidasMuros(
 
         Vector3 pies = { e.posicionCaida.x, e.posicionCaida.y - 0.7f - e.hundimiento * 1.7f, e.posicionCaida.z };
         float giro = e.tocoArena ? 0.0f : e.tiempoCaida * 160.0f;
-        DibujarModeloJugadorEnPosicion(pies, giro, participantes[i].color);
+        DibujarModeloJugadorEnPosicion(ObtenerPersonajeParticipante(participantes[i]), pies, giro, participantes[i].color);
     }
 }
 

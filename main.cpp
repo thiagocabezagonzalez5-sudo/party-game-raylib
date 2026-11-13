@@ -134,7 +134,6 @@ int main(int argc, char* argv[])
     //------------------------------
 
     juego.Descargar();
-    DescargarModeloJugadorCompartido();
 
 
     CloseWindow();

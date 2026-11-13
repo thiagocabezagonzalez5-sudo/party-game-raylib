@@ -268,7 +268,7 @@ int main()
     zona.Descargar(); zona.Descargar();
     for (int i=0;i<N;i++) Comprobar(cargas[i]==descargas[i] && !Recursos()[i].modelo.meshes,"Descarga simetrica antes de CloseWindow");
     Comprobar(!ObtenerModelosEscenariosRetro3D().franjasCintaGrua,"Reposo CPU de la cinta liberado");
-    DescargarModeloJugadorCompartido(); CloseWindow();
+    CloseWindow();
     std::printf("Verificacion Grua de Chatarra 2/3/4 participantes: %d errores\n",errores);
     return errores ? 1 : 0;
 }

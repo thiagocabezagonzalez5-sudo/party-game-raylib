@@ -328,7 +328,6 @@ int main()
     zona.Descargar();
     for (const auto& r : almacen.cajasPuerto)
         Comprobar(!r.cargado && !r.cargaIntentada && !r.modelo.meshes, "Descarga simetrica e idempotente");
-    DescargarModeloJugadorCompartido();
     CloseWindow();
     std::printf("Verificacion Cajas del Puerto 2/3/4 jugadores: %d errores\n", errores);
     return errores == 0 ? 0 : 1;

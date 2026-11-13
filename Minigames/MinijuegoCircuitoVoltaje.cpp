@@ -2683,6 +2683,7 @@ static void DibujarAutoCircuito(
     const PoseAutoCircuito& pose,
     float desvioLateral,
     Color color,
+    int personaje,
     bool enTrompo,
     bool advertencia,
     float destello,
@@ -2777,7 +2778,7 @@ static void DibujarAutoCircuito(
     CuboCircuito({ -1.17f, 0.52f, 0.0f }, { 0.03f, 0.08f, 0.22f }, frena ? Color{ 255, 70, 60, 255 } : Color{ 150, 30, 30, 255 });
 
     // Piloto con el modelo compartido, sentado en la cabina.
-    DibujarModeloJugadorEnPosicion({ -0.12f, 0.1f, 0.0f }, 90.0f, color, ESCALA_MODELO_JUGADOR_3D * 0.42f);
+    DibujarModeloJugadorEnPosicion(personaje, { -0.12f, 0.1f, 0.0f }, 90.0f, color, ESCALA_MODELO_JUGADOR_3D * 0.42f);
 
     rlPopMatrix();
 }
@@ -3101,6 +3102,7 @@ void MinijuegoCircuitoVoltaje::Dibujar(
             pose,
             desvio,
             participantes[i].color,
+            ObtenerPersonajeParticipante(participantes[i]),
             enTrompo,
             ExcedidoCircuito(*this, i),
             destelloVuelta[i],

@@ -746,45 +746,22 @@ static void DibujarPersonaje(
         Fade(BLACK, 0.28f)
     );
 
-    // Tinte propio de cada personaje, siempre claro; el no apuntado solo
-    // se atenua un poco para que el apuntado destaque sin ocultar al resto.
-    Color base = MezclarColor(personaje.color, WHITE, 0.62f);
-    Color tinte = Oscurecer(base, 0.90f + 0.10f * personaje.foco);
+    // Remera con el color propio del personaje; el no apuntado solo se
+    // atenua un poco para que el apuntado destaque sin ocultar al resto.
+    Color remera = Oscurecer(personaje.color, 0.88f + 0.12f * personaje.foco);
 
     if (personaje.listo)
     {
-        tinte = MezclarColor(tinte, Color{ 255, 236, 160, 255 }, 0.30f);
+        remera = MezclarColor(remera, Color{ 255, 236, 160, 255 }, 0.25f);
     }
 
-    InicializarModeloJugadorCompartido();
+    // Cada pedestal tiene su propio reloj para que no respiren a la par;
+    // al confirmar salta con los brazos arriba.
+    PosePersonajeBloque pose;
+    pose.tiempo = tiempo + indice * 0.9f;
+    pose.enAire = salto > 0.02f;
 
-    const Model* modelo = ObtenerModeloJugadorCompartidoRender();
-
-    if (modelo == nullptr)
-    {
-        DibujarModeloJugadorEnPosicion(pies, angulo, tinte, escala);
-        return;
-    }
-
-    // El modelo y su pose son compartidos: se fija un fotograma distinto
-    // por personaje justo antes de cada dibujo para que no se muevan igual.
-    int fotogramas = ObtenerCantidadFotogramasIdleModeloJugadorCompartido();
-
-    if (fotogramas > 0)
-    {
-        AplicarFotogramaIdleModeloJugadorCompartido(
-            (int)(tiempo * 30.0f) + indice * (fotogramas / 4 + 3)
-        );
-    }
-
-    DrawModelEx(
-        *modelo,
-        pies,
-        Vector3{ 0.0f, 1.0f, 0.0f },
-        angulo,
-        Vector3{ escala, escala, escala },
-        tinte
-    );
+    DibujarModeloJugadorEnPosicion(indice, pies, angulo, remera, escala, pose);
 }
 
 

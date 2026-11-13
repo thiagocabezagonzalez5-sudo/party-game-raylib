@@ -201,19 +201,13 @@ void SeleccionPersonajes::Inicializar(
     // PERSONAJES REALES DEL JUEGO
     //------------------------------
 
-    personajes[0].nombre = "TUNG TUNG";
-    personajes[0].color = ORANGE;
+    for (int c = 0; c < MAX_PERSONAJES_SELECCION; c++)
+    {
+        personajes[c].nombre = ObtenerNombrePersonajeBloque(c);
+        personajes[c].color = ObtenerColorPersonajeBloque(c);
+    }
 
-    personajes[1].nombre = "PERSONAJE 2";
-    personajes[1].color = SKYBLUE;
-
-    personajes[2].nombre = "PERSONAJE 3";
-    personajes[2].color = LIME;
-
-    personajes[3].nombre = "PERSONAJE 4";
-    personajes[3].color = VIOLET;
-
-    // El modelo 3D es el compartido de main.cpp: no hay nada que cargar.
+    // Los personajes son procedurales: no hay nada que cargar.
     recursosCargados =
         true;
 
@@ -1678,9 +1672,8 @@ void SeleccionPersonajes::Dibujar(
 
 void SeleccionPersonajes::Descargar()
 {
-    // El modelo 3D es el compartido, que descarga main.cpp con
-    // DescargarModeloJugadorCompartido(). Solo la escena posee la
-    // textura de arena.
+    // Los personajes son procedurales (no se cargan); solo la escena
+    // posee la textura de arena.
     DescargarEscenaSeleccion();
 
     recursosCargados =
