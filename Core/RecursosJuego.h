@@ -932,7 +932,7 @@ inline constexpr const char* RUTA_LOGO_CREADOR =
 //==================================================
 
 inline constexpr const char* RUTA_MUSICA_MENU =
-    "Assets/Audio/Musica/musicaMenu.mp3";
+    "Assets/Audio/Musica/musicaMenu.ogg";
 
 // Pistas opcionales por categoria (base sin extension; se prueba .ogg y .mp3).
 // Si faltan, se mantiene la pista que ya suena.

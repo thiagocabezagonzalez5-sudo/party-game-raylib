@@ -66,7 +66,11 @@ Todos: autor Kenney, licencia CC0 1.0, atribucion no requerida.
 | Ambiente/ruido_tecnologico.ogg | sci-fi-sounds | computer_noise_000.ogg |
 
 ## Musica
-`Musica/musicaMenu.mp3`: preexistente en el proyecto; su licencia no esta documentada aqui (verificar origen).
+`Musica/musicaMenu.ogg`: "Happy Happy HardPopCoreTastic", DJ Mesostic (2017), obra propia publicada en Wikimedia Commons.
+Licencia **CC0 1.0 Universal (dominio publico)**, atribucion no requerida (se agradece: "Musica del menu: Mesostic, Wikimedia Commons").
+Origen: https://commons.wikimedia.org/wiki/File:Happy_Happy_HardPopCoreTastic.ogg
+(archivo original sin modificar; Ogg Vorbis estereo 44,1 kHz, 4:33; SHA-256 dba924608bc3e299880f88f2c1739d5331c0dafec30a30f4859d1926a86f53d3).
+Reemplaza a la anterior `musicaMenu.mp3`, cuyo origen y licencia no estaban documentados.
 
 ## Copias de archivos ya listados (mismo origen, CC0, Kenney)
 | Archivo | Copia de |
