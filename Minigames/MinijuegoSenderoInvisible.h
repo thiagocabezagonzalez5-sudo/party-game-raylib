@@ -14,7 +14,8 @@
 // su propia cuadricula de losas (6 x 10) sobre un abismo de niebla, todas
 // con el MISMO trazado seguro oculto. Al inicio unos fuegos fatuos
 // recorren la ruta segura durante 3 s para memorizarla. Pisar una losa
-// falsa la desmorona: caes y reapareces en la ultima losa segura. Cada
+// falsa la desmorona al instante: caes y reapareces en la ultima losa
+// segura (no se salta: cada losa del recorrido se pisa). Cada
 // caida marca con una grieta esa losa falsa en TODAS las cuadriculas. A
 // mitad del recorrido hay un farol que ilumina las 2 losas siguientes 3 s.
 // Gana quien llega primero a la ultima fila; tope de 60 s: gana el que
@@ -40,7 +41,6 @@ enum FaseSenderoInvisible
 enum EstadoLosaSendero
 {
     LOSA_SENDERO_FIRME = 0,
-    LOSA_SENDERO_TEMBLANDO,
     LOSA_SENDERO_CAIDA
 };
 

@@ -34,7 +34,6 @@ static const float SEPARACION_CARRILES = 10.0f;
 static const float Z_FILA_CERO = 6.0f;
 static const float ALTURA_CENTRO_JUGADOR = 0.7f;
 
-static const float TIEMPO_TEMBLOR = 0.3f;
 static const float DURACION_REAPARICION = 0.5f;
 static const float DURACION_FAROL = 3.0f;
 static const float ALCANCE_FAROL = 0.9f;
@@ -61,12 +60,6 @@ static float Aleatorio01()
 static bool JugadorEsBot(const Participante& participante)
 {
     return participante.esBot || !participante.conectado;
-}
-
-
-static unsigned int HashIndice(int k)
-{
-    return (((unsigned int)k * 2654435761u) >> 8) & 0xFFu;
 }
 
 
@@ -109,12 +102,6 @@ static bool LosaBajoPosicion(
     return
         columna >= 0 && columna < COLUMNAS_SENDERO &&
         fila >= 0 && fila < FILAS_SENDERO;
-}
-
-
-static Color ColorJugador(const Participante participantes[], int i)
-{
-    return participantes[i].color;
 }
 
 
@@ -613,18 +600,8 @@ static void ActualizarLosasCaidas(MinijuegoSenderoInvisible& m, float deltaTime)
         {
             LosaSendero& losa = m.losas[carril][k];
 
-            if (losa.estado == LOSA_SENDERO_TEMBLANDO)
-            {
-                losa.tiempo -= deltaTime;
-
-                if (losa.tiempo <= 0.0f)
-                {
-                    losa.estado = LOSA_SENDERO_CAIDA;
-                    losa.tiempo = 0.0f;
-                    m.bloques[carril][k].activaColision = false;
-                }
-            }
-            else if (losa.estado == LOSA_SENDERO_CAIDA && losa.tiempo < 3.0f)
+            // Solo anima el derrumbe: la colision ya se quito al pisarla.
+            if (losa.estado == LOSA_SENDERO_CAIDA && losa.tiempo < 3.0f)
             {
                 losa.tiempo += deltaTime;
             }
@@ -723,12 +700,10 @@ void MinijuegoSenderoInvisible::Actualizar(
             }
         }
 
+        // Sin golpes ni salto: el recorrido se hace pisando losa por losa.
+        // Saltando se cruzaban zonas fuera del sendero sin tocarlas.
         entrada.golpear = false;
-
-        if (!jugador.enSuelo)
-        {
-            entrada.saltar = false;
-        }
+        entrada.saltar = false;
 
         ActualizarJugadorPruebaNormal(
             jugador,
@@ -737,7 +712,7 @@ void MinijuegoSenderoInvisible::Actualizar(
             LOSAS_SENDERO,
             particulas,
             MAX_PARTICULAS_SENDERO,
-            true,
+            false,
             true,
             deltaTime
         );
@@ -803,16 +778,31 @@ void MinijuegoSenderoInvisible::Actualizar(
         }
         else
         {
+            // Losa falsa bajo el centro del jugador: se desmorona EN EL ACTO.
+            // Antes temblaba 0.3 s con colision y corriendo se cruzaba antes
+            // de que cayera; ademas la hitbox podia seguir apoyada en una
+            // losa segura vecina. Se quita su colision y se centra al
+            // jugador sobre el hueco (la hitbox queda dentro de la losa) para
+            // que caiga siempre y reaparezca en su ultima losa segura.
             LosaSendero& losa = losas[estado.carril][indice];
 
             if (losa.estado == LOSA_SENDERO_FIRME)
             {
-                losa.estado = LOSA_SENDERO_TEMBLANDO;
-                losa.tiempo = TIEMPO_TEMBLOR;
+                losa.estado = LOSA_SENDERO_CAIDA;
+                losa.tiempo = 0.0f;
                 grieta[indice] = true;
                 estado.caidas++;
                 ReproducirSonidoMinijuego(audio, SONIDO_PLATAFORMA);
             }
+
+            bloques[estado.carril][indice].activaColision = false;
+
+            jugador.posicion.x = XColumna(*this, estado.carril, columna);
+            jugador.posicion.z = ZFila(fila);
+            jugador.velocidad.x = 0.0f;
+            jugador.velocidad.z = 0.0f;
+            jugador.empuje = {};
+            jugador.enSuelo = false;
         }
     }
 
@@ -1722,8 +1712,7 @@ static float EdadGrietaS(const MinijuegoSenderoInvisible& m, int k, int* carrilC
         const LosaSendero& losa = m.losas[carril][k];
         float edad = -1.0f;
 
-        if (losa.estado == LOSA_SENDERO_TEMBLANDO) edad = TIEMPO_TEMBLOR - losa.tiempo;
-        else if (losa.estado == LOSA_SENDERO_CAIDA) edad = TIEMPO_TEMBLOR + losa.tiempo;
+        if (losa.estado == LOSA_SENDERO_CAIDA) edad = losa.tiempo;
 
         if (edad >= 0.0f && (mejor < 0.0f || edad < mejor))
         {
@@ -1736,12 +1725,9 @@ static float EdadGrietaS(const MinijuegoSenderoInvisible& m, int k, int* carrilC
 }
 
 
-// Losas que tiemblan y trozos que caen al abismo (inmediato, cada frame).
+// Trozos de las losas falsas que caen al abismo (inmediato, cada frame).
 static void DibujarLosasVivasS(const MinijuegoSenderoInvisible& m, const Participante participantes[])
 {
-    float t = m.tiempoAnimacion;
-    float mov = 0.4f + 0.6f * ObtenerFactorMovimientoCamaraMinijuegos();
-
     LoteS();
 
     for (int carril = 0; carril < m.cantidadCarriles; carril++)
@@ -1750,22 +1736,12 @@ static void DibujarLosasVivasS(const MinijuegoSenderoInvisible& m, const Partici
         {
             const LosaSendero& losa = m.losas[carril][k];
 
-            if (losa.estado == LOSA_SENDERO_FIRME || (losa.estado == LOSA_SENDERO_CAIDA && losa.tiempo >= 1.4f)) continue;
+            if (losa.estado == LOSA_SENDERO_FIRME || losa.tiempo >= 1.4f) continue;
 
             const BloquePrueba& bloque = m.bloques[carril][k];
             int fila = k / COLUMNAS_SENDERO, columna = k % COLUMNAS_SENDERO;
             Color top = ColorLosaS(m, participantes, carril, fila, columna);
 
-            if (losa.estado == LOSA_SENDERO_TEMBLANDO)
-            {
-                float f = 1.0f - losa.tiempo / TIEMPO_TEMBLOR;
-                float x = bloque.posicion.x + 0.06f * mov * std::sin(t * 70.0f);
-                float z = bloque.posicion.z + 0.04f * mov * std::cos(t * 53.0f);
-                Color rojo = MezclaS(top, Color{ 150, 92, 120, 255 }, 0.5f * f);
-                LosaS(x, -0.05f * f, z, rojo, k * 13 + 7, false, true);
-                FormaGrietaS(x, 0.006f - 0.05f * f, z, k, 0.04f + 0.08f * f, Color{ 26, 14, 38, 255 });
-            }
-            else
             {
                 float tt = losa.tiempo;
                 float caida = 0.5f * 16.0f * tt * tt;
@@ -3049,9 +3025,8 @@ static void PrepararHudS(
             std::snprintf(
                 jugador.controles,
                 sizeof(jugador.controles),
-                "MOVÉ: %s\nSALTÁ: %s",
-                TextoMoverHud(participante),
-                ObtenerTextoBotonPrincipal(participante)
+                "MOVÉ: %s",
+                TextoMoverHud(participante)
             );
         }
     }
