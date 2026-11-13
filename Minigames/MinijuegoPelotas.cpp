@@ -1259,9 +1259,6 @@ static void DibujarPicoPelotas(
     Color nieveLuz = NieblaPelotas(Color{ 238, 245, 252, 255 }, p);
     Color nieveSombra = NieblaPelotas(Color{ 170, 194, 222, 255 }, p);
 
-    DrawTriangle3D(l, f, p, rocaLuz);
-    DrawTriangle3D(f, r, p, rocaSombra);
-
     // Linea de nieve irregular: baja mas por la arista frontal.
     float sL = nieve * (0.9f + 0.2f * Hash01Pelotas(semilla, 3));
     float sF = nieve * (1.15f + 0.25f * Hash01Pelotas(semilla, 5));
@@ -1272,16 +1269,29 @@ static void DibujarPicoPelotas(
     Vector3 nf = { p.x + (f.x - p.x) * sF, p.y + (f.y - p.y) * sF, p.z + (f.z - p.z) * sF };
     Vector3 nr = { p.x + (r.x - p.x) * sR, p.y + (r.y - p.y) * sR, p.z + (r.z - p.z) * sR };
 
-    DrawTriangle3D(nl, nf, p, nieveLuz);
-    DrawTriangle3D(nf, nr, p, nieveSombra);
-
-    // Chorreado de nieve en cada cara.
+    // Punta del chorreado de nieve de cada cara (siempre sobre su plano,
+    // entre la linea de nieve y la base).
     Vector3 medioL = { (nl.x + nf.x) * 0.5f, (nl.y + nf.y) * 0.5f, (nl.z + nf.z) * 0.5f };
     Vector3 puntaL = { medioL.x + (medioL.x - p.x) * 0.35f, medioL.y + (medioL.y - p.y) * 0.35f, medioL.z + (medioL.z - p.z) * 0.35f };
-    DrawTriangle3D(nl, puntaL, nf, nieveLuz);
-
     Vector3 medioR = { (nf.x + nr.x) * 0.5f, (nf.y + nr.y) * 0.5f, (nf.z + nr.z) * 0.5f };
     Vector3 puntaR = { medioR.x + (medioR.x - p.x) * 0.28f, medioR.y + (medioR.y - p.y) * 0.28f, medioR.z + (medioR.z - p.z) * 0.28f };
+
+    // Cada cara se reparte en regiones que NO se superponen: la roca cubre
+    // solo lo que queda bajo la nieve (pentagono base-linea de nieve con la
+    // muesca del chorreado) y la nieve lo de arriba. Antes la nieve se
+    // dibujaba encima de la cara de roca completa en el mismo plano y, con
+    // otra triangulacion, la profundidad interpolada peleaba (rayado a la
+    // distancia). Mismo sentido de giro que la cara original.
+    DrawTriangle3D(l, f, puntaL, rocaLuz);
+    DrawTriangle3D(f, nf, puntaL, rocaLuz);
+    DrawTriangle3D(puntaL, nl, l, rocaLuz);
+    DrawTriangle3D(nl, nf, p, nieveLuz);
+    DrawTriangle3D(nl, puntaL, nf, nieveLuz);
+
+    DrawTriangle3D(f, r, puntaR, rocaSombra);
+    DrawTriangle3D(r, nr, puntaR, rocaSombra);
+    DrawTriangle3D(puntaR, nf, f, rocaSombra);
+    DrawTriangle3D(nf, nr, p, nieveSombra);
     DrawTriangle3D(nf, puntaR, nr, nieveSombra);
 }
 
@@ -1599,13 +1609,15 @@ static void DibujarDetallesParedPelotas(const CimaPelotas& cima)
             Vector3 centro = PuntoCimaPelotas(cima, angulo + 0.03f, 0.955f, -1.15f - h1 * 0.9f);
             Vector3 tamano = { 0.7f + 0.6f * h1, 0.55f + 0.4f * h2, 0.6f + 0.5f * h2 };
             Color roca = NieblaPelotas(TintePelotas(COLOR_ROCA_PELOTAS, 0.85f + 0.3f * h1), centro);
-            RocaGiradaPelotas(centro, tamano, angulo * 57.3f + h1 * 40.0f, roca);
-            // Nieve acumulada encima de la roca.
-            CajaFacetadaPelotas(
+            float giro = angulo * 57.3f + h1 * 40.0f;
+            RocaGiradaPelotas(centro, tamano, giro, roca);
+            // Nieve acumulada encima de la roca: gira con ella (sin girar
+            // quedaba cruzada sobre la roca y sus esquinas la atravesaban).
+            RocaGiradaPelotas(
                 { centro.x, centro.y + tamano.y * 0.5f + 0.05f, centro.z },
                 { tamano.x * 0.8f, 0.1f, tamano.z * 0.8f },
-                NieblaPelotas(COLOR_NIEVE_PELOTAS, centro),
-                1.0f
+                giro,
+                NieblaPelotas(COLOR_NIEVE_PELOTAS, centro)
             );
         }
     }
@@ -1997,8 +2009,15 @@ static void DibujarIndicadorJugadorPelotas(
 }
 
 
+// Las huellas son calcomanias translucidas que se pisan unas a otras en el
+// mismo plano (y = 0.03): se prueban contra la profundidad pero no la
+// escriben, asi se mezclan entre si y con las lineas grabadas del centro
+// en vez de recortarse a manchas segun la precision del depth buffer.
 static void DibujarHuellasPelotas(const MinijuegoPelotas& m)
 {
+    rlDrawRenderBatchActive();
+    rlDisableDepthMask();
+
     for (int i = 0; i < MAX_HUELLAS_PELOTAS; i++)
     {
         const HuellaPelotas& h = m.huellas[i];
@@ -2018,6 +2037,9 @@ static void DibujarHuellasPelotas(const MinijuegoPelotas& m)
         Vector3 e = { p.x + c * largo + s * ancho, p.y, p.z + s * largo - c * ancho };
         CuadPelotas(a, b, e, d, color, color, color, color);
     }
+
+    rlDrawRenderBatchActive();
+    rlEnableDepthMask();
 }
 
 
