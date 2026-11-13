@@ -1177,6 +1177,20 @@ static void ActualizarCamaraTablero(
             if (zoom > 2.0f) zoom = 2.0f;
         }
         else if (
+            partida.fase == FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO &&
+            partida.evento.activo &&
+            partida.evento.tipo == EVENTO_INTERACTIVO_TIENDA
+        )
+        {
+            // Tienda: la ficha y el puesto del vendedor, de cerca.
+            Vector3 puesto = PosicionPuestoTienda(partida, partida.evento.jugador);
+
+            foco.x = ficha.x * 0.4f + puesto.x * 0.6f;
+            foco.y = 0.8f;
+            foco.z = partida.jugadores[turno].posicionVisual.z * 0.4f + puesto.z * 0.6f + 0.5f;
+            zoom = 0.5f;
+        }
+        else if (
             partida.fase == FASE_PARTIDA_TABLERO_DECISION_TROFEO &&
             trofeo != nullptr
         )

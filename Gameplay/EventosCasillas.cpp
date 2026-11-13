@@ -1747,7 +1747,11 @@ void DibujarEventoInteractivo2D(const PartidaTablero& partida)
         return;
     }
 
-    DibujarVeloUI(0.58f * entrada);
+    // La tienda no lleva velo: el puesto del vendedor se ve en el tablero.
+    if (evento.tipo != EVENTO_INTERACTIVO_TIENDA)
+    {
+        DibujarVeloUI(0.58f * entrada);
+    }
 
     switch (evento.tipo)
     {
@@ -1945,6 +1949,16 @@ void DibujarEventosCasillas3D(const PartidaTablero& partida)
     )
     {
         DibujarAbejas3D(partida);
+    }
+
+    // Don Cambalache y su carrito junto a la casilla de la tienda.
+    if (
+        partida.evento.activo &&
+        partida.fase == FASE_PARTIDA_TABLERO_EVENTO_INTERACTIVO &&
+        partida.evento.tipo == EVENTO_INTERACTIVO_TIENDA
+    )
+    {
+        DibujarPuestoTienda3D(partida, partida.evento.tienda, partida.evento.jugador);
     }
 
     DibujarCofreRegalo3D(partida);

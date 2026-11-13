@@ -21,7 +21,22 @@ struct PartidaTablero;
 // sale, cancelar sale. Bot: espera su retardo, compra a lo sumo 2 objetos
 // con una regla simple y sale.
 
+// El comerciante es Don Cambalache, un personaje de bloques
+// (DibujarVendedorBloque) que aparece con su carrito junto a la casilla y
+// reacciona a lo que pasa: saluda, muestra los productos, festeja una
+// compra y se sorprende si no alcanzan las monedas. Esa reaccion es solo
+// presentacion: las reglas de compra no cambian.
+
 inline constexpr int OBJETOS_POR_OFERTA_TIENDA = 3;
+
+
+enum ReaccionVendedor
+{
+    REACCION_VENDEDOR_NINGUNA = 0,
+    REACCION_VENDEDOR_COMPRA,
+    REACCION_VENDEDOR_SIN_MONEDAS,
+    REACCION_VENDEDOR_MOCHILA_LLENA
+};
 inline constexpr int COMPRAS_MAXIMAS_BOT = 2;
 
 
@@ -49,6 +64,15 @@ struct EstadoTienda
     // Instante de la ultima compra (para el rebote del objeto).
     float tiempoCompra = 99.0f;
     int ultimoComprado = -1;
+
+    // Presentacion del vendedor (no cambia las reglas): ultima reaccion y
+    // segundos desde ella, desde su ultima frase y desde que el jugador
+    // movio la seleccion.
+    ReaccionVendedor reaccion = REACCION_VENDEDOR_NINGUNA;
+    float tiempoReaccion = 99.0f;
+    float tiempoDesdeMensaje = 0.0f;
+    float tiempoSeleccion = 99.0f;
+    float tiempoTotal = 0.0f;
 
     bool terminado = false;
 };
@@ -85,7 +109,23 @@ void ActualizarTienda(
     const InputSeleccionParticipante& entrada
 );
 
-// Velo, comerciante, ofertas y mochila.
+// Punto del piso del carrito del vendedor, al costado de la casilla donde
+// esta el jugador (a la derecha en pantalla, del lado de la camara).
+Vector3 PosicionPuestoTienda(const PartidaTablero& partida, int jugador);
+
+// Pies del vendedor (detras del mostrador).
+Vector3 PosicionVendedorTienda(const PartidaTablero& partida, int jugador);
+
+// Carrito, mostrador con la oferta y Don Cambalache animado. Dentro de
+// BeginMode3D.
+void DibujarPuestoTienda3D(
+    const PartidaTablero& partida,
+    const EstadoTienda& tienda,
+    int jugador
+);
+
+// Globo del vendedor, ofertas en columna y mochila (sin velo: el puesto se
+// ve en el tablero).
 void DibujarTienda2D(
     const PartidaTablero& partida,
     const EstadoTienda& tienda,
