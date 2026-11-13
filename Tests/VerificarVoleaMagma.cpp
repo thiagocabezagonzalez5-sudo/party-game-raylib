@@ -226,11 +226,12 @@ static void ComprobarEscena(ZonaPruebas& zona)
         if (tamano>=.2f*EscalaUmbralSombraPropRetro()) sombrasParticulas+=2;
     }
     // Marcas, humo y halo de la roca ahora son geometria propia del estadio
-    // (rlgl), no cubos ni esferas sueltas.
-    Comprobar(cubos==particulas && esferas==golpes && cilindros==enSuelo && segmentos==0,
-        "Conservar punos, particulas y sombra cilindrica del jugador sin superponer geometria del escenario");
-    int sombrasGolpe=.18f>=.1f*EscalaUmbralSombraPropRetro() ? golpes*LadosSombraPropRetro() : 0;
-    Comprobar(triangulosSombra==8*zona.cantidadParticipantes+sombrasGolpe+sombrasParticulas,
+    // (rlgl), no cubos ni esferas sueltas. El golpe ya no dibuja una esfera
+    // de "puno": el personaje extiende el brazo (animacion procedural).
+    (void)golpes;
+    Comprobar(cubos==particulas && esferas==0 && cilindros==enSuelo && segmentos==0,
+        "Conservar particulas y sombra cilindrica del jugador sin superponer geometria del escenario");
+    Comprobar(triangulosSombra==8*zona.cantidadParticipantes+sombrasParticulas,
         "Sombras de personajes y sus efectos intactas, sin manchas del escenario");
 }
 static void PrepararGolpe(ZonaPruebas& zona,int indice,bool remate=false)

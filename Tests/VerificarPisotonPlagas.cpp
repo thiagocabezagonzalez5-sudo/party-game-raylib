@@ -224,6 +224,8 @@ int main()
         Avanzar(zona,1); Comprobar(m.puntos[0]==3 && m.inmunidadAvispa[0]>0 && zona.jugadores[0].tiempoRalentizado>0,"Picadura aplica penalizacion e inmunidad"); Dibujar(zona);
         Aislar(zona); m.avispas[0].activa=true; m.avispas[0].x=.8f; m.avispas[0].objetivo=0; m.avispas[0].tiempoObjetivo=1000; zona.jugadores[0].direccionMirada={1,0,0};
         tecla=KEY_E; Avanzar(zona,1); tecla=KEY_NULL;
+        // El golpe queda activo tras la anticipacion (DURACION_ANTICIPACION_GOLPE).
+        Avanzar(zona,5);
         Comprobar(m.avispas[0].huida>2 && m.puntos[0]==0,"Golpe real espanta avispa sin cambiar puntaje"); Dibujar(zona);
         Aislar(zona); m.florX=m.florZ=0; m.tiempoFlor=.001f; Avanzar(zona,1);
         Comprobar(m.puntos[0]==3 && m.florGanador==0 && m.florAbierta>0,"Flor premia cercania con reglas originales"); Dibujar(zona,cantidad==4 ? "build/pisoton-flor.png" : nullptr);

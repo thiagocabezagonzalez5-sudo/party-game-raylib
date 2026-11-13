@@ -1532,34 +1532,6 @@ static void HaloPesca(Vector3 p, float radio, Color exterior, Color interior)
 }
 
 
-// Cono de luz (aditivo): del foco hacia el charco, se apaga en la base.
-static void ConoLuzPesca(Vector3 foco, Vector3 baseCentro, float radio, Color color)
-{
-    const int LADOS = 16;
-    Vector3 eje = NormalizarPesca(RestaPesca(baseCentro, foco));
-    Vector3 apoyo = std::fabs(eje.y) < 0.9f ? Vector3{ 0.0f, 1.0f, 0.0f } : Vector3{ 1.0f, 0.0f, 0.0f };
-    Vector3 u = NormalizarPesca(CruzPesca(eje, apoyo));
-    Vector3 v = CruzPesca(eje, u);
-
-    BeginPesca(RL_TRIANGLES);
-    for (int k = 0; k < LADOS; k++)
-    {
-        float a0 = 6.2832f * (float)k / (float)LADOS;
-        float a1 = 6.2832f * (float)(k + 1) / (float)LADOS;
-        Vector3 p0 = SumaPesca(baseCentro, SumaPesca(EscalaPesca(u, std::cos(a0) * radio), EscalaPesca(v, std::sin(a0) * radio)));
-        Vector3 p1 = SumaPesca(baseCentro, SumaPesca(EscalaPesca(u, std::cos(a1) * radio), EscalaPesca(v, std::sin(a1) * radio)));
-
-        rlColor4ub(color.r, color.g, color.b, color.a);
-        rlVertex3f(foco.x, foco.y, foco.z);
-        rlColor4ub(color.r, color.g, color.b, 0);
-        rlVertex3f(p0.x, p0.y, p0.z);
-        rlColor4ub(color.r, color.g, color.b, 0);
-        rlVertex3f(p1.x, p1.y, p1.z);
-    }
-    EndPesca();
-}
-
-
 // Charco de luz: el mismo perfil que tres discos concentricos tenues
 // (radios 0.55, 1 y 1.45; alfas 0.11, 0.08 y 0.05) en una sola pasada,
 // para no pintar tres veces cada pixel.

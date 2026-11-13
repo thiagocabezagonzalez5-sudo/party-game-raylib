@@ -99,12 +99,6 @@ static float CentroCarril(int equipo)
 }
 
 
-static unsigned int HashIndice(int k)
-{
-    return (((unsigned int)k * 2654435761u) >> 8) & 0xFFu;
-}
-
-
 static bool EsMinoria(const MinijuegoBalsasRapido& m, int equipo)
 {
     int otro = equipo == 0 ? 1 : 0;
@@ -1881,24 +1875,6 @@ static void PuntoB(Vector3 c, float r, Color color)
         Vector3Subtract(Vector3Subtract(c, d), u), Vector3Subtract(Vector3Add(c, d), u),
         Vector3Add(Vector3Add(c, d), u), Vector3Add(Vector3Subtract(c, d), u),
         color, color, color, color);
-}
-
-
-// Tira delgada entre dos puntos que mira a la camara (lianas, sogas).
-static void TiraB(Vector3 a, Vector3 b, float ancho, Color ca, Color cb)
-{
-    Vector3 eje = Vector3Subtract(b, a);
-    Vector3 vista = Vector3Subtract(Vector3Scale(Vector3Add(a, b), 0.5f), g_ojoB);
-    Vector3 lado = Vector3CrossProduct(eje, vista);
-    float l = Vector3Length(lado);
-
-    if (l < 0.0001f)
-    {
-        return;
-    }
-
-    lado = Vector3Scale(lado, ancho * 0.5f / l);
-    Quad4B(Vector3Subtract(a, lado), Vector3Add(a, lado), Vector3Add(b, lado), Vector3Subtract(b, lado), ca, ca, cb, cb);
 }
 
 

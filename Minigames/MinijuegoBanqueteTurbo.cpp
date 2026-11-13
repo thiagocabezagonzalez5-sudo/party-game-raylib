@@ -906,16 +906,6 @@ static void CajaBT(Vector3 c, Vector3 t, Color color)
 }
 
 
-// Caja girada en Y (grados).
-static void CajaGiradaBT(Vector3 c, Vector3 t, float giroY, Color color)
-{
-    float a = giroY * DEG2RAD;
-    Vector3 ux = { std::cos(a), 0.0f, -std::sin(a) };
-    Vector3 uz = { std::sin(a), 0.0f, std::cos(a) };
-    CajaEjesBT(c, Vector3Scale(ux, t.x * 0.5f), { 0.0f, t.y * 0.5f, 0.0f }, Vector3Scale(uz, t.z * 0.5f), color, true);
-}
-
-
 // Viga de seccion rectangular entre dos puntos (ancho x alto).
 static void VigaBT(Vector3 a, Vector3 b, float ancho, float alto, Color color)
 {

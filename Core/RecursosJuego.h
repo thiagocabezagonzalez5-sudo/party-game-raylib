@@ -980,28 +980,3 @@ inline constexpr const char* RUTA_SFX_IMPACTO = "Assets/Audio/SFX/Minijuegos/imp
 inline constexpr const char* RUTA_SFX_ACIERTO = "Assets/Audio/SFX/Minijuegos/acierto";
 inline constexpr const char* RUTA_SFX_ERROR = "Assets/Audio/SFX/Minijuegos/error";
 inline constexpr const char* RUTA_SFX_ELIMINADO = "Assets/Audio/SFX/Minijuegos/eliminado";
-
-
-//==================================================
-// SELECCION DE PERSONAJES
-//==================================================
-
-inline constexpr const char* RUTA_ICONO_PERSONAJE_1 =
-    "Assets/Personajes/TungTung/Icono.png";
-inline constexpr const char* RUTA_RETRATO_PERSONAJE_1 =
-    "Assets/Personajes/TungTung/Retrato.png";
-
-inline constexpr const char* RUTA_ICONO_PERSONAJE_2 =
-    "Assets/Personajes/Personaje2/Icono.png";
-inline constexpr const char* RUTA_RETRATO_PERSONAJE_2 =
-    "Assets/Personajes/Personaje2/Retrato.png";
-
-inline constexpr const char* RUTA_ICONO_PERSONAJE_3 =
-    "Assets/Personajes/Personaje3/Icono.png";
-inline constexpr const char* RUTA_RETRATO_PERSONAJE_3 =
-    "Assets/Personajes/Personaje3/Retrato.png";
-
-inline constexpr const char* RUTA_ICONO_PERSONAJE_4 =
-    "Assets/Personajes/Personaje4/Icono.png";
-inline constexpr const char* RUTA_RETRATO_PERSONAJE_4 =
-    "Assets/Personajes/Personaje4/Retrato.png";

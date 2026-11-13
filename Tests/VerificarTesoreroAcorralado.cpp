@@ -200,6 +200,8 @@ static void AlejarJugadores(ZonaPruebas& zona,int cantidad)
     {
         auto& j=zona.jugadores[i]; j.posicion=posiciones[i]; j.velocidad=j.empuje={};
         j.enSuelo=true; j.aplastado=j.cayendo=j.golpeando=false; j.tiempoInmunidad=0;
+        // Sin aturdimiento ni golpe a medias del paso anterior.
+        j.tiempoAturdido=j.duracionAturdido=0; j.derribado=false; j.tiempoAnticipacionGolpe=j.tiempoAnimacionGolpe=0;
     }
 }
 static int MonedasActivas(const MinijuegoTesoreroAcorralado& m)
@@ -259,6 +261,8 @@ int main()
         AlejarJugadores(zona,cantidad); int tesorero=m.indiceTesorero, atacante=tesorero==0 ? 1 : 0;
         zona.jugadores[tesorero].posicion={4,.7f,3}; zona.jugadores[atacante].posicion={3,.7f,3};
         zona.jugadores[atacante].direccionMirada={1,0,0}; Pulsar(zona,KEY_E);
+        // El golpe queda activo tras la anticipacion (DURACION_ANTICIPACION_GOLPE).
+        Avanzar(zona,5);
         Comprobar(m.monedasTesorero==95 && m.monedasPerdidas==5 && MonedasActivas(m)==5,"Golpe real suelta cinco monedas y conserva puntuacion");
         Dibujar(zona,cantidad==4 ? "build/tesorero-golpe.png" : nullptr); ComprobarEscena(m);
         MonedaTesorero moneda{}; moneda.activa=true; moneda.y=.25f; moneda.edad=1;
