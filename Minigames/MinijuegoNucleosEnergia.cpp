@@ -316,7 +316,42 @@ static bool PuntoOcupadoPorOtroNucleo(
 }
 
 
-static void ReubicarNucleo(MinijuegoNucleosEnergia& minijuego, int indice)
+// Un nucleo no debe reaparecer debajo de un jugador: se lo llevaria en el
+// mismo frame sin moverse (punto gratis).
+static bool PuntoOcupadoPorJugador(
+    const JugadorPrueba jugadores[],
+    const Participante participantes[],
+    int limite,
+    Vector3 punto
+)
+{
+    if (jugadores == nullptr || participantes == nullptr)
+    {
+        return false;
+    }
+
+    const float RADIO_LIBRE = RADIO_RECOLECCION_NUCLEO + 0.6f;
+
+    for (int i = 0; i < limite; i++)
+    {
+        if (!participantes[i].activo || jugadores[i].cayendo) continue;
+
+        float dx = jugadores[i].posicion.x - punto.x;
+        float dz = jugadores[i].posicion.z - punto.z;
+        if (dx * dx + dz * dz < RADIO_LIBRE * RADIO_LIBRE) return true;
+    }
+
+    return false;
+}
+
+
+static void ReubicarNucleo(
+    MinijuegoNucleosEnergia& minijuego,
+    int indice,
+    const JugadorPrueba jugadores[] = nullptr,
+    const Participante participantes[] = nullptr,
+    int limite = 0
+)
 {
     int puntoElegido = GetRandomValue(0, CANTIDAD_PUNTOS_NUCLEOS - 1);
 
@@ -324,11 +359,10 @@ static void ReubicarNucleo(MinijuegoNucleosEnergia& minijuego, int indice)
     {
         int candidato = GetRandomValue(0, CANTIDAD_PUNTOS_NUCLEOS - 1);
 
-        if (!PuntoOcupadoPorOtroNucleo(
-            minijuego,
-            indice,
-            PUNTOS_NUCLEOS[candidato]
-        ))
+        if (
+            !PuntoOcupadoPorOtroNucleo(minijuego, indice, PUNTOS_NUCLEOS[candidato]) &&
+            !PuntoOcupadoPorJugador(jugadores, participantes, limite, PUNTOS_NUCLEOS[candidato])
+        )
         {
             puntoElegido = candidato;
             break;
@@ -1099,7 +1133,7 @@ void MinijuegoNucleosEnergia::Actualizar(
         if (!nucleo.activo)
         {
             nucleo.tiempoReaparicion -= deltaTime;
-            if (nucleo.tiempoReaparicion <= 0.0f) ReubicarNucleo(*this, n);
+            if (nucleo.tiempoReaparicion <= 0.0f) ReubicarNucleo(*this, n, jugadores, participantes, limite);
             continue;
         }
 
