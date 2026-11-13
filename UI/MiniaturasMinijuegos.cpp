@@ -1392,6 +1392,190 @@ static void DibujarArteMinijuego(
 }
 
 
+//==================================================
+// CAPTURAS DE GAMEPLAY
+//==================================================
+
+// Una ruta por minijuego, en el orden de IdMinijuego.
+static const char* const RUTAS_MINIATURAS[] =
+{
+    "Assets/UI/Miniaturas/color_seguro.png",
+    "Assets/UI/Miniaturas/pelotas.png",
+    "Assets/UI/Miniaturas/tronco.png",
+    "Assets/UI/Miniaturas/fabrica_67.png",
+    "Assets/UI/Miniaturas/isla_fuego.png",
+    "Assets/UI/Miniaturas/capitan_manda.png",
+    "Assets/UI/Miniaturas/barra_giratoria.png",
+    "Assets/UI/Miniaturas/nucleos_energia.png",
+    "Assets/UI/Miniaturas/refugio_pinchos.png",
+    "Assets/UI/Miniaturas/miradas_cruzadas.png",
+    "Assets/UI/Miniaturas/muros_locos.png",
+    "Assets/UI/Miniaturas/tormenta_magnetica.png",
+    "Assets/UI/Miniaturas/conteo_explosivo.png",
+    "Assets/UI/Miniaturas/paso_silencioso.png",
+    "Assets/UI/Miniaturas/circuito_voltaje.png",
+    "Assets/UI/Miniaturas/trazo_perfecto.png",
+    "Assets/UI/Miniaturas/carga_inestable.png",
+    "Assets/UI/Miniaturas/secuencia_neon.png",
+    "Assets/UI/Miniaturas/interruptores_caos.png",
+    "Assets/UI/Miniaturas/tanques_plasma.png",
+    "Assets/UI/Miniaturas/pasarelas_vacio.png",
+    "Assets/UI/Miniaturas/cantera_fuga.png",
+    "Assets/UI/Miniaturas/territorio_conquista.png",
+    "Assets/UI/Miniaturas/defensa_nucleo.png",
+    "Assets/UI/Miniaturas/lluvia_apilada.png",
+    "Assets/UI/Miniaturas/cuerda_acantilado.png",
+    "Assets/UI/Miniaturas/ultimo_asiento.png",
+    "Assets/UI/Miniaturas/cajas_puerto.png",
+    "Assets/UI/Miniaturas/laberinto_inclinado.png",
+    "Assets/UI/Miniaturas/veta_cristal.png",
+    "Assets/UI/Miniaturas/capsulas_barajadas.png",
+    "Assets/UI/Miniaturas/bateo_meteorico.png",
+    "Assets/UI/Miniaturas/racimo_toxico.png",
+    "Assets/UI/Miniaturas/tesorero_acorralado.png",
+    "Assets/UI/Miniaturas/descenso_nubes.png",
+    "Assets/UI/Miniaturas/volea_magma.png",
+    "Assets/UI/Miniaturas/parejas_glaciar.png",
+    "Assets/UI/Miniaturas/esferas_canon.png",
+    "Assets/UI/Miniaturas/pesca_isla.png",
+    "Assets/UI/Miniaturas/rodillos_neon.png",
+    "Assets/UI/Miniaturas/bolas_azucar.png",
+    "Assets/UI/Miniaturas/grua_chatarra.png",
+    "Assets/UI/Miniaturas/pisoton_plagas.png",
+    "Assets/UI/Miniaturas/balsas_rapido.png",
+    "Assets/UI/Miniaturas/autos_globo.png",
+    "Assets/UI/Miniaturas/sendero_invisible.png",
+    "Assets/UI/Miniaturas/banquete_turbo.png",
+    "Assets/UI/Miniaturas/tuberias_desierto.png",
+    "Assets/UI/Miniaturas/trepa_mastil.png",
+    "Assets/UI/Miniaturas/guardian_ruinas.png",
+    "Assets/UI/Miniaturas/cables_cruzados.png",
+    "Assets/UI/Miniaturas/vagonetas_duelo.png",
+    "Assets/UI/Miniaturas/gemas_deslizantes.png"
+};
+
+static_assert(
+    sizeof(RUTAS_MINIATURAS) / sizeof(RUTAS_MINIATURAS[0]) == CANTIDAD_MINIJUEGOS,
+    "Falta o sobra una ruta de miniatura: agregarla en el orden de IdMinijuego"
+);
+
+
+// Textura de cada captura. `intentada` evita volver a buscar en disco
+// cada frame un archivo que no existe (ahi se usa el dibujo de respaldo).
+struct MiniaturaCargada
+{
+    Texture2D textura = {};
+    bool intentada = false;
+};
+
+static MiniaturaCargada miniaturas[CANTIDAD_MINIJUEGOS];
+
+
+const char* ObtenerRutaMiniaturaMinijuego(
+    IdMinijuego id
+)
+{
+    if (!EsIdMinijuegoValido(id))
+    {
+        return "";
+    }
+
+    return RUTAS_MINIATURAS[id];
+}
+
+
+// Carga perezosa: solo se lee del disco la primera vez que la postal
+// aparece en pantalla. nullptr si no hay captura.
+static const Texture2D* ObtenerTexturaMiniatura(
+    IdMinijuego id
+)
+{
+    if (!EsIdMinijuegoValido(id))
+    {
+        return nullptr;
+    }
+
+    MiniaturaCargada& miniatura = miniaturas[id];
+
+    if (!miniatura.intentada)
+    {
+        miniatura.intentada = true;
+
+        const char* ruta = RUTAS_MINIATURAS[id];
+
+        if (FileExists(ruta))
+        {
+            miniatura.textura = LoadTexture(ruta);
+
+            if (miniatura.textura.id != 0)
+            {
+                // Las postales se dibujan mas chicas o mas grandes que la
+                // captura: el filtro bilineal evita el serrucho.
+                SetTextureFilter(miniatura.textura, TEXTURE_FILTER_BILINEAR);
+            }
+        }
+    }
+
+    return miniatura.textura.id != 0 ? &miniatura.textura : nullptr;
+}
+
+
+void DescargarMiniaturasMinijuegos()
+{
+    for (int i = 0; i < CANTIDAD_MINIJUEGOS; i++)
+    {
+        if (miniaturas[i].textura.id != 0)
+        {
+            UnloadTexture(miniaturas[i].textura);
+        }
+
+        miniaturas[i] = MiniaturaCargada{};
+    }
+}
+
+
+// La captura llena `rect` sin deformarse: se toma del centro de la
+// imagen el trozo con la misma proporcion que el marco. Asi no hace
+// falta recorte de pantalla (sirve tambien dentro de una matriz rotada).
+static void DibujarCapturaMinijuego(
+    const Texture2D& textura,
+    Rectangle rect
+)
+{
+    if (rect.width <= 0.0f || rect.height <= 0.0f)
+    {
+        return;
+    }
+
+    float anchoFuente = (float)textura.width;
+    float altoFuente = (float)textura.height;
+    const float proporcionMarco = rect.width / rect.height;
+
+    if (anchoFuente / altoFuente > proporcionMarco)
+    {
+        anchoFuente = altoFuente * proporcionMarco;
+    }
+    else
+    {
+        altoFuente = anchoFuente / proporcionMarco;
+    }
+
+    Rectangle fuente =
+    {
+        ((float)textura.width - anchoFuente) * 0.5f,
+        ((float)textura.height - altoFuente) * 0.5f,
+        anchoFuente,
+        altoFuente
+    };
+
+    DrawTexturePro(textura, fuente, rect, Vector2{ 0.0f, 0.0f }, 0.0f, WHITE);
+}
+
+
+//==================================================
+// ILUSTRACION (ENTRADA)
+//==================================================
+
 static bool proyeccionInvertida = false;
 
 
@@ -1409,6 +1593,15 @@ void DibujarIlustracionMinijuego(
     bool recortar
 )
 {
+    const Texture2D* captura = ObtenerTexturaMiniatura(id);
+
+    if (captura != nullptr)
+    {
+        DibujarCapturaMinijuego(*captura, rect);
+        return;
+    }
+
+    // Respaldo sin captura: dibujo con primitivas.
     const DatosMinijuegoCatalogo& datos = ObtenerDatosMinijuego(id);
 
     // Fondo opaco: el color del minijuego apagado, para que el dibujo

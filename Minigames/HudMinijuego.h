@@ -131,6 +131,15 @@ void ReiniciarMarcaHudMinijuego();
 bool HudMinijuegoDibujado();
 
 
+// SOLO HERRAMIENTAS (Tests/CapturarMiniaturas.cpp): si no es nullptr, la
+// llama DibujarHudMinijuego justo antes de dibujar el HUD, con la escena
+// del minijuego ya en pantalla y todavia sin carteles encima. Recibe los
+// datos del HUD para saber en que fase esta la ronda.
+typedef void (*FuncionAntesHudMinijuego)(const DatosHudMinijuego& datos);
+
+void EstablecerFuncionAntesHudMinijuego(FuncionAntesHudMinijuego funcion);
+
+
 // Textos de teclas fieles a Systems/Input.cpp para armar la ayuda.
 // Golpe / accion: E, SHIFT DER o X. Movimiento: WASD/FLECHAS, WASD,
 // FLECHAS o STICK. Vacio para bots.

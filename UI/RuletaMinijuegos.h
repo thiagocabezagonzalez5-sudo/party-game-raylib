@@ -95,7 +95,8 @@ struct RuletaMinijuegos
     // Velo, tendedero, carteles y ayuda de la ruleta (sin la previa).
     void DibujarTendedero() const;
 
-    // Libera la textura de la previa. Seguro llamar varias veces.
+    // Libera la textura de la previa y las capturas de las postales.
+    // Seguro llamar varias veces.
     void Descargar();
 
     bool Termino() const;

@@ -1973,6 +1973,50 @@ bool PreviaMinijuegoQuieta(
 // CACHE DE PANTALLA (compartida con la ruleta)
 //==================================================
 
+// Como LoadRenderTexture pero sin buffer de profundidad: la cache solo
+// guarda dibujo 2D, y a 1920x1080 la profundidad ocupaba otros ~8 MB de
+// video por cache. UnloadRenderTexture la libera igual (textura y FBO).
+static RenderTexture2D CargarCacheSoloColor(
+    int ancho,
+    int alto
+)
+{
+    RenderTexture2D cache = {};
+
+    cache.id = rlLoadFramebuffer();
+
+    if (cache.id == 0)
+    {
+        return cache;
+    }
+
+    cache.texture.id = rlLoadTexture(nullptr, ancho, alto, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8, 1);
+    cache.texture.width = ancho;
+    cache.texture.height = alto;
+    cache.texture.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+    cache.texture.mipmaps = 1;
+
+    rlEnableFramebuffer(cache.id);
+    rlFramebufferAttach(
+        cache.id,
+        cache.texture.id,
+        RL_ATTACHMENT_COLOR_CHANNEL0,
+        RL_ATTACHMENT_TEXTURE2D,
+        0
+    );
+    bool completa = rlFramebufferComplete(cache.id);
+    rlDisableFramebuffer();
+
+    if (cache.texture.id == 0 || !completa)
+    {
+        UnloadRenderTexture(cache);
+        return RenderTexture2D{};
+    }
+
+    return cache;
+}
+
+
 bool DibujarEnCacheMinijuegos(
     RenderTexture2D& cache,
     void (*dibujar)(const void* datos),
@@ -1999,7 +2043,7 @@ bool DibujarEnCacheMinijuegos(
 
     if (cache.id == 0)
     {
-        cache = LoadRenderTexture(ancho, alto);
+        cache = CargarCacheSoloColor(ancho, alto);
 
         if (cache.id == 0)
         {
@@ -2315,6 +2359,9 @@ void SeleccionMinijuegos::Descargar()
 
     cacheFija = RenderTexture2D{};
     cacheValida = false;
+
+    // Capturas de las postales: se vuelven a cargar al regresar.
+    DescargarMiniaturasMinijuegos();
 }
 
 

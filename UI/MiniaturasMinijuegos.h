@@ -59,11 +59,14 @@ void DibujarIconoFormatoMinijuego(
 //==================================================
 
 // Ilustracion del minijuego ocupando todo `rect` (pixeles), sin franjas
-// reservadas: quien la usa dibuja marco y nombre alrededor. Hoy es un
-// dibujo con primitivas; para pasar a imagenes reales basta con dibujar
-// la textura dentro de esta funcion, sin tocar las pantallas.
+// reservadas: quien la usa dibuja marco y nombre alrededor.
+// Es la captura de gameplay de ObtenerRutaMiniaturaMinijuego, recortada
+// al centro para llenar `rect` (una sola textura chica por minijuego, que
+// se carga la primera vez que se dibuja). Si falta el archivo se dibuja
+// el dibujo de respaldo con primitivas.
 // recortar = false cuando se dibuja dentro de una matriz rotada (el
-// recorte de raylib es siempre un rectangulo de pantalla).
+// recorte de raylib es siempre un rectangulo de pantalla; la captura no
+// lo necesita, solo el dibujo de respaldo).
 void DibujarIlustracionMinijuego(
     IdMinijuego id,
     Rectangle rect,
@@ -77,3 +80,15 @@ void DibujarIlustracionMinijuego(
 void EstablecerProyeccionInvertidaMiniaturas(
     bool invertida
 );
+
+// "Assets/UI/Miniaturas/<minijuego>.png": captura de gameplay que genera
+// Tests/CapturarMiniaturas.ps1.
+const char* ObtenerRutaMiniaturaMinijuego(
+    IdMinijuego id
+);
+
+// Libera las capturas cargadas por DibujarIlustracionMinijuego (la
+// proxima vez que se dibujen se vuelven a cargar). La llaman
+// SeleccionMinijuegos::Descargar y RuletaMinijuegos::Descargar al dejar
+// sus pantallas y al cerrar el juego. Seguro llamar varias veces.
+void DescargarMiniaturasMinijuegos();

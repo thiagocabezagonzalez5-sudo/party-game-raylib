@@ -1180,6 +1180,9 @@ void RuletaMinijuegos::Descargar()
 
     cachePrevia = RenderTexture2D{};
     cacheValida = false;
+
+    // Capturas de las postales: se vuelven a cargar en la proxima ruleta.
+    DescargarMiniaturasMinijuegos();
 }
 
 

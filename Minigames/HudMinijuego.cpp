@@ -95,6 +95,9 @@ static EstadoHudMinijuego estadoHud;
 // Ver ReiniciarMarcaHudMinijuego / HudMinijuegoDibujado.
 static bool hudDibujadoEsteFrame = false;
 
+// Ver EstablecerFuncionAntesHudMinijuego (solo herramientas).
+static FuncionAntesHudMinijuego funcionAntesHud = nullptr;
+
 
 static float Limitar01(float v)
 {
@@ -1180,6 +1183,11 @@ void DibujarHudMinijuego(
     const Participante participantes[]
 )
 {
+    if (funcionAntesHud != nullptr)
+    {
+        funcionAntesHud(datos);
+    }
+
     const EstiloUI& estilo = ObtenerEstiloUI();
 
     if (!estilo.cargado)
@@ -1305,6 +1313,12 @@ void ReiniciarMarcaHudMinijuego()
 bool HudMinijuegoDibujado()
 {
     return hudDibujadoEsteFrame;
+}
+
+
+void EstablecerFuncionAntesHudMinijuego(FuncionAntesHudMinijuego funcion)
+{
+    funcionAntesHud = funcion;
 }
 
 
